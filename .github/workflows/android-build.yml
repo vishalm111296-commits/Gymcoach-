@@ -35,9 +35,11 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-        with:
-          android-sdk-version: ${{ env.ANDROID_SDK_VERSION }}
-          build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager --licenses
 
       - name: Setup Gradle
         run: |

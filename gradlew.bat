@@ -49,7 +49,7 @@ goto fail
 :execute
 @rem Setup the command line
 
-set CLASSPATH=%GRADLE_USER_HOME%\wrapper\dists\gradle-8.4-bin\5xj3n1k5x6x7y8z9a0b1c2d3e\gradle-8.4\lib\gradle-wrapper-8.4.jar
+set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 
 @rem Execute Gradle

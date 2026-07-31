@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.GymCoach" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+    </style>
+</resources>

@@ -1,0 +1,20 @@
+# Default ignored files
+/.gradle/
+/build/
+/app/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE files
+.idea/
+*.iml
+.cxx/
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.jks
+*.keystore
+secrets.properties

@@ -387,3 +387,4 @@ fun formatDuration(seconds: Long): String {
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
 
+}

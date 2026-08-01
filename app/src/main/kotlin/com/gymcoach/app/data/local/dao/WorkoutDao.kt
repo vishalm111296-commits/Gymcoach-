@@ -144,6 +144,17 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE completed = 1 AND date >= :startDate AND date <= :endDate ORDER BY date DESC")
     fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
 
+    @Query("""
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON we.workoutId = w.id
+        LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
+        WHERE w.completed = 1 AND w.date >= :startDate AND w.date <= :endDate
+        GROUP BY w.id
+        ORDER BY w.date DESC
+    """)
+    fun getWorkoutsInDateRangeWithStats(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>>
+
     @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY date ASC")
     fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 

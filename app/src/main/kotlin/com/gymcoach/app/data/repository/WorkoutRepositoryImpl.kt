@@ -119,31 +119,31 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getWorkoutsInDateRange(startDate, endDate).map { entities ->
+        return workoutDao.getWorkoutsInDateRangeWithStats(startDate, endDate).map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun getWorkoutsByVolumeDesc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsByVolumeDesc().map { entities ->
+        return workoutDao.getCompletedWorkoutsWithStatsByVolumeDesc().map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun getWorkoutsByVolumeAsc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsByVolumeAsc().map { entities ->
+        return workoutDao.getCompletedWorkoutsWithStatsByVolumeAsc().map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun getWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsByDurationDesc().map { entities ->
+        return workoutDao.getCompletedWorkoutsWithStatsByDurationDesc().map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsByDurationAsc().map { entities ->
+        return workoutDao.getCompletedWorkoutsWithStatsByDurationAsc().map { entities ->
             entities.map { it.toDomain() }
         }
     }
@@ -216,7 +216,7 @@ private fun ExerciseEntity.toDomain() = Exercise(
     difficulty = difficulty
 )
 
-private fun WorkoutWithStats.toDomain() = com.gymcoach.app.domain.model.WorkoutWithStats(
+private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = com.gymcoach.app.domain.model.WorkoutWithStats(
     id = id,
     date = Instant.ofEpochMilli(date),
     startTime = Instant.ofEpochMilli(startTime),

@@ -90,15 +90,15 @@ class WorkoutHistoryViewModel @Inject constructor(
                     FilterOption.ALL -> filtered
                     FilterOption.THIS_WEEK -> {
                         val weekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
-                        filtered.filter { it.date.toEpochMilli() >= weekAgo }
+                        filtered.filter { it.workout.date.toEpochMilli() >= weekAgo }
                     }
                     FilterOption.THIS_MONTH -> {
                         val monthAgo = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000
-                        filtered.filter { it.date.toEpochMilli() >= monthAgo }
+                        filtered.filter { it.workout.date.toEpochMilli() >= monthAgo }
                     }
                     FilterOption.CUSTOM -> {
                         filtered.filter { it ->
-                            val date = it.date.toEpochMilli()
+                            val date = it.workout.date.toEpochMilli()
                             (filters.customStart == null || date >= filters.customStart) && 
                             (filters.customEnd == null || date <= filters.customEnd)
                         }
@@ -107,12 +107,12 @@ class WorkoutHistoryViewModel @Inject constructor(
 
                 // Apply sorting
                 val sorted = when (filters.sort) {
-                    SortOption.NEWEST -> filtered.sortedByDescending { it.date.toEpochMilli() }
-                    SortOption.OLDEST -> filtered.sortedBy { it.date.toEpochMilli() }
+                    SortOption.NEWEST -> filtered.sortedByDescending { it.workout.date.toEpochMilli() }
+                    SortOption.OLDEST -> filtered.sortedBy { it.workout.date.toEpochMilli() }
                     SortOption.VOLUME_DESC -> filtered.sortedByDescending { it.volume }
                     SortOption.VOLUME_ASC -> filtered.sortedBy { it.volume }
-                    SortOption.DURATION_DESC -> filtered.sortedByDescending { it.duration }
-                    SortOption.DURATION_ASC -> filtered.sortedBy { it.duration }
+                    SortOption.DURATION_DESC -> filtered.sortedByDescending { it.workout.duration }
+                    SortOption.DURATION_ASC -> filtered.sortedBy { it.workout.duration }
                 }
                 
                 sorted

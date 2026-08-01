@@ -355,7 +355,7 @@ private fun SetRow(
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
+fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
@@ -363,7 +363,7 @@ private fun StatItem(label: String, value: String) {
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
@@ -372,12 +372,12 @@ private fun SectionHeader(title: String) {
     )
 }
 
-private fun formatDate(instant: java.time.Instant): String {
+fun formatDate(instant: java.time.Instant): String {
     val fmt = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return fmt.format(Date.from(instant))
 }
 
-private fun formatDuration(seconds: Long): String {
+fun formatDuration(seconds: Long): String {
     val hours = seconds / 3600
     val minutes = (seconds % 3600) / 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

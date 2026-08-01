@@ -65,11 +65,11 @@ class WorkoutHistoryViewModel @Inject constructor(
     private fun observeWorkouts() {
         viewModelScope.launch {
             val filtersFlow = combine(
-                searchQuery.distinctUntilChanged(),
-                filterOption.distinctUntilChanged(),
-                sortOption.distinctUntilChanged(),
-                _customStartDate.distinctUntilChanged(),
-                _customEndDate.distinctUntilChanged()
+                searchQuery,
+                filterOption,
+                sortOption,
+                _customStartDate,
+                _customEndDate
             ) { query, filter, sort, customStart, customEnd ->
                 FilterState(query, filter, sort, customStart, customEnd)
             }

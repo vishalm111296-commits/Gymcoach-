@@ -133,7 +133,7 @@ fun WorkoutHistoryScreen(
             }
 
             // Sort dropdown
-            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+            Box(modifier = Modifier.align(Alignment.TopEnd)) {
                 IconButton(onClick = { showSortOptions = true }) {
                     Icon(Icons.Filled.Sort, contentDescription = "Sort")
                 }

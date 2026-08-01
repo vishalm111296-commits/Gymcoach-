@@ -221,7 +221,7 @@ fun WorkoutHistoryDetailScreen(
 }
 
 @Composable
-private fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
+fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -260,7 +260,7 @@ private fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
 }
 
 @Composable
-private fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
+fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -308,7 +308,7 @@ private fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.W
 }
 
 @Composable
-private fun SetRow(
+fun SetRow(
     setNumber: Int,
     weight: Double,
     reps: Int,

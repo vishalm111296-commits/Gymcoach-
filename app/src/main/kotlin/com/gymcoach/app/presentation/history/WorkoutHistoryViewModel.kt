@@ -23,9 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class WorkoutHistoryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val restTimer: RestTimerManager,
-    private val onResumeWorkout: (Workout) -> Unit = {},
-    private val onDetailClick: (Long) -> Unit = {}
+    private val restTimer: RestTimerManager
 ) : ViewModel() {
 
     enum class SortOption { NEWEST, OLDEST, VOLUME_DESC, VOLUME_ASC, DURATION_DESC, DURATION_ASC }
@@ -158,7 +156,6 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     fun onWorkoutClick(workoutId: Long) {
         _selectedWorkout.value = workoutId
-        onDetailClick(workoutId)
     }
 
     fun onDeleteClick(workoutId: Long) {
@@ -177,10 +174,8 @@ class WorkoutHistoryViewModel @Inject constructor(
         _deleteTarget.value = null
     }
 
-    fun onResumeWorkout() {
-        _incompleteWorkout.value?.let { workout ->
-            onResumeWorkout(workout)
-        }
+    fun getIncompleteWorkout(): Workout? {
+        return _incompleteWorkout.value
     }
 
     override fun onCleared() {

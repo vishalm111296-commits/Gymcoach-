@@ -54,7 +54,14 @@ data class MovementValidation(
 
 class FormAnalyzer(
     private val exerciseType: ExerciseType,
-    private val config: ExerciseConfig = ExerciseConfig.getDefaultConfig(exerciseType)
+    private val config: ExerciseConfig = ExerciseConfig(
+        downThreshold = 0.0,
+        upThreshold = 1.0,
+        minConfidence = 0.5,
+        validAngleRange = 0.0..180.0,
+        isTimeBased = false,
+        holdDurationMs = 0
+    )
 ) {
     private var repCount = 0
     private var lastPhase: RepPhase? = null

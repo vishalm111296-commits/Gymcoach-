@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsState
+import androidx.lifecycle.compose.LaunchedEffect
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
@@ -77,7 +79,7 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = WorkoutHistoryDetailUiState(isLoading = true)
             try {
-                val workout = workoutRepository.getWorkoutWithDetails(workoutId).first()
+                val workout = workoutRepository.getWorkoutWithDetails(workoutId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null).value
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
                     workout = workout,

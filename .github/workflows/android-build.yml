@@ -237,6 +237,7 @@ jobs:
         run: |
           echo "=== Running Unit Tests ==="
           echo "Running debug unit tests..."
+          chmod +x ./gradlew
           ./gradlew testDebugUnitTest --stacktrace
 
           echo "=== Running Kotlin tests ==="

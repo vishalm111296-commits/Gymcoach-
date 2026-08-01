@@ -33,6 +33,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.4
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
@@ -40,11 +45,6 @@ jobs:
         run: |
           yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           yes | sdkmanager --licenses
-
-      - name: Setup Gradle
-        run: |
-          echo "Gradle wrapper checksum verification"
-          ./gradlew --version
 
       - name: Validate Project Configuration
         run: |

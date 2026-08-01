@@ -147,10 +147,26 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY date ASC")
     fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 
-    @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY duration DESC")
+    @Query("""
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON we.workoutId = w.id
+        LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
+        WHERE w.completed = 1
+        GROUP BY w.id
+        ORDER BY w.duration DESC
+    """)
     fun getCompletedWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
-    @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY duration ASC")
+    @Query("""
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON we.workoutId = w.id
+        LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
+        WHERE w.completed = 1
+        GROUP BY w.id
+        ORDER BY w.duration ASC
+    """)
     fun getCompletedWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""

@@ -2,6 +2,7 @@ package com.gymcoach.app.core.ml
 
 import kotlin.math.acos
 import kotlin.math.sqrt
+import kotlin.math.toDegrees
 
 // ── Types ────────────────────────────────────────────────
 

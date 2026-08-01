@@ -4,6 +4,7 @@ import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import kotlinx.coroutines.flow.Flow
 
 interface WorkoutRepository {

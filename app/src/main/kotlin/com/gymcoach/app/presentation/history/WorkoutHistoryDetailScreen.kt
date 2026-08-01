@@ -201,6 +201,7 @@ fun WorkoutHistoryDetailScreen(
                         Spacer(Modifier.height(16.dp))
                     }
                 }
+            }
         }
     }
 

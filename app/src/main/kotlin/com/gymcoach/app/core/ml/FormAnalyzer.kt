@@ -2,7 +2,6 @@ package com.gymcoach.app.core.ml
 
 import kotlin.math.acos
 import kotlin.math.sqrt
-import kotlin.math.toDegrees
 
 // ── Types ────────────────────────────────────────────────
 
@@ -127,7 +126,7 @@ class FormAnalyzer(
         val magAB = sqrt(ab[0] * ab[0] + ab[1] * ab[1])
         val magCB = sqrt(cb[0] * cb[0] + cb[1] * cb[1])
         if (magAB < 1e-6 || magCB < 1e-6) return -1.0
-        return kotlin.math.toDegrees(acos((dot / (magAB * magCB)).coerceIn(-1.0, 1.0)))
+        return Math.toDegrees(acos((dot / (magAB * magCB)).coerceIn(-1.0, 1.0)))
     }
 
     private fun safeLandmark(pose: Pose, index: Int): NormalizedLandmark {

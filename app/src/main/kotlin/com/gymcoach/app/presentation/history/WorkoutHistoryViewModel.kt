@@ -64,23 +64,29 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     private fun observeWorkouts() {
         viewModelScope.launch {
-            val baseFlow = combine(
-                workoutRepository.getCompletedWorkouts(),
+            val filtersFlow = combine(
                 searchQuery.distinctUntilChanged(),
                 filterOption.distinctUntilChanged(),
                 sortOption.distinctUntilChanged(),
                 _customStartDate.distinctUntilChanged(),
                 _customEndDate.distinctUntilChanged()
-            ) { workouts, query, filter, sort, customStart, customEnd ->
+            ) { query, filter, sort, customStart, customEnd ->
+                FilterState(query, filter, sort, customStart, customEnd)
+            }
+
+            val baseFlow = combine(
+                workoutRepository.getCompletedWorkouts(),
+                filtersFlow
+            ) { workouts, filters ->
                 var filtered = workouts
 
                 // Apply search
-                if (query.isNotBlank()) {
-                    filtered = workouts.filter { it.workout?.name?.lowercase()?.contains(query.lowercase()) == true }
+                if (filters.query.isNotBlank()) {
+                    filtered = workouts.filter { it.notes.lowercase().contains(filters.query.lowercase()) }
                 }
 
                 // Apply filter
-                filtered = when (filter) {
+                filtered = when (filters.filter) {
                     FilterOption.ALL -> filtered
                     FilterOption.THIS_WEEK -> {
                         val weekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
@@ -93,13 +99,14 @@ class WorkoutHistoryViewModel @Inject constructor(
                     FilterOption.CUSTOM -> {
                         filtered.filter { it ->
                             val date = it.date.toEpochMilli()
-                            (customStart == null || date >= customStart!!) && (customEnd == null || date <= customEnd!!)
+                            (filters.customStart == null || date >= filters.customStart) && 
+                            (filters.customEnd == null || date <= filters.customEnd)
                         }
                     }
                 }
 
                 // Apply sorting
-                val sorted = when (sort) {
+                val sorted = when (filters.sort) {
                     SortOption.NEWEST -> filtered.sortedByDescending { it.date.toEpochMilli() }
                     SortOption.OLDEST -> filtered.sortedBy { it.date.toEpochMilli() }
                     SortOption.VOLUME_DESC -> filtered.sortedByDescending { it.volume }
@@ -117,6 +124,14 @@ class WorkoutHistoryViewModel @Inject constructor(
                 }
         }
     }
+
+    private data class FilterState(
+        val query: String,
+        val filter: FilterOption,
+        val sort: SortOption,
+        val customStart: Long?,
+        val customEnd: Long?
+    )
 
     private fun loadIncompleteWorkout() {
         viewModelScope.launch {

@@ -382,3 +382,5 @@ private fun formatDuration(seconds: Long): String {
     val minutes = (seconds % 3600) / 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
+
+}

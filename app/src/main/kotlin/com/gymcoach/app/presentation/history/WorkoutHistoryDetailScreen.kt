@@ -118,6 +118,7 @@ data class WorkoutHistoryDetailUiState(
     val error: String? = null
 )
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutHistoryDetailScreen(
     workoutId: Long,
@@ -386,4 +387,3 @@ fun formatDuration(seconds: Long): String {
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
 
-}

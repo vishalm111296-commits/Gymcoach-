@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -133,7 +134,7 @@ fun WorkoutHistoryScreen(
             }
 
             // Sort dropdown
-            Box(modifier = Modifier.align(Alignment.TopEnd)) {
+            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                 IconButton(onClick = { showSortOptions = true }) {
                     Icon(Icons.Filled.Sort, contentDescription = "Sort")
                 }

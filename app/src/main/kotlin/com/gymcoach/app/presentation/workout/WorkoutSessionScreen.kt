@@ -166,9 +166,7 @@ fun WorkoutSessionScreen(
                         }
                     }
 
-                    // Notes update is handled via viewModel.updateNotes() externally
-
-                    Spacer(Modifier.height(16.dp))
+                    item { Spacer(Modifier.height(16.dp)) }
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->

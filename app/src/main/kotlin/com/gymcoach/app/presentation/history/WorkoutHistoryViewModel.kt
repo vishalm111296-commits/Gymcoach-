@@ -107,7 +107,9 @@ class WorkoutHistoryViewModel @Inject constructor(
                     SortOption.DURATION_DESC -> filtered.sortedByDescending { it.duration }
                     SortOption.DURATION_ASC -> filtered.sortedBy { it.duration }
                 }
-            }.distinctUntilChanged()
+            }
+            baseFlow
+                .distinctUntilChanged()
                 .collect { workouts ->
                     _workouts.value = workouts
                 }

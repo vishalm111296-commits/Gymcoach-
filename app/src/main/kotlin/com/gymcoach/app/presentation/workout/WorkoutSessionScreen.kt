@@ -222,7 +222,7 @@ fun WorkoutSessionScreen(
             title = { Text("Add Exercise") },
             text = {
                 LazyColumn {
-                    items(allExercises, key = { it.id }) { exercise ->
+                    items(items = allExercises, key = { it.id }) { exercise ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { viewModel.addExerciseToWorkout(exercise) },
@@ -309,7 +309,7 @@ private fun ExerciseSetCard(
 
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
                 SetRow(
-                    setNumber = set.setNumber,
+                    index = index,
                     weight = set.weight,
                     reps = set.reps,
                     rpe = set.rpe,

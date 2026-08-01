@@ -99,7 +99,7 @@ class WorkoutHistoryViewModel @Inject constructor(
                 }
 
                 // Apply sorting
-                when (sort) {
+                val sorted = when (sort) {
                     SortOption.NEWEST -> filtered.sortedByDescending { it.date.toEpochMilli() }
                     SortOption.OLDEST -> filtered.sortedBy { it.date.toEpochMilli() }
                     SortOption.VOLUME_DESC -> filtered.sortedByDescending { it.volume }
@@ -107,6 +107,8 @@ class WorkoutHistoryViewModel @Inject constructor(
                     SortOption.DURATION_DESC -> filtered.sortedByDescending { it.duration }
                     SortOption.DURATION_ASC -> filtered.sortedBy { it.duration }
                 }
+                
+                sorted
             }
             baseFlow
                 .distinctUntilChanged()

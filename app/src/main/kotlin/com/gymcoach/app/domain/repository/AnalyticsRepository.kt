@@ -16,7 +16,18 @@ interface AnalyticsRepository {
     suspend fun getMuscleGroupDistribution(): List<MuscleGroupStats>
     suspend fun getAverageWorkoutVolume(): Double
     suspend fun getAverageWorkoutDurationMinutes(): Long
+    suspend fun getLongestWorkout(): WorkoutWithStats?
+    suspend fun getShortestWorkout(): WorkoutWithStats?
+    suspend fun getWorkoutCounts(): WorkoutCounts
+    suspend fun getTotalExercises(): Int
 }
+
+data class WorkoutCounts(
+    val total: Int,
+    val today: Int,
+    val week: Int,
+    val month: Int
+)
 
 data class PersonalRecord(
     val exerciseName: String,

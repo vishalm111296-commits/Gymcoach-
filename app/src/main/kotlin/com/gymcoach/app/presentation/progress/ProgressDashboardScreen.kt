@@ -41,6 +41,8 @@ import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
+import com.gymcoach.app.domain.repository.WorkoutCounts
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,12 +65,16 @@ data class ProgressUiState(
     val totalWorkouts: Int = 0,
     val totalSets: Int = 0,
     val totalReps: Int = 0,
+    val totalExercises: Int = 0,
     val totalVolume: Double = 0.0,
     val totalTrainingTimeMinutes: Long = 0,
     val averageWorkoutVolume: Double = 0.0,
     val averageWorkoutDurationMinutes: Long = 0,
     val weeklyTrend: Double = 0.0,
     val workoutFrequency: Int = 0,
+    val workoutCounts: WorkoutCounts = WorkoutCounts(0,0,0,0),
+    val longestWorkout: WorkoutWithStats? = null,
+    val shortestWorkout: WorkoutWithStats? = null,
     val error: String? = null
 )
 
@@ -98,10 +104,15 @@ class ProgressViewModel @Inject constructor(
                 val totalReps = analyticsRepository.getTotalReps()
                 val totalVolume = analyticsRepository.getTotalVolume()
                 val totalTrainingTimeMinutes = analyticsRepository.getTotalTrainingTimeMinutes()
+                val totalExercises = analyticsRepository.getTotalExercises()
                 val averageWorkoutVolume = analyticsRepository.getAverageWorkoutVolume()
                 val averageWorkoutDurationMinutes = analyticsRepository.getAverageWorkoutDurationMinutes()
                 val weeklyTrend = calculateWeeklyTrend(weekly)
                 val workoutFrequency = calculateWorkoutFrequency(weekly)
+                val workoutCounts = analyticsRepository.getWorkoutCounts()
+                val longestWorkout = analyticsRepository.getLongestWorkout()
+                val shortestWorkout = analyticsRepository.getShortestWorkout()
+
                 _uiState.value = ProgressUiState(
                     isLoading = false,
                     volumeHistory = volume,
@@ -114,10 +125,14 @@ class ProgressViewModel @Inject constructor(
                     totalReps = totalReps,
                     totalVolume = totalVolume,
                     totalTrainingTimeMinutes = totalTrainingTimeMinutes,
+                    totalExercises = totalExercises,
                     averageWorkoutVolume = averageWorkoutVolume,
                     averageWorkoutDurationMinutes = averageWorkoutDurationMinutes,
                     weeklyTrend = weeklyTrend,
-                    workoutFrequency = workoutFrequency
+                    workoutFrequency = workoutFrequency,
+                    workoutCounts = workoutCounts,
+                    longestWorkout = longestWorkout,
+                    shortestWorkout = shortestWorkout
                 )
             } catch (e: Exception) {
                 _uiState.value = ProgressUiState(
@@ -203,12 +218,32 @@ fun ProgressDashboardScreen(
 
                     // Stats Overview
                     StatsOverview(
-                        totalWorkouts = state.totalWorkouts,
+                        totalWorkouts = state.workoutCounts.total,
+                        todayWorkouts = state.workoutCounts.today,
+                        weekWorkouts = state.workoutCounts.week,
+                        monthWorkouts = state.workoutCounts.month,
+                        totalExercises = state.totalExercises,
                         totalSets = state.totalSets,
                         totalReps = state.totalReps,
                         totalVolume = state.totalVolume,
                         totalTrainingTimeMinutes = state.totalTrainingTimeMinutes
                     )
+
+                    Spacer(Modifier.height(16.dp))
+                    
+                    SectionHeader("Workout Extremes")
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        state.longestWorkout?.let {
+                            StatCard(label = "Longest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
+                        }
+                        state.shortestWorkout?.let {
+                            StatCard(label = "Shortest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
+                        }
+                    }
 
                     Spacer(Modifier.height(16.dp))
 

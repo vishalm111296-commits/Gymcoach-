@@ -94,6 +94,45 @@ interface WorkoutDao {
     @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1")
     suspend fun getTotalWorkoutsCount(): Int
 
+    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :todayStart")
+    suspend fun getWorkoutsTodayCount(todayStart: Long): Int
+
+    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :weekStart")
+    suspend fun getWorkoutsThisWeekCount(weekStart: Long): Int
+
+    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :monthStart")
+    suspend fun getWorkoutsThisMonthCount(monthStart: Long): Int
+
+    @Query("SELECT COUNT(*) FROM workout_exercises WHERE workoutId IN (SELECT id FROM workouts WHERE completed = 1)")
+    suspend fun getTotalExercisesCount(): Int
+
+    @Query("""
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON we.workoutId = w.id
+        LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
+        WHERE w.completed = 1
+        GROUP BY w.id
+        ORDER BY w.duration DESC
+        LIMIT 1
+    """)
+    suspend fun getLongestWorkout(): WorkoutWithStats?
+
+    @Query("""
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON we.workoutId = w.id
+        LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
+        WHERE w.completed = 1
+        GROUP BY w.id
+        ORDER BY w.duration ASC
+        LIMIT 1
+    """)
+    suspend fun getShortestWorkout(): WorkoutWithStats?
+
+    @Query("SELECT SUM(duration) FROM workouts WHERE completed = 1")
+    suspend fun getTotalTrainingTimeSeconds(): Long?
+
     @Query("SELECT COUNT(*) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.completed = 1")
     suspend fun getTotalSetsCount(): Int
 

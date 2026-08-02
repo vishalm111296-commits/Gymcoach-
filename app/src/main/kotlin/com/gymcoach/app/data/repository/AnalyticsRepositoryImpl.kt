@@ -91,4 +91,31 @@ class AnalyticsRepositoryImpl @Inject constructor(
         val totalSeconds = workoutDao.getAverageWorkoutDurationSeconds()
         return totalSeconds / 60
     }
+
+    override suspend fun getLongestWorkout(): WorkoutWithStats? {
+        return workoutDao.getLongestWorkout()
+    }
+
+    override suspend fun getShortestWorkout(): WorkoutWithStats? {
+        return workoutDao.getShortestWorkout()
+    }
+
+    override suspend fun getWorkoutCounts(): WorkoutCounts {
+        val now = java.util.Calendar.getInstance()
+        val today = now.timeInMillis
+        now.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+        val week = now.timeInMillis
+        now.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        val month = now.timeInMillis
+        return WorkoutCounts(
+            total = workoutDao.getTotalWorkoutsCount(),
+            today = workoutDao.getWorkoutsTodayCount(today),
+            week = workoutDao.getWorkoutsThisWeekCount(week),
+            month = workoutDao.getWorkoutsThisMonthCount(month)
+        )
+    }
+
+    override suspend fun getTotalExercises(): Int {
+        return workoutDao.getTotalExercisesCount()
+    }
 }

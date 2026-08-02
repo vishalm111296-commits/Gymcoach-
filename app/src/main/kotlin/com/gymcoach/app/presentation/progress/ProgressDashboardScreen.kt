@@ -43,6 +43,7 @@ import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
 import com.gymcoach.app.domain.model.WorkoutWithStats
+import com.gymcoach.app.presentation.history.formatDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -498,6 +499,10 @@ private fun monthLabel(date: Date): String {
 @Composable
 private fun StatsOverview(
     totalWorkouts: Int,
+    todayWorkouts: Int,
+    weekWorkouts: Int,
+    monthWorkouts: Int,
+    totalExercises: Int,
     totalSets: Int,
     totalReps: Int,
     totalVolume: Double,
@@ -508,31 +513,29 @@ private fun StatsOverview(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(
-                label = "Workouts",
-                value = "$totalWorkouts",
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                label = "Sets",
-                value = "$totalSets",
-                modifier = Modifier.weight(1f)
-            )
+            StatCard(label = "Workouts", value = "$totalWorkouts", modifier = Modifier.weight(1f))
+            StatCard(label = "Today", value = "$todayWorkouts", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(
-                label = "Reps",
-                value = "$totalReps",
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                label = "Volume",
-                value = "%.1f kg".format(totalVolume),
-                modifier = Modifier.weight(1f)
-            )
+            StatCard(label = "Week", value = "$weekWorkouts", modifier = Modifier.weight(1f))
+            StatCard(label = "Month", value = "$monthWorkouts", modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(label = "Exercises", value = "$totalExercises", modifier = Modifier.weight(1f))
+            StatCard(label = "Sets", value = "$totalSets", modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(label = "Reps", value = "$totalReps", modifier = Modifier.weight(1f))
+            StatCard(label = "Volume", value = "%.1f kg".format(totalVolume), modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),

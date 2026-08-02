@@ -159,6 +159,30 @@ class WorkoutLoggingViewModel @Inject constructor(
         updateSetField(exerciseIndex, setIndex) { it.copy(weight = weight) }
     }
 
+    fun updateSetRestSeconds(exerciseIndex: Int, setIndex: Int, restSeconds: Int) {
+        updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds) }
+    }
+
+    fun removeSet(exerciseIndex: Int, setIndex: Int) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices) return
+        val we = workout.exercises[exerciseIndex]
+        if (setIndex !in we.sets.indices) return
+        val set = we.sets[setIndex]
+        viewModelScope.launch {
+            workoutRepository.deleteSet(set.id)
+        }
+    }
+
+    fun removeExercise(exerciseIndex: Int) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices) return
+        val we = workout.exercises[exerciseIndex]
+        viewModelScope.launch {
+            workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
+        }
+    }
+
     fun toggleSetCompletion(exerciseIndex: Int, setIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return

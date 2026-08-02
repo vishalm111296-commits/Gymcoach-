@@ -175,9 +175,12 @@ fun WorkoutSessionScreen(
                                 muscleGroup = we.exercise.muscleGroup,
                                 sets = we.sets,
                                 onAddSet = { viewModel.addSet(exIdx) },
+                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
+                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
                                 onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
                                 onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
                                 onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
+                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                 onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
@@ -261,9 +264,12 @@ private fun ExerciseSetCard(
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
     onAddSet: () -> Unit,
+    onRemoveSet: (Int) -> Unit,
+    onRemoveExercise: () -> Unit,
     onRepsChange: (Int, Int) -> Unit,
     onWeightChange: (Int, Double) -> Unit,
     onRpeChange: (Int, Double) -> Unit,
+    onRestSecondsChange: (Int, Int) -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
     Card(
@@ -293,6 +299,9 @@ private fun ExerciseSetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                IconButton(onClick = onRemoveExercise) {
+                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                }
             }
 
             // Set labels
@@ -300,10 +309,12 @@ private fun ExerciseSetCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.25f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.25f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.25f))
-                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.25f))
+                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Spacer(modifier = Modifier.width(40.dp)) // Checkbox + Delete
             }
 
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
@@ -312,11 +323,14 @@ private fun ExerciseSetCard(
                     weight = set.weight,
                     reps = set.reps,
                     rpe = set.rpe,
+                    restSeconds = set.restSeconds,
                     completed = set.completed,
                     onRepsChange = { reps -> onRepsChange(index, reps) },
                     onWeightChange = { weight -> onWeightChange(index, weight) },
                     onRpeChange = { rpe -> onRpeChange(index, rpe) },
-                    onToggleComplete = { onToggleComplete(index) }
+                    onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
+                    onToggleComplete = { onToggleComplete(index) },
+                    onRemoveSet = { onRemoveSet(index) }
                 )
             }
 
@@ -335,15 +349,19 @@ private fun SetRow(
     weight: Double,
     reps: Int,
     rpe: Double,
+    restSeconds: Int,
     completed: Boolean,
     onRepsChange: (Int) -> Unit,
     onWeightChange: (Double) -> Unit,
     onRpeChange: (Double) -> Unit,
-    onToggleComplete: () -> Unit
+    onRestSecondsChange: (Int) -> Unit,
+    onToggleComplete: () -> Unit,
+    onRemoveSet: () -> Unit
 ) {
     var weightText by rememberSaveable { mutableStateOf(if (weight > 0) weight.toString() else "") }
     var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }
     var rpeText by rememberSaveable { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
+    var restText by rememberSaveable { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -353,7 +371,7 @@ private fun SetRow(
         Text(
             text = "${index + 1}",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(28.dp),
+            modifier = Modifier.width(20.dp),
             fontWeight = FontWeight.Medium
         )
 
@@ -363,7 +381,7 @@ private fun SetRow(
                 weightText = v
                 v.toDoubleOrNull()?.let { onWeightChange(it) }
             },
-            modifier = Modifier.weight(0.25f),
+            modifier = Modifier.weight(0.2f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -375,7 +393,7 @@ private fun SetRow(
                 repsText = v
                 v.toIntOrNull()?.let { onRepsChange(it) }
             },
-            modifier = Modifier.weight(0.25f),
+            modifier = Modifier.weight(0.2f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -387,16 +405,45 @@ private fun SetRow(
                 rpeText = v
                 v.toDoubleOrNull()?.let { onRpeChange(it) }
             },
-            modifier = Modifier.weight(0.25f),
+            modifier = Modifier.weight(0.15f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium
         )
 
-        Checkbox(
-            checked = completed,
-            onCheckedChange = { onToggleComplete() },
-            modifier = Modifier.width(40.dp)
+        OutlinedTextField(
+            value = restText,
+            onValueChange = { v ->
+                restText = v
+                v.toIntOrNull()?.let { onRestSecondsChange(it) }
+            },
+            modifier = Modifier.weight(0.15f),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle = MaterialTheme.typography.bodyMedium
         )
+
+        Row(
+            modifier = Modifier.width(56.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = completed,
+                onCheckedChange = { onToggleComplete() },
+                modifier = Modifier.size(24.dp)
+            )
+            IconButton(
+                onClick = onRemoveSet,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Remove Set",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }

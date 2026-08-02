@@ -1,5 +1,6 @@
 package com.gymcoach.app.domain.repository
 
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import java.util.Date
 
 interface AnalyticsRepository {

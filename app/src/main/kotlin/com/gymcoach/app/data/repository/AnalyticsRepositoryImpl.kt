@@ -4,6 +4,8 @@ import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
+import com.gymcoach.app.domain.repository.WorkoutCounts
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar

@@ -95,12 +95,28 @@ class AnalyticsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLongestWorkout(): WorkoutWithStats? {
-        return workoutDao.getLongestWorkout()
+        val entity = workoutDao.getLongestWorkout()
+        return entity?.toDomain()
     }
 
     override suspend fun getShortestWorkout(): WorkoutWithStats? {
-        return workoutDao.getShortestWorkout()
+        val entity = workoutDao.getShortestWorkout()
+        return entity?.toDomain()
     }
+
+    private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = WorkoutWithStats(
+        id = id,
+        date = java.time.Instant.ofEpochMilli(date),
+        startTime = java.time.Instant.ofEpochMilli(startTime),
+        endTime = java.time.Instant.ofEpochMilli(endTime),
+        duration = duration,
+        notes = notes,
+        completed = completed,
+        volume = volume,
+        setCount = setCount,
+        repCount = repCount,
+        exerciseCount = exerciseCount
+    )
 
     override suspend fun getWorkoutCounts(): WorkoutCounts {
         val now = java.util.Calendar.getInstance()

@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -36,7 +38,9 @@ import com.gymcoach.app.presentation.components.ExerciseItemCard
 fun ExerciseListScreen(
     viewModel: ExerciseViewModel = hiltViewModel(),
     onExerciseClick: (Long) -> Unit = {},
-    onHistoryClick: () -> Unit = {}
+    onHistoryClick: () -> Unit = {},
+    onProgressClick: () -> Unit = {},
+    onCameraClick: () -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
     var textFieldValue by rememberSaveable { mutableStateOf("") }
@@ -84,8 +88,16 @@ fun ExerciseListScreen(
                 }
             }
 
+            IconButton(onClick = onCameraClick) {
+                Icon(Icons.Filled.CameraAlt, contentDescription = "Form Analysis")
+            }
+
             IconButton(onClick = onHistoryClick) {
                 Icon(Icons.Filled.History, contentDescription = "Workout History")
+            }
+
+            IconButton(onClick = onProgressClick) {
+                Icon(Icons.Filled.Insights, contentDescription = "Progress")
             }
         }
 

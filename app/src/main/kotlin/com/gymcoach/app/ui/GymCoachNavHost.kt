@@ -6,10 +6,12 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
+import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 
 object Routes {
@@ -18,6 +20,8 @@ object Routes {
     const val WORKOUT_HISTORY = "workout_history"
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
     const val WORKOUT_SESSION = "workout_session/{workoutId?}"
+    const val PROGRESS = "progress"
+    const val CAMERA = "camera"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -35,7 +39,9 @@ fun GymCoachNavHost(navController: NavHostController) {
                 onExerciseClick = { exerciseId ->
                     navController.navigate(Routes.exerciseDetail(exerciseId))
                 },
-                onHistoryClick = { navController.navigate(Routes.WORKOUT_HISTORY) }
+                onHistoryClick = { navController.navigate(Routes.WORKOUT_HISTORY) },
+                onProgressClick = { navController.navigate(Routes.PROGRESS) },
+                onCameraClick = { navController.navigate(Routes.CAMERA) }
             )
         }
 
@@ -60,7 +66,8 @@ fun GymCoachNavHost(navController: NavHostController) {
                 },
                 onResumeWorkout = { workoutId ->
                     navController.navigate(Routes.workoutSession(workoutId))
-                }
+                },
+                onNewWorkout = { navController.navigate(Routes.workoutSession()) }
             )
         }
 
@@ -88,6 +95,16 @@ fun GymCoachNavHost(navController: NavHostController) {
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId
             )
+        }
+
+        composable(Routes.PROGRESS) {
+            ProgressDashboardScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.CAMERA) {
+            CameraPreviewScreen()
         }
     }
 }

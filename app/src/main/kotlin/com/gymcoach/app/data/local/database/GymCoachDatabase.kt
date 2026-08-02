@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
@@ -41,7 +42,33 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 "gymcoach.db"
             )
                 .addMigrations(MIGRATION_1_2)
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        seedExercises(db)
+                    }
+                })
                 .build()
+        }
+
+        private fun seedExercises(db: SupportSQLiteDatabase) {
+            val seedData = listOf(
+                arrayOf("Bench Press", "Lie on a bench and press the barbell from your chest to full arm extension.", "Chest", "Barbell", "Intermediate"),
+                arrayOf("Squat", "Lower your hips until your thighs are parallel to the floor, then stand back up.", "Legs", "Barbell", "Beginner"),
+                arrayOf("Push-up", "Lower your chest toward the floor while keeping your body in a straight line.", "Chest", "Bodyweight", "Beginner"),
+                arrayOf("Shoulder Press", "Press the dumbbells overhead until your arms are fully extended.", "Shoulders", "Dumbbell", "Intermediate"),
+                arrayOf("Lateral Raise", "Raise dumbbells out to the sides until your arms are parallel with the floor.", "Shoulders", "Dumbbell", "Beginner"),
+                arrayOf("Bent-over Row", "Hinge at the hips and pull the barbell toward your torso.", "Back", "Barbell", "Intermediate"),
+                arrayOf("Plank", "Hold a straight-body position supported on your forearms and toes.", "Core", "Bodyweight", "Beginner"),
+                arrayOf("Deadlift", "Hinge at the hips and lift the loaded barbell to a standing position.", "Back", "Barbell", "Advanced"),
+                arrayOf("Bicep Curl", "Curl the dumbbells toward your shoulders with your elbows pinned to your sides.", "Arms", "Dumbbell", "Beginner")
+            )
+            seedData.forEach { row ->
+                db.execSQL(
+                    "INSERT INTO exercises (name, description, muscleGroup, equipment, difficulty) VALUES (?, ?, ?, ?, ?)",
+                    row
+                )
+            }
         }
     }
 }

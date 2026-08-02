@@ -69,6 +69,7 @@ fun WorkoutHistoryScreen(
     onBackClick: () -> Unit,
     onDetailClick: (Long) -> Unit,
     onResumeWorkout: (Long) -> Unit,
+    onNewWorkout: () -> Unit = {},
     viewModel: WorkoutHistoryViewModel = hiltViewModel()
 ) {
     val workouts by viewModel.workouts.collectAsState()
@@ -93,7 +94,7 @@ fun WorkoutHistoryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Add new workout */ }) {
+                    IconButton(onClick = onNewWorkout) {
                         Icon(Icons.Default.Add, contentDescription = "New Workout")
                     }
                 }

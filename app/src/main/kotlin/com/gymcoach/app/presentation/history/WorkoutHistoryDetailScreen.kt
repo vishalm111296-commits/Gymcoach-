@@ -206,13 +206,16 @@ fun WorkoutHistoryDetailScreen(
     }
 
     // Delete confirmation dialog
-    if (viewModel.deleteTarget.collectAsState() != null) {
+    if (viewModel.deleteTarget.collectAsState().value != null) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelDelete() },
             title = { Text("Delete Workout") },
             text = { Text("Are you sure you want to delete this workout?") },
             confirmButton = {
-                Button(onClick = { viewModel.confirmDelete() }) {
+                Button(onClick = {
+                    viewModel.confirmDelete()
+                    onBackClick()
+                }) {
                     Text("Delete")
                 }
             },

@@ -142,10 +142,7 @@ interface WorkoutDao {
     @Query("SELECT SUM(weight * reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.completed = 1")
     suspend fun getTotalVolumeSum(): Double?
 
-    @Query("SELECT SUM(duration) FROM workouts WHERE completed = 1")
-    suspend fun getTotalTrainingTimeSeconds(): Long?
-
-@Query("""
+    @Query("""
         SELECT w.date, SUM(ws.reps * ws.weight) as volume
         FROM workouts w
         INNER JOIN workout_exercises we ON we.workoutId = w.id

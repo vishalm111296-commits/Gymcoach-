@@ -19,13 +19,13 @@ object Routes {
     const val EXERCISE_DETAIL = "exercise_detail/{exerciseId}"
     const val WORKOUT_HISTORY = "workout_history"
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
-    const val WORKOUT_SESSION = "workout_session/{workoutId?}"
+    const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
     const val PROGRESS = "progress"
     const val CAMERA = "camera"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
-    fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session/$workoutId" else "workout_session"
+    fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session?workoutId=$workoutId" else "workout_session"
 }
 
 @Composable
@@ -87,10 +87,14 @@ fun GymCoachNavHost(navController: NavHostController) {
         composable(
             route = Routes.WORKOUT_SESSION,
             arguments = listOf(
-                navArgument("workoutId") { type = NavType.LongType; nullable = true }
+                navArgument("workoutId") { 
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
             )
         ) { backStackEntry ->
-            val workoutId = backStackEntry.arguments?.getLong("workoutId")
+            val arg = backStackEntry.arguments?.getLong("workoutId") ?: -1L
+            val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId

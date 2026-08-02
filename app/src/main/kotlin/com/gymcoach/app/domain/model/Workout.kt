@@ -51,5 +51,6 @@ data class WorkoutWithStats(
     val completed: Boolean,
     val volume: Double,
     val setCount: Int,
-    val repCount: Int
+    val repCount: Int,
+    val exerciseCount: Int
 )

@@ -27,7 +27,7 @@ class WorkoutHistoryViewModel @Inject constructor(
 ) : ViewModel() {
 
     enum class SortOption { NEWEST, OLDEST, VOLUME_DESC, VOLUME_ASC, DURATION_DESC, DURATION_ASC }
-    enum class FilterOption { ALL, THIS_WEEK, THIS_MONTH, CUSTOM }
+    enum class FilterOption { ALL, TODAY, THIS_WEEK, THIS_MONTH, CUSTOM }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -72,20 +72,31 @@ class WorkoutHistoryViewModel @Inject constructor(
                 FilterState(query, filter, sort, customStart, customEnd)
             }
 
-            val baseFlow = combine(
-                workoutRepository.getCompletedWorkouts(),
-                filtersFlow
-            ) { workouts, filters ->
-                var filtered = workouts
-
-                // Apply search
-                if (filters.query.isNotBlank()) {
-                    filtered = workouts.filter { it.notes.lowercase().contains(filters.query.lowercase()) }
+            filtersFlow
+                .flatMapLatest { filters ->
+                    if (filters.query.isNotBlank()) {
+                        kotlinx.coroutines.flow.flow {
+                            emit(Pair(workoutRepository.searchWorkouts(filters.query), filters))
+                        }
+                    } else {
+                        workoutRepository.getCompletedWorkouts().map { Pair(it, filters) }
+                    }
                 }
+                .map { (workouts, filters) ->
+                    var filtered = workouts
 
-                // Apply filter
+                    // Apply filter
                 filtered = when (filters.filter) {
                     FilterOption.ALL -> filtered
+                    FilterOption.TODAY -> {
+                        val todayStart = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, 0)
+                            set(java.util.Calendar.MINUTE, 0)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+                        filtered.filter { it.date.toEpochMilli() >= todayStart }
+                    }
                     FilterOption.THIS_WEEK -> {
                         val weekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
                         filtered.filter { it.date.toEpochMilli() >= weekAgo }
@@ -115,7 +126,6 @@ class WorkoutHistoryViewModel @Inject constructor(
                 
                 sorted
             }
-            baseFlow
                 .distinctUntilChanged()
                 .collect { workouts ->
                     _workouts.value = workouts

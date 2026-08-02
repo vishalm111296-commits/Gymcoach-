@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -123,6 +124,7 @@ data class WorkoutHistoryDetailUiState(
 fun WorkoutHistoryDetailScreen(
     workoutId: Long,
     onBackClick: () -> Unit,
+    onEditClick: (Long) -> Unit = {},
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -142,6 +144,9 @@ fun WorkoutHistoryDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onEditClick(workoutId) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                    }
                     IconButton(onClick = {
                         viewModel.onDeleteClick(workoutId)
                     }) {
@@ -297,9 +302,12 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.3f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.35f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.35f))
+                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Spacer(modifier = Modifier.width(24.dp))
             }
 
             exerciseWithSets.sets.sortedBy { it.setNumber }.forEach { set ->
@@ -308,6 +316,7 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                     weight = set.weight,
                     reps = set.reps,
                     rpe = set.rpe,
+                    restSeconds = set.restSeconds,
                     completed = set.completed
                 )
             }
@@ -321,6 +330,7 @@ fun SetRow(
     weight: Double,
     reps: Int,
     rpe: Double,
+    restSeconds: Int,
     completed: Boolean
 ) {
     Row(
@@ -331,24 +341,30 @@ fun SetRow(
         Text(
             text = setNumber.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.3f),
+            modifier = Modifier.weight(0.15f),
             fontWeight = FontWeight.Medium
         )
         Text(
             text = "%.1f kg".format(weight),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.35f)
+            modifier = Modifier.weight(0.2f)
         )
         Text(
             text = reps.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.35f)
+            modifier = Modifier.weight(0.2f)
         )
         // RPE
         Text(
             text = "RPE ${"%.1f".format(rpe)}",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.35f)
+            modifier = Modifier.weight(0.15f)
+        )
+        // Rest
+        Text(
+            text = "${restSeconds}s",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.15f)
         )
         // Completed indicator
         if (completed) {
@@ -358,6 +374,8 @@ fun SetRow(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(24.dp)
             )
+        } else {
+            Spacer(modifier = Modifier.width(24.dp))
         }
     }
 }

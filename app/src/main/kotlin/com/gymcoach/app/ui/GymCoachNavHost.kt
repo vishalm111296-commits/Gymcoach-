@@ -80,7 +80,10 @@ fun GymCoachNavHost(navController: NavHostController) {
             val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: return@composable
             WorkoutHistoryDetailScreen(
                 workoutId = workoutId,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onEditClick = { id ->
+                    navController.navigate(Routes.workoutSession(id))
+                }
             )
         }
 

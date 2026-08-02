@@ -224,7 +224,8 @@ private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = com.gy
     duration = duration,
     notes = notes,
     completed = completed,
-    volume = volume,
+    volume = volume ?: 0.0,
     setCount = setCount,
-    repCount = repCount
+    repCount = repCount ?: 0,
+    exerciseCount = exerciseCount
 )

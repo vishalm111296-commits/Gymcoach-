@@ -145,7 +145,7 @@ interface WorkoutDao {
     fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -159,7 +159,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -170,7 +170,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -181,7 +181,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -192,7 +192,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsWithStats(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -203,7 +203,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsWithStatsByVolumeDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -214,7 +214,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsWithStatsByVolumeAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -225,7 +225,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsWithStatsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -236,7 +236,7 @@ interface WorkoutDao {
     fun getCompletedWorkoutsWithStatsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
-        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount
+        SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
@@ -279,5 +279,6 @@ data class WorkoutWithStats(
     val completed: Boolean,
     val volume: Double,
     val setCount: Int,
-    val repCount: Int
+    val repCount: Int,
+    val exerciseCount: Int
 )

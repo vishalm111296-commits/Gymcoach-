@@ -41,6 +41,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -80,6 +83,7 @@ fun WorkoutHistoryScreen(
     val deleteTarget by viewModel.deleteTarget.collectAsState()
     val showDeleteConfirmation = deleteTarget != null
     var showSortOptions by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -128,8 +132,13 @@ fun WorkoutHistoryScreen(
                 WorkoutHistoryViewModel.FilterOption.values().forEachIndexed { index, filter ->
                     Tab(
                         selected = filterOption == filter,
-                        onClick = { viewModel.onFilterChange(filter) },
-                        text = { Text(filter.name) }
+                        onClick = {
+                            viewModel.onFilterChange(filter)
+                            if (filter == WorkoutHistoryViewModel.FilterOption.CUSTOM) {
+                                showDatePicker = true
+                            }
+                        },
+                        text = { Text(filter.name.replace("_", " ")) }
                     )
                 }
             }
@@ -210,6 +219,36 @@ fun WorkoutHistoryScreen(
         }
     }
 
+    if (showDatePicker) {
+        val dateRangePickerState = rememberDateRangePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                        viewModel.onCustomDateRangeChange(
+                            start = dateRangePickerState.selectedStartDateMillis,
+                            end = dateRangePickerState.selectedEndDateMillis
+                        )
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DateRangePicker(
+                state = dateRangePickerState,
+                modifier = Modifier.fillMaxWidth().height(400.dp)
+            )
+        }
+    }
+
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
         AlertDialog(
@@ -264,8 +303,8 @@ private fun HistoryWorkoutCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 StatItem(label = "Duration", value = formatDuration(workout.duration))
+                StatItem(label = "Exercises", value = workout.exerciseCount.toString())
                 StatItem(label = "Sets", value = workout.setCount.toString())
-                StatItem(label = "Reps", value = workout.repCount.toString())
                 StatItem(label = "Volume", value = "%.1f kg".format(workout.volume))
             }
 

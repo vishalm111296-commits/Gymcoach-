@@ -217,6 +217,7 @@ fun WorkoutSessionScreen(
                                 onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
                                 onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
                                 onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
+                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
                                 onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
@@ -307,6 +308,7 @@ private fun ExerciseSetCard(
     onWeightChange: (Int, Double) -> Unit,
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
+    onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
     Card(
@@ -392,10 +394,12 @@ private fun ExerciseSetCard(
                         rpe = set.rpe,
                         restSeconds = set.restSeconds,
                         completed = set.completed,
+                        setType = set.setType,
                         onRepsChange = { reps -> onRepsChange(index, reps) },
                         onWeightChange = { weight -> onWeightChange(index, weight) },
                         onRpeChange = { rpe -> onRpeChange(index, rpe) },
                         onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
+                        onSetTypeChange = { type -> onSetTypeChange(index, type) },
                         onToggleComplete = { onToggleComplete(index) },
                         onRemoveSet = { onRemoveSet(index) }
                     )
@@ -419,10 +423,12 @@ private fun SetRow(
     rpe: Double,
     restSeconds: Int,
     completed: Boolean,
+    setType: com.gymcoach.app.domain.model.SetType,
     onRepsChange: (Int) -> Unit,
     onWeightChange: (Double) -> Unit,
     onRpeChange: (Double) -> Unit,
     onRestSecondsChange: (Int) -> Unit,
+    onSetTypeChange: (com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: () -> Unit,
     onRemoveSet: () -> Unit
 ) {
@@ -436,12 +442,30 @@ private fun SetRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "${index + 1}",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(20.dp),
-            fontWeight = FontWeight.Medium
-        )
+        // Set Number & Type Indicator
+        val setTypeColor = when (setType) {
+            com.gymcoach.app.domain.model.SetType.WARMUP -> MaterialTheme.colorScheme.tertiary
+            com.gymcoach.app.domain.model.SetType.DROP -> MaterialTheme.colorScheme.secondary
+            com.gymcoach.app.domain.model.SetType.FAILURE -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+        val setTypeText = when (setType) {
+            com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
+            com.gymcoach.app.domain.model.SetType.DROP -> "D"
+            com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
+            else -> "${index + 1}"
+        }
+        Box(
+            modifier = Modifier.width(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = setTypeText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = setTypeColor,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         OutlinedTextField(
             value = weightText,
@@ -449,7 +473,7 @@ private fun SetRow(
                 weightText = v
                 v.toDoubleOrNull()?.let { onWeightChange(it) }
             },
-            modifier = Modifier.weight(0.2f),
+            modifier = Modifier.weight(0.18f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -461,7 +485,7 @@ private fun SetRow(
                 repsText = v
                 v.toIntOrNull()?.let { onRepsChange(it) }
             },
-            modifier = Modifier.weight(0.2f),
+            modifier = Modifier.weight(0.18f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -473,7 +497,7 @@ private fun SetRow(
                 rpeText = v
                 v.toDoubleOrNull()?.let { onRpeChange(it) }
             },
-            modifier = Modifier.weight(0.15f),
+            modifier = Modifier.weight(0.13f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -485,7 +509,7 @@ private fun SetRow(
                 restText = v
                 v.toIntOrNull()?.let { onRestSecondsChange(it) }
             },
-            modifier = Modifier.weight(0.15f),
+            modifier = Modifier.weight(0.13f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium
@@ -501,19 +525,28 @@ private fun SetRow(
                 checked = completed,
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleComplete() 
+                    onToggleComplete()
                 },
                 modifier = Modifier.size(24.dp)
             )
             IconButton(
-                onClick = onRemoveSet,
+                onClick = { 
+                    // Cycle through set types
+                    val nextType = when (setType) {
+                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
+                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
+                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
+                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
+                    }
+                    onSetTypeChange(nextType)
+                },
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Remove Set",
+                    androidx.compose.material.icons.Icons.Default.Star,
+                    contentDescription = "Cycle Set Type",
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = setTypeColor
                 )
             }
         }

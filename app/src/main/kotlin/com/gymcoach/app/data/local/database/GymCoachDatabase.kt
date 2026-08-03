@@ -19,7 +19,7 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
         WorkoutExerciseEntity::class,
         WorkoutSetEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class GymCoachDatabase : RoomDatabase() {

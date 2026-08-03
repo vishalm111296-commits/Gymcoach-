@@ -163,6 +163,10 @@ class WorkoutLoggingViewModel @Inject constructor(
         updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds) }
     }
 
+    fun updateSetType(exerciseIndex: Int, setIndex: Int, setType: com.gymcoach.app.domain.model.SetType) {
+        updateSetField(exerciseIndex, setIndex) { it.copy(setType = setType) }
+    }
+
     fun removeSet(exerciseIndex: Int, setIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return

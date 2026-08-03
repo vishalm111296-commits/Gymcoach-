@@ -25,5 +25,6 @@ data class WorkoutSetEntity(
     val reps: Int,
     val rpe: Double,
     val restSeconds: Int,
-    val completed: Boolean
+    val completed: Boolean,
+    val setType: Int = 0 // 0=NORMAL, 1=WARMUP, 2=DROP, 3=FAILURE
 )

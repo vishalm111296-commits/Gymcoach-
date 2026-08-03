@@ -19,6 +19,10 @@ data class WorkoutExercise(
     val orderIndex: Int
 )
 
+enum class SetType {
+    NORMAL, WARMUP, DROP, FAILURE
+}
+
 data class WorkoutSet(
     val id: Long = 0,
     val workoutExerciseId: Long,
@@ -27,7 +31,8 @@ data class WorkoutSet(
     val reps: Int,
     val rpe: Double,
     val restSeconds: Int,
-    val completed: Boolean
+    val completed: Boolean,
+    val setType: SetType = SetType.NORMAL
 )
 
 data class WorkoutWithDetails(

@@ -193,7 +193,8 @@ private fun WorkoutSetEntity.toDomain() = WorkoutSet(
     reps = reps,
     rpe = rpe,
     restSeconds = restSeconds,
-    completed = completed
+    completed = completed,
+    setType = com.gymcoach.app.domain.model.SetType.values().getOrElse(setType) { com.gymcoach.app.domain.model.SetType.NORMAL }
 )
 
 private fun WorkoutSet.toEntity() = WorkoutSetEntity(
@@ -204,7 +205,8 @@ private fun WorkoutSet.toEntity() = WorkoutSetEntity(
     reps = reps,
     rpe = rpe,
     restSeconds = restSeconds,
-    completed = completed
+    completed = completed,
+    setType = setType.ordinal
 )
 
 private fun ExerciseEntity.toDomain() = Exercise(

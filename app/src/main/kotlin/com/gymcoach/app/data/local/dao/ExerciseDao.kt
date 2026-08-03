@@ -12,6 +12,15 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE id = :id")
     fun getById(id: Long): Flow<ExerciseEntity?>
 
+    @Query("""
+        SELECT * FROM exercises 
+        WHERE (:muscle IS NULL OR LOWER(muscleGroup) = LOWER(:muscle))
+        AND (:difficulty IS NULL OR LOWER(difficulty) = LOWER(:difficulty))
+        AND (:equipment IS NULL OR LOWER(equipment) = LOWER(:equipment))
+        ORDER BY LOWER(name) ASC
+    """)
+    fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<ExerciseEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(exercise: ExerciseEntity)
 

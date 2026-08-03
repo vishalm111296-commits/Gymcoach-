@@ -18,6 +18,12 @@ class ExerciseRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<Exercise>> {
+        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override fun getExerciseById(id: Long): Flow<Exercise?> {
         return exerciseDao.getById(id).map { it?.toDomain() }
     }
@@ -40,7 +46,19 @@ class ExerciseRepositoryImpl @Inject constructor(
         description = description,
         muscleGroup = muscleGroup,
         equipment = equipment,
-        difficulty = difficulty
+        difficulty = difficulty,
+        secondaryMuscles = secondaryMuscles,
+        instructions = instructions,
+        tips = tips,
+        commonMistakes = commonMistakes,
+        safetyNotes = safetyNotes,
+        recommendedRepRange = recommendedRepRange,
+        recommendedRestTime = recommendedRestTime,
+        estimatedCalories = estimatedCalories,
+        category = category,
+        tags = tags,
+        isFavorite = isFavorite,
+        lastViewed = lastViewed
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -49,6 +67,18 @@ class ExerciseRepositoryImpl @Inject constructor(
         description = description,
         muscleGroup = muscleGroup,
         equipment = equipment,
-        difficulty = difficulty
+        difficulty = difficulty,
+        secondaryMuscles = secondaryMuscles,
+        instructions = instructions,
+        tips = tips,
+        commonMistakes = commonMistakes,
+        safetyNotes = safetyNotes,
+        recommendedRepRange = recommendedRepRange,
+        recommendedRestTime = recommendedRestTime,
+        estimatedCalories = estimatedCalories,
+        category = category,
+        tags = tags,
+        isFavorite = isFavorite,
+        lastViewed = lastViewed
     )
 }

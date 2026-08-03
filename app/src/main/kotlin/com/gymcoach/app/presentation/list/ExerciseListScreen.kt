@@ -10,7 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Insights
@@ -34,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.ExerciseViewModel
 import com.gymcoach.app.presentation.components.ExerciseItemCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseListScreen(
     viewModel: ExerciseViewModel = hiltViewModel(),
@@ -43,8 +51,12 @@ fun ExerciseListScreen(
     onCameraClick: () -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
+    val filterDifficulty by viewModel.filterDifficulty.collectAsState()
+    val filterEquipment by viewModel.filterEquipment.collectAsState()
+
     var textFieldValue by rememberSaveable { mutableStateOf("") }
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -63,7 +75,12 @@ fun ExerciseListScreen(
                 )
             },
             placeholder = { Text("Search exercises...") },
-            singleLine = true
+            singleLine = true,
+            trailingIcon = {
+                IconButton(onClick = { showFilterSheet = true }) {
+                    Icon(Icons.Default.Tune, contentDescription = "Filter")
+                }
+            }
         )
 
         Row(
@@ -113,6 +130,56 @@ fun ExerciseListScreen(
                     difficulty = exercise.difficulty,
                     onClick = { onExerciseClick(exercise.id) }
                 )
+            }
+        }
+    }
+
+    if (showFilterSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showFilterSheet = false },
+            state = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("Difficulty", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    viewModel.difficulties.forEach { diff ->
+                        FilterChip(
+                            selected = diff == filterDifficulty,
+                            onClick = { viewModel.onDifficultySelected(diff) },
+                            label = { Text(diff) }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Text("Equipment", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                // Equipment options can be long, so use a horizontal scroll or wrap. 
+                // Since this is just a sheet, a ScrollableTabRow style or wrapping layout is best.
+                // We'll use a simple horizontal scroll for equipment.
+                androidx.compose.foundation.horizontalScroll(androidx.compose.foundation.rememberScrollState()).let { scrollModifier ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().then(scrollModifier),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        viewModel.equipments.forEach { eq ->
+                            FilterChip(
+                                selected = eq == filterEquipment,
+                                onClick = { viewModel.onEquipmentSelected(eq) },
+                                label = { Text(eq) }
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(32.dp))
             }
         }
     }

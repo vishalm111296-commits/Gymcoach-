@@ -134,6 +134,81 @@ fun ExerciseDetailScreen(
                     label = "Difficulty",
                     value = ex.difficulty
                 )
+
+                if (ex.secondaryMuscles.isNotBlank()) {
+                    Spacer(Modifier.height(16.dp))
+                    DetailRow(
+                        icon = Icons.Default.FitnessCenter,
+                        label = "Secondary Muscles",
+                        value = ex.secondaryMuscles
+                    )
+                }
+
+                if (ex.instructions.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Instructions",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = ex.instructions,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (ex.tips.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Tips",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = ex.tips,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (ex.commonMistakes.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Common Mistakes",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = ex.commonMistakes,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (ex.safetyNotes.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Safety Notes",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = ex.safetyNotes,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(Modifier.height(32.dp))
             }
         } ?: run {
             Column(

@@ -12,7 +12,9 @@ import javax.inject.Singleton
 
 data class RestTimerState(
     val timeRemaining: Int = 0,
-    val isRunning: Boolean = false
+    val isRunning: Boolean = false,
+    val isPaused: Boolean = false,
+    val totalDuration: Int = 0
 )
 
 @Singleton
@@ -22,25 +24,49 @@ class RestTimerManager @Inject constructor() {
     val state: StateFlow<RestTimerState> = _state.asStateFlow()
 
     private var tickJob: Job? = null
+    private var timerScope: CoroutineScope? = null
 
     fun start(seconds: Int, scope: CoroutineScope) {
+        timerScope = scope
         tickJob?.cancel()
-        _state.value = RestTimerState(timeRemaining = seconds, isRunning = true)
+        _state.value = RestTimerState(timeRemaining = seconds, isRunning = true, totalDuration = seconds)
 
+        startTicking(scope)
+    }
+
+    private fun startTicking(scope: CoroutineScope) {
         tickJob = scope.launch {
             while (_state.value.timeRemaining > 0) {
                 delay(1000L)
-                _state.value = _state.value.copy(
-                    timeRemaining = _state.value.timeRemaining - 1
-                )
+                if (!_state.value.isPaused) {
+                    _state.value = _state.value.copy(
+                        timeRemaining = _state.value.timeRemaining - 1
+                    )
+                }
             }
-            _state.value = _state.value.copy(isRunning = false)
+            _state.value = _state.value.copy(isRunning = false, isPaused = false)
         }
+    }
+
+    fun pause() {
+        if (_state.value.isRunning) {
+            _state.value = _state.value.copy(isPaused = true)
+        }
+    }
+
+    fun resume() {
+        if (_state.value.isRunning && _state.value.isPaused) {
+            _state.value = _state.value.copy(isPaused = false)
+        }
+    }
+
+    fun skip() {
+        stop()
     }
 
     fun stop() {
         tickJob?.cancel()
         tickJob = null
-        _state.value = _state.value.copy(timeRemaining = 0, isRunning = false)
+        _state.value = _state.value.copy(timeRemaining = 0, isRunning = false, isPaused = false, totalDuration = 0)
     }
 }

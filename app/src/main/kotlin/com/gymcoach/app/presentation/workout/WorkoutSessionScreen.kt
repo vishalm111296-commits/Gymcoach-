@@ -19,8 +19,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -144,22 +158,44 @@ fun WorkoutSessionScreen(
                                     containerColor = MaterialTheme.colorScheme.primaryContainer
                                 )
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(32.dp),
-                                        strokeWidth = 3.dp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Text(
-                                        text = "${restTimerState.timeRemaining}s",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.PlayArrow, contentDescription = "Rest")
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = "Rest: ${restTimerState.timeRemaining}s",
+                                                style = MaterialTheme.typography.headlineSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                        Row {
+                                            IconButton(onClick = { 
+                                                if (restTimerState.isPaused) viewModel.resumeRestTimer() 
+                                                else viewModel.pauseRestTimer() 
+                                            }) {
+                                                Icon(if (restTimerState.isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause/Resume")
+                                            }
+                                            IconButton(onClick = { viewModel.stopRestTimer() }) {
+                                                Icon(Icons.Default.SkipNext, contentDescription = "Skip")
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    LinearProgressIndicator(
+                                        progress = { 
+                                            if (restTimerState.totalDuration > 0) 
+                                                restTimerState.timeRemaining.toFloat() / restTimerState.totalDuration 
+                                            else 0f 
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                                     )
                                 }
                             }
@@ -318,20 +354,51 @@ private fun ExerciseSetCard(
             }
 
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
-                SetRow(
-                    index = index,
-                    weight = set.weight,
-                    reps = set.reps,
-                    rpe = set.rpe,
-                    restSeconds = set.restSeconds,
-                    completed = set.completed,
-                    onRepsChange = { reps -> onRepsChange(index, reps) },
-                    onWeightChange = { weight -> onWeightChange(index, weight) },
-                    onRpeChange = { rpe -> onRpeChange(index, rpe) },
-                    onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
-                    onToggleComplete = { onToggleComplete(index) },
-                    onRemoveSet = { onRemoveSet(index) }
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = {
+                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                            onRemoveSet(index)
+                            true
+                        } else false
+                    }
                 )
+
+                SwipeToDismissBox(
+                    state = dismissState,
+                    backgroundContent = {
+                        val color = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color)
+                                .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onErrorContainer)
+                            }
+                        }
+                    }
+                ) {
+                    SetRow(
+                        index = index,
+                        weight = set.weight,
+                        reps = set.reps,
+                        rpe = set.rpe,
+                        restSeconds = set.restSeconds,
+                        completed = set.completed,
+                        onRepsChange = { reps -> onRepsChange(index, reps) },
+                        onWeightChange = { weight -> onWeightChange(index, weight) },
+                        onRpeChange = { rpe -> onRpeChange(index, rpe) },
+                        onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
+                        onToggleComplete = { onToggleComplete(index) },
+                        onRemoveSet = { onRemoveSet(index) }
+                    )
+                }
             }
 
             TextButton(onClick = onAddSet) {
@@ -428,9 +495,13 @@ private fun SetRow(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val haptic = LocalHapticFeedback.current
             Checkbox(
                 checked = completed,
-                onCheckedChange = { onToggleComplete() },
+                onCheckedChange = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleComplete() 
+                },
                 modifier = Modifier.size(24.dp)
             )
             IconButton(

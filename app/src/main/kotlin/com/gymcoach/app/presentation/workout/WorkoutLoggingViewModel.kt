@@ -201,6 +201,14 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    fun pauseRestTimer() {
+        restTimer.pause()
+    }
+
+    fun resumeRestTimer() {
+        restTimer.resume()
+    }
+
     fun stopRestTimer() {
         restTimer.stop()
     }

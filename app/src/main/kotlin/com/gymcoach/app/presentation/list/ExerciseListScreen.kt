@@ -165,18 +165,16 @@ fun ExerciseListScreen(
                 // Equipment options can be long, so use a horizontal scroll or wrap. 
                 // Since this is just a sheet, a ScrollableTabRow style or wrapping layout is best.
                 // We'll use a simple horizontal scroll for equipment.
-                androidx.compose.foundation.horizontalScroll(androidx.compose.foundation.rememberScrollState()).let { scrollModifier ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().then(scrollModifier),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        viewModel.equipments.forEach { eq ->
-                            FilterChip(
-                                selected = eq == filterEquipment,
-                                onClick = { viewModel.onEquipmentSelected(eq) },
-                                label = { Text(eq) }
-                            )
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth().androidx.compose.foundation.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    viewModel.equipments.forEach { eq ->
+                        FilterChip(
+                            selected = eq == filterEquipment,
+                            onClick = { viewModel.onEquipmentSelected(eq) },
+                            label = { Text(eq) }
+                        )
                     }
                 }
                 Spacer(Modifier.height(32.dp))

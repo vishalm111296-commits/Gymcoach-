@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -177,6 +178,19 @@ fun ExerciseListScreen(
                             onClick = { viewModel.onEquipmentSelected(eq) },
                             label = { Text(eq) }
                         )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = {
+                        viewModel.onDifficultySelected("All")
+                        viewModel.onEquipmentSelected("All")
+                        viewModel.onCategorySelected("All")
+                    }) {
+                        Text("Clear Filters")
                     }
                 }
                 Spacer(Modifier.height(32.dp))

@@ -36,6 +36,11 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _currentWorkout = MutableStateFlow<WorkoutWithDetails?>(null)
     val currentWorkout: StateFlow<WorkoutWithDetails?> = _currentWorkout.asStateFlow()
 
+    private val _elapsedSeconds = MutableStateFlow(0L)
+    val elapsedSeconds: StateFlow<Long> = _elapsedSeconds.asStateFlow()
+
+    private var workoutTimerJob: kotlinx.coroutines.Job? = null
+
     private val _showExercisePicker = MutableStateFlow(false)
     val showExercisePicker: StateFlow<Boolean> = _showExercisePicker.asStateFlow()
 
@@ -57,12 +62,14 @@ class WorkoutLoggingViewModel @Inject constructor(
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
+                        startWorkoutTimer()
                     }
                 } else {
                     val existing = workoutRepository.getLatestIncompleteWorkout()
                     if (existing != null) {
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
+                            startWorkoutTimer()
                         }
                     } else {
                         startNewWorkoutInternal()
@@ -70,6 +77,19 @@ class WorkoutLoggingViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load workout"
+            }
+        }
+    }
+
+    private fun startWorkoutTimer() {
+        workoutTimerJob?.cancel()
+        workoutTimerJob = viewModelScope.launch {
+            while (true) {
+                val start = _currentWorkout.value?.workout?.startTime
+                if (start != null) {
+                    _elapsedSeconds.value = Instant.now().epochSecond - start.epochSecond
+                }
+                kotlinx.coroutines.delay(1000L)
             }
         }
     }
@@ -219,6 +239,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun completeWorkout() {
         val workout = _currentWorkout.value?.workout ?: return
+        workoutTimerJob?.cancel()
         restTimer.stop()
         val now = Instant.now()
         val duration = now.epochSecond - workout.startTime.epochSecond
@@ -242,6 +263,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        workoutTimerJob?.cancel()
         restTimer.stop()
     }
 }

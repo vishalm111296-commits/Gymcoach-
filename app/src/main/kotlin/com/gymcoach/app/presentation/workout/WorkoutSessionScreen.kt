@@ -80,6 +80,8 @@ fun WorkoutSessionScreen(
     val completed by viewModel.completed.collectAsState()
     val error by viewModel.error.collectAsState()
     val restTimerState by viewModel.restTimerState.collectAsState()
+    val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
+    var showFinishDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(restTimerState.isRunning) {
@@ -128,7 +130,16 @@ fun WorkoutSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Workout Session") },
+                title = { 
+                    Column {
+                        Text("Workout Session")
+                        Text(
+                            text = com.gymcoach.app.presentation.history.formatDuration(elapsedSeconds),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -222,6 +233,16 @@ fun WorkoutSessionScreen(
                                 onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
+
+                        item {
+                            OutlinedTextField(
+                                value = workout.notes,
+                                onValueChange = { viewModel.updateNotes(it) },
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                label = { Text("Workout Notes") },
+                                maxLines = 4
+                            )
+                        }
                     }
                 }
             }
@@ -242,7 +263,7 @@ fun WorkoutSessionScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.completeWorkout() },
+                    onClick = { showFinishDialog = true },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
@@ -254,6 +275,27 @@ fun WorkoutSessionScreen(
                 }
             }
         }
+    }
+
+    if (showFinishDialog) {
+        AlertDialog(
+            onDismissRequest = { showFinishDialog = false },
+            title = { Text("Finish Workout") },
+            text = { Text("Are you sure you are done? All completed sets will be saved.") },
+            confirmButton = {
+                Button(onClick = {
+                    showFinishDialog = false
+                    viewModel.completeWorkout()
+                }) {
+                    Text("Finish")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFinishDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showPicker) {

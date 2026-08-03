@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
@@ -543,7 +544,7 @@ private fun SetRow(
                 modifier = Modifier.size(24.dp)
             ) {
                 Icon(
-                    androidx.compose.material.icons.Icons.Default.Star,
+                    Icons.Default.Star,
                     contentDescription = "Cycle Set Type",
                     modifier = Modifier.size(16.dp),
                     tint = setTypeColor

@@ -11,13 +11,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Insights
@@ -138,7 +140,7 @@ fun ExerciseListScreen(
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
-            state = sheetState
+            sheetState = sheetState
         ) {
             Column(
                 modifier = Modifier
@@ -166,7 +168,7 @@ fun ExerciseListScreen(
                 // Since this is just a sheet, a ScrollableTabRow style or wrapping layout is best.
                 // We'll use a simple horizontal scroll for equipment.
                 Row(
-                    modifier = Modifier.fillMaxWidth().androidx.compose.foundation.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     viewModel.equipments.forEach { eq ->

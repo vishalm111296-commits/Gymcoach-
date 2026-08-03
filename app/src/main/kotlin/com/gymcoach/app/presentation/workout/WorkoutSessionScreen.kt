@@ -237,7 +237,7 @@ fun WorkoutSessionScreen(
                         item {
                             OutlinedTextField(
                                 value = workout.notes,
-                                onValueChange = { newText -> viewModel.updateNotes(newText) },
+                                onValueChange = { newText: String -> viewModel.updateNotes(newText) },
                                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                                 label = { Text("Workout Notes") },
                                 maxLines = 4

@@ -56,6 +56,16 @@ android {
     }
 }
 
+// ponytail: build-host workaround — the installed NDK ships only x86_64 llvm-strip,
+// which cannot execute on this aarch64 host (no x86_64 dynamic loader for qemu).
+// Debug native-symbol stripping is optional; skipping it keeps the debug build green.
+// Release builds (stripReleaseDebugSymbols) are unaffected.
+tasks.whenTaskAdded {
+    if (name == "stripDebugDebugSymbols") {
+        enabled = false
+    }
+}
+
 dependencies {
     // Compose BOM
     val composeBom = platform(libs.compose.bom)

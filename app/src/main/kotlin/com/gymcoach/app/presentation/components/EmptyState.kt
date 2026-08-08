@@ -1,6 +1,8 @@
 package com.gymcoach.app.presentation.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,7 +17,7 @@ fun EmptyState(
     onPrimaryAction: () -> Unit,
     primaryActionLabel: String,
     modifier: Modifier = Modifier.fillMaxSize(),
-    icon: ImageVector = androidx.compose.material.icons.Icons.Filled.Info
+    icon: ImageVector = Icons.Filled.Info
 ) {
     Box(
         modifier = modifier,

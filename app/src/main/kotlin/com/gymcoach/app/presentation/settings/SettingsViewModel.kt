@@ -1,24 +1,24 @@
 package com.gymcoach.app.presentation.settings
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AppRegistration
 import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.Bell
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Restart
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.ViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,8 +55,8 @@ enum class PlateUnit {
 sealed class SettingsScreenSection(val id: Int, val title: String, val icon: ImageVector) {
     data object General : SettingsScreenSection(1, "General", Icons.Default.Settings)
     data object Appearance : SettingsScreenSection(2, "Appearance", Icons.Default.DarkMode)
-    data object Notifications : SettingsScreenSection(3, "Notifications", Icons.Default.Bell)
-    data object Workout : SettingsScreenSection(4, "Workout", Icons.Default.Restart)
+    data object Notifications : SettingsScreenSection(3, "Notifications", Icons.Default.Notifications)
+    data object Workout : SettingsScreenSection(4, "Workout", Icons.Default.RestartAlt)
     data object RestTimer : SettingsScreenSection(5, "Rest Timer", Icons.Default.RestartAlt)
     data object Units : SettingsScreenSection(6, "Units", Icons.Default.Scale)
     data object PlateCalculator : SettingsScreenSection(7, "Plate Calculator", Icons.Default.Layers)
@@ -69,7 +69,7 @@ sealed class SettingsScreenSection(val id: Int, val title: String, val icon: Ima
 @Singleton
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -107,11 +107,9 @@ class SettingsViewModel @Inject constructor(
         val isDebugMode = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(KEY_DEBUG_MODE, false)
 
-        val packageInfo = try {
+        val packageInfo = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0)
-        } catch (e: PackageManager.NameNotFoundException) {
-            PackageInfo(versionName = "0.1.0", versionCode = 1)
-        }
+        }.getOrNull()
 
         _state.value = SettingsState(
             isDarkMode = isDarkMode,
@@ -128,8 +126,8 @@ class SettingsViewModel @Inject constructor(
             notificationSoundUri = notificationSoundUri,
             isBackupEnabled = isBackupEnabled,
             isDebugMode = isDebugMode,
-            versionName = packageInfo.versionName,
-            versionCode = packageInfo.versionCode
+            versionName = packageInfo?.versionName ?: "0.1.0",
+            versionCode = packageInfo?.versionCode ?: 1
         )
     }
 
@@ -198,9 +196,10 @@ class SettingsViewModel @Inject constructor(
         savePreference(context, KEY_DEBUG_MODE, enabled)
     }
 
-    private fun savePreference(context: Context, key: String, value: Any) {
+    private fun savePreference(context: Context, key: String, value: Any?) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
         when (value) {
+            null -> prefs.remove(key)
             is Boolean -> prefs.putBoolean(key, value)
             is Int -> prefs.putInt(key, value)
             is String -> prefs.putString(key, value)
@@ -223,10 +222,5 @@ class SettingsViewModel @Inject constructor(
         private const val KEY_NOTIFICATION_SOUND = "notification_sound_uri"
         private const val KEY_BACKUP_ENABLED = "backup_enabled"
         private const val KEY_DEBUG_MODE = "debug_mode"
-
-        data class PackageInfo(
-            val versionName: String,
-            val versionCode: Int
-        )
     }
 }

@@ -1,7 +1,8 @@
 package com.gymcoach.app.presentation.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Builder
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,13 +23,13 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Bell
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Restart
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Terminal
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,8 +71,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.gymcoach.app.domain.model.PlateCalculator
-import com.gymcoach.app.presentation.workout.formatDuration
+import com.gymcoach.app.core.util.PlateCalculator
+import com.gymcoach.app.presentation.history.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -270,7 +273,7 @@ private fun NotificationSection(
     CategorySection(title = "Notifications") {
         SettingsToggleItem(
             title = "Push Notifications",
-            icon = Icons.Default.Bell,
+            icon = Icons.Default.Notifications,
             description = "Receive push notifications",
             checked = isNotificationsEnabled,
             onCheckedChange = onNotificationsToggle
@@ -284,7 +287,7 @@ private fun NotificationSection(
         )
         SettingsToggleItem(
             title = "Vibration",
-            icon = Icons.Default.Bell,
+            icon = Icons.Default.Notifications,
             description = "Vibrate on timer completion",
             checked = vibrationEnabled,
             onCheckedChange = onVibrationToggle
@@ -304,12 +307,12 @@ private fun RestTimerSection(
     CategorySection(title = "Rest Timer") {
         SettingsSliderItem(
             title = "Default Duration",
-            icon = Icons.Default.Restart,
+            icon = Icons.Default.RestartAlt,
             value = defaultRestTimerSeconds,
             valueRange = 30f..300f,
             steps = 9,
             onValueChange = { onRestTimerChange(it.toInt()) },
-            description = "$defaultRestTimer seconds"
+            description = "$defaultRestTimerSeconds seconds"
         )
         SettingsToggleItem(
             title = "Auto-start Timer",
@@ -381,9 +384,9 @@ private fun PlateCalculatorSettings(
             description = "Select your plate type",
             selectedItem = selectedItem?.second,
             options = unitOptions.map { it.second },
-            onItemSelected = {
+            onItemSelected = { selected ->
                 onPlateUnitChange(
-                    unitOptions.find { it.second == it }?.first ?: PlateUnit.STANDARD_PLATES
+                    unitOptions.find { it.second == selected }?.first ?: PlateUnit.STANDARD_PLATES
                 )
             }
         )
@@ -474,7 +477,7 @@ private fun AboutSection(
 @Composable
 private fun CategorySection(
     title: String,
-    content: @Composable SettingsCategoryScope.() -> Unit
+    content: @Composable () -> Unit
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Text(
@@ -638,7 +641,7 @@ private fun SettingsDropdownItem(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    options.forEach { option ->
+                    for (option in options) {
                         DropdownMenuItem(
                             text = { Text(option) },
                             onClick = {
@@ -649,8 +652,7 @@ private fun SettingsDropdownItem(
                     }
                 }
             }
-        },
-        onClick = { expanded = true }
+        }
     )
 }
 
@@ -691,7 +693,6 @@ private fun SettingsButtonItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
-        enabled = enabled,
-        onClick = onClick
+        modifier = Modifier.clickable(enabled = enabled, onClick = onClick)
     )
 }

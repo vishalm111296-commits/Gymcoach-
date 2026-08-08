@@ -47,7 +47,13 @@ import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.presentation.history.formatDuration
-import com.gymcoach.app.presentation.components.Accessibility
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import com.gymcoach.app.domain.repository.MuscleGroupStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -198,6 +204,7 @@ fun ProgressDashboardScreen(
             else -> {
                 ProgressDataContent(
                     state = state,
+                    onSearchQueryChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -205,6 +212,7 @@ fun ProgressDashboardScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProgressTopAppBar(
     title: String,
@@ -265,12 +273,13 @@ private fun ErrorScreen(error: String, padding: androidx.compose.foundation.layo
 @Composable
 private fun ProgressDataContent(
     state: ProgressUiState,
+    onSearchQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         SearchField(
             value = state.searchQuery,
-            onValueChange = { onSearch },
+            onValueChange = onSearchQueryChange,
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         )
 
@@ -476,7 +485,7 @@ private fun WeeklySummarySection(weeklySummary: List<Pair<Date, Double>>) {
         Spacer(Modifier.height(8.dp))
         if (weeklySummary.isNotEmpty()) {
             LazyVerticalGrid(
-                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -500,7 +509,7 @@ private fun MonthlySummarySection(monthlySummary: List<Pair<Date, Double>>) {
         Spacer(Modifier.height(8.dp))
         if (monthlySummary.isNotEmpty()) {
             LazyVerticalGrid(
-                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -524,7 +533,7 @@ private fun TopExercisesSection(muscleGroupDistribution: List<MuscleGroupStats>)
         Spacer(Modifier.height(8.dp))
         if (muscleGroupDistribution.isNotEmpty()) {
             LazyVerticalGrid(
-                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -548,7 +557,7 @@ private fun PersonalRecordsSection(personalRecords: List<PersonalRecord>) {
         Spacer(Modifier.height(8.dp))
         if (personalRecords.isNotEmpty()) {
             LazyVerticalGrid(
-                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -620,7 +629,7 @@ private fun SummaryRow(label: String, value: String) {
 
 @Composable
 private fun VolumeLineChart(
-    List<Pair<Date, Double>>,
+    data: List<Pair<Date, Double>>,
     title: String,
     modifier: Modifier = Modifier
 ) {

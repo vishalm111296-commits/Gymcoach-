@@ -9,14 +9,12 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.dao.UserProfileDao
 import com.gymcoach.app.data.local.dao.MeasurementDao
-import com.gymcoach.app.data.local.dao.GoalDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.data.local.entity.MeasurementRecordEntity
-import com.gymcoach.app.data.local.entity.GoalEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,8 +26,7 @@ import kotlinx.coroutines.launch
         WorkoutExerciseEntity::class,
         WorkoutSetEntity::class,
         UserProfileEntity::class,
-        MeasurementRecordEntity::class,
-        GoalEntity::class
+        MeasurementRecordEntity::class
     ],
     version = 3,
     exportSchema = false
@@ -39,7 +36,6 @@ abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun measurementDao(): MeasurementDao
-    abstract fun goalDao(): GoalDao
 
     companion object {
         @Volatile

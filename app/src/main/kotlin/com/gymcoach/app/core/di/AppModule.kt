@@ -5,7 +5,6 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.dao.MeasurementDao
 import com.gymcoach.app.data.local.dao.UserProfileDao
-import com.gymcoach.app.data.local.dao.GoalDao
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import dagger.Module
 import dagger.Provides
@@ -37,8 +36,4 @@ object AppModule {
     @Provides
     @Singleton
     fun provideUserProfileDao(database: GymCoachDatabase): UserProfileDao = database.userProfileDao()
-
-    @Provides
-    @Singleton
-    fun provideGoalDao(database: GymCoachDatabase): GoalDao = database.goalDao()
 }

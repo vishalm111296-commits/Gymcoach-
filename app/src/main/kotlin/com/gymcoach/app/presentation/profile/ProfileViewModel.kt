@@ -73,13 +73,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.model.UserProfile
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.repository.ProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.PersonalRecord
-import com.gymcoach.app.domain.repository.WorkoutStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -131,7 +132,6 @@ class ProfileViewModel @Inject constructor(
                 if (validateForm()) {
                     val profile = formToProfile()
                     profileRepository.saveUserProfile(profile)
-                    profileRepository.updateProfile(profile)
                     _state.value = _state.value.copy(
                         isSaving = false,
                         profile = profile,
@@ -240,7 +240,7 @@ class ProfileViewModel @Inject constructor(
     }
 }
 
-sealed class ProfileUiState(
+data class ProfileUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val isNewUser: Boolean = false,
@@ -251,6 +251,47 @@ sealed class ProfileUiState(
     val formErrors: Map<ProfileFormField, String> = emptyMap(),
     val error: String? = null
 )
+
+data class ProfileForm(
+    val name: String = "",
+    val age: Int = 0,
+    val gender: String = "",
+    val height: Double = 0.0,
+    val weight: Double = 0.0,
+    val goalWeight: Double = 0.0,
+    val experience: String = "",
+    val trainingStyle: String = "",
+    val preferredSplit: String = "",
+    val activityLevel: String = "",
+    val weeklyWorkoutGoal: Int = 0,
+    val proteinGoal: Double = 0.0,
+    val caloriesGoal: Int = 0,
+    val units: String = "",
+    val profile: UserProfile? = null
+) {
+    companion object {
+        fun fromProfile(profile: UserProfile?): ProfileForm = if (profile == null) {
+            ProfileForm()
+        } else {
+            ProfileForm(
+                name = profile.name,
+                age = profile.age,
+                gender = profile.gender,
+                height = profile.height,
+                weight = profile.weight,
+                goalWeight = profile.goalWeight,
+                experience = profile.experience,
+                trainingStyle = profile.trainingStyle,
+                preferredSplit = profile.preferredSplit,
+                activityLevel = profile.activityLevel,
+                weeklyWorkoutGoal = profile.weeklyWorkoutGoal,
+                proteinGoal = profile.proteinGoal,
+                caloriesGoal = profile.caloriesGoal,
+                units = profile.units
+            )
+        }
+    }
+}
 
 sealed class ProfileFormField {
     data object Name : ProfileFormField()
@@ -269,157 +310,3 @@ sealed class ProfileFormField {
     data object Units : ProfileFormField()
 }
 
-@HiltViewModel
-class ProfileSettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(ProfileSettingsState())
-    val state: StateFlow<ProfileSettingsState> = _state.asStateFlow()
-
-    init {
-        loadSettings()
-    }
-
-    private fun loadSettings() {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _state.value = ProfileSettingsState(
-            profileSyncEnabled = prefs.getBoolean(KEY_PROFILE_SYNC, true),
-            autoSync = prefs.getBoolean(KEY_AUTO_SYNC, true),
-            syncFrequency = prefs.getString(KEY_SYNC_FREQUENCY, "daily") ?: "daily",
-            dataUsageLimit = prefs.getLong(KEY_DATA_USAGE_LIMIT, 100 * 1024 * 1024),
-            compressData = prefs.getBoolean(KEY_COMPRESS_DATA, true)
-        )
-    }
-
-    fun onProfileSyncToggle(enabled: Boolean) {
-        _state.value = _state.value.copy(profileSyncEnabled = enabled)
-        savePreference(context, KEY_PROFILE_SYNC, enabled)
-    }
-
-    fun onAutoSyncToggle(enabled: Boolean) {
-        _state.value = _state.value.copy(autoSync = enabled)
-        savePreference(context, KEY_AUTO_SYNC, enabled)
-    }
-
-    fun onSyncFrequencyChange(frequency: String) {
-        _state.value = _state.value.copy(syncFrequency = frequency)
-        savePreference(context, KEY_SYNC_FREQUENCY, frequency)
-    }
-
-    fun onDataUsageLimitChange(limit: Long) {
-        _state.value = _state.value.copy(dataUsageLimit = limit)
-        savePreference(context, KEY_DATA_USAGE_LIMIT, limit)
-    }
-
-    fun onCompressDataToggle(enabled: Boolean) {
-        _state.value = _state.value.copy(compressData = enabled)
-        savePreference(context, KEY_COMPRESS_DATA, enabled)
-    }
-
-    private fun savePreference(context: Context, key: String, value: Any) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
-        when (value) {
-            is Boolean -> prefs.putBoolean(key, value)
-            is Long -> prefs.putLong(key, value)
-            is String -> prefs.putString(key, value)
-        }
-        prefs.apply()
-    }
-
-    companion object {
-        private const val PREFS_NAME = "GymCoachProfileSettings"
-        private const val KEY_PROFILE_SYNC = "profile_sync_enabled"
-        private const val KEY_AUTO_SYNC = "auto_sync_enabled"
-        private const val KEY_SYNC_FREQUENCY = "sync_frequency"
-        private const val KEY_DATA_USAGE_LIMIT = "data_usage_limit_bytes"
-        private const val KEY_COMPRESS_DATA = "compress_data"
-    }
-}
-
-sealed class ProfileSettingsState(
-    val profileSyncEnabled: Boolean = true,
-    val autoSync: Boolean = true,
-    val syncFrequency: String = "daily",
-    val dataUsageLimit: Long = 100 * 1024 * 1024,
-    val compressData: Boolean = true
-)
-
-@HiltViewModel
-class ProfileAnalyticsViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository,
-    private val analyticsRepository: AnalyticsRepository
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(ProfileAnalyticsUiState())
-    val state: StateFlow<ProfileAnalyticsUiState> = _state.asStateFlow()
-
-    init {
-        loadAnalytics()
-    }
-
-    private fun loadAnalytics() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
-            try {
-                val userProfile = profileRepository.getUserProfile().firstOrNull()
-                if (userProfile != null) {
-                    val workoutCounts = analyticsRepository.getWorkoutCounts()
-                    val totalVolume = analyticsRepository.getTotalVolume()
-                    val averageWorkoutVolume = analyticsRepository.getAverageWorkoutVolume()
-                    val personalRecords = analyticsRepository.getAllPersonalRecords()
-                    val muscleGroupDistribution = analyticsRepository.getMuscleGroupDistribution()
-
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        profile = userProfile,
-                        workoutCounts = workoutCounts,
-                        totalVolume = totalVolume,
-                        averageWorkoutVolume = averageWorkoutVolume,
-                        personalRecords = personalRecords,
-                        muscleGroupDistribution = muscleGroupDistribution,
-                        profileCompletionPercentage = calculateProfileCompletion(userProfile)
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = "No profile found"
-                    )
-                }
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load analytics"
-                )
-            }
-        }
-    }
-
-    private fun calculateProfileCompletion(profile: UserProfile): Float {
-        val fields = listOf(
-            profile.name.isNotBlank(),
-            profile.age > 0,
-            profile.height > 0.0,
-            profile.weight > 0.0,
-            profile.gender.isNotBlank(),
-            profile.experience.isNotBlank(),
-            profile.activityLevel.isNotBlank(),
-            profile.weeklyWorkoutGoal > 0
-        )
-        return (fields.count { it } * 100f) / fields.size
-    }
-
-    fun refresh() = loadAnalytics()
-}
-
-sealed class ProfileAnalyticsUiState(
-    val isLoading: Boolean = true,
-    val profile: UserProfile? = null,
-    val workoutCounts: WorkoutCounts = WorkoutCounts(0, 0, 0, 0),
-    val totalVolume: Double = 0.0,
-    val averageWorkoutVolume: Double = 0.0,
-    val personalRecords: List<PersonalRecord> = emptyList(),
-    val muscleGroupDistribution: List<MuscleGroupStats> = emptyList(),
-    val profileCompletionPercentage: Float = 0.0f,
-    val error: String? = null
-)

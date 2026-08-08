@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.profile
 
 import android.content.Context
+import androidx.lifecycle.ViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,7 +77,7 @@ class ProfileSettingsViewModel @Inject constructor(
     }
 }
 
-sealed class ProfileSettingsState(
+data class ProfileSettingsState(
     val profileSyncEnabled: Boolean = true,
     val autoSync: Boolean = true,
     val syncFrequency: String = "daily",

@@ -67,7 +67,7 @@ fun ProfileScreen(
         ) {
             when {
                 state.isLoading -> LoadingState(modifier = Modifier.fillMaxSize())
-                state.error != null -> ErrorState(message = state.error, onRetry = viewModel::onRetry, modifier = Modifier.fillMaxSize())
+                state.error != null -> ErrorState(message = state.error ?: "", onRetry = viewModel::onRetry, modifier = Modifier.fillMaxSize())
                 state.profile == null && !state.isEditing -> {
                     EmptyState(
                         message = "No profile found. Let's create one!",

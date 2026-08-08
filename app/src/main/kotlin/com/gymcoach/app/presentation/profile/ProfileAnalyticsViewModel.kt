@@ -35,16 +35,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.model.UserProfile
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
-import com.gymcoach.app.domain.repository.WorkoutStats
 import com.gymcoach.app.presentation.history.formatDuration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.gymcoach.app.domain.repository.ProfileRepository
@@ -116,7 +119,7 @@ class ProfileAnalyticsViewModel @Inject constructor(
     fun refresh() = loadAnalytics()
 }
 
-sealed class ProfileAnalyticsUiState(
+data class ProfileAnalyticsUiState(
     val isLoading: Boolean = true,
     val profile: UserProfile? = null,
     val workoutCounts: WorkoutCounts = WorkoutCounts(0, 0, 0, 0),

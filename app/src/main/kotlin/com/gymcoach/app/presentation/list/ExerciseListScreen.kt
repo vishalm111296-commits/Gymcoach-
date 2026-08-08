@@ -21,12 +21,16 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -46,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.ExerciseViewModel
 import com.gymcoach.app.presentation.components.ExerciseItemCard
+import com.gymcoach.app.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,7 +170,7 @@ private fun FilterBottomSheet(
     onEquipmentSelected: (String) -> Unit,
     onCategorySelected: (Int) -> Unit,
     onClearFilters: () -> Unit,
-    sheetState: androidx.compose.material3.ModalBottomSheetState
+    sheetState: androidx.compose.material3.SheetState
 ) {
     androidx.compose.material3.ModalBottomSheet(
         onDismissRequest = { /* automatically dismissed by sheetState */ },
@@ -267,7 +272,7 @@ private fun NavigationActions(
             modifier = Modifier.weight(1f),
             edgePadding = 0.dp
         ) {
-            categories.forEachIndexed { index, category ->
+            listOf("All").forEachIndexed { index, category ->
                 Tab(
                     selected = index == 0,
                     onClick = {},
@@ -333,10 +338,13 @@ private fun mainContent(
     topBarActions: @Composable () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        ScrollView(
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            item {
+                topBarActions()
+            }
             items(exercises, key = { it.id }) { exercise ->
                 ExerciseItemCard(
                     name = exercise.name,
@@ -348,23 +356,5 @@ private fun mainContent(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ScrollView(
-    modifier: Modifier,
-    contentPadding: PaddingValues,
-    content: @Composable () -> Unit
-) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            topBarActions()
-        }
-        content()
     }
 }

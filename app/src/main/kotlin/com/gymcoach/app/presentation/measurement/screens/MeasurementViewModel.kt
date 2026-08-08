@@ -2,7 +2,6 @@ package com.gymcoach.app.presentation.measurement.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gymcoach.app.domain.Result
 import com.gymcoach.app.domain.vshape.model.MeasurementRecord
 import com.gymcoach.app.domain.vshape.model.MeasurementType
 import com.gymcoach.app.domain.measurement.usecase.AddMeasurementUseCase
@@ -40,24 +39,32 @@ class MeasurementViewModel @Inject constructor(
     private fun loadMeasurements() {
         viewModelScope.launch {
             _isLoading.value = true
-            when (val result = getMeasurementsForUserUseCase.execute("default_user")) {
-                is Result.Success -> _measurements.value = result.value
-                is Result.Failure -> _error.value = "Failed to load measurements"
+            try {
+                getMeasurementsForUserUseCase("default_user").collect { records ->
+                    _measurements.value = records
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load measurements"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     fun addMeasurement(record: MeasurementRecord) {
         viewModelScope.launch {
-            addMeasurementUseCase.execute(record)
+            try {
+                addMeasurementUseCase("default_user", record.measurementType, record.value, record.notes)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to add measurement"
+            }
             loadMeasurements()
         }
     }
 
     fun updateMeasurement(record: MeasurementRecord) {
         viewModelScope.launch {
-            updateMeasurementUseCase.execute(record)
+            updateMeasurementUseCase(record)
             loadMeasurements()
         }
     }

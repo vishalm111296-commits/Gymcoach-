@@ -1,6 +1,8 @@
 package com.gymcoach.app.presentation.measurement.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -11,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,35 +25,10 @@ import com.gymcoach.app.presentation.components.LoadingState
 import com.gymcoach.app.presentation.components.ErrorState
 import com.gymcoach.app.presentation.components.EmptyState
 import com.gymcoach.app.presentation.measurement.screens.MeasurementViewModel
-import com.gymcoach.app.presentation.components.MeasurementCard
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.IconButton
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingUp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +37,6 @@ fun MeasurementScreen(
     viewModel: MeasurementViewModel = hiltViewModel()
 ) {
     val measurements by viewModel.measurements.collectAsState()
-    val trends by viewModel.trends.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -74,7 +51,7 @@ fun MeasurementScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -99,7 +76,7 @@ fun MeasurementScreen(
             if (isLoading) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else if (error != null) {
-                ErrorState(message = error, onRetry = { /* viewModel.refresh() */ }, modifier = Modifier.fillMaxSize())
+                ErrorState(message = error ?: "", onRetry = { /* viewModel.refresh() */ }, modifier = Modifier.fillMaxSize())
             } else if (measurements.isEmpty()) {
                 EmptyState(
                     message = "No measurements yet. Start tracking your body metrics!",
@@ -120,21 +97,15 @@ fun MeasurementScreen(
                         contentPadding = PaddingValues(0.dp)
                     ) {
                         items(MeasurementType.values()) { type ->
-                            val latest = MeasurementType.values().mapNotNull { type ->
-                                _measurements.value
-                                    .filter { it.measurementType == type }
-                                    .maxByOrNull { it.date.toEpochMilli() }
-                            }.firstOrNull { it.measurementType == type }
-                            val trend = trendMap[type]
-                            
-                            latest?.let { record ->
-                                item {
-                                    MeasurementCard(
-                                        record = record,
-                                        trend = trendMap[type],
-                                        onDelete = { /* viewModel.deleteMeasurement(it) */ }
-                                    )
-                                }
+                            val latest = measurements
+                                .filter { it.measurementType == type }
+                                .maxByOrNull { it.date.toEpochMilli() }
+                            if (latest != null) {
+                                MeasurementCard(
+                                    record = latest,
+                                    trend = null,
+                                    onDelete = {}
+                                )
                             }
                         }
                     }
@@ -150,15 +121,6 @@ fun MeasurementScreen(
             title = { Text("Add Measurement") },
             text = {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    androidx.compose.material3.DropdownMenu(
-                        expanded = selectedType != null,
-                        onDismissRequest = { selectedType = null },
-                        properties = androidx.compose.material3.DropdownMenuProperties(
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    ) {
-                        // This is a simplified dropdown - in production use ExposedDropdownMenuBox
-                    }
                     androidx.compose.material3.ExposedDropdownMenuBox(
                         expanded = selectedType != null,
                         onExpandedChange = { },
@@ -170,17 +132,17 @@ fun MeasurementScreen(
                             onValueChange = { },
                             label = { Text("Measurement Type") },
                             trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon()
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = selectedType != null)
                             },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        androidx.compose.material3.ExposedDropdownMenu(
+                        ExposedDropdownMenu(
                             expanded = selectedType != null,
                             onDismissRequest = { },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            MeasurementType.values().forEach { type ->
+                            for (type in MeasurementType.values()) {
                                 androidx.compose.material3.DropdownMenuItem(
                                     text = { Text(type.displayName) },
                                     onClick = { selectedType = type }
@@ -293,8 +255,7 @@ fun MeasurementCard(
                 }
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(24.dp),
-                    contentDescription = "Delete Measurement"
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(Icons.Filled.Remove, contentDescription = "Delete")
                 }

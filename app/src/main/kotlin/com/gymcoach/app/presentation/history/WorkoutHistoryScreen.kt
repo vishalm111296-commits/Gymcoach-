@@ -30,6 +30,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +45,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +55,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -219,7 +224,7 @@ fun WorkoutHistoryScreen(
 
             // Workout list with semantic column header
             if (workouts.isEmpty()) {
-                EmptyStateScreen()
+                EmptyStateScreen(searchQuery = searchQuery)
             } else {
                 WorkoutList(
                     workouts = workouts,
@@ -366,10 +371,10 @@ private fun HistoryWorkoutCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                StatItem(label = "Duration", value = formatDuration(workout.duration))
-                StatItem(label = "Exercises", value = workout.exerciseCount.toString())
-                StatItem(label = "Sets", value = workout.setCount.toString())
-                StatItem(label = "Volume", value = "%.1f kg".format(workout.volume))
+                HistoryStatItem(label = "Duration", value = formatDuration(workout.duration))
+                HistoryStatItem(label = "Exercises", value = workout.exerciseCount.toString())
+                HistoryStatItem(label = "Sets", value = workout.setCount.toString())
+                HistoryStatItem(label = "Volume", value = "%.1f kg".format(workout.volume))
             }
 
             if (workout.notes.isNotBlank()) {
@@ -385,7 +390,7 @@ private fun HistoryWorkoutCard(
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
+private fun HistoryStatItem(label: String, value: String) {
     Column(
         modifier = Modifier.padding(horizontal = 0.dp),
         verticalArrangement = Arrangement.Center
@@ -405,11 +410,11 @@ private fun StatItem(label: String, value: String) {
 }
 
 @Composable
-private fun EmptyStateScreen() {
+private fun EmptyStateScreen(searchQuery: String) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)),
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

@@ -6,6 +6,7 @@ import com.gymcoach.app.domain.vshape.model.MeasurementType
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -36,7 +37,7 @@ class GetLatestMeasurementUseCaseTest {
             date = Instant.now(),
             createdAt = Instant.now()
         )
-        every { repository.getLatestMeasurementForUser(userId) } returns mockk { answers { flowOf(measurement) } }
+        every { repository.getLatestMeasurementForUser(userId) } returns flowOf(measurement)
 
         val result = useCase(userId).first()
         assertEquals(measurement, result)
@@ -45,7 +46,7 @@ class GetLatestMeasurementUseCaseTest {
     @Test
     fun `invoke returns null if no measurements`() = runTest {
         val userId = "test_user"
-        every { repository.getLatestMeasurementForUser(userId) } returns mockk { answers { flowOf(null) } }
+        every { repository.getLatestMeasurementForUser(userId) } returns flowOf(null)
 
         val result = useCase(userId).first()
         assertNull(result)

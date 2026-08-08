@@ -6,9 +6,11 @@ import com.gymcoach.app.domain.vshape.model.MeasurementType
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
@@ -38,7 +40,7 @@ class GetMeasurementsForUserUseCaseTest {
                 createdAt = Instant.now()
             )
         )
-        every { repository.getMeasurementsForUser(userId) } returns mockk { answers { measurements.asFlow() } }
+        every { repository.getMeasurementsForUser(userId) } returns flowOf(measurements)
 
         val result = useCase(userId).first()
         assertEquals(measurements, result)
@@ -47,7 +49,7 @@ class GetMeasurementsForUserUseCaseTest {
     @Test
     fun `invoke returns empty list if no measurements`() = runTest {
         val userId = "test_user"
-        every { repository.getMeasurementsForUser(userId) } returns mockk { answers { emptyList().asFlow() } }
+        every { repository.getMeasurementsForUser(userId) } returns flowOf(emptyList())
 
         val result = useCase(userId).first()
         assertTrue(result.isEmpty())

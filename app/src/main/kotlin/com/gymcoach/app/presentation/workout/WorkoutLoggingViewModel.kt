@@ -49,11 +49,28 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     val restTimerState: StateFlow<RestTimerState> = restTimer.state
 
+    private val _exercisePerformance = MutableStateFlow<Map<Long, Pair<WorkoutSet?, WorkoutSet?>>>(emptyMap())
+    val exercisePerformance: StateFlow<Map<Long, Pair<WorkoutSet?, WorkoutSet?>>> = _exercisePerformance.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    fun dismissError() {
-        _error.value = null
+    private val _showNotesDialog = MutableStateFlow(false)
+    val showNotesDialog: StateFlow<Boolean> = _showNotesDialog.asStateFlow()
+
+    private val _showPlateCalculator = MutableStateFlow(false)
+    val showPlateCalculator: StateFlow<Boolean> = _showPlateCalculator.asStateFlow()
+
+    private fun loadPerformanceData(exercises: List<WorkoutExerciseWithSets>) {
+        viewModelScope.launch {
+            val performanceMap = mutableMapOf<Long, Pair<WorkoutSet?, WorkoutSet?>>()
+            exercises.forEach { we ->
+                val latest = workoutRepository.getLatestSetForExercise(we.workoutExercise.exerciseId)
+                val best = workoutRepository.getBestVolumeSetForExercise(we.workoutExercise.exerciseId)
+                performanceMap[we.workoutExercise.exerciseId] = Pair(latest, best)
+            }
+            _exercisePerformance.value = performanceMap
+        }
     }
 
     fun loadOrStartWorkout(workoutId: Long? = null) {
@@ -62,6 +79,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
+                        it?.let { loadPerformanceData(it.exercises) }
                         startWorkoutTimer()
                     }
                 } else {
@@ -69,6 +87,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     if (existing != null) {
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
+                            it?.let { loadPerformanceData(it.exercises) }
                             startWorkoutTimer()
                         }
                     } else {
@@ -117,6 +136,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         val id = workoutRepository.createWorkout(workout)
         workoutRepository.getWorkoutWithDetails(id).collect {
             _currentWorkout.value = it
+            it?.let { loadPerformanceData(it.exercises) }
         }
     }
 
@@ -235,6 +255,30 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun stopRestTimer() {
         restTimer.stop()
+    }
+
+    fun addTimeRestTimer(seconds: Int) {
+        restTimer.addTime(seconds)
+    }
+
+    fun showNotesDialog() {
+        _showNotesDialog.value = true
+    }
+
+    fun dismissNotesDialog() {
+        _showNotesDialog.value = false
+    }
+
+    fun showPlateCalculator() {
+        _showPlateCalculator.value = true
+    }
+
+    fun dismissPlateCalculator() {
+        _showPlateCalculator.value = false
+    }
+
+    fun dismissError() {
+        _error.value = null
     }
 
     fun completeWorkout() {

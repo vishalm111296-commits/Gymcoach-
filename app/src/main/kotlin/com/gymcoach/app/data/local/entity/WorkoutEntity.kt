@@ -11,5 +11,9 @@ data class WorkoutEntity(
     val endTime: Long,
     val duration: Long,
     val notes: String,
-    val completed: Boolean
+    val mood: Int? = null,
+    val energy: Int? = null,
+    val pain: Int? = null,
+    val completed: Boolean,
+    val isTemplate: Boolean = false
 )

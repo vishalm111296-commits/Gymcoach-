@@ -21,7 +21,7 @@ class AnalyticsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPersonalRecord(exerciseId: Long): Double? {
-        return workoutDao.getPersonalRecordMax(exerciseId)
+        return workoutDao.getLatestSetForExercise(exerciseId)?.weight
     }
 
     override suspend fun getWeeklySummary(): List<Pair<Date, Double>> {

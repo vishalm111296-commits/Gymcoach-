@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +40,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.ExerciseViewModel
@@ -47,6 +50,7 @@ import com.gymcoach.app.presentation.components.ExerciseItemCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseListScreen(
+    navController: androidx.navigation.NavHostController,
     viewModel: ExerciseViewModel = hiltViewModel(),
     onExerciseClick: (Long) -> Unit = {},
     onHistoryClick: () -> Unit = {},
@@ -62,139 +66,305 @@ fun ExerciseListScreen(
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
+        SearchField(
             value = textFieldValue,
             onValueChange = { newValue ->
                 textFieldValue = newValue
                 viewModel.onSearchQueryChange(newValue)
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
-                )
-            },
-            placeholder = { Text("Search exercises...") },
-            singleLine = true,
-            trailingIcon = {
-                IconButton(onClick = { showFilterSheet = true }) {
-                    Icon(Icons.Default.Tune, contentDescription = "Filter")
-                }
-            }
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            onFilterClick = { showFilterSheet = true }
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        if (showFilterSheet) {
+            FilterBottomSheet(
+                filterDifficulty = filterDifficulty,
+                filterEquipment = filterEquipment,
+                difficulties = viewModel.difficulties,
+                equipments = viewModel.equipments,
+                categories = viewModel.categories,
+                selectedCategory = tabIndex,
+                onDifficultySelected = { viewModel.onDifficultySelected(it) },
+                onEquipmentSelected = { viewModel.onEquipmentSelected(it) },
+                onCategorySelected = {
+                    tabIndex = it
+                    viewModel.onCategorySelected(viewModel.categories[it])
+                },
+                onClearFilters = {
+                    viewModel.onDifficultySelected("All")
+                    viewModel.onEquipmentSelected("All")
+                    viewModel.onCategorySelected("All")
+                },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            )
+        }
+    }
+
+    mainContent(
+        exercises = exercises,
+        categories = viewModel.categories,
+        selectedCategory = tabIndex,
+        onCategorySelected = {
+            tabIndex = it
+            viewModel.onCategorySelected(viewModel.categories[it])
+        },
+        onExerciseClick = onExerciseClick,
+        topBarActions = {
+            NavigationActions(
+                onHistoryClick = onHistoryClick,
+                onProgressClick = onProgressClick,
+                onCameraClick = onCameraClick,
+                navigateToSettings = { navController.navigate(Routes.SETTINGS) }
+            )
+        }
+    )
+}
+
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onFilterClick: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search exercises",
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        placeholder = { Text("Search exercises...") },
+        singleLine = true,
+        trailingIcon = {
+            IconButton(onClick = onFilterClick, modifier = Modifier.size(48.dp).height(48.dp)) {
+                Icon(
+                    Icons.Default.Tune,
+                    contentDescription = "Filter exercises",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterBottomSheet(
+    filterDifficulty: String,
+    filterEquipment: String,
+    difficulties: List<String>,
+    equipments: List<String>,
+    categories: List<String>,
+    selectedCategory: Int,
+    onDifficultySelected: (String) -> Unit,
+    onEquipmentSelected: (String) -> Unit,
+    onCategorySelected: (Int) -> Unit,
+    onClearFilters: () -> Unit,
+    sheetState: androidx.compose.material3.ModalBottomSheetState
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = { /* automatically dismissed by sheetState */ },
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            ScrollableTabRow(
-                selectedTabIndex = tabIndex,
-                modifier = Modifier.weight(1f),
-                edgePadding = 0.dp
+            Text("Difficulty", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            FilterRow(
+                options = difficulties,
+                selected = filterDifficulty,
+                onOptionSelected = onDifficultySelected
+            )
+            Spacer(Modifier.height(16.dp))
+            Text("Equipment", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            EquipmentRow(
+                options = equipments,
+                selected = filterEquipment,
+                onOptionSelected = onEquipmentSelected
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onClearFilters,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                viewModel.categories.forEachIndexed { index, category ->
-                    Tab(
-                        selected = tabIndex == index,
-                        onClick = {
-                            tabIndex = index
-                            viewModel.onCategorySelected(category)
-                        },
-                        text = { Text(category) }
-                    )
-                }
+                Text("Clear Filters")
             }
+            Spacer(Modifier.height(32.dp))
+        }
+    }
+}
 
-            IconButton(onClick = onCameraClick) {
-                Icon(Icons.Filled.CameraAlt, contentDescription = "Form Analysis")
-            }
+@Composable
+private fun FilterRow(
+    options: List<String>,
+    selected: String,
+    onOptionSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { diff ->
+            FilterChip(
+                selected = diff == selected,
+                onClick = { onOptionSelected(diff) },
+                label = { Text(diff) },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+}
 
-            IconButton(onClick = onHistoryClick) {
-                Icon(Icons.Filled.History, contentDescription = "Workout History")
-            }
+@Composable
+private fun EquipmentRow(
+    options: List<String>,
+    selected: String,
+    onOptionSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { eq ->
+            FilterChip(
+                selected = eq == selected,
+                onClick = { onOptionSelected(eq) },
+                label = { Text(eq) },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+}
 
-            IconButton(onClick = onProgressClick) {
-                Icon(Icons.Filled.Insights, contentDescription = "Progress")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NavigationActions(
+    onHistoryClick: () -> Unit,
+    onProgressClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    navigateToSettings: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ScrollableTabRow(
+            selectedTabIndex = 0,
+            modifier = Modifier.weight(1f),
+            edgePadding = 0.dp
+        ) {
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = index == 0,
+                    onClick = {},
+                    text = { Text(category) }
+                )
             }
         }
 
-        LazyColumn(
+        IconButton(
+            onClick = onCameraClick,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Filled.CameraAlt,
+                contentDescription = "Form analysis",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = onHistoryClick,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Filled.History,
+                contentDescription = "Workout history",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = onProgressClick,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Filled.Insights,
+                contentDescription = "Progress",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = navigateToSettings,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "Settings",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun mainContent(
+    exercises: List<com.gymcoach.app.domain.model.Exercise>,
+    categories: List<String>,
+    selectedCategory: Int,
+    onCategorySelected: (Int) -> Unit,
+    onExerciseClick: (Long) -> Unit,
+    topBarActions: @Composable () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        ScrollView(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
             items(exercises, key = { it.id }) { exercise ->
                 ExerciseItemCard(
                     name = exercise.name,
                     muscleGroup = exercise.muscleGroup,
                     difficulty = exercise.difficulty,
-                    onClick = { onExerciseClick(exercise.id) }
+                    equipment = exercise.equipment,
+                    onClick = { onExerciseClick(exercise.id) },
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
         }
     }
+}
 
-    if (showFilterSheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { showFilterSheet = false },
-            sheetState = sheetState
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text("Difficulty", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    viewModel.difficulties.forEach { diff ->
-                        FilterChip(
-                            selected = diff == filterDifficulty,
-                            onClick = { viewModel.onDifficultySelected(diff) },
-                            label = { Text(diff) }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-                Text("Equipment", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                // Equipment options can be long, so use a horizontal scroll or wrap. 
-                // Since this is just a sheet, a ScrollableTabRow style or wrapping layout is best.
-                // We'll use a simple horizontal scroll for equipment.
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    viewModel.equipments.forEach { eq ->
-                        FilterChip(
-                            selected = eq == filterEquipment,
-                            onClick = { viewModel.onEquipmentSelected(eq) },
-                            label = { Text(eq) }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = {
-                        viewModel.onDifficultySelected("All")
-                        viewModel.onEquipmentSelected("All")
-                        viewModel.onCategorySelected("All")
-                    }) {
-                        Text("Clear Filters")
-                    }
-                }
-                Spacer(Modifier.height(32.dp))
-            }
+@Composable
+private fun ScrollView(
+    modifier: Modifier,
+    contentPadding: PaddingValues,
+    content: @Composable () -> Unit
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            topBarActions()
         }
+        content()
     }
 }

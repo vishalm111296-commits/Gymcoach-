@@ -41,9 +41,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -88,18 +85,32 @@ fun WorkoutHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Workout History") },
+                title = {
+                    Text(
+                        text = "Workout History",
+                        modifier = Modifier.semantics {
+                            contentDescription = "Workout history screen"
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back to exercises"
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNewWorkout) {
-                        Icon(Icons.Default.Add, contentDescription = "New Workout")
+                    IconButton(
+                        onClick = onNewWorkout,
+                        modifier = Modifier.height(48.dp).width(48.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Create new workout",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             )
@@ -109,6 +120,7 @@ fun WorkoutHistoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = 16.dp)
         ) {
             // Search bar
             OutlinedTextField(
@@ -116,9 +128,15 @@ fun WorkoutHistoryScreen(
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .height(56.dp),
                 placeholder = { Text("Search workouts...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = "Search workouts",
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
             )
@@ -127,7 +145,7 @@ fun WorkoutHistoryScreen(
             ScrollableTabRow(
                 selectedTabIndex = filterOption.ordinal,
                 modifier = Modifier.fillMaxWidth(),
-                edgePadding = 16.dp
+                edgePadding = 0.dp
             ) {
                 WorkoutHistoryViewModel.FilterOption.values().forEachIndexed { index, filter ->
                     Tab(
@@ -145,8 +163,15 @@ fun WorkoutHistoryScreen(
 
             // Sort dropdown
             Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                IconButton(onClick = { showSortOptions = true }) {
-                    Icon(Icons.Filled.Sort, contentDescription = "Sort")
+                IconButton(
+                    onClick = { showSortOptions = true },
+                    modifier = Modifier.height(48.dp).width(48.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Sort,
+                        contentDescription = "Sort workouts",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
                 DropdownMenu(
                     expanded = showSortOptions,
@@ -172,13 +197,19 @@ fun WorkoutHistoryScreen(
                 ) {
                     Button(
                         onClick = { onResumeWorkout(workout.id) },
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = "Resume")
+                            Icon(
+                                Icons.Filled.PlayArrow,
+                                contentDescription = "Resume workout",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(Modifier.width(8.dp))
                             Text("Resume Workout", style = MaterialTheme.typography.titleMedium)
                         }
@@ -186,35 +217,14 @@ fun WorkoutHistoryScreen(
                 }
             }
 
-            // Workout list
+            // Workout list with semantic column header
             if (workouts.isEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No workouts found for \"$searchQuery\"" else "No workouts yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                EmptyStateScreen()
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(padding)
-                        .padding(horizontal = 16.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(workouts, key = { it.id }) { workout ->
-                        HistoryWorkoutCard(
-                            workout = workout,
-                            onClick = { onDetailClick(workout.id) }
-                        )
-                    }
-                }
+                WorkoutList(
+                    workouts = workouts,
+                    onClick = onDetailClick
+                )
             }
         }
     }
@@ -270,31 +280,85 @@ fun WorkoutHistoryScreen(
 }
 
 @Composable
+private fun WorkoutList(
+    workouts: List<WorkoutWithStats>,
+    onClick: (Long) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            // Semantic table header
+            WorkoutTableHeader()
+        }
+
+        items(workouts, key = { it.id }) { workout ->
+            HistoryWorkoutCard(
+                workout = workout,
+                onClick = { onClick(workout.id) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutTableHeader() {
+    Text(
+        text = "Workout Date         Duration   Sets   Volume      Notes",
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+    Text(
+        text = "─────────────────  ──────  ────  ────────────  ───────────────────",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    )
+}
+
+@Composable
 private fun HistoryWorkoutCard(
     workout: WorkoutWithStats,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(88.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = workout.notes.ifBlank { "Workout" },
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = formatDate(workout.date),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
 
@@ -313,10 +377,61 @@ private fun HistoryWorkoutCard(
                     text = workout.notes,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 2
                 )
             }
         }
     }
 }
 
+@Composable
+private fun StatItem(label: String, value: String) {
+    Column(
+        modifier = Modifier.padding(horizontal = 0.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun EmptyStateScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = if (searchQuery.isNotBlank()) "No workouts found for \"$searchQuery\"" else "No workouts yet",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+fun formatDate(date: Date): String {
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    return dateFormat.format(date)
+}
+
+fun formatDuration(seconds: Int): String {
+    val minutes = seconds / 60
+    if (minutes >= 60) {
+        val hours = minutes / 60
+        val remainingMinutes = minutes % 60
+        return if (remainingMinutes > 0) "$hours h $remainingMinutes m" else "$hours h"
+    }
+    return if (minutes > 0) "${minutes}m" else "${seconds}s"
+}

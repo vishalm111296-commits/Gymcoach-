@@ -11,8 +11,14 @@ import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
+import com.gymcoach.app.presentation.measurement.screens.MeasurementScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
+import com.gymcoach.app.presentation.profile.ProfileScreen
+import com.gymcoach.app.presentation.pr.PRScreen
+import com.gymcoach.app.presentation.settings.SettingsScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
+import com.gymcoach.app.presentation.workout.WorkoutSummaryScreen
+import androidx.navigation.compose.rememberNavController
 
 object Routes {
     const val EXERCISE_LIST = "exercise_list"
@@ -21,97 +27,90 @@ object Routes {
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
     const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
     const val PROGRESS = "progress"
+    const val MEASUREMENTS = "measurements"
     const val CAMERA = "camera"
+    const val SETTINGS = "settings"
+    const val PROFILE = "profile"
+    const val PR = "pr"
+    const val WORKOUT_SUMMARY = "workout_summary/{workoutId}"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
     fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session?workoutId=$workoutId" else "workout_session"
+    fun measurements() = MEASUREMENTS
+    fun workoutSummary(workoutId: Long) = "workout_summary/$workoutId"
+    fun pr() = PR
 }
 
 @Composable
-fun GymCoachNavHost(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = Routes.EXERCISE_LIST
-    ) {
+fun GymCoachNavHost(
+    navController: NavHostController,
+    startDestination: String = Routes.EXERCISE_LIST
+) {
+    NavHost(navController, startDestination) {
         composable(Routes.EXERCISE_LIST) {
-            ExerciseListScreen(
-                onExerciseClick = { exerciseId ->
-                    navController.navigate(Routes.exerciseDetail(exerciseId))
-                },
-                onHistoryClick = { navController.navigate(Routes.WORKOUT_HISTORY) },
-                onProgressClick = { navController.navigate(Routes.PROGRESS) },
-                onCameraClick = { navController.navigate(Routes.CAMERA) }
-            )
+            ExerciseListScreen(onBackClick = { navController.popBackStack() })
         }
-
         composable(
             route = Routes.EXERCISE_DETAIL,
-            arguments = listOf(
-                navArgument("exerciseId") { type = NavType.LongType }
-            )
+            arguments = listOf(navArgument("exerciseId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
-            ExerciseDetailScreen(
-                exerciseId = exerciseId,
-                onBackClick = { navController.popBackStack() }
-            )
+            val exerciseId = backStackEntry.getLong("exerciseId", -1)
+            if (exerciseId != -1) {
+                ExerciseDetailScreen(exerciseId = exerciseId, onBackClick = { navController.popBackStack() })
+            }
         }
-
         composable(Routes.WORKOUT_HISTORY) {
-            WorkoutHistoryScreen(
-                onBackClick = { navController.popBackStack() },
-                onDetailClick = { workoutId ->
-                    navController.navigate(Routes.workoutHistoryDetail(workoutId))
-                },
-                onResumeWorkout = { workoutId ->
-                    navController.navigate(Routes.workoutSession(workoutId))
-                },
-                onNewWorkout = { navController.navigate(Routes.workoutSession()) }
-            )
+            WorkoutHistoryScreen(onBackClick = { navController.popBackStack() })
         }
-
         composable(
             route = Routes.WORKOUT_HISTORY_DETAIL,
-            arguments = listOf(
-                navArgument("workoutId") { type = NavType.LongType }
-            )
+            arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: return@composable
-            WorkoutHistoryDetailScreen(
-                workoutId = workoutId,
-                onBackClick = { navController.popBackStack() },
-                onEditClick = { id ->
-                    navController.navigate(Routes.workoutSession(id))
-                }
-            )
+            val workoutId = backStackEntry.getLong("workoutId", -1)
+            if (workoutId != -1) {
+                WorkoutHistoryDetailScreen(workoutId = workoutId, onBackClick = { navController.popBackStack() })
+            }
         }
-
         composable(
             route = Routes.WORKOUT_SESSION,
-            arguments = listOf(
-                navArgument("workoutId") { 
-                    type = NavType.LongType
-                    defaultValue = -1L
-                }
-            )
+            arguments = listOf(navArgument("workoutId") { type = NavType.LongType, defaultValue = "" })
         ) { backStackEntry ->
-            val arg = backStackEntry.arguments?.getLong("workoutId") ?: -1L
-            val workoutId = if (arg == -1L) null else arg
+            val workoutId = backStackEntry.getString("workoutId")?.toLongOrNull()
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId
             )
         }
-
         composable(Routes.PROGRESS) {
-            ProgressDashboardScreen(
-                onBackClick = { navController.popBackStack() }
-            )
+            ProgressDashboardScreen(onBackClick = { navController.popBackStack() })
         }
-
+        composable(Routes.MEASUREMENTS) {
+            MeasurementScreen(onBackClick = { navController.popBackStack() })
+        }
         composable(Routes.CAMERA) {
-            CameraPreviewScreen()
+            CameraPreviewScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(Routes.PR) {
+            PRScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(
+            route = Routes.WORKOUT_SUMMARY,
+            arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val workoutId = backStackEntry.getLong("workoutId", -1)
+            if (workoutId != -1) {
+                WorkoutSummaryScreen(
+                    workoutId = workoutId,
+                    onFinish = { navController.popBackStack(Routes.EXERCISE_LIST, inclusive = false) }
+                )
+            }
         }
     }
 }

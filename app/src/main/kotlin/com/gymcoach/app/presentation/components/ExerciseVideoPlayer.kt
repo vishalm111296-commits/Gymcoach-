@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +41,7 @@ import androidx.media3.ui.PlayerView
 @Composable
 fun ExerciseVideoPlayer(
     videoUri: Uri,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
@@ -75,7 +76,6 @@ fun ExerciseVideoPlayer(
 
         exoPlayer.addListener(listener)
 
-        // ponytail: polling for seek bar; replace with Compose animation frame callback if perf matters
         while (true) {
             kotlinx.coroutines.delay(200L)
             if (exoPlayer.playbackState == Player.STATE_READY) {
@@ -89,45 +89,69 @@ fun ExerciseVideoPlayer(
         onDispose { exoPlayer.release() }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                player = exoPlayer
-                useController = false
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Video player container
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = false
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+        )
+
+        // Control bar with improved accessibility
+        VideoControlBar(
+            isPlaying = isPlaying,
+            hasEnded = hasEnded,
+            currentPosition = currentPosition,
+            duration = duration,
+            onTogglePlayPause = {
+                when {
+                    hasEnded -> {
+                        exoPlayer.seekTo(0)
+                        exoPlayer.play()
+                        hasEnded = false
+                    }
+                    isPlaying -> {
+                        exoPlayer.pause()
+                        hasEnded = false
+                    }
+                    else -> {
+                        exoPlayer.play()
+                    }
+                }
             }
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f),
-    )
+        )
 
-    // Controls
-    val formattedPosition = formatTime(currentPosition)
-    val formattedDuration = formatTime(duration)
+        VideoProgress(
+            currentPosition = currentPosition,
+            duration = duration
+        )
+    }
+}
 
+@Composable
+private fun VideoControlBar(
+    isPlaying: Boolean,
+    hasEnded: Boolean,
+    onTogglePlayPause: () -> Unit
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Play / Pause / Replay
-        IconButton(onClick = {
-            when {
-                hasEnded -> {
-                    exoPlayer.seekTo(0)
-                    exoPlayer.play()
-                    hasEnded = false
-                }
-                isPlaying -> {
-                    exoPlayer.pause()
-                    hasEnded = false
-                }
-                else -> {
-                    exoPlayer.play()
-                }
-            }
-        }) {
+        // Play / Pause / Replay button with accessible description
+        IconButton(
+            onClick = onTogglePlayPause,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
             Icon(
                 imageVector = when {
                     hasEnded -> Icons.Default.Replay
@@ -135,49 +159,36 @@ fun ExerciseVideoPlayer(
                     else -> Icons.Default.PlayArrow
                 },
                 contentDescription = when {
-                    hasEnded -> "Replay"
-                    isPlaying -> "Pause"
-                    else -> "Play"
+                    hasEnded -> "Replay video"
+                    isPlaying -> "Pause video"
+                    else -> "Play video"
                 },
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(24.dp)
             )
         }
 
         Spacer(Modifier.width(4.dp))
-
-        // Seek bar
-        Slider(
-            value = if (duration > 0) currentPosition.toFloat() / duration else 0f,
-            onValueChange = { fraction ->
-                val newPosition = (fraction * duration).toLong()
-                exoPlayer.seekTo(newPosition)
-                currentPosition = newPosition
-                hasEnded = false
-            },
-            modifier = Modifier.weight(1f),
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        )
     }
+}
 
+@Composable
+private fun VideoProgress(
+    currentPosition: Long,
+    duration: Long
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
     ) {
         androidx.compose.material3.Text(
-            text = "$formattedPosition / $formattedDuration",
+            text = formatVideoTime(currentPosition) + " / " + formatVideoTime(duration),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
-private fun formatTime(millis: Long): String {
+fun formatVideoTime(millis: Long): String {
     val totalSeconds = millis / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60

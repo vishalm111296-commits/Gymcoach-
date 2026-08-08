@@ -14,21 +14,11 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
-        }
-
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
-
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
     }
 
@@ -59,19 +49,9 @@ android {
         kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-        jniLibs {
-            useLegacyPackaging = false
         }
     }
 }

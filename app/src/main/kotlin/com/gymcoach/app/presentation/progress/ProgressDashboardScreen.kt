@@ -11,21 +11,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,16 +32,22 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.repository.AnalyticsRepository
-import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.presentation.history.formatDuration
+import com.gymcoach.app.presentation.components.Accessibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,10 +77,11 @@ data class ProgressUiState(
     val averageWorkoutDurationMinutes: Long = 0,
     val weeklyTrend: Double = 0.0,
     val workoutFrequency: Int = 0,
-    val workoutCounts: WorkoutCounts = WorkoutCounts(0,0,0,0),
+    val workoutCounts: WorkoutCounts = WorkoutCounts(0, 0, 0, 0),
     val longestWorkout: WorkoutWithStats? = null,
     val shortestWorkout: WorkoutWithStats? = null,
-    val error: String? = null
+    val error: String? = null,
+    val searchQuery: String = ""
 )
 
 @HiltViewModel
@@ -157,6 +162,10 @@ class ProgressViewModel @Inject constructor(
     }
 
     fun refresh() = loadData()
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+    }
 }
 
 // --- Screen ---
@@ -171,207 +180,387 @@ fun ProgressDashboardScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Progress") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
+            ProgressTopAppBar(
+                title = "Progress",
+                onBackClick = onBackClick,
+                onRefresh = { viewModel.refresh() },
+                onSearch = { viewModel.onSearchQueryChange(it) }
             )
         }
     ) { padding ->
         when {
             state.isLoading -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                }
+                CircularProgressIndicatorScreen(padding)
             }
             state.error != null -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.error!!,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                ErrorScreen(state.error!!, padding)
             }
             else -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Spacer(Modifier.height(8.dp))
+                ProgressDataContent(
+                    state = state,
+                    modifier = Modifier.padding(padding)
+                )
+            }
+        }
+    }
+}
 
-                    // Stats Overview
-                    StatsOverview(
-                        totalWorkouts = state.workoutCounts.total,
-                        todayWorkouts = state.workoutCounts.today,
-                        weekWorkouts = state.workoutCounts.week,
-                        monthWorkouts = state.workoutCounts.month,
-                        totalExercises = state.totalExercises,
-                        totalSets = state.totalSets,
-                        totalReps = state.totalReps,
-                        totalVolume = state.totalVolume,
-                        totalTrainingTimeMinutes = state.totalTrainingTimeMinutes
+@Composable
+private fun ProgressTopAppBar(
+    title: String,
+    onBackClick: () -> Unit,
+    onRefresh: () -> Unit,
+    onSearch: (String) -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                modifier = Modifier.semantics {
+                    contentDescription = "$title progress dashboard"
+                }
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick, modifier = Modifier.height(48.dp).width(48.dp)) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to exercise list"
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onRefresh, modifier = Modifier.height(48.dp).width(48.dp)) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = "Refresh data"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun CircularProgressIndicatorScreen(padding: androidx.compose.foundation.layout.PaddingValues) {
+    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorScreen(error: String, padding: androidx.compose.foundation.layout.PaddingValues) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Error: $error",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+@Composable
+private fun ProgressDataContent(
+    state: ProgressUiState,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+        SearchField(
+            value = state.searchQuery,
+            onValueChange = { onSearch },
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        StatsOverview(
+            totalWorkouts = state.workoutCounts.total,
+            todayWorkouts = state.workoutCounts.today,
+            weekWorkouts = state.workoutCounts.week,
+            monthWorkouts = state.workoutCounts.month,
+            totalExercises = state.totalExercises,
+            totalSets = state.totalSets,
+            totalReps = state.totalReps,
+            totalVolume = state.totalVolume,
+            totalTrainingTimeMinutes = state.totalTrainingTimeMinutes
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        SectionHeader("Workout Extremes")
+        Spacer(Modifier.height(8.dp))
+        workoutExtremesRow(
+            longestWorkout = state.longestWorkout,
+            shortestWorkout = state.shortestWorkout
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        trainingTimeAndAverages(
+            averageWorkoutDurationMinutes = state.averageWorkoutDurationMinutes,
+            averageWorkoutVolume = state.averageWorkoutVolume
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        workoutFrequencyAndTrend(
+            workoutFrequency = state.workoutFrequency,
+            weeklyTrend = state.weeklyTrend
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        VolumeHistoryChartSection(
+            volumeHistory = state.volumeHistory
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        WeeklySummarySection(
+            weeklySummary = state.weeklySummary
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        MonthlySummarySection(
+            monthlySummary = state.monthlySummary
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        TopExercisesSection(
+            muscleGroupDistribution = state.muscleGroupDistribution
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        PersonalRecordsSection(
+            personalRecords = state.personalRecords
+        )
+
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        placeholder = { Text("Search exercises...") },
+        leadingIcon = {
+            Icon(
+                Icons.Default.FilterList,
+                contentDescription = "Filter exercises",
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Search,
+            keyboardType = KeyboardType.Text
+        )
+    )
+}
+
+@Composable
+private fun workoutExtremesRow(
+    longestWorkout: WorkoutWithStats?,
+    shortestWorkout: WorkoutWithStats?
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        longestWorkout?.let {
+            StatCard(
+                label = "Longest Workout",
+                value = formatDuration(it.duration),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        shortestWorkout?.let {
+            StatCard(
+                label = "Shortest Workout",
+                value = formatDuration(it.duration),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun trainingTimeAndAverages(
+    averageWorkoutDurationMinutes: Long,
+    averageWorkoutVolume: Double
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        StatCard(
+            label = "Avg Duration",
+            value = "${averageWorkoutDurationMinutes}m",
+            modifier = Modifier.weight(1f)
+        )
+        StatCard(
+            label = "Avg Volume",
+            value = "%.1f kg".format(averageWorkoutVolume),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun workoutFrequencyAndTrend(
+    workoutFrequency: Int,
+    weeklyTrend: Double
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        StatCard(
+            label = "Weekly Workouts",
+            value = "${workoutFrequency}",
+            modifier = Modifier.weight(1f)
+        )
+        val trendSymbol = when {
+            weeklyTrend > 0 -> "▲ +%.1f%%".format(weeklyTrend)
+            weeklyTrend < 0 -> "▼ %.1f%%".format(weeklyTrend)
+            else -> "• 0.0%%"
+        }
+        val trendColor = when {
+            weeklyTrend > 0 -> MaterialTheme.colorScheme.primary
+            weeklyTrend < 0 -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        StatCard(
+            label = "Weekly Trend",
+            value = trendSymbol,
+            modifier = Modifier.weight(1f),
+            valueColor = trendColor
+        )
+    }
+}
+
+@Composable
+private fun VolumeHistoryChartSection(volumeHistory: List<Pair<Date, Double>>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        SectionHeader("Volume History")
+        Spacer(Modifier.height(8.dp))
+        if (volumeHistory.isNotEmpty()) {
+            VolumeLineChart(
+                data = volumeHistory,
+                title = "Weekly volume over time",
+                modifier = Modifier.fillMaxWidth().height(200.dp)
+            )
+        } else {
+            EmptyPlaceholder("No volume data yet")
+        }
+    }
+}
+
+@Composable
+private fun WeeklySummarySection(weeklySummary: List<Pair<Date, Double>>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        SectionHeader("Weekly Summary")
+        Spacer(Modifier.height(8.dp))
+        if (weeklySummary.isNotEmpty()) {
+            LazyVerticalGrid(
+                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(weeklySummary, key = { it.first.time }) { (date, volume) ->
+                    SummaryRow(
+                        label = weekLabel(date),
+                        value = "%.0f kg".format(volume)
                     )
-
-                    Spacer(Modifier.height(16.dp))
-                    
-                    SectionHeader("Workout Extremes")
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        state.longestWorkout?.let {
-                            StatCard(label = "Longest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
-                        }
-                        state.shortestWorkout?.let {
-                            StatCard(label = "Shortest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Training Time & Averages
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatCard(
-                            label = "Avg Duration",
-                            value = "${state.averageWorkoutDurationMinutes}m",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            label = "Avg Volume",
-                            value = "%.1f kg".format(state.averageWorkoutVolume),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Workout Frequency & Weekly Trend
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatCard(
-                            label = "Weekly Workouts",
-                            value = "${state.workoutFrequency}",
-                            modifier = Modifier.weight(1f)
-                        )
-                        val trendSymbol = when {
-                            state.weeklyTrend > 0 -> "▲ +%.1f%%".format(state.weeklyTrend)
-                            state.weeklyTrend < 0 -> "▼ %.1f%%".format(state.weeklyTrend)
-                            else -> "• 0.0%%"
-                        }
-                        StatCard(
-                            label = "Weekly Trend",
-                            value = trendSymbol,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Volume History Chart
-                    SectionHeader("Volume History")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.volumeHistory.isNotEmpty()) {
-                        VolumeLineChart(
-                            data = state.volumeHistory,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        )
-                    } else {
-                        EmptyPlaceholder("No volume data yet")
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Weekly Summary
-                    SectionHeader("Weekly Summary")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.weeklySummary.isNotEmpty()) {
-                        state.weeklySummary.forEach { (date, volume) ->
-                            SummaryRow(
-                                label = weekLabel(date),
-                                value = "%.0f kg".format(volume)
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No weekly data yet")
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Monthly Summary
-                    SectionHeader("Monthly Summary")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.monthlySummary.isNotEmpty()) {
-                        state.monthlySummary.forEach { (date, volume) ->
-                            SummaryRow(
-                                label = monthLabel(date),
-                                value = "%.0f kg".format(volume)
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No monthly data yet")
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Muscle Group Distribution
-                    SectionHeader("Top Exercises")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.muscleGroupDistribution.isNotEmpty()) {
-                        state.muscleGroupDistribution.forEach { stat ->
-                            SummaryRow(
-                                label = stat.name,
-                                value = "${stat.totalReps} reps"
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No exercise data yet")
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Personal Records
-                    SectionHeader("Personal Records")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.personalRecords.isNotEmpty()) {
-                        state.personalRecords.forEach { pr ->
-                            SummaryRow(
-                                label = pr.exerciseName,
-                                value = "%.1f kg".format(pr.maxWeight)
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No PRs recorded yet")
-                    }
-
-                    Spacer(Modifier.height(16.dp))
                 }
             }
+        } else {
+            EmptyPlaceholder("No weekly data yet")
+        }
+    }
+}
+
+@Composable
+private fun MonthlySummarySection(monthlySummary: List<Pair<Date, Double>>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        SectionHeader("Monthly Summary")
+        Spacer(Modifier.height(8.dp))
+        if (monthlySummary.isNotEmpty()) {
+            LazyVerticalGrid(
+                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(monthlySummary, key = { it.first.time }) { (date, volume) ->
+                    SummaryRow(
+                        label = monthLabel(date),
+                        value = "%.0f kg".format(volume)
+                    )
+                }
+            }
+        } else {
+            EmptyPlaceholder("No monthly data yet")
+        }
+    }
+}
+
+@Composable
+private fun TopExercisesSection(muscleGroupDistribution: List<MuscleGroupStats>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        SectionHeader("Top Exercises")
+        Spacer(Modifier.height(8.dp))
+        if (muscleGroupDistribution.isNotEmpty()) {
+            LazyVerticalGrid(
+                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(muscleGroupDistribution, key = { it.name.lowercase() }) { stat ->
+                    SummaryRow(
+                        label = stat.name,
+                        value = "${stat.totalReps} reps"
+                    )
+                }
+            }
+        } else {
+            EmptyPlaceholder("No exercise data yet")
+        }
+    }
+}
+
+@Composable
+private fun PersonalRecordsSection(personalRecords: List<PersonalRecord>) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        SectionHeader("Personal Records")
+        Spacer(Modifier.height(8.dp))
+        if (personalRecords.isNotEmpty()) {
+            LazyVerticalGrid(
+                columns = androidx.compose.foundation.grid.GridCells.Fixed(2),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(personalRecords, key = { it.exerciseName.lowercase() }) { pr ->
+                    SummaryRow(
+                        label = pr.exerciseName,
+                        value = "%.1f kg".format(pr.maxWeight)
+                    )
+                }
+            }
+        } else {
+            EmptyPlaceholder("No PRs recorded yet")
         }
     }
 }
@@ -400,9 +589,7 @@ private fun EmptyPlaceholder(message: String) {
 @Composable
 private fun SummaryRow(label: String, value: String) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -417,7 +604,9 @@ private fun SummaryRow(label: String, value: String) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = value,
@@ -431,57 +620,73 @@ private fun SummaryRow(label: String, value: String) {
 
 @Composable
 private fun VolumeLineChart(
-    data: List<Pair<Date, Double>>,
+    List<Pair<Date, Double>>,
+    title: String,
     modifier: Modifier = Modifier
 ) {
     val lineColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.outlineVariant
 
-    Canvas(modifier = modifier) {
-        if (data.size < 2) return@Canvas
-
-        val paddingLeft = 8f
-        val paddingBottom = 8f
-        val chartWidth = size.width - paddingLeft
-        val chartHeight = size.height - paddingBottom
-
-        val values = data.map { it.second }
-        val minVal = values.min()
-        val maxVal = values.max()
-        val range = (maxVal - minVal).coerceAtLeast(1.0)
-
-        // Grid lines (3 horizontal)
-        for (i in 0..3) {
-            val y = chartHeight - (chartHeight * i / 3f)
-            drawLine(
-                color = gridColor,
-                start = Offset(paddingLeft, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1f
-            )
-        }
-
-        // Line path
-        val path = Path()
-        val stepX = chartWidth / (data.size - 1).toFloat()
-
-        data.forEachIndexed { index, (_, volume) ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-
-        drawPath(
-            path = path,
-            color = lineColor,
-            style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(8.dp)
         )
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .semantics {
+                    contentDescription = "Volume history chart showing weekly volume over time"
+                }
+        ) {
+            if (data.size < 2) return@Canvas
 
-        // Data point dots
-        data.forEachIndexed { index, (_, volume) ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-            drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+            val paddingLeft = 8f
+            val paddingBottom = 8f
+            val chartWidth = size.width - paddingLeft
+            val chartHeight = size.height - paddingBottom
+
+            val values = data.map { it.second }
+            val minVal = values.min()
+            val maxVal = values.max()
+            val range = (maxVal - minVal).coerceAtLeast(1.0)
+
+            // Grid lines (3 horizontal)
+            for (i in 0..3) {
+                val y = chartHeight - (chartHeight * i / 3f)
+                drawLine(
+                    color = gridColor,
+                    start = Offset(paddingLeft, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1f
+                )
+            }
+
+            // Line path
+            val path = Path()
+            val stepX = chartWidth / (data.size - 1).toFloat()
+
+            data.forEachIndexed { index, (_, volume) ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+
+            drawPath(
+                path = path,
+                color = lineColor,
+                style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+
+            // Data point dots
+            data.forEachIndexed { index, (_, volume) ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
+                drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+            }
         }
     }
 }
@@ -556,7 +761,12 @@ private fun StatsOverview(
 }
 
 @Composable
-private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
+private fun StatCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = MaterialTheme.colorScheme.primary
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
@@ -576,7 +786,7 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = valueColor
             )
         }
     }

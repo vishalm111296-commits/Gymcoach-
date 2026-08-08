@@ -9,8 +9,14 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WorkoutDao {
     // Workouts
-    @Query("SELECT * FROM workouts ORDER BY date DESC")
+    @Query("SELECT * FROM workouts WHERE isTemplate = 0 ORDER BY date DESC")
     fun getAllWorkouts(): Flow<List<WorkoutEntity>>
+
+    @Query("SELECT * FROM workouts WHERE isTemplate = 1 ORDER BY date DESC")
+    fun getAllWorkoutTemplates(): Flow<List<WorkoutEntity>>
+
+    @Query("SELECT * FROM workouts WHERE isTemplate = 1")
+    suspend fun getAllWorkoutTemplatesNow(): List<WorkoutEntity>
 
     @Query("SELECT * FROM workouts WHERE id = :id")
     fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
@@ -61,13 +67,27 @@ interface WorkoutDao {
 
     // Analytics queries
     @Query("""
-        SELECT MAX(ws.weight) 
+        SELECT ws.*
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
         WHERE we.exerciseId = :exerciseId AND w.completed = 1
+        ORDER BY w.date DESC, ws.setNumber ASC
+        LIMIT 1
     """)
-    suspend fun getPersonalRecordMax(exerciseId: Long): Double?
+    suspend fun getLatestSetForExercise(exerciseId: Long): WorkoutSetEntity?
+
+    @Query("""
+        SELECT *
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE we.exerciseId = :exerciseId AND w.completed = 1
+        ORDER BY ws.weight * ws.reps DESC
+        LIMIT 1
+    """)
+    suspend fun getBestVolumeSetForExercise(exerciseId: Long): WorkoutSetEntity?
+
 
     @Query("""
         SELECT e.name, MAX(ws.weight) as maxWeight

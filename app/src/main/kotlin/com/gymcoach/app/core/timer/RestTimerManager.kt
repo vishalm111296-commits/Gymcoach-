@@ -60,8 +60,11 @@ class RestTimerManager @Inject constructor() {
         }
     }
 
-    fun skip() {
-        stop()
+    fun addTime(seconds: Int) {
+        _state.value = _state.value.copy(
+            timeRemaining = (_state.value.timeRemaining + seconds).coerceAtLeast(0),
+            totalDuration = (_state.value.totalDuration + seconds).coerceAtLeast(0)
+        )
     }
 
     fun stop() {

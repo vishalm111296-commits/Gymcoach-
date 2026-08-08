@@ -1,11 +1,15 @@
 package com.gymcoach.app.core.di
 
-import com.gymcoach.app.data.repository.ExerciseRepositoryImpl
-import com.gymcoach.app.data.repository.WorkoutRepositoryImpl
 import com.gymcoach.app.data.repository.AnalyticsRepositoryImpl
-import com.gymcoach.app.domain.repository.ExerciseRepository
-import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.data.repository.ExerciseRepositoryImpl
+import com.gymcoach.app.data.repository.MeasurementRepositoryImpl
+import com.gymcoach.app.data.repository.UserProfileRepositoryImpl
+import com.gymcoach.app.data.repository.WorkoutRepositoryImpl
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.domain.repository.MeasurementRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
+import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,4 +36,16 @@ abstract class RepositoryModule {
     abstract fun bindAnalyticsRepository(
         impl: AnalyticsRepositoryImpl
     ): AnalyticsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserProfileRepository(
+        impl: UserProfileRepositoryImpl
+    ): UserProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMeasurementRepository(
+        impl: MeasurementRepositoryImpl
+    ): MeasurementRepository
 }

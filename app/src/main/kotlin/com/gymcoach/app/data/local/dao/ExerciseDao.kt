@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ExerciseDao {
+    @Query("SELECT COUNT(*) FROM exercises")
+    suspend fun getExerciseCount(): Int
+
     @Query("SELECT * FROM exercises ORDER BY LOWER(name) ASC")
     fun getAll(): Flow<List<ExerciseEntity>>
 
@@ -21,8 +24,11 @@ interface ExerciseDao {
     """)
     fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<ExerciseEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(exercise: ExerciseEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllExercises(exercises: List<ExerciseEntity>)
 
     @Update
     suspend fun update(exercise: ExerciseEntity)

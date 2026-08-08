@@ -36,6 +36,16 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getAllWorkoutTemplates(): Flow<List<Workout>> {
+        return workoutDao.getAllWorkoutTemplates().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun getAllWorkoutTemplatesNow(): List<Workout> {
+        return workoutDao.getAllWorkoutTemplatesNow().map { it.toDomain() }
+    }
+
     override fun getWorkoutWithDetails(workoutId: Long): Flow<WorkoutWithDetails?> {
         return workoutDao.getWorkoutById(workoutId).flatMapLatest { workoutEntity ->
             if (workoutEntity == null) {
@@ -70,6 +80,17 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getAllWorkoutsWithDetails(): Flow<List<WorkoutWithDetails>> {
+        return workoutDao.getAllWorkouts().flatMapLatest { workouts ->
+            if (workouts.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                val flows = workouts.map { getWorkoutWithDetails(it.id).map { it!! } }
+                combine(flows) { it.toList() }
+            }
+        }
+    }
+
     override suspend fun getLatestIncompleteWorkout(): Workout? {
         return workoutDao.getLatestIncompleteWorkout()?.toDomain()
     }
@@ -83,7 +104,6 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteWorkout(workoutId: Long) {
-        // Get workout entity to delete
         val entity = workoutDao.getWorkoutById(workoutId).first()
         entity?.let { workoutDao.deleteWorkout(it) }
     }
@@ -152,10 +172,23 @@ class WorkoutRepositoryImpl @Inject constructor(
         return workoutDao.searchWorkouts(query).map { it.toDomain() }
     }
 
+    override suspend fun getLatestSetForExercise(exerciseId: Long): WorkoutSet? {
+        return workoutDao.getLatestSetForExercise(exerciseId)?.toDomain()
+    }
+
+    override suspend fun getBestVolumeSetForExercise(exerciseId: Long): WorkoutSet? {
+        return workoutDao.getBestVolumeSetForExercise(exerciseId)?.toDomain()
+    }
+
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
     }
+
+    override suspend fun getWorkoutWithDetailsNow(workoutId: Long): WorkoutWithDetails? {
+        return getWorkoutWithDetails(workoutId).firstOrNull()
+    }
 }
+
 
 // Entity → Domain mappers
 private fun WorkoutEntity.toDomain() = Workout(
@@ -165,7 +198,8 @@ private fun WorkoutEntity.toDomain() = Workout(
     endTime = Instant.ofEpochMilli(endTime),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    isTemplate = isTemplate
 )
 
 private fun Workout.toEntity() = WorkoutEntity(
@@ -175,7 +209,8 @@ private fun Workout.toEntity() = WorkoutEntity(
     endTime = endTime.toEpochMilli(),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    isTemplate = isTemplate
 )
 
 private fun WorkoutExerciseEntity.toDomain() = WorkoutExercise(

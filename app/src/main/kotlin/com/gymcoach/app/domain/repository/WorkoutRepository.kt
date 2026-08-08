@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 interface WorkoutRepository {
     fun getAllWorkouts(): Flow<List<Workout>>
+    fun getAllWorkoutTemplates(): Flow<List<Workout>>
+    suspend fun getAllWorkoutTemplatesNow(): List<Workout>
     fun getWorkoutWithDetails(workoutId: Long): Flow<WorkoutWithDetails?>
+    fun getAllWorkoutsWithDetails(): Flow<List<WorkoutWithDetails>>
     suspend fun getLatestIncompleteWorkout(): Workout?
     suspend fun createWorkout(workout: Workout): Long
     suspend fun updateWorkout(workout: Workout)
@@ -28,5 +31,8 @@ interface WorkoutRepository {
     fun getWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
     fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
+    suspend fun getLatestSetForExercise(exerciseId: Long): WorkoutSet?
+    suspend fun getBestVolumeSetForExercise(exerciseId: Long): WorkoutSet?
     suspend fun getIncompleteWorkout(): Workout?
+    suspend fun getWorkoutWithDetailsNow(workoutId: Long): WorkoutWithDetails?
 }

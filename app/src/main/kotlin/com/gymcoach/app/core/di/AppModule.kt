@@ -1,7 +1,11 @@
 package com.gymcoach.app.core.di
 
+import android.content.Context
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
+import com.gymcoach.app.data.local.dao.MeasurementDao
+import com.gymcoach.app.data.local.dao.UserProfileDao
+import com.gymcoach.app.data.local.dao.GoalDao
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import dagger.Module
 import dagger.Provides
@@ -15,8 +19,8 @@ import javax.inject.Singleton
 object AppModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext ctx: android.content.Context): GymCoachDatabase =
-        GymCoachDatabase.create(ctx)
+    fun provideDatabase(@ApplicationContext ctx: Context): GymCoachDatabase =
+        GymCoachDatabase.getDatabase(ctx)
 
     @Provides
     @Singleton
@@ -26,5 +30,15 @@ object AppModule {
     @Singleton
     fun provideWorkoutDao(database: GymCoachDatabase): WorkoutDao = database.workoutDao()
 
-    // ExerciseRepository and WorkoutRepository are bound via @Binds in RepositoryModule.
+    @Provides
+    @Singleton
+    fun provideMeasurementDao(database: GymCoachDatabase): MeasurementDao = database.measurementDao()
+
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(database: GymCoachDatabase): UserProfileDao = database.userProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideGoalDao(database: GymCoachDatabase): GoalDao = database.goalDao()
 }

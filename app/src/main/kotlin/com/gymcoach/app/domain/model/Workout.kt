@@ -9,7 +9,8 @@ data class Workout(
     val endTime: Instant,
     val duration: Long,
     val notes: String,
-    val completed: Boolean
+    val completed: Boolean,
+    val isTemplate: Boolean = false
 )
 
 data class WorkoutExercise(

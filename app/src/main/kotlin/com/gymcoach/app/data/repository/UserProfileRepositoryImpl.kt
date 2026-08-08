@@ -13,7 +13,7 @@ class UserProfileRepositoryImpl @Inject constructor(
 ) : UserProfileRepository {
 
     override fun getUserProfile(): Flow<UserProfile?> {
-        return userProfileDao.getUserProfile().map { it?.toDomain() }
+        return userProfileDao.getUserProfile(1L).map { it?.toDomain() }
     }
 
     override suspend fun saveUserProfile(profile: UserProfile) {

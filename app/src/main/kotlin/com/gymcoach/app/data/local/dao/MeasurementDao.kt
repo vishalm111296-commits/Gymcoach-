@@ -31,7 +31,7 @@ interface MeasurementDao {
     fun getMeasurementsSince(startDate: Long): Flow<List<MeasurementRecordEntity>>
 
     @Query("SELECT * FROM measurement_records WHERE measurementType IN (:types) ORDER BY date DESC")
-    fun getMeasurementsByTypes(userId: String, types: List<String>): Flow<List<MeasurementRecordEntity>>
+    fun getMeasurementsByTypes(types: List<String>): Flow<List<MeasurementRecordEntity>>
 
     @Query("DELETE FROM measurement_records WHERE date < :cutoffDate")
     suspend fun deleteOldMeasurements(cutoffDate: Long)

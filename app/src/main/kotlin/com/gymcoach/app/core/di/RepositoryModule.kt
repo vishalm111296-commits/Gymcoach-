@@ -3,11 +3,13 @@ package com.gymcoach.app.core.di
 import com.gymcoach.app.data.repository.AnalyticsRepositoryImpl
 import com.gymcoach.app.data.repository.ExerciseRepositoryImpl
 import com.gymcoach.app.data.repository.MeasurementRepositoryImpl
+import com.gymcoach.app.data.repository.ProfileRepositoryImpl
 import com.gymcoach.app.data.repository.UserProfileRepositoryImpl
 import com.gymcoach.app.data.repository.WorkoutRepositoryImpl
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.MeasurementRepository
+import com.gymcoach.app.domain.repository.ProfileRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.Binds
@@ -48,4 +50,10 @@ abstract class RepositoryModule {
     abstract fun bindMeasurementRepository(
         impl: MeasurementRepositoryImpl
     ): MeasurementRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl
+    ): ProfileRepository
 }

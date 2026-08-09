@@ -35,8 +35,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,7 +79,7 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = WorkoutHistoryDetailUiState(isLoading = true)
             try {
-                val workout = workoutRepository.getWorkoutWithDetails(workoutId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null).value
+                val workout = workoutRepository.getWorkoutWithDetailsNow(workoutId)
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
                     workout = workout,

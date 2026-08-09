@@ -30,6 +30,10 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private var defaultRestSeconds = 90
 
+    // ponytail: injectable clock so the timer is unit-testable; defaults to the real clock.
+    // Internal (not constructor) so Hilt never has to resolve it.
+    internal var nowProvider: () -> Instant = Instant::now
+
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -46,6 +50,9 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private val _completed = MutableStateFlow(false)
     val completed: StateFlow<Boolean> = _completed.asStateFlow()
+
+    private val _completedWorkoutId = MutableStateFlow<Long?>(null)
+    val completedWorkoutId: StateFlow<Long?> = _completedWorkoutId.asStateFlow()
 
     val restTimerState: StateFlow<RestTimerState> = restTimer.state
 
@@ -77,19 +84,11 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (workoutId != null) {
-                    workoutRepository.getWorkoutWithDetails(workoutId).collect {
-                        _currentWorkout.value = it
-                        it?.let { loadPerformanceData(it.exercises) }
-                        startWorkoutTimer()
-                    }
+                    workoutRepository.getWorkoutWithDetails(workoutId).collect { it?.let(::onWorkoutLoaded) }
                 } else {
                     val existing = workoutRepository.getLatestIncompleteWorkout()
                     if (existing != null) {
-                        workoutRepository.getWorkoutWithDetails(existing.id).collect {
-                            _currentWorkout.value = it
-                            it?.let { loadPerformanceData(it.exercises) }
-                            startWorkoutTimer()
-                        }
+                        workoutRepository.getWorkoutWithDetails(existing.id).collect { it?.let(::onWorkoutLoaded) }
                     } else {
                         startNewWorkoutInternal()
                     }
@@ -100,13 +99,19 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    private fun onWorkoutLoaded(loaded: WorkoutWithDetails) {
+        _currentWorkout.value = loaded
+        loadPerformanceData(loaded.exercises)
+        if (!loaded.workout.completed) startWorkoutTimer()
+    }
+
     private fun startWorkoutTimer() {
         workoutTimerJob?.cancel()
         workoutTimerJob = viewModelScope.launch {
             while (true) {
                 val start = _currentWorkout.value?.workout?.startTime
                 if (start != null) {
-                    _elapsedSeconds.value = Instant.now().epochSecond - start.epochSecond
+                    _elapsedSeconds.value = nowProvider().epochSecond - start.epochSecond
                 }
                 kotlinx.coroutines.delay(1000L)
             }
@@ -124,7 +129,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     private suspend fun startNewWorkoutInternal() {
-        val now = Instant.now()
+        val now = nowProvider()
         val workout = Workout(
             date = now,
             startTime = now,
@@ -134,10 +139,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             completed = false
         )
         val id = workoutRepository.createWorkout(workout)
-        workoutRepository.getWorkoutWithDetails(id).collect {
-            _currentWorkout.value = it
-            it?.let { loadPerformanceData(it.exercises) }
-        }
+        workoutRepository.getWorkoutWithDetails(id).collect { it?.let(::onWorkoutLoaded) }
     }
 
     fun updateNotes(notes: String) {
@@ -285,11 +287,13 @@ class WorkoutLoggingViewModel @Inject constructor(
         val workout = _currentWorkout.value?.workout ?: return
         workoutTimerJob?.cancel()
         restTimer.stop()
-        val now = Instant.now()
+        val now = nowProvider()
         val duration = now.epochSecond - workout.startTime.epochSecond
         val updated = workout.copy(endTime = now, duration = duration, completed = true)
+        _elapsedSeconds.value = duration
         viewModelScope.launch {
             workoutRepository.updateWorkout(updated)
+            _completedWorkoutId.value = updated.id
             _completed.value = true
         }
     }

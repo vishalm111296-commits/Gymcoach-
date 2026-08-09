@@ -72,6 +72,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
     workoutId: Long? = null,
+    onWorkoutComplete: (Long) -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
     val currentWorkout by viewModel.currentWorkout.collectAsState()
@@ -105,6 +106,10 @@ fun WorkoutSessionScreen(
             text = { Text(error!!) },
             confirmButton = { Button(onClick = { viewModel.dismissError() }) { Text("OK") } }
         )
+    }
+
+    LaunchedEffect(viewModel.completedWorkoutId.value) {
+        viewModel.completedWorkoutId.value?.let(onWorkoutComplete)
     }
 
     if (completed) {

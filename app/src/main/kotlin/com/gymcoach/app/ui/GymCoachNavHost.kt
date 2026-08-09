@@ -87,12 +87,14 @@ fun GymCoachNavHost(
             route = Routes.WORKOUT_SESSION,
             arguments = listOf(
                 navArgument("workoutId") {
+                    // navigation-compose primitive types (Long) cannot be nullable;
+                    // -1L is the "no workout" sentinel. Workout ids are Room-autoincrement (positive).
                     type = NavType.LongType
-                    nullable = true
+                    defaultValue = -1L
                 }
             )
         ) { backStackEntry ->
-            val workoutId = backStackEntry.arguments?.getLong("workoutId")
+            val workoutId = backStackEntry.arguments?.getLong("workoutId")?.takeIf { it != -1L }
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId,

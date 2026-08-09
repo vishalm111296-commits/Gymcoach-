@@ -108,8 +108,10 @@ fun WorkoutSessionScreen(
         )
     }
 
-    LaunchedEffect(viewModel.completedWorkoutId.value) {
-        viewModel.completedWorkoutId.value?.let(onWorkoutComplete)
+    val completedWorkoutId by viewModel.completedWorkoutId.collectAsState()
+
+    LaunchedEffect(completedWorkoutId) {
+        completedWorkoutId?.let(onWorkoutComplete)
     }
 
     if (completed) {

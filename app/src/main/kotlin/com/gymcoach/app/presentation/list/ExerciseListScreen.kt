@@ -70,6 +70,15 @@ fun ExerciseListScreen(
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
 
+    val clearFilters = {
+        textFieldValue = ""
+        viewModel.onSearchQueryChange("")
+        viewModel.onDifficultySelected("All")
+        viewModel.onEquipmentSelected("All")
+        viewModel.onCategorySelected("All")
+        showFilterSheet = false
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         SearchField(
             value = textFieldValue,
@@ -95,34 +104,33 @@ fun ExerciseListScreen(
                     tabIndex = it
                     viewModel.onCategorySelected(viewModel.categories[it])
                 },
-                onClearFilters = {
-                    viewModel.onDifficultySelected("All")
-                    viewModel.onEquipmentSelected("All")
-                    viewModel.onCategorySelected("All")
-                },
+                onClearFilters = clearFilters,
+                onDismiss = { showFilterSheet = false },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             )
         }
-    }
 
-    mainContent(
-        exercises = exercises,
-        categories = viewModel.categories,
-        selectedCategory = tabIndex,
-        onCategorySelected = {
-            tabIndex = it
-            viewModel.onCategorySelected(viewModel.categories[it])
-        },
-        onExerciseClick = onExerciseClick,
-        topBarActions = {
-            NavigationActions(
-                onHistoryClick = onHistoryClick,
-                onProgressClick = onProgressClick,
-                onCameraClick = onCameraClick,
-                navigateToSettings = { navController.navigate(Routes.SETTINGS) }
-            )
-        }
-    )
+        mainContent(
+            exercises = exercises,
+            categories = viewModel.categories,
+            selectedCategory = tabIndex,
+            onCategorySelected = {
+                tabIndex = it
+                viewModel.onCategorySelected(viewModel.categories[it])
+            },
+            onExerciseClick = onExerciseClick,
+            topBarActions = {
+                NavigationActions(
+                    onHistoryClick = onHistoryClick,
+                    onProgressClick = onProgressClick,
+                    onCameraClick = onCameraClick,
+                    navigateToSettings = { navController.navigate(Routes.SETTINGS) }
+                )
+            },
+            onClearFilters = clearFilters,
+            modifier = Modifier.weight(1f)
+        )
+    }
 }
 
 @Composable
@@ -170,10 +178,11 @@ private fun FilterBottomSheet(
     onEquipmentSelected: (String) -> Unit,
     onCategorySelected: (Int) -> Unit,
     onClearFilters: () -> Unit,
+    onDismiss: () -> Unit,
     sheetState: androidx.compose.material3.SheetState
 ) {
     androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = { /* automatically dismissed by sheetState */ },
+        onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
         Column(
@@ -335,9 +344,11 @@ private fun mainContent(
     selectedCategory: Int,
     onCategorySelected: (Int) -> Unit,
     onExerciseClick: (Long) -> Unit,
-    topBarActions: @Composable () -> Unit
+    topBarActions: @Composable () -> Unit,
+    onClearFilters: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -345,15 +356,35 @@ private fun mainContent(
             item {
                 topBarActions()
             }
-            items(exercises, key = { it.id }) { exercise ->
-                ExerciseItemCard(
-                    name = exercise.name,
-                    muscleGroup = exercise.muscleGroup,
-                    difficulty = exercise.difficulty,
-                    equipment = exercise.equipment,
-                    onClick = { onExerciseClick(exercise.id) },
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+            if (exercises.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "No exercises found",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = onClearFilters) {
+                            Text("Clear filters")
+                        }
+                    }
+                }
+            } else {
+                items(exercises, key = { it.id }) { exercise ->
+                    ExerciseItemCard(
+                        name = exercise.name,
+                        muscleGroup = exercise.muscleGroup,
+                        difficulty = exercise.difficulty,
+                        equipment = exercise.equipment,
+                        onClick = { onExerciseClick(exercise.id) },
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
         }
     }

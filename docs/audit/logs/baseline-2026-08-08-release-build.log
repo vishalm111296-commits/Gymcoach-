@@ -1,0 +1,59 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.4/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.aapt2FromMavenOverride=/opt/android-sdk/qemu/bin/aapt2' is experimental.
+
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols FAILED
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:processReleaseResources
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:stripReleaseDebugSymbols'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsDelegate
+   > There were multiple failures while executing work items
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+      > A failure occurred while executing com.android.build.gradle.internal.tasks.StripDebugSymbolsRunnable
+         > A problem occurred starting process 'command '/opt/android-sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip''
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 17s
+20 actionable tasks: 3 executed, 17 up-to-date

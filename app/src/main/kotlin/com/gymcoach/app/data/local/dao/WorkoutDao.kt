@@ -71,7 +71,7 @@ interface WorkoutDao {
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE we.exerciseId = :exerciseId AND w.completed = 1
+        WHERE we.exerciseId = :exerciseId AND w.completed = 1 AND ws.completed = 1 AND ws.setType = 0
         ORDER BY w.date DESC, ws.setNumber ASC
         LIMIT 1
     """)
@@ -82,7 +82,7 @@ interface WorkoutDao {
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE we.exerciseId = :exerciseId AND w.completed = 1
+        WHERE we.exerciseId = :exerciseId AND w.completed = 1 AND ws.completed = 1 AND ws.setType = 0
         ORDER BY ws.weight * ws.reps DESC
         LIMIT 1
     """)
@@ -93,8 +93,9 @@ interface WorkoutDao {
         SELECT e.name, MAX(ws.weight) as maxWeight
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
         INNER JOIN exercises e ON e.id = we.exerciseId
-        WHERE 1=1
+        WHERE w.completed = 1 AND ws.completed = 1 AND ws.setType = 0
         GROUP BY we.exerciseId
         ORDER BY maxWeight DESC
     """)
@@ -168,10 +169,11 @@ interface WorkoutDao {
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id
         WHERE w.completed = 1
-        GROUP BY strftime('%Y-%m', w.date)
-        ORDER BY w.date ASC
+        GROUP BY strftime('%Y-%m', w.date/1000, 'unixepoch')
+        ORDER BY strftime('%Y-%m', w.date/1000, 'unixepoch') ASC
     """)
     // Using SQLite strftime for reliable monthly grouping on Android's Room/SQLite backend.
+    // w.date is millis; /1000 converts to seconds for the 'unixepoch' modifier (D1).
     suspend fun getMonthlyVolumes(): List<DateVolume>
 
     @Query("""

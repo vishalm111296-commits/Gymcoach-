@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.pr
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,6 +71,8 @@ class PRViewModel @Inject constructor(
 
         workouts.sortedByDescending { it.workout.date }.forEach { workoutWithDetails ->
             val workout = workoutWithDetails.workout
+            // D2: incomplete workouts must not count toward PRs.
+            if (!workout.completed) return@forEach
             val exercises = workoutWithDetails.exercises
 
             // Overall workout stats
@@ -86,7 +89,7 @@ class PRViewModel @Inject constructor(
                 mostExercises = PersonalRecord(PRType.MOST_EXERCISES, numExercises, workout.date, workout.id)
                 allPrs.add(mostExercises)
             }
-            val numSets = exercises.sumOf { it.sets.size }.toDouble()
+            val numSets = exercises.sumOf { ex -> ex.sets.count { it.completed && it.setType == SetType.NORMAL } }.toDouble()
             if (numSets > mostSets.value) {
                 mostSets = PersonalRecord(PRType.MOST_SETS, numSets, workout.date, workout.id)
                 allPrs.add(mostSets)
@@ -99,7 +102,9 @@ class PRViewModel @Inject constructor(
                 val exerciseId = workoutExerciseWithSets.exercise.id
                 val exerciseName = workoutExerciseWithSets.exercise.name
 
-                workoutExerciseWithSets.sets.forEach { workoutSet ->
+                workoutExerciseWithSets.sets.forEach setLoop@ { workoutSet ->
+                    // D2: only completed NORMAL sets count toward PRs.
+                    if (!workoutSet.completed || workoutSet.setType != SetType.NORMAL) return@setLoop
                     val totalWeight = workoutSet.weight * workoutSet.reps
                     if (totalWeight > highestVolume.value) {
                         highestVolume = PersonalRecord(PRType.HIGHEST_VOLUME, totalWeight, workout.date, workout.id, exerciseName)

@@ -37,6 +37,13 @@ class AnalyticsRepositoryImpl @Inject constructor(
                 Calendar.SUNDAY -> 6
                 else -> dayOfWeek - Calendar.MONDAY
             }
+            // D5: zero the time first so the day subtraction starts from local midnight
+            // (mirrors startOfWeek()), then back up to Monday so all days of one week
+            // share a single Monday-midnight bucket.
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
             calendar.add(Calendar.DAY_OF_MONTH, -daysToMonday)
             val weekStart = Date(calendar.timeInMillis)
 
@@ -118,13 +125,10 @@ class AnalyticsRepositoryImpl @Inject constructor(
         exerciseCount = exerciseCount
     )
 
-    override suspend fun getWorkoutCounts(): WorkoutCounts {
-        val now = java.util.Calendar.getInstance()
-        val today = now.timeInMillis
-        now.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
-        val week = now.timeInMillis
-        now.set(java.util.Calendar.DAY_OF_MONTH, 1)
-        val month = now.timeInMillis
+    override suspend fun getWorkoutCounts(now: Calendar): WorkoutCounts {
+        val today = now.atLocalMidnight().timeInMillis
+        val week = now.startOfWeek()
+        val month = now.startOfMonth()
         return WorkoutCounts(
             total = workoutDao.getTotalWorkoutsCount(),
             today = workoutDao.getWorkoutsTodayCount(today),
@@ -132,6 +136,27 @@ class AnalyticsRepositoryImpl @Inject constructor(
             month = workoutDao.getWorkoutsThisMonthCount(month)
         )
     }
+
+    // D4: week starts on Monday at local midnight; never set(DAY_OF_WEEK, MONDAY)
+    // which rolls Sunday FORWARD to the next Monday.
+    private fun Calendar.startOfWeek(): Long {
+        val c = atLocalMidnight()
+        val daysToMonday = (c.get(Calendar.DAY_OF_WEEK) - Calendar.MONDAY + 7) % 7
+        c.add(Calendar.DAY_OF_MONTH, -daysToMonday)
+        return c.timeInMillis
+    }
+
+    private fun Calendar.startOfMonth(): Long {
+        return atLocalMidnight().apply { set(Calendar.DAY_OF_MONTH, 1) }.timeInMillis
+    }
+
+    private fun Calendar.atLocalMidnight(): Calendar =
+        (clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
 
     override suspend fun getTotalExercises(): Int {
         return workoutDao.getTotalExercisesCount()

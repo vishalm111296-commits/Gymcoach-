@@ -1,6 +1,7 @@
 package com.gymcoach.app.domain.repository
 
 import com.gymcoach.app.domain.model.WorkoutWithStats
+import java.util.Calendar
 import java.util.Date
 
 interface AnalyticsRepository {
@@ -19,7 +20,7 @@ interface AnalyticsRepository {
     suspend fun getAverageWorkoutDurationMinutes(): Long
     suspend fun getLongestWorkout(): WorkoutWithStats?
     suspend fun getShortestWorkout(): WorkoutWithStats?
-    suspend fun getWorkoutCounts(): WorkoutCounts
+    suspend fun getWorkoutCounts(now: Calendar = Calendar.getInstance()): WorkoutCounts
     suspend fun getTotalExercises(): Int
 }
 

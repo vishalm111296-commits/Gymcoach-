@@ -98,6 +98,9 @@ class ProgressViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProgressUiState())
     val uiState: StateFlow<ProgressUiState> = _uiState.asStateFlow()
 
+    private var allPersonalRecords: List<PersonalRecord> = emptyList()
+    private var allMuscleGroupDistribution: List<MuscleGroupStats> = emptyList()
+
     init {
         loadData()
     }
@@ -124,6 +127,9 @@ class ProgressViewModel @Inject constructor(
                 val workoutCounts = analyticsRepository.getWorkoutCounts()
                 val longestWorkout = analyticsRepository.getLongestWorkout()
                 val shortestWorkout = analyticsRepository.getShortestWorkout()
+
+                allPersonalRecords = prs
+                allMuscleGroupDistribution = muscleGroupDistribution
 
                 _uiState.value = ProgressUiState(
                     isLoading = false,
@@ -170,7 +176,15 @@ class ProgressViewModel @Inject constructor(
     fun refresh() = loadData()
 
     fun onSearchQueryChange(query: String) {
-        _uiState.value = _uiState.value.copy(searchQuery = query)
+        val filteredPRs = if (query.isBlank()) allPersonalRecords
+            else allPersonalRecords.filter { it.exerciseName.contains(query, ignoreCase = true) }
+        val filteredMG = if (query.isBlank()) allMuscleGroupDistribution
+            else allMuscleGroupDistribution.filter { it.name.contains(query, ignoreCase = true) }
+        _uiState.value = _uiState.value.copy(
+            searchQuery = query,
+            personalRecords = filteredPRs,
+            muscleGroupDistribution = filteredMG
+        )
     }
 }
 
@@ -636,6 +650,18 @@ private fun VolumeLineChart(
     val lineColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.outlineVariant
 
+    val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+    val maxVolume = if (data.isNotEmpty()) data.maxOf { it.second } else 0.0
+    val maxVolumeLabel = remember(maxVolume) {
+        if (maxVolume >= 1000) String.format("%.1fk", maxVolume / 1000.0) else String.format("%.0f", maxVolume)
+    }
+    val firstDateLabel = remember(data) {
+        if (data.isNotEmpty()) dateFormat.format(data.first().first) else ""
+    }
+    val lastDateLabel = remember(data) {
+        if (data.isNotEmpty()) dateFormat.format(data.last().first) else ""
+    }
+
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -643,59 +669,92 @@ private fun VolumeLineChart(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(8.dp)
         )
-        Canvas(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
-                .semantics {
-                    contentDescription = "Volume history chart showing weekly volume over time"
-                }
         ) {
-            if (data.size < 2) return@Canvas
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .semantics {
+                        contentDescription = "Volume history chart showing weekly volume over time"
+                    }
+            ) {
+                if (data.size < 2) return@Canvas
 
-            val paddingLeft = 8f
-            val paddingBottom = 8f
-            val chartWidth = size.width - paddingLeft
-            val chartHeight = size.height - paddingBottom
+                val paddingLeft = 8f
+                val paddingBottom = 8f
+                val chartWidth = size.width - paddingLeft
+                val chartHeight = size.height - paddingBottom
 
-            val values = data.map { it.second }
-            val minVal = values.min()
-            val maxVal = values.max()
-            val range = (maxVal - minVal).coerceAtLeast(1.0)
+                val values = data.map { it.second }
+                val minVal = values.min()
+                val maxVal = values.max()
+                val range = (maxVal - minVal).coerceAtLeast(1.0)
 
-            // Grid lines (3 horizontal)
-            for (i in 0..3) {
-                val y = chartHeight - (chartHeight * i / 3f)
-                drawLine(
-                    color = gridColor,
-                    start = Offset(paddingLeft, y),
-                    end = Offset(size.width, y),
-                    strokeWidth = 1f
+                // Grid lines (3 horizontal)
+                for (i in 0..3) {
+                    val y = chartHeight - (chartHeight * i / 3f)
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(paddingLeft, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1f
+                    )
+                }
+
+                // Line path
+                val path = Path()
+                val stepX = chartWidth / (data.size - 1).toFloat()
+
+                data.forEachIndexed { index, (_, volume) ->
+                    val x = paddingLeft + index * stepX
+                    val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
+                    if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+
+                drawPath(
+                    path = path,
+                    color = lineColor,
+                    style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                 )
+
+                // Data point dots
+                data.forEachIndexed { index, (_, volume) ->
+                    val x = paddingLeft + index * stepX
+                    val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
+                    drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+                }
             }
 
-            // Line path
-            val path = Path()
-            val stepX = chartWidth / (data.size - 1).toFloat()
-
-            data.forEachIndexed { index, (_, volume) ->
-                val x = paddingLeft + index * stepX
-                val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-
-            drawPath(
-                path = path,
-                color = lineColor,
-                style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            // Y-axis labels
+            Text(
+                text = maxVolumeLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 2.dp, top = 2.dp)
+            )
+            Text(
+                text = "0",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 2.dp, bottom = 2.dp)
             )
 
-            // Data point dots
-            data.forEachIndexed { index, (_, volume) ->
-                val x = paddingLeft + index * stepX
-                val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-                drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
-            }
+            // X-axis labels
+            Text(
+                text = firstDateLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 2.dp)
+            )
+            Text(
+                text = lastDateLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 2.dp, bottom = 2.dp)
+            )
         }
     }
 }

@@ -167,6 +167,7 @@ class ProfileViewModel @Inject constructor(
             is ProfileFormField.ProteinGoal -> currentForm.copy(proteinGoal = value.toDoubleOrNull() ?: 0.0)
             is ProfileFormField.CaloriesGoal -> currentForm.copy(caloriesGoal = value.toIntOrNull() ?: 0)
             is ProfileFormField.Units -> currentForm.copy(units = value)
+            is ProfileFormField.Equipment -> currentForm.copy(equipment = value)
         }
         _state.value = _state.value.copy(form = updatedForm)
     }
@@ -220,7 +221,8 @@ class ProfileViewModel @Inject constructor(
             units = form.units,
             avatarUrl = "",
             leanBodyMass = 0.0,
-            maintenanceCalories = 0
+            maintenanceCalories = 0,
+            equipment = form.equipment
         )
     }
 
@@ -267,6 +269,7 @@ data class ProfileForm(
     val proteinGoal: Double = 0.0,
     val caloriesGoal: Int = 0,
     val units: String = "",
+    val equipment: String = "Dumbbell,Flat Bench,Bodyweight",
     val profile: UserProfile? = null
 ) {
     companion object {
@@ -287,7 +290,8 @@ data class ProfileForm(
                 weeklyWorkoutGoal = profile.weeklyWorkoutGoal,
                 proteinGoal = profile.proteinGoal,
                 caloriesGoal = profile.caloriesGoal,
-                units = profile.units
+                units = profile.units,
+                equipment = profile.equipment
             )
         }
     }
@@ -308,5 +312,6 @@ sealed class ProfileFormField {
     data object ProteinGoal : ProfileFormField()
     data object CaloriesGoal : ProfileFormField()
     data object Units : ProfileFormField()
+    data object Equipment : ProfileFormField()
 }
 

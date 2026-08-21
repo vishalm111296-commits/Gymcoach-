@@ -1,10 +1,24 @@
 package com.gymcoach.app.ui
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
@@ -47,7 +61,69 @@ fun GymCoachNavHost(
     navController: NavHostController,
     startDestination: String = Routes.EXERCISE_LIST
 ) {
-    NavHost(navController, startDestination) {
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    val bottomBarRoutes = setOf(
+        Routes.EXERCISE_LIST,
+        Routes.WORKOUT_HISTORY,
+        Routes.PROGRESS,
+        Routes.PROFILE
+    )
+
+    Scaffold(
+        bottomBar = {
+            if (currentRoute in bottomBarRoutes) {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = currentRoute == Routes.EXERCISE_LIST,
+                        onClick = {
+                            navController.navigate(Routes.EXERCISE_LIST) {
+                                popUpTo(Routes.EXERCISE_LIST) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.FitnessCenter, contentDescription = "Exercises") },
+                        label = { Text("Exercises") }
+                    )
+                    NavigationBarItem(
+                        selected = currentRoute == Routes.WORKOUT_HISTORY,
+                        onClick = {
+                            navController.navigate(Routes.WORKOUT_HISTORY) {
+                                popUpTo(Routes.EXERCISE_LIST) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.History, contentDescription = "History") },
+                        label = { Text("History") }
+                    )
+                    NavigationBarItem(
+                        selected = currentRoute == Routes.PROGRESS,
+                        onClick = {
+                            navController.navigate(Routes.PROGRESS) {
+                                popUpTo(Routes.EXERCISE_LIST) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.Insights, contentDescription = "Progress") },
+                        label = { Text("Progress") }
+                    )
+                    NavigationBarItem(
+                        selected = currentRoute == Routes.PROFILE,
+                        onClick = {
+                            navController.navigate(Routes.PROFILE) {
+                                popUpTo(Routes.EXERCISE_LIST) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") }
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(navController, startDestination, modifier = Modifier.padding(innerPadding)) {
         composable(Routes.EXERCISE_LIST) {
             ExerciseListScreen(
                 navController = navController,
@@ -108,13 +184,16 @@ fun GymCoachNavHost(
             MeasurementScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Routes.CAMERA) {
-            CameraPreviewScreen()
+            CameraPreviewScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBackClick = { navController.popBackStack() })
         }
         composable(Routes.PROFILE) {
-            ProfileScreen(onBackClick = { navController.popBackStack() })
+            ProfileScreen(
+                onBackClick = { navController.popBackStack() },
+                onMeasurementsClick = { navController.navigate(Routes.MEASUREMENTS) }
+            )
         }
         composable(Routes.PR) {
             PRScreen(onBackClick = { navController.popBackStack() })
@@ -132,4 +211,5 @@ fun GymCoachNavHost(
             }
         }
     }
+}
 }

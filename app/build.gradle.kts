@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -22,6 +24,24 @@ android {
         }
     }
 
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val keystoreProperties = Properties().apply {
+        if (keystorePropertiesFile.exists()) {
+            load(keystorePropertiesFile.inputStream())
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -29,6 +49,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -66,7 +89,7 @@ android {
 // which cannot execute on this aarch64 host (no x86_64 dynamic loader for qemu).
 // Debug native-symbol stripping is optional; skipping it keeps the debug build green.
 // Release builds (stripReleaseDebugSymbols) are unaffected.
-tasks.whenTaskAdded {
+tasks.configureEach {
     if (name == "stripDebugDebugSymbols") {
         enabled = false
     }
@@ -133,6 +156,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
+    testImplementation(libs.room.testing)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext)

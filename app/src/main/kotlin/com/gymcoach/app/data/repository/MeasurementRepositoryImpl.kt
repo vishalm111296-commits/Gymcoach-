@@ -38,6 +38,10 @@ class MeasurementRepositoryImpl @Inject constructor(
         measurementDao.updateMeasurement(measurement.toEntity())
     }
 
+    override suspend fun deleteMeasurement(id: Long) {
+        measurementDao.deleteMeasurementById(id)
+    }
+
     override fun getTrendForType(userId: String, type: MeasurementType): Flow<MeasurementTrend> {
         return getMeasurementsByType(userId, type).map { measurements ->
             if (measurements.size < 2) return@map MeasurementTrend(0.0, 0.0)

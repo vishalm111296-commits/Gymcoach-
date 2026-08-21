@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -58,6 +60,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -130,6 +133,16 @@ fun WorkoutSessionScreen(
                     Text("Go Back")
                 }
             }
+        }
+        return
+    }
+
+    if (currentWorkout == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
         return
     }
@@ -305,13 +318,25 @@ fun WorkoutSessionScreen(
         )
     }
 
+    var pickerSearchQuery by remember { mutableStateOf("") }
+
     if (showPicker) {
+        val filteredExercises = if (pickerSearchQuery.isBlank()) allExercises else allExercises.filter { it.name.contains(pickerSearchQuery, ignoreCase = true) || it.muscleGroup.contains(pickerSearchQuery, ignoreCase = true) }
         AlertDialog(
             onDismissRequest = { viewModel.hideExercisePicker() },
             title = { Text("Add Exercise") },
             text = {
-                LazyColumn {
-                    items(items = allExercises, key = { it.id }) { exercise ->
+                Column {
+                    OutlinedTextField(
+                        value = pickerSearchQuery,
+                        onValueChange = { pickerSearchQuery = it },
+                        label = { Text("Search exercises") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        singleLine = true
+                    )
+                    LazyColumn {
+                        items(items = filteredExercises, key = { it.id }) { exercise ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { viewModel.addExerciseToWorkout(exercise) },
@@ -332,6 +357,7 @@ fun WorkoutSessionScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             },
@@ -388,8 +414,29 @@ private fun ExerciseSetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onRemoveExercise) {
+                var showDeleteExerciseDialog by remember { mutableStateOf(false) }
+                IconButton(onClick = { showDeleteExerciseDialog = true }) {
                     Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                }
+                if (showDeleteExerciseDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteExerciseDialog = false },
+                        title = { Text("Remove Exercise") },
+                        text = { Text("Remove this exercise from your workout?") },
+                        confirmButton = {
+                            Button(onClick = {
+                                showDeleteExerciseDialog = false
+                                onRemoveExercise()
+                            }) {
+                                Text("Remove")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteExerciseDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
             }
 
@@ -438,6 +485,7 @@ private fun ExerciseSetCard(
                     }
                 ) {
                     SetRow(
+                        setId = set.id,
                         index = index,
                         weight = set.weight,
                         reps = set.reps,
@@ -467,6 +515,7 @@ private fun ExerciseSetCard(
 
 @Composable
 private fun SetRow(
+    setId: Long,
     index: Int,
     weight: Double,
     reps: Int,
@@ -482,10 +531,10 @@ private fun SetRow(
     onToggleComplete: () -> Unit,
     onRemoveSet: () -> Unit
 ) {
-    var weightText by rememberSaveable { mutableStateOf(if (weight > 0) weight.toString() else "") }
-    var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }
-    var rpeText by rememberSaveable { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
-    var restText by rememberSaveable { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
+    var weightText by rememberSaveable(setId) { mutableStateOf(if (weight > 0) weight.toString() else "") }
+    var repsText by rememberSaveable(setId) { mutableStateOf(if (reps > 0) reps.toString() else "") }
+    var rpeText by rememberSaveable(setId) { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
+    var restText by rememberSaveable(setId) { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -566,7 +615,7 @@ private fun SetRow(
         )
 
         Row(
-            modifier = Modifier.width(56.dp),
+            modifier = Modifier.wrapContentWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -577,11 +626,9 @@ private fun SetRow(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggleComplete()
                 },
-                modifier = Modifier.size(24.dp)
             )
             IconButton(
                 onClick = { 
-                    // Cycle through set types
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
                         com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
@@ -589,8 +636,7 @@ private fun SetRow(
                         com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
                     }
                     onSetTypeChange(nextType)
-                },
-                modifier = Modifier.size(24.dp)
+                }
             ) {
                 Icon(
                     Icons.Default.Star,

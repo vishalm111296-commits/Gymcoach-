@@ -1,13 +1,11 @@
 package com.gymcoach.app.presentation.measurement.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +23,7 @@ import com.gymcoach.app.presentation.components.LoadingState
 import com.gymcoach.app.presentation.components.ErrorState
 import com.gymcoach.app.presentation.components.EmptyState
 import com.gymcoach.app.presentation.measurement.screens.MeasurementViewModel
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.TrendingDown
@@ -39,6 +38,7 @@ fun MeasurementScreen(
     val measurements by viewModel.measurements.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val trends by viewModel.trends.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedType by remember { mutableStateOf<MeasurementType?>(null) }
     var valueText by remember { mutableStateOf("") }
@@ -51,7 +51,7 @@ fun MeasurementScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -76,7 +76,7 @@ fun MeasurementScreen(
             if (isLoading) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else if (error != null) {
-                ErrorState(message = error ?: "", onRetry = { /* viewModel.refresh() */ }, modifier = Modifier.fillMaxSize())
+                ErrorState(message = error ?: "", onRetry = { viewModel.refresh() }, modifier = Modifier.fillMaxSize())
             } else if (measurements.isEmpty()) {
                 EmptyState(
                     message = "No measurements yet. Start tracking your body metrics!",
@@ -92,21 +92,16 @@ fun MeasurementScreen(
                 ) {
                     Text("Current Measurements", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        items(MeasurementType.values()) { type ->
-                            val latest = measurements
-                                .filter { it.measurementType == type }
-                                .maxByOrNull { it.date.toEpochMilli() }
-                            if (latest != null) {
-                                MeasurementCard(
-                                    record = latest,
-                                    trend = null,
-                                    onDelete = {}
-                                )
-                            }
+                    for (type in MeasurementType.values()) {
+                        val latest = measurements
+                            .filter { it.measurementType == type }
+                            .maxByOrNull { it.date.toEpochMilli() }
+                        if (latest != null) {
+                            MeasurementCard(
+                                record = latest,
+                                trend = trends[latest.measurementType],
+                                onDelete = { viewModel.deleteMeasurement(latest) }
+                            )
                         }
                     }
                 }
@@ -139,7 +134,7 @@ fun MeasurementScreen(
                         )
                         ExposedDropdownMenu(
                             expanded = selectedType != null,
-                            onDismissRequest = { },
+                            onDismissRequest = { selectedType = null },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             for (type in MeasurementType.values()) {
@@ -183,7 +178,7 @@ fun MeasurementScreen(
                                 notes = notesText.ifBlank { null },
                                 createdAt = java.time.Instant.now()
                             )
-                            // viewModel.addMeasurement(record)
+                            viewModel.addMeasurement(record)
                             showAddDialog = false
                             valueText = ""
                             notesText = ""
@@ -255,7 +250,7 @@ fun MeasurementCard(
                 }
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.minimumInteractiveComponentSize()
                 ) {
                     Icon(Icons.Filled.Remove, contentDescription = "Delete")
                 }

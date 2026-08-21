@@ -20,8 +20,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val DarkColorScheme = darkColorScheme()
-private val LightColorScheme = lightColorScheme()
+val GymGreen = Color(0xFF2E7D32)
+val GymGreenLight = Color(0xFF60AD5E)
+val GymOrange = Color(0xFFFF6D00)
+val GymOrangeLight = Color(0xFFFF9E40)
+val GymDark = Color(0xFF1B1B1F)
+val GymGray = Color(0xFF2C2C34)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = GymGreen,
+    onPrimary = Color.White,
+    primaryContainer = GymGreen.copy(alpha = 0.15f),
+    onPrimaryContainer = GymGreenLight,
+    secondary = GymOrange,
+    onSecondary = Color.Black,
+    secondaryContainer = GymOrange.copy(alpha = 0.15f),
+    onSecondaryContainer = GymOrangeLight,
+    surface = GymDark,
+    surfaceVariant = GymGray,
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = GymGreen,
+    onPrimary = Color.White,
+    primaryContainer = GymGreen.copy(alpha = 0.12f),
+    secondary = GymOrange,
+    onSecondary = Color.Black,
+    secondaryContainer = GymOrange.copy(alpha = 0.12f),
+)
 
 private val AppShapes = Shapes(
     small = RoundedCornerShape(4.dp),

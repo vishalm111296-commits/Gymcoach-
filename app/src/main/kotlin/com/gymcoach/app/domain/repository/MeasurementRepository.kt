@@ -10,6 +10,7 @@ interface MeasurementRepository {
     fun getLatestMeasurementForUser(userId: String): Flow<MeasurementRecord?>
     suspend fun insertMeasurement(measurement: MeasurementRecord)
     suspend fun updateMeasurement(measurement: MeasurementRecord)
+    suspend fun deleteMeasurement(id: Long)
     fun getTrendForType(userId: String, type: MeasurementType): Flow<MeasurementTrend>
     fun getMeasurementsSince(userId: String, startDate: Long): Flow<List<MeasurementRecord>>
 }

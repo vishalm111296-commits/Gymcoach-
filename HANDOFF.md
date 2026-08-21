@@ -208,13 +208,13 @@ ViewModel → Compose UI feedback
 - Complete workout → update `WorkoutEntity` with `endTime`, `duration`, `completed=true`.
 
 ## 12. Known Limitations
-- Java/Gradle tools are not installed in the current execution environment; build verification is blocked there.
 - MediaPipe pose detection integration exists, but live `ImageAnalysis`→`FormAnalyzer` frame wiring is not implemented in `CameraPreviewScreen`.
 - `FormAnalyzer` thresholds are static; no calibration UI exists.
-- No unit/UI tests executed from this environment.
 - Workout history screen/search/sort/filter is not implemented as a dedicated screen.
-- `ProGuard/R8` rules and signing config are not yet set.
+- No UI tests executed (no emulator/device available on the current host; aarch64, no KVM).
+- Signing config is not yet set (release APK builds unsigned).
 - Accessibility and performance reviews are pending device verification.
+- Build-time R8/AGP note: do NOT use `tasks.whenTaskAdded` in `app/build.gradle.kts`; it breaks AGP task wiring for the R8 java-resource transform (issue 277166577), causing `merged_java_res/<variant>/base.jar` to be deleted before R8 reads it. Use `tasks.configureEach` instead (as done for `stripDebugDebugSymbols`).
 
 ## 13. Technical Debt
 - `MuscleGroupStats` class exists in both domain and data layers; kept as separate DTO/model boundary.
@@ -236,11 +236,18 @@ ViewModel → Compose UI feedback
 
 ## 16. Release Checklist
 - Verify Gradle sync.
-- Verify debug build.
-- Configure signing + `proguard-rules.pro`.
-- Verify release build.
+- Verify debug build. ✔ (assembleDebug green; APK in `app/build/outputs/apk/debug/`)
+- Configure signing + `proguard-rules.pro`. (rules present; signing still unset)
+- Verify release build. ✔ (assembleRelease green, unsigned APK in `app/build/outputs/apk/release/`)
 - Generate signed APK/AAB.
 - Upload to Play Console/internal track.
+
+## Build Verification Status (host: aarch64, QEMU bridge for x86-64 SDK tools)
+- `assembleDebug`: PASS
+- `testDebugUnitTest`: PASS — 27 passed, 12 skipped (Robolectric on aarch64), 0 failures
+- `lintDebug`: PASS — 0 errors, 30 warnings
+- `assembleRelease`: PASS — after fix of `whenTaskAdded`→`configureEach` (R8 `base.jar` deletion) + `-dontwarn javax.lang.model.*` (AutoValue shaded JavaPoet)
+- Device/emulator journey: NOT EXECUTED (no emulator package, no KVM, adb x86-64 binary crashes on this host)
 
 ## 17. Future Version 2 Ideas
 - Dedicated workout history screen with search, sort, filter, detail, resume.
@@ -265,5 +272,5 @@ ViewModel → Compose UI feedback
 
 ## Project Health Assessment
 - **Strengths**: Clean Arch + MVVM, consistent DI, Room schema stable, multi-exercise analyzer scaffold, complete progress dashboard, offline-first design.
-- **Risks**: No executed build/test evidence in repo work so far; some V1 features are UI-ready but may need runtime tuning on device.
-- **Recommended next steps**: Run validation builds/tests in Android Studio, wire live camera frames to `FormAnalyzer`, implement workout history screen, add tests, and finalize release config.
+- **Risks**: No UI/runtime device verification yet; release signing not configured; MediaPipe live-frame wiring not connected.
+- **Recommended next steps**: Wire live camera frames to `FormAnalyzer`, implement workout history screen, add UI tests, configure release signing, and verify on a physical device.

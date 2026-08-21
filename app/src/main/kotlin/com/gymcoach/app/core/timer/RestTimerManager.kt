@@ -24,10 +24,7 @@ class RestTimerManager @Inject constructor() {
     val state: StateFlow<RestTimerState> = _state.asStateFlow()
 
     private var tickJob: Job? = null
-    private var timerScope: CoroutineScope? = null
-
     fun start(seconds: Int, scope: CoroutineScope) {
-        timerScope = scope
         tickJob?.cancel()
         _state.value = RestTimerState(timeRemaining = seconds, isRunning = true, totalDuration = seconds)
 

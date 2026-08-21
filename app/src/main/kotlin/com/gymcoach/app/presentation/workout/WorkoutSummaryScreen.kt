@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.workout
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,10 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,10 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.ui.theme.GymGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +47,7 @@ fun WorkoutSummaryScreen(
     onFinish: () -> Unit
 ) {
     LaunchedEffect(workoutId) { viewModel.setWorkoutId(workoutId) }
-    val metrics by viewModel.workoutSummary.collectAsState()
+    val state by viewModel.workoutSummary.collectAsState()
 
     Scaffold(
         topBar = {
@@ -65,34 +70,95 @@ fun WorkoutSummaryScreen(
             }
         }
     ) { padding ->
-        metrics?.let { m ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    MetricCard(label = "Duration", value = "${m.duration / 60} minutes", category = "Time")
+        when (val s = state) {
+            is WorkoutSummaryUiState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-                item {
-                    MetricCard(label = "Exercises", value = "${m.exerciseCount}", category = "Count")
+            }
+            is WorkoutSummaryUiState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = s.message,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onFinish) {
+                            Text("Back")
+                        }
+                    }
                 }
-                item {
-                    MetricCard(label = "Sets", value = "${m.totalSets}", category = "Count")
-                }
-                item {
-                    MetricCard(label = "Reps", value = "${m.totalReps}", category = "Count")
-                }
-                item {
-                    MetricCard(label = "Volume", value = "${m.totalVolume.toInt()} kg", category = "Weight")
-                }
-                item {
-                    MetricCard(label = "Calories", value = "${m.calories} kcal", category = "Energy")
-                }
-                item {
-                    MetricCard(label = "Max Weight", value = "${m.maxWeight} kg", category = "Weight")
+            }
+            is WorkoutSummaryUiState.Success -> {
+                val m = s.summary
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Workout Complete",
+                                modifier = Modifier.size(72.dp),
+                                tint = GymGreen
+                            )
+                            Text(
+                                text = "Workout Complete!",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = GymGreen
+                            )
+                            Text(
+                                text = "Great job! You crushed it. Keep up the momentum!",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    item {
+                        MetricCard(label = "Duration", value = "${m.duration / 60} minutes", category = "Time")
+                    }
+                    item {
+                        MetricCard(label = "Exercises", value = "${m.exerciseCount}", category = "Count")
+                    }
+                    item {
+                        MetricCard(label = "Sets", value = "${m.totalSets}", category = "Count")
+                    }
+                    item {
+                        MetricCard(label = "Reps", value = "${m.totalReps}", category = "Count")
+                    }
+                    item {
+                        MetricCard(label = "Volume", value = "${m.totalVolume.toInt()} kg", category = "Weight")
+                    }
+                    item {
+                        MetricCard(label = "Calories", value = "${m.calories} kcal", category = "Energy")
+                    }
+                    item {
+                        MetricCard(label = "Max Weight", value = "${m.maxWeight} kg", category = "Weight")
+                    }
                 }
             }
         }

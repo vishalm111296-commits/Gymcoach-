@@ -8,10 +8,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,6 +28,9 @@ class ExerciseViewModel @Inject constructor(
     val filterCategory = MutableStateFlow("All")
     val filterDifficulty = MutableStateFlow("All")
     val filterEquipment = MutableStateFlow("All")
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     val categories = listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body")
     val difficulties = listOf("All", "Beginner", "Intermediate", "Advanced")
@@ -53,7 +59,8 @@ class ExerciseViewModel @Inject constructor(
                 it.tags.contains(filters.query, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.onEach { _isLoading.value = false }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private data class FilterState(val query: String, val category: String, val difficulty: String, val equipment: String)
 

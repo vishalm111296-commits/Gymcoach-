@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.LocalDining
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,9 +74,16 @@ class ExerciseDetailViewModel @Inject constructor(
     private val _exercise = MutableStateFlow<Exercise?>(null)
     val exercise: StateFlow<Exercise?> = _exercise.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     fun loadExercise(id: Long) {
         viewModelScope.launch {
-            repository.getExerciseById(id).collect { _exercise.value = it }
+            try {
+                repository.getExerciseById(id).collect { _exercise.value = it }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to load exercise"
+            }
         }
     }
 }
@@ -88,6 +96,7 @@ fun ExerciseDetailScreen(
     viewModel: ExerciseDetailViewModel = hiltViewModel()
 ) {
     val exercise by viewModel.exercise.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     LaunchedEffect(exerciseId) {
         viewModel.loadExercise(exerciseId)
@@ -120,7 +129,17 @@ fun ExerciseDetailScreen(
             )
         }
     ) { padding ->
-        exercise?.let { ex ->
+        if (exercise == null && error == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (exercise == null) {
+            ErrorSection(padding)
+        } else {
+            exercise?.let { ex ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -140,10 +159,6 @@ fun ExerciseDetailScreen(
                         difficulty = ex.difficulty,
                         equipment = ex.equipment.ifBlank { "Bodyweight" }
                     )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    descriptionSection(ex)
 
                     Spacer(Modifier.height(16.dp))
 
@@ -177,37 +192,6 @@ fun ExerciseDetailScreen(
                 }
 
                 Spacer(Modifier.height(24.dp))
-
-                // Muscle Group with proper semantics
-                SemanticRowSection(title = "Muscle Group") {
-                    RowContent(
-                        icon = Icons.Default.FitnessCenter,
-                        label = "Muscle Group",
-                        value = ex.muscleGroup
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Equipment with proper semantics
-                SemanticRowSection(title = "Equipment") {
-                    RowContent(
-                        icon = Icons.Default.Build,
-                        label = "Equipment",
-                        value = if (ex.equipment.isNotBlank()) ex.equipment else "Bodyweight"
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Difficulty with proper semantics
-                SemanticRowSection(title = "Difficulty") {
-                    RowContent(
-                        icon = Icons.Default.LocalFireDepartment,
-                        label = "Difficulty",
-                        value = ex.difficulty
-                    )
-                }
 
                 if (ex.instructions.isNotBlank()) {
                     Spacer(Modifier.height(24.dp))
@@ -255,8 +239,7 @@ fun ExerciseDetailScreen(
 
                 Spacer(Modifier.height(32.dp))
             }
-        } ?: run {
-            ErrorSection()
+            }
         }
     }
 }
@@ -322,18 +305,6 @@ private fun HeaderSection(
 }
 
 @Composable
-private fun descriptionSection(exercise: Exercise) {
-    if (exercise.description.isNotBlank()) {
-        Text(
-            text = exercise.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
 private fun InfoSection(
     icon: ImageVector,
     title: String,
@@ -394,67 +365,11 @@ private fun SemanticCard(
 }
 
 @Composable
-private fun SemanticRowSection(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-            )
-        ) {
-            content()
-        }
-    }
-}
-
-@Composable
-private fun RowContent(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = "${label} icon",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun ErrorSection() {
+private fun ErrorSection(padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(padding)
             .padding(16.dp)
     ) {
         Text(

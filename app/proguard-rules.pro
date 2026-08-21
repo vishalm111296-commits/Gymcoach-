@@ -32,13 +32,10 @@
 -keep class com.gymcoach.app.domain.repository.** { *; }
 -keep class com.gymcoach.app.data.repository.** { *; }
 
-# Keep the ViewModels
--keep class com.gymcoach.app.presentation.** { *; }
-
 # Keep the FormAnalyzer
 -keep class com.gymcoach.app.core.ml.** { *; }
 
-# Keep the FormAnalyzer
+# Keep the Timer
 -keep class com.gymcoach.app.core.timer.** { *; }
 
 # Keep Room auto-generated classes
@@ -46,27 +43,10 @@
 -keep class * implements androidx.room.RoomDatabase.Callback { *; }
 -keep class * extends androidx.room.migration.Migration { *; }
 
-# Keep Coroutines
--keep class kotlinx.coroutines.** { *; }
--keep class kotlinx.coroutines.flow.** { *; }
-
-# Keep Hilt
--keep class dagger.hilt.** { *; }
--keep class com.gymcoach.app.** { *; }
-
-# Keep Coil
--keep class coil.** { *; }
--keep class com.github.bumptech.glide.** { *; }
-
-# Keep Media3
--keep class androidx.media3.** { *; }
--keep class com.google.android.exoplayer2.** { *; }
-
-# Keep CameraX
--keep class androidx.camera.** { *; }
-
-# Keep MediaPipe
--keep class com.google.mediapipe.** { *; }
-
-# Keep Coil
--keep class coil.** { *; }
+# Missing classes referenced by AutoValue's shaded JavaPoet; safe to ignore
+-dontwarn javax.lang.model.SourceVersion
+-dontwarn javax.lang.model.element.Element
+-dontwarn javax.lang.model.element.ElementKind
+-dontwarn javax.lang.model.type.TypeMirror
+-dontwarn javax.lang.model.type.TypeVisitor
+-dontwarn javax.lang.model.util.SimpleTypeVisitor8

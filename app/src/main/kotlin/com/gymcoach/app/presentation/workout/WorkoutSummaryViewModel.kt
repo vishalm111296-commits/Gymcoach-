@@ -12,6 +12,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+sealed interface WorkoutSummaryUiState {
+    data object Loading : WorkoutSummaryUiState
+    data class Success(val summary: WorkoutSummary) : WorkoutSummaryUiState
+    data class Error(val message: String) : WorkoutSummaryUiState
+}
+
 @HiltViewModel
 class WorkoutSummaryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository
@@ -20,12 +26,20 @@ class WorkoutSummaryViewModel @Inject constructor(
     private val _workoutId = MutableStateFlow<Long?>(null)
 
     val workoutSummary = _workoutId.map { id ->
-        if (id == null) null
+        if (id == null) WorkoutSummaryUiState.Loading
         else {
-            val details = workoutRepository.getWorkoutWithDetailsNow(id)
-            details?.let { calculateMetrics(it) }
+            try {
+                val details = workoutRepository.getWorkoutWithDetailsNow(id)
+                if (details != null) {
+                    WorkoutSummaryUiState.Success(calculateMetrics(details))
+                } else {
+                    WorkoutSummaryUiState.Error("Workout not found")
+                }
+            } catch (e: Exception) {
+                WorkoutSummaryUiState.Error(e.message ?: "Failed to load workout summary")
+            }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WorkoutSummaryUiState.Loading)
 
     fun setWorkoutId(id: Long) {
         _workoutId.value = id

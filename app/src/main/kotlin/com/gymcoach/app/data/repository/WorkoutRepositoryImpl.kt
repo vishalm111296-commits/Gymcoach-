@@ -251,7 +251,19 @@ private fun ExerciseEntity.toDomain() = Exercise(
     description = description,
     muscleGroup = muscleGroup,
     equipment = equipment,
-    difficulty = difficulty
+    difficulty = difficulty,
+    secondaryMuscles = secondaryMuscles,
+    instructions = instructions,
+    tips = tips,
+    commonMistakes = commonMistakes,
+    safetyNotes = safetyNotes,
+    recommendedRepRange = recommendedRepRange,
+    recommendedRestTime = recommendedRestTime,
+    estimatedCalories = estimatedCalories,
+    category = category,
+    tags = tags,
+    isFavorite = isFavorite,
+    lastViewed = lastViewed
 )
 
 private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = com.gymcoach.app.domain.model.WorkoutWithStats(

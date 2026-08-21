@@ -16,7 +16,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            GymCoachTheme {
+            val prefs = getSharedPreferences("GymCoachSettings", MODE_PRIVATE)
+            val darkMode = prefs.getBoolean("dark_mode", false)
+            GymCoachTheme(darkTheme = darkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

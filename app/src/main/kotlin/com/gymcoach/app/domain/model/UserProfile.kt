@@ -19,5 +19,6 @@ data class UserProfile(
     val units: String = "metric",
     val avatarUrl: String = "",
     val leanBodyMass: Double = 0.0,
-    val maintenanceCalories: Int = 0
+    val maintenanceCalories: Int = 0,
+    val equipment: String = "Dumbbell,Flat Bench,Bodyweight"
 )

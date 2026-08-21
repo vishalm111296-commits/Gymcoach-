@@ -35,4 +35,7 @@ interface MeasurementDao {
 
     @Query("DELETE FROM measurement_records WHERE date < :cutoffDate")
     suspend fun deleteOldMeasurements(cutoffDate: Long)
+
+    @Query("DELETE FROM measurement_records WHERE id = :id")
+    suspend fun deleteMeasurementById(id: Long)
 }

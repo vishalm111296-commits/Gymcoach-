@@ -23,5 +23,6 @@ data class UserProfileEntity(
     val units: String = "metric", // metric or imperial
     val avatarUrl: String = "", // placeholder for now
     val leanBodyMass: Double = 0.0,
-    val maintenanceCalories: Int = 0
+    val maintenanceCalories: Int = 0,
+    val equipment: String = "Dumbbell,Flat Bench,Bodyweight"
 )

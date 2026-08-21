@@ -24,9 +24,12 @@ import com.gymcoach.app.presentation.components.EmptyState
 @Composable
 fun ProfileScreen(
     onBackClick: () -> Unit,
-    viewModel: ProfileViewModel = hiltViewModel()
+    onMeasurementsClick: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel(),
+    analyticsViewModel: ProfileAnalyticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val analyticsState by analyticsViewModel.state.collectAsState()
 
     Scaffold(
         topBar = {
@@ -50,6 +53,9 @@ fun ProfileScreen(
                             IconButton(onClick = viewModel::onEditClick) {
                                 Icon(Icons.Filled.Edit, contentDescription = "Edit Profile")
                             }
+                        }
+                        IconButton(onClick = onMeasurementsClick) {
+                            Icon(Icons.Filled.Straighten, contentDescription = "Measurements")
                         }
                     }
                 }
@@ -76,20 +82,20 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                else -> ProfileContent(state = state, viewModel = viewModel)
+                else -> ProfileContent(state = state, viewModel = viewModel, analyticsState = analyticsState)
             }
         }
     }
 }
 
 @Composable
-fun ProfileContent(state: ProfileUiState, viewModel: ProfileViewModel) {
+fun ProfileContent(state: ProfileUiState, viewModel: ProfileViewModel, analyticsState: ProfileAnalyticsUiState) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Avatar Placeholder
+        // Avatar
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -204,15 +210,30 @@ fun ProfileContent(state: ProfileUiState, viewModel: ProfileViewModel) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Analytics Placeholder
+        // Analytics
         if (state.profile != null) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Profile Analytics (Coming Soon)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Text("BMI: Calculate from height and weight", style = MaterialTheme.typography.bodyMedium)
-                    Text("Lean Body Mass: (Placeholder)", style = MaterialTheme.typography.bodyMedium)
-                    Text("Maintenance Calories: (Placeholder)", style = MaterialTheme.typography.bodyMedium)
+            if (analyticsState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            } else if (analyticsState.error != null) {
+                Text("Analytics unavailable", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Profile Analytics", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Total Workouts: ${analyticsState.workoutCounts.total}", style = MaterialTheme.typography.bodyMedium)
+                        Text("This Week: ${analyticsState.workoutCounts.week}  |  This Month: ${analyticsState.workoutCounts.month}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Total Volume: ${analyticsState.totalVolume.toInt()} kg", style = MaterialTheme.typography.bodyMedium)
+                        Text("Avg Workout Volume: ${analyticsState.averageWorkoutVolume.toInt()} kg", style = MaterialTheme.typography.bodyMedium)
+                        Text("Personal Records: ${analyticsState.personalRecords.size}", style = MaterialTheme.typography.bodyMedium)
+                        if (analyticsState.muscleGroupDistribution.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Top Muscle Groups", style = MaterialTheme.typography.titleSmall)
+                            analyticsState.muscleGroupDistribution.sortedByDescending { it.totalReps }.take(5).forEach { stats ->
+                                Text("${stats.name}: ${stats.totalReps} reps", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
                 }
             }
         }

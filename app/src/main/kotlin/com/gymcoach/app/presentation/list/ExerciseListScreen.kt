@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.list
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,13 +29,13 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -63,6 +65,7 @@ fun ExerciseListScreen(
     onCameraClick: () -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
     val filterEquipment by viewModel.filterEquipment.collectAsState()
 
@@ -112,6 +115,7 @@ fun ExerciseListScreen(
 
         mainContent(
             exercises = exercises,
+            isLoading = isLoading,
             categories = viewModel.categories,
             selectedCategory = tabIndex,
             onCategorySelected = {
@@ -124,7 +128,9 @@ fun ExerciseListScreen(
                     onHistoryClick = onHistoryClick,
                     onProgressClick = onProgressClick,
                     onCameraClick = onCameraClick,
-                    navigateToSettings = { navController.navigate(Routes.SETTINGS) }
+                    navigateToSettings = { navController.navigate(Routes.SETTINGS) },
+                    navigateToProfile = { navController.navigate("profile") },
+                    navigateToPR = { navController.navigate("pr") }
                 )
             },
             onClearFilters = clearFilters,
@@ -267,7 +273,9 @@ private fun NavigationActions(
     onHistoryClick: () -> Unit,
     onProgressClick: () -> Unit,
     onCameraClick: () -> Unit,
-    navigateToSettings: () -> Unit
+    navigateToSettings: () -> Unit,
+    navigateToProfile: () -> Unit,
+    navigateToPR: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -276,19 +284,7 @@ private fun NavigationActions(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ScrollableTabRow(
-            selectedTabIndex = 0,
-            modifier = Modifier.weight(1f),
-            edgePadding = 0.dp
-        ) {
-            listOf("All").forEachIndexed { index, category ->
-                Tab(
-                    selected = index == 0,
-                    onClick = {},
-                    text = { Text(category) }
-                )
-            }
-        }
+        Spacer(modifier = Modifier.weight(1f))
 
         IconButton(
             onClick = onCameraClick,
@@ -324,6 +320,28 @@ private fun NavigationActions(
         }
 
         IconButton(
+            onClick = navigateToPR,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Default.EmojiEvents,
+                contentDescription = "PR",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
+            onClick = navigateToProfile,
+            modifier = Modifier.height(48.dp).width(48.dp)
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = "Profile",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        IconButton(
             onClick = navigateToSettings,
             modifier = Modifier.height(48.dp).width(48.dp)
         ) {
@@ -340,6 +358,7 @@ private fun NavigationActions(
 @Composable
 private fun mainContent(
     exercises: List<com.gymcoach.app.domain.model.Exercise>,
+    isLoading: Boolean,
     categories: List<String>,
     selectedCategory: Int,
     onCategorySelected: (Int) -> Unit,
@@ -356,7 +375,16 @@ private fun mainContent(
             item {
                 topBarActions()
             }
-            if (exercises.isEmpty()) {
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (exercises.isEmpty()) {
                 item {
                     Column(
                         modifier = Modifier

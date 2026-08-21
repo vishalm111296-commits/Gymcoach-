@@ -2,7 +2,7 @@ name: Android CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, repair/restore-build ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -10,10 +10,8 @@ on:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
-  GRADLE_VERSION: "8.8"
   ANDROID_SDK_VERSION: "34"
   ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
-  ANDROID_NDK_VERSION: "21.4.7075529"
 
 jobs:
   build:
@@ -34,9 +32,7 @@ jobs:
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: 8.4
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
@@ -60,42 +56,25 @@ jobs:
           echo "=== Print project structure ==="
           find . -name "*.gradle*" -o -name "gradle.properties" -o -name "local.properties" | head -10
 
-      - name: Check for Required Files
-        run: |
-          echo "=== Checking for required files ==="
-          echo "Workflow file exists and is valid"
-          echo "Gradle wrapper available"
-          echo "Android SDK configuration verified"
-
-          if [ ! -f "local.properties" ]; then
-            echo "WARNING: local.properties not found - Android SDK path may need manual setup"
-          else
-            echo "local.properties found"
-          fi
-
-          if [ ! -f "gradle.properties" ]; then
-            echo "WARNING: gradle.properties not found"
-          fi
-
-          if [ ! -f "pubspec.yaml" ]; then
-            echo "INFO: pubspec.yaml not found (not a Flutter project)"
-          fi
-
       - name: Build Debug APK
         run: |
           echo "=== Building Debug APK ==="
           echo "Starting debug build..."
-          gradle assembleDebug --stacktrace
+          ./gradlew assembleDebug --stacktrace
           echo "Debug build completed successfully"
+
+      - name: Rename APK
+        run: |
+          mv ./app/build/outputs/apk/debug/app-debug.apk ./app/build/outputs/apk/debug/GymCoach-debug.apk
 
       - name: Verify Build Output
         run: |
           echo "=== Verifying build outputs ==="
 
           echo "=== Checking for debug APK ==="
-          if [ -f "./app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "✓ Debug APK found: ./app/build/outputs/apk/debug/app-debug.apk"
-            ls -lh ./app/build/outputs/apk/debug/app-debug.apk
+          if [ -f "./app/build/outputs/apk/debug/GymCoach-debug.apk" ]; then
+            echo "✓ Debug APK found: ./app/build/outputs/apk/debug/GymCoach-debug.apk"
+            ls -lh ./app/build/outputs/apk/debug/GymCoach-debug.apk
           else
             echo "✗ Error: Debug APK not found"
             exit 1
@@ -138,22 +117,24 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gymcoach-debug-apk
-          path: ./app/build/outputs/apk/debug/
-          retention-days: 7
+          name: GymCoach-debug-apk
+          path: ./app/build/outputs/apk/debug/GymCoach-debug.apk
+          retention-days: 30
           if-no-files-found: error
 
       - name: Create Build Summary
         if: always()
         run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            STATUS="✅ Success"
+          else
+            STATUS="❌ Failed"
+          fi
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Build Status**: Success" >> $GITHUB_STEP_SUMMARY
-          echo "📱 **APK Location**: ./app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_STEP_SUMMARY
-          echo "🕐 **Build Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "🎯 **Workflow**: GitHub Actions CI/CD Pipeline" >> $GITHUB_STEP_SUMMARY
-          echo "📋 **Gradle Version**: $(gradle --version | head -1)" >> $GITHUB_STEP_SUMMARY
-          echo "☕ **Java Version**: $(java -version 2>&1 | head -1 | cut -d' ' -f2)" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Status**: $STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "**APK Location**: ./app/build/outputs/apk/debug/GymCoach-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify if Build Failed
         if: failure()
@@ -194,23 +175,17 @@ jobs:
 
       - name: Run Android Lint
         run: |
-          echo "=== Running Android Lint ==="
-          echo "This step runs lint checks on the Android codebase."
-          echo "Skipping this step to save time, but in a real CI/CD pipeline, you would run:"
-          echo "  ./gradlew lint"
-          echo ""
-          echo "Lint would check for:"
-          echo "  - Resource conflicts"
-          echo "  - Unused components"
-          echo "  - Security issues"
-          echo "  - Performance issues"
-          echo "  - Code style violations"
+          chmod +x ./gradlew
+          ./gradlew lintDebug --stacktrace
 
       - name: Upload Lint Reports
         if: always()
-        run: |
-          echo "Lint reports would be available in a real CI/CD pipeline"
-          echo "Generated in ./app/build/reports/lint-results/"
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: ./app/build/reports/lint-results-debug.xml
+          retention-days: 7
+          if-no-files-found: warn
 
   test:
     runs-on: ubuntu-latest
@@ -235,53 +210,72 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          echo "=== Running Unit Tests ==="
-          echo "Running debug unit tests..."
           chmod +x ./gradlew
-          ./gradlew testDebugUnitTest --stacktrace
-
-          echo "=== Running Kotlin tests ==="
-          ./gradlew test --stacktrace
-
-          echo "=== Test Results ==="
-          echo "Test execution completed. Check for any test failures above."
+          ./gradlew testDebugUnitTest --stacktrace --continue
 
       - name: Upload Test Reports
         if: always()
-        run: |
-          echo "Test reports would be available in a real CI/CD pipeline"
-          echo "Generated in ./app/build/reports/tests/"
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: ./app/build/reports/tests/
+          retention-days: 7
+          if-no-files-found: warn
 
-  create-release:
+  Create GitHub Release:
     runs-on: ubuntu-latest
-    name: Create Release (Optional)
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Create GitHub Release
+    needs: [build, test]
+    permissions:
+      contents: write
+    if: |
+      startsWith(github.ref, 'refs/tags/v') ||
+      github.ref == 'refs/heads/repair/restore-build' ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+          else
+            TAG_NAME="auto-debug-${{ github.run_number }}"
+          fi
+          echo "name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "Release tag: ${TAG_NAME}"
+
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
-          name: gymcoach-debug-apk
+          name: GymCoach-debug-apk
           path: ./build/artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: |
-            ./build/artifacts/app-debug.apk
-          generate_release_notes: true
-          draft: false
-          prerelease: false
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: ${{ steps.tag.outputs.name }}
+          body: |
+            ## GymCoach Debug Build
 
-      - name: Upload Release Assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: gymcoach-release
-          path: |
-            ./build/artifacts/app-debug.apk
-          retention-days: 30
+            ⚠️ This is a **debug/testing APK** signed with the Android debug keystore.
+            Do NOT distribute publicly — install only on devices you own for testing.
+
+            ### Build Info
+            - Branch: `${{ github.ref_name }}`
+            - Commit: `${{ github.sha }}`
+            - Workflow run: #${{ github.run_number }}
+            - Triggered by: `${{ github.event_name }}`
+
+            ### Install on Android
+            1. Download `GymCoach-debug.apk` from the assets below.
+            2. On your phone, enable **Install unknown apps** for your browser/files app.
+            3. Open the APK and tap **Install**.
+            4. Launch "GymCoach" from your app drawer.
+          files: ./build/artifacts/GymCoach-debug.apk
+          draft: false
+          prerelease: true

@@ -8,6 +8,8 @@ import com.gymcoach.app.domain.measurement.usecase.AddMeasurementUseCase
 import com.gymcoach.app.domain.measurement.usecase.GetMeasurementsForUserUseCase
 import com.gymcoach.app.domain.measurement.usecase.GetMeasurementTrendUseCase
 import com.gymcoach.app.domain.measurement.usecase.UpdateMeasurementUseCase
+import com.gymcoach.app.domain.repository.MeasurementRepository
+import com.gymcoach.app.domain.repository.MeasurementTrend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,8 @@ class MeasurementViewModel @Inject constructor(
     private val addMeasurementUseCase: AddMeasurementUseCase,
     private val getMeasurementsForUserUseCase: GetMeasurementsForUserUseCase,
     private val getMeasurementTrendUseCase: GetMeasurementTrendUseCase,
-    private val updateMeasurementUseCase: UpdateMeasurementUseCase
+    private val updateMeasurementUseCase: UpdateMeasurementUseCase,
+    private val measurementRepository: MeasurementRepository
 ) : ViewModel() {
 
     private val _measurements = MutableStateFlow<List<MeasurementRecord>>(emptyList())
@@ -32,7 +35,14 @@ class MeasurementViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _trends = MutableStateFlow<Map<MeasurementType, MeasurementTrend>>(emptyMap())
+    val trends: StateFlow<Map<MeasurementType, MeasurementTrend>> = _trends.asStateFlow()
+
     init {
+        loadMeasurements()
+    }
+
+    fun refresh() {
         loadMeasurements()
     }
 
@@ -42,11 +52,24 @@ class MeasurementViewModel @Inject constructor(
             try {
                 getMeasurementsForUserUseCase("default_user").collect { records ->
                     _measurements.value = records
+                    loadTrends()
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to load measurements"
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    private fun loadTrends() {
+        for (type in MeasurementType.values()) {
+            viewModelScope.launch {
+                try {
+                    getMeasurementTrendUseCase("default_user", type).collect { trend ->
+                        _trends.value = _trends.value + (type to trend)
+                    }
+                } catch (_: Exception) {}
             }
         }
     }
@@ -57,6 +80,17 @@ class MeasurementViewModel @Inject constructor(
                 addMeasurementUseCase("default_user", record.measurementType, record.value, record.notes)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to add measurement"
+            }
+            loadMeasurements()
+        }
+    }
+
+    fun deleteMeasurement(record: MeasurementRecord) {
+        viewModelScope.launch {
+            try {
+                measurementRepository.deleteMeasurement(record.id)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to delete measurement"
             }
             loadMeasurements()
         }

@@ -42,7 +42,12 @@ fun PRScreen(
             )
         }
     ) { padding ->
-        val hasData = categories.highestWeight.value > 0.0
+        val hasData = categories.highestWeight.value > 0.0 ||
+            categories.highestVolume.value > 0.0 ||
+            categories.highestReps.value > 0.0 ||
+            categories.longestWorkout.value > 0.0 ||
+            categories.mostExercises.value > 0.0 ||
+            categories.mostSets.value > 0.0
 
         if (!hasData) {
             EmptyState(

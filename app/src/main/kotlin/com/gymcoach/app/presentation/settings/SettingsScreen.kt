@@ -53,6 +53,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +84,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     var selectedSection by remember { mutableStateOf<SettingsScreenSection?>(null) }
 
     Scaffold(
@@ -222,7 +226,24 @@ fun SettingsScreen(
             item {
                 AboutSection(
                     versionName = state.versionName,
-                    versionCode = state.versionCode
+                    versionCode = state.versionCode,
+                    onRateAppClick = {
+                        try {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.gymcoach.app"))
+                            )
+                        } catch (e: Exception) {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.gymcoach.app"))
+                            )
+                        }
+                    },
+                    onContactSupportClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")).apply {
+                            putExtra(Intent.EXTRA_SUBJECT, "GymCoach Support")
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Contact Support"))
+                    }
                 )
             }
         }
@@ -442,13 +463,16 @@ private fun DeveloperSection(
 @Composable
 private fun AboutSection(
     versionName: String,
-    versionCode: Int
+    versionCode: Int,
+    onRateAppClick: () -> Unit = {},
+    onContactSupportClick: () -> Unit = {}
 ) {
     CategorySection(title = "About") {
         SettingsButtonItem(
             title = "Rate App",
             icon = Icons.Default.AppRegistration,
-            description = "Rate GymCoach on app store"
+            description = "Rate GymCoach on app store",
+            onClick = onRateAppClick
         )
         SettingsButtonItem(
             title = "Privacy Policy",
@@ -463,7 +487,8 @@ private fun AboutSection(
         SettingsButtonItem(
             title = "Contact Support",
             icon = Icons.Default.Tune,
-            description = "Get help from support team"
+            description = "Get help from support team",
+            onClick = onContactSupportClick
         )
         SettingsButtonItem(
             title = "Version",

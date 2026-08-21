@@ -40,7 +40,8 @@ private fun UserProfileEntity.toDomain() = UserProfile(
     units = units,
     avatarUrl = avatarUrl,
     leanBodyMass = leanBodyMass,
-    maintenanceCalories = maintenanceCalories
+    maintenanceCalories = maintenanceCalories,
+    equipment = equipment
 )
 
 private fun UserProfile.toEntity() = UserProfileEntity(
@@ -62,5 +63,6 @@ private fun UserProfile.toEntity() = UserProfileEntity(
     units = units,
     avatarUrl = avatarUrl,
     leanBodyMass = leanBodyMass,
-    maintenanceCalories = maintenanceCalories
+    maintenanceCalories = maintenanceCalories,
+    equipment = equipment
 )

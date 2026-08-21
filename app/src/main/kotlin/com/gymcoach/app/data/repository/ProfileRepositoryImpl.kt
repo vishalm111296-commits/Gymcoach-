@@ -52,7 +52,8 @@ class ProfileRepositoryImpl @Inject constructor(
         units = units,
         avatarUrl = avatarUrl,
         leanBodyMass = leanBodyMass,
-        maintenanceCalories = maintenanceCalories
+        maintenanceCalories = maintenanceCalories,
+        equipment = equipment
     )
 
     private fun UserProfile.toEntity() = UserProfileEntity(
@@ -74,6 +75,7 @@ class ProfileRepositoryImpl @Inject constructor(
         units = units,
         avatarUrl = avatarUrl,
         leanBodyMass = leanBodyMass,
-        maintenanceCalories = maintenanceCalories
+        maintenanceCalories = maintenanceCalories,
+        equipment = equipment
     )
 }

@@ -4,6 +4,7 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
 import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 class SubstitutionEngine @Inject constructor(
     private val exerciseDao: ExerciseDao,
     private val exerciseMuscleDao: ExerciseMuscleDao,
-    private val exerciseSubstitutionDao: ExerciseSubstitutionDao
+    private val exerciseSubstitutionDao: ExerciseSubstitutionDao,
+    private val equipmentAvailability: EquipmentAvailability
 ) {
 
     data class SubstitutionResult(
@@ -22,27 +24,33 @@ class SubstitutionEngine @Inject constructor(
 
     suspend fun findSubstitutes(
         exerciseId: Long,
-        availableEquipment: List<String>,
+        equipmentType: String,
         maxResults: Int = 5
     ): List<SubstitutionResult> {
-        val original = exerciseDao.getById(exerciseId) ?: return emptyList()
+        val original = exerciseDao.getById(exerciseId).first() ?: return emptyList()
+        val availableEquipment = equipmentAvailability.getAvailableEquipment(equipmentType)
         val substitutes = mutableListOf<SubstitutionResult>()
 
-        val existingSubs = exerciseSubstitutionDao.getByExerciseId(exerciseId)
+        // Check predefined substitutions first
+        val existingSubs = exerciseSubstitutionDao.getByExerciseId(exerciseId).first()
         for (sub in existingSubs) {
-            val substitute = exerciseDao.getById(sub.substituteId) ?: continue
-            if (substitute.equipment in availableEquipment || substitute.equipment == "Bodyweight") {
+            val substitute = exerciseDao.getById(sub.substituteExerciseId).first() ?: continue
+            if (equipmentAvailability.isAvailable(substitute.equipment, equipmentType)) {
                 val score = calculatePreservationScore(original, substitute)
                 substitutes.add(SubstitutionResult(substitute, score, "Recommended substitute"))
             }
         }
 
+        // Fallback: same muscle group exercises with available equipment
         if (substitutes.size < maxResults) {
-            val sameGroup = exerciseDao.getAll()
-                .filter { it.id != exerciseId && it.muscleGroup == original.muscleGroup }
-                .filter { it.equipment in availableEquipment || it.equipment == "Bodyweight" }
+            val allExercises = exerciseDao.getAll().first()
+            val sameGroup = allExercises
+                .filter { it.id != exerciseId && it.muscleGroup.equals(original.muscleGroup, ignoreCase = true) }
+                .filter { equipmentAvailability.isAvailable(it.equipment, equipmentType) }
                 .filter { sub -> substitutes.none { it.substitute.id == sub.id } }
-            for (ex in sameGroup.take(maxResults - substitutes.size)) {
+                .take(maxResults - substitutes.size)
+
+            for (ex in sameGroup) {
                 val score = calculatePreservationScore(original, ex)
                 substitutes.add(SubstitutionResult(ex, score, "Same muscle group"))
             }
@@ -53,7 +61,7 @@ class SubstitutionEngine @Inject constructor(
 
     private fun calculatePreservationScore(original: ExerciseEntity, substitute: ExerciseEntity): Int {
         var score = 0
-        if (original.muscleGroup == substitute.muscleGroup) score += 40
+        if (original.muscleGroup.equals(substitute.muscleGroup, ignoreCase = true)) score += 40
         if (original.category == substitute.category) score += 20
         if (original.equipment == substitute.equipment) score += 15
         if (original.difficulty == substitute.difficulty) score += 10

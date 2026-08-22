@@ -18,6 +18,7 @@ import com.gymcoach.app.data.local.dao.PersonalRecordDao
 import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramDao
 import com.gymcoach.app.data.local.dao.ProgramExerciseDao
+import com.gymcoach.app.data.local.dao.UserProfileDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
 import com.gymcoach.app.data.local.entity.EquipmentEntity
@@ -28,11 +29,11 @@ import com.gymcoach.app.data.local.entity.ExerciseMuscleEntity
 import com.gymcoach.app.data.local.entity.ExerciseSubstitutionEntity
 import com.gymcoach.app.data.local.entity.FavoriteExerciseEntity
 import com.gymcoach.app.data.local.entity.MuscleEntity
-import com.gymcoach.app.data.local.entity.MuscleGroupEnum
 import com.gymcoach.app.data.local.entity.PersonalRecordEntity
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
+import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
@@ -55,14 +56,15 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
         ProgramDayEntity::class,
         ProgramEntity::class,
         ProgramExerciseEntity::class,
-        MuscleGroupEnum::class
+        UserProfileEntity::class
     ],
-    version = 5,
-    exportSchema = false
+    version = 6,
+    exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutDao(): WorkoutDao
+    abstract fun userProfileDao(): UserProfileDao
     abstract fun programDao(): ProgramDao
     abstract fun programDayDao(): ProgramDayDao
     abstract fun programExerciseDao(): ProgramExerciseDao
@@ -85,38 +87,58 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v2 had no new tables, v3 added workout_exercises and workout_sets via 1_2
+                // This migration is a no-op placeholder for version continuity
+            }
+        }
+
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v4 added setType column to workout_sets
+                database.execSQL("ALTER TABLE `workout_sets` ADD COLUMN `setType` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Add new columns to exercises table
-                database.execSQL("ALTER TABLE exercises ADD COLUMN vtaper_lat INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN vtaper_lateral_delt INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN vtaper_upper_chest INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN vtaper_rear_delt INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN movement_pattern TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN image_url TEXT")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN video_url TEXT")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN animation_url TEXT")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN setup_instructions TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN execution_instructions TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN breathing_instructions TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN tempo_guidance TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN beginner_variant_id INTEGER")
-                database.execSQL("ALTER TABLE exercises ADD COLUMN advanced_variant_id INTEGER")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lat` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lateral_delt` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_upper_chest` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_rear_delt` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `movement_pattern` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `image_url` TEXT")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `video_url` TEXT")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `animation_url` TEXT")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `setup_instructions` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `execution_instructions` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `breathing_instructions` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `tempo_guidance` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `beginner_variant_id` INTEGER")
+                database.execSQL("ALTER TABLE `exercises` ADD COLUMN `advanced_variant_id` INTEGER")
 
-                // Create all 13 new tables
-                database.execSQL("CREATE TABLE IF NOT EXISTS `user_profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` TEXT NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `programs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `goal` TEXT, `difficulty` TEXT)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `program_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `programId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `name` TEXT NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `program_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `programId` INTEGER NOT NULL, `dayId` INTEGER NOT NULL, `exerciseId` INTEGER NOT NULL, `orderIndex` INTEGER NOT NULL, `sets` INTEGER NOT NULL, `reps` TEXT NOT NULL, `restTime` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `personal_records` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `exerciseId` INTEGER NOT NULL, `weight` REAL NOT NULL, `reps` INTEGER NOT NULL, `rpe` REAL, `date` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `body_measurements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `weight` REAL NOT NULL, `height` REAL, `bmi` REAL, `bodyFatPercent` REAL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `favorite_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `exerciseId` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sourceExerciseId` INTEGER NOT NULL, `targetExerciseId` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `muscles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `primary` INTEGER NOT NULL DEFAULT 0)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `equipment` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_muscles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exerciseId` INTEGER NOT NULL, `muscleId` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exerciseId` INTEGER NOT NULL, `equipmentId` INTEGER NOT NULL)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_aliases` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `exerciseId` INTEGER NOT NULL)")
+                // Create all 13 new tables matching entity schemas
+                database.execSQL("CREATE TABLE IF NOT EXISTS `user_profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goal` TEXT NOT NULL DEFAULT '', `experience` TEXT NOT NULL DEFAULT '', `age` INTEGER NOT NULL DEFAULT 0, `sex` TEXT NOT NULL DEFAULT '', `height_cm` REAL NOT NULL DEFAULT 0.0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `training_days_per_week` INTEGER NOT NULL DEFAULT 4, `session_length_minutes` INTEGER NOT NULL DEFAULT 60, `equipment_type` TEXT NOT NULL DEFAULT 'gym', `preferred_exercises` TEXT NOT NULL DEFAULT '', `exercises_to_avoid` TEXT NOT NULL DEFAULT '', `created_at` INTEGER NOT NULL DEFAULT 0)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `programs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL DEFAULT '', `description` TEXT NOT NULL DEFAULT '', `goal` TEXT NOT NULL DEFAULT '', `frequency` INTEGER NOT NULL DEFAULT 4, `is_active` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL DEFAULT 0)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `program_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_id` INTEGER NOT NULL, `day_number` INTEGER NOT NULL, `name` TEXT NOT NULL DEFAULT '', `target_muscles` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `program_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_day_id` INTEGER NOT NULL, `exercise_id` INTEGER NOT NULL, `order_index` INTEGER NOT NULL DEFAULT 0, `target_sets` INTEGER NOT NULL DEFAULT 3, `target_reps_min` INTEGER NOT NULL DEFAULT 8, `target_reps_max` INTEGER NOT NULL DEFAULT 12, `target_rpe` REAL NOT NULL DEFAULT 7.0, `rest_seconds` INTEGER NOT NULL DEFAULT 90, FOREIGN KEY(`program_day_id`) REFERENCES `program_days`(`id`) ON DELETE CASCADE, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `personal_records` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `weight` REAL NOT NULL DEFAULT 0.0, `reps` INTEGER NOT NULL DEFAULT 0, `estimated_1rm` REAL NOT NULL DEFAULT 0.0, `volume` REAL NOT NULL DEFAULT 0.0, `workout_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`workout_id`) REFERENCES `workouts`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `body_measurements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL DEFAULT 0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `waist_cm` REAL NOT NULL DEFAULT 0.0, `chest_cm` REAL NOT NULL DEFAULT 0.0, `shoulders_cm` REAL NOT NULL DEFAULT 0.0, `arm_cm` REAL NOT NULL DEFAULT 0.0, `thigh_cm` REAL NOT NULL DEFAULT 0.0, `body_fat_estimate` REAL NOT NULL DEFAULT 0.0, `photo_url` TEXT NOT NULL DEFAULT '', `notes` TEXT NOT NULL DEFAULT '')")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `favorite_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `added_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `substitute_id` INTEGER NOT NULL, `preservation_score` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`substitute_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `muscles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NOT NULL DEFAULT '', `group_name` TEXT NOT NULL DEFAULT '', `vtaper_relevance` INTEGER NOT NULL DEFAULT 0)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `equipment` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL DEFAULT '', `category` TEXT NOT NULL DEFAULT '', `gym_available` INTEGER NOT NULL DEFAULT 1, `home_available` INTEGER NOT NULL DEFAULT 0)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_muscles` (`exercise_id` INTEGER NOT NULL, `muscle_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `muscle_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`exercise_id` INTEGER NOT NULL, `equipment_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `equipment_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_aliases` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `alias` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v6 schema update - ensure UserProfileEntity is properly migrated
             }
         }
 
@@ -126,7 +148,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 GymCoachDatabase::class.java,
                 "gymcoach.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration()
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {

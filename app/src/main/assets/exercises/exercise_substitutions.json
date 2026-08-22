@@ -1,0 +1,115 @@
+{
+  "db_bench_press": [
+    {"substitute_id": "db_floor_press", "reason": "Same horizontal push pattern, no bench needed, shoulder-friendly range"},
+    {"substitute_id": "push_up", "reason": "Bodyweight horizontal push, similar chest activation"},
+    {"substitute_id": "db_squeeze_press", "reason": "Same equipment and pattern with extra inner-chest tension"}
+  ],
+  "db_floor_press": [
+    {"substitute_id": "db_bench_press", "reason": "Longer range of motion on the same horizontal press pattern"},
+    {"substitute_id": "push_up", "reason": "Bodyweight alternative, similar muscle activation"}
+  ],
+  "db_flye": [
+    {"substitute_id": "db_squeeze_press", "reason": "Chest isolation via inward squeeze, easier on shoulders"},
+    {"substitute_id": "wide_push_up", "reason": "Bodyweight alternative emphasizing pec stretch and adduction"}
+  ],
+  "db_one_arm_row": [
+    {"substitute_id": "chest_supported_row", "reason": "Same horizontal pull pattern, reduces lower back strain"},
+    {"substitute_id": "db_seal_row", "reason": "Strictest version of the same pull, zero body english"},
+    {"substitute_id": "inverted_row", "reason": "Bodyweight alternative, similar lat and upper-back activation"}
+  ],
+  "db_bent_over_row": [
+    {"substitute_id": "chest_supported_row", "reason": "Identical muscles with the lower back taken out of the equation"},
+    {"substitute_id": "db_one_arm_row", "reason": "Unilateral variant allowing torso support on bench"}
+  ],
+  "chest_supported_row": [
+    {"substitute_id": "db_seal_row", "reason": "Same supported pulling angle with stricter setup"},
+    {"substitute_id": "inverted_row", "reason": "Bodyweight horizontal pull preserving the movement pattern"}
+  ],
+  "db_seal_row": [
+    {"substitute_id": "chest_supported_row", "reason": "Easier setup, same prone horizontal pull"},
+    {"substitute_id": "db_bent_over_row", "reason": "No elevation required, same rowing muscles"}
+  ],
+  "db_renegade_row": [
+    {"substitute_id": "db_one_arm_row", "reason": "Isolated rowing with less stability demand"},
+    {"substitute_id": "plank", "reason": "Keeps the anti-extension core component if rowing form breaks down"}
+  ],
+  "db_two_arm_pullover": [
+    {"substitute_id": "db_single_arm_pullover", "reason": "Same pullover arc with unilateral focus"},
+    {"substitute_id": "db_one_arm_row", "reason": "Lat-dominant pull when bench position is uncomfortable"}
+  ],
+  "db_single_arm_pullover": [
+    {"substitute_id": "db_two_arm_pullover", "reason": "Bilateral version, same lat stretch and contraction"}
+  ],
+  "inverted_row": [
+    {"substitute_id": "db_one_arm_row", "reason": "Dumbbell horizontal pull if no sturdy table is available"},
+    {"substitute_id": "superman_pull", "reason": "Floor-based posterior chain pull, no equipment"}
+  ],
+  "superman_pull": [
+    {"substitute_id": "prone_y_raise", "reason": "Same prone position focused on upper-back scapular muscles"},
+    {"substitute_id": "inverted_row", "reason": "Heavier loading for the same pulling musculature"}
+  ],
+  "db_reverse_flye": [
+    {"substitute_id": "prone_y_raise", "reason": "Bodyweight rear-delt and lower-trap work"},
+    {"substitute_id": "superman_pull", "reason": "Prone posterior-chain alternative without dumbbells"}
+  ],
+  "db_lateral_raise": [
+    {"substitute_id": "db_seated_lateral_raise", "reason": "Seated setup removes momentum for the same side-delt isolation"},
+    {"substitute_id": "db_leaning_lateral_raise", "reason": "Unilateral lean-away version with longer tension range"}
+  ],
+  "db_seated_shoulder_press": [
+    {"substitute_id": "db_overhead_press", "reason": "Standing version, same vertical press pattern"},
+    {"substitute_id": "pike_push_up", "reason": "Bodyweight vertical press alternative"}
+  ],
+  "db_overhead_press": [
+    {"substitute_id": "db_seated_shoulder_press", "reason": "Back support removes stability limit on same pattern"},
+    {"substitute_id": "elevated_pike_push_up", "reason": "Bodyweight vertical press using only floor and bench"}
+  ],
+  "pike_push_up": [
+    {"substitute_id": "elevated_pike_push_up", "reason": "Progression of the same vertical pressing pattern"},
+    {"substitute_id": "db_seated_shoulder_press", "reason": "Loaded alternative when bodyweight volume stalls"}
+  ],
+  "db_skull_crusher": [
+    {"substitute_id": "db_overhead_triceps_extension", "reason": "Same elbow-extension pattern with long-head stretch"},
+    {"substitute_id": "db_close_grip_floor_press", "reason": "Compound triceps loader, safer setup without bench"}
+  ],
+  "db_overhead_triceps_extension": [
+    {"substitute_id": "db_kickback", "reason": "Lighter elbow extension isolating the same muscle"},
+    {"substitute_id": "bench_dip", "reason": "Bodyweight triceps loading using the bench"}
+  ],
+  "bench_dip": [
+    {"substitute_id": "diamond_push_up", "reason": "Bodyweight triceps emphasis, less shoulder stress"},
+    {"substitute_id": "db_skull_crusher", "reason": "Direct triceps isolation on the same bench"}
+  ],
+  "db_goblet_squat": [
+    {"substitute_id": "db_front_squat", "reason": "Heavier loading potential, same upright squat pattern"},
+    {"substitute_id": "db_sumo_squat", "reason": "Wide-stance variant shifting emphasis to adductors"}
+  ],
+  "db_rdl": [
+    {"substitute_id": "db_single_leg_rdl", "reason": "Unilateral hinge adding balance demand"},
+    {"substitute_id": "db_hip_thrust", "reason": "Posterior-chain alternative removing hamstring flexibility limits"}
+  ],
+  "bulgarian_split_squat": [
+    {"substitute_id": "db_split_squat", "reason": "Both feet on floor, easier balance on same pattern"},
+    {"substitute_id": "db_reverse_lunge", "reason": "Dynamic lunge hitting the same unilateral leg muscles"}
+  ],
+  "db_step_up": [
+    {"substitute_id": "bulgarian_split_squat", "reason": "Same unilateral glute/quad emphasis using the bench"},
+    {"substitute_id": "db_reverse_lunge", "reason": "No-bench unilateral alternative preserving pattern"}
+  ],
+  "db_lateral_lunge": [
+    {"substitute_id": "db_sumo_squat", "reason": "Frontal-plane adductor emphasis with simpler mechanics"},
+    {"substitute_id": "db_reverse_lunge", "reason": "Sagittal-plane lunge if groin mobility limits depth"}
+  ],
+  "plank": [
+    {"substitute_id": "dead_bug", "reason": "Anti-extension core training in a safer supine position"},
+    {"substitute_id": "hollow_body_hold", "reason": "Higher-intensity anti-extension hold"}
+  ],
+  "russian_twist": [
+    {"substitute_id": "db_side_bend", "reason": "Loaded oblique work with less spinal rotation stress"},
+    {"substitute_id": "lying_leg_raise", "reason": "Trains anterior core without rotation if low back is sensitive"}
+  ],
+  "db_farmer_carry": [
+    {"substitute_id": "db_shrug", "reason": "Traps and grip loaded statically if walking space is limited"},
+    {"substitute_id": "side_plank", "reason": "Core stability component without equipment travel"}
+  ]
+}

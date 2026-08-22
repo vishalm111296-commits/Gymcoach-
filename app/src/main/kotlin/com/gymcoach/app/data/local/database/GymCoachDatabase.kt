@@ -25,6 +25,7 @@ import com.gymcoach.app.data.local.entity.EquipmentEntity
 import com.gymcoach.app.data.local.entity.ExerciseAliasEntity
 import com.gymcoach.app.data.local.entity.ExerciseEquipmentEntity
 import com.gymcoach.app.data.local.entity.ExerciseEntity
+import com.gymcoach.app.data.local.entity.ExerciseFtsEntity
 import com.gymcoach.app.data.local.entity.ExerciseMuscleEntity
 import com.gymcoach.app.data.local.entity.ExerciseSubstitutionEntity
 import com.gymcoach.app.data.local.entity.FavoriteExerciseEntity
@@ -41,6 +42,7 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 @Database(
     entities = [
         ExerciseEntity::class,
+        ExerciseFtsEntity::class,
         WorkoutEntity::class,
         WorkoutExerciseEntity::class,
         WorkoutSetEntity::class,
@@ -58,7 +60,7 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
         ProgramExerciseEntity::class,
         UserProfileEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -142,13 +144,21 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v7 added external-content FTS4 index over exercises for search
+                database.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `exercise_fts` USING FTS4(`name` TEXT NOT NULL, `description` TEXT NOT NULL, `muscleGroup` TEXT NOT NULL, `equipment` TEXT NOT NULL, `difficulty` TEXT NOT NULL, `category` TEXT NOT NULL, content=`exercises`)")
+                database.execSQL("INSERT INTO exercise_fts(exercise_fts) VALUES('rebuild')")
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
                 GymCoachDatabase::class.java,
                 "gymcoach.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {

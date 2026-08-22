@@ -12,7 +12,6 @@ import com.gymcoach.app.data.local.dao.ExerciseEquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
 import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
 import com.gymcoach.app.data.local.dao.ExerciseDao
-import com.gymcoach.app.data.local.dao.ExerciseSubstitutionsDao
 import com.gymcoach.app.data.local.dao.FavoriteExerciseDao
 import com.gymcoach.app.data.local.dao.MuscleDao
 import com.gymcoach.app.data.local.dao.PersonalRecordDao
@@ -76,7 +75,6 @@ abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseMuscleDao(): ExerciseMuscleDao
     abstract fun exerciseEquipmentDao(): ExerciseEquipmentDao
     abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
-    abstract fun exerciseSubstitutionsDao(): ExerciseSubstitutionsDao
 
     companion object {
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {

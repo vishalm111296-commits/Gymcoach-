@@ -1,5 +1,10 @@
 package com.gymcoach.app.core.program
 
+import com.gymcoach.app.data.local.entity.WorkoutSetEntity
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,8 +19,12 @@ class VolumeCalculator @Inject constructor() {
         val status: VolumeStatus
     )
 
-    enum class VolumeStatus(val label: String) {
-        INSUFFICIENT("Too low"), MODERATE("Moderate"), HIGH("High"), EXCESSIVE("Very high")
+    enum class VolumeStatus(val label: String, val ordinal: Int) {
+        INSUFFICIENT("Too low", 0),
+        MODERATE("Moderate", 1),
+        HIGH("High", 2),
+        OPTIMAL("Optimal", 3),
+        EXCESSIVE("Very high", 4)
     }
 
     data class TrainingBalance(
@@ -51,17 +60,68 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
+    /**
+     * Calculate weekly volume per muscle group with ISO-week bucketing.
+     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     */
     fun calculateWeeklyVolume(
-        weeklySetsByMuscle: Map<String, Int>,
-        weeklyIndirectByMuscle: Map<String, Int>
+        completedSets: List<WorkoutSetEntity>,
+        exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
+        val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+
+        for (set in completedSets.filter { it.completed && it.setType == 0 }) {
+            val weekKey = isoWeekKey(set.date)
+            val muscleAssignments = exerciseMuscleMap[set.exerciseId] ?: emptyList()
+
+            for (assignment in muscleAssignments) {
+                val credits = assignment.role.credit
+                val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
+                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + credits
+            }
+        }
+
+        // Average across weeks (or take most recent week if preferred)
+        val avgWeekly = mutableMapOf<String, Double>()
+        for ((_, weekMap) in weekBuckets) {
+            for ((muscle, credits) in weekMap) {
+                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
+            }
+        }
+        for ((muscle, total) in avgWeekly) {
+            avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+        }
+
+        val directSetsByMuscle = completedSets
+            .filter { it.completed && it.setType == 0 }
+            .groupBy { it.exerciseId }
+            .flatMap { (exId, sets) ->
+                (exerciseMuscleMap[exId] ?: emptyList())
+                    .filter { it.role == MuscleRole.PRIMARY }
+                    .map { it.muscleName }
+            }
+            .groupBy { it }
+            .mapValues { (_, v) -> v.size }
+
+        val indirectSetsByMuscle = completedSets
+            .filter { it.completed && it.setType == 0 }
+            .groupBy { it.exerciseId }
+            .flatMap { (exId, sets) ->
+                (exerciseMuscleMap[exId] ?: emptyList())
+                    .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
+                    .map { it.muscleName }
+            }
+            .groupBy { it }
+            .mapValues { (_, v) -> v.size }
+
         fun vol(muscle: String) = MuscleVolume(
             muscleName = muscle,
-            weeklySets = (weeklySetsByMuscle[muscle] ?: 0) + (weeklyIndirectByMuscle[muscle] ?: 0),
-            directSets = weeklySetsByMuscle[muscle] ?: 0,
-            indirectSets = weeklyIndirectByMuscle[muscle] ?: 0,
-            status = classify((weeklySetsByMuscle[muscle] ?: 0) + (weeklyIndirectByMuscle[muscle] ?: 0))
+            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
+            directSets = directSetsByMuscle[muscle] ?: 0,
+            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
+            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
         )
+
         return TrainingBalance(
             latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
             rearDeltVolume = vol("Rear Deltoid"), upperChestVolume = vol("Upper Chest"),
@@ -76,17 +136,28 @@ class VolumeCalculator @Inject constructor() {
         val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
         val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
         val text = when {
-            primary >= 2.0 && secondary >= 1.5 -> "Good V-taper volume distribution"
-            primary >= 1.5 -> "Moderate V-taper focus"
+            primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
+            primary >= 2.0 -> "Moderate V-taper focus"
             else -> "Low V-taper volume"
         }
         return VtaperBalance(primary, secondary, text)
     }
 
-    private fun classify(sets: Int): VolumeStatus = when {
-        sets < 8 -> VolumeStatus.INSUFFICIENT
-        sets < 12 -> VolumeStatus.MODERATE
-        sets < 16 -> VolumeStatus.HIGH
-        else -> VolumeStatus.EXCESSIVE
+    private fun classify(sets: Int): VolumeStatus {
+        return when {
+            sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
+            sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
+            sets < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
+            sets < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
+            else -> VolumeStatus.EXCESSIVE          // > 21 = excessive per evidence
+        }
+    }
+
+    private fun isoWeekKey(dateMs: Long): Int {
+        val calendar = Calendar.getInstance(Locale.getDefault())
+        calendar.timeInMillis = dateMs
+        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
+        val year = calendar.get(Calendar.YEAR)
+        return year * 100 + weekOfYear
     }
 }

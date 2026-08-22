@@ -29,7 +29,7 @@ Single `:app` Gradle module today; package boundaries drawn so extraction into G
 ```
 core/
   di/            existing Hilt modules
-  ml/            FormAnalyzer (UNWIRED — see §9)
+  ml/            FormAnalyzer (UNWIRED — see §8)
   timer/         RestTimerManager (domain clock logic, service-agnostic)
   exercise/      NEW  ExerciseSeeder, SearchEngine, SubstitutionResolver
   program/       NEW  ProgramGenerator, VolumeCalculator, SplitTemplates
@@ -50,44 +50,43 @@ Extraction rule for later: a `core/*` package qualifies to become a Gradle modul
 
 The rest timer is a **first-class OS citizen**, not an in-app composable:
 
-- `RestTimerService`: started foreground service, `FOREGROUND_SERVICE_TYPE_SPECIAL_USE` (declare + justify in manifest; targetSdk-compliant).
-- Ongoing notification, channel `rest_timer` (low importance sound-wise; vibration at expiry via separate event or `setInsistent` flag per settings):
+- `RestTimerService`: started foreground service, typed foreground-service declaration in manifest (targetSdk-compliant, with user-visible rationale on first use).
+- Ongoing notification, channel `rest_timer`:
   - Title: exercise + set just completed ("Bench Press · Set 2 done")
-  - Chronometer/countdown text updated every second via `setUsesChronometer(false)` + periodic update
-  - `visibility = VISIBILITY_PUBLIC`, `ongoing = true`, shown on **lock screen**
+  - Countdown text updated every second
+  - `visibility = PUBLIC`, `ongoing = true`, shown on **lock screen**
 - **Action buttons (4):**
   1. **Complete Set** — marks pending set complete, advances session cursor
   2. **Skip** — cancel remainder, advance cursor, start next rest chain if applicable
   3. **+15 s** — extend remaining
   4. **−15 s** — reduce, floor 0 (expiry fires immediately at 0)
-- Actions delivered via `BroadcastReceiver`/pending intents → service mutates timer state held in `RestTimerManager` (singleton, coroutine-based); UI re-subscribes via shared Flow. App kill does not stop service; service stops itself at expiry or Skip.
-- Android 14+ requires user-visible FGS rationale on first launch of a session with rests enabled.
+- Actions delivered via pending intents → service mutates timer state held in `RestTimerManager` (singleton, coroutine-based); UI re-subscribes via shared Flow. App kill does not stop service; service stops itself at expiry or Skip.
 
 ## 4. Superset Chaining (Antagonist Pairs)
 
 - `program_exercises.superset_group` (int, nullable) groups consecutive paired exercises; pairs declared antagonist-aware in split templates (bench↔row, OHP↔pull-up/pulldown, curl↔pushdown, lunge↔hip thrust).
 - Timing model per group member: log set → **transition timer** (default 15–30 s, enough to walk/set up partner station) → partner logs set → back; after BOTH sides of pair finish a round → **full rest** (configured per exercise).
-- Implementation: the session state machine emits `RestChain` events (`TRANSITION_TO(exerciseId)` / `FULL_REST(seconds)`); `core/notification` consumes identical API whether chained or plain — one notification pipeline, two cadences.
+- Implementation: the session state machine emits `RestChain` events (`TRANSITION_TO(exerciseId)` / `FULL_REST(seconds)`); `core/notification` consumes an identical API whether chained or plain — one notification pipeline, two cadences.
 - Manual Skip breaks chain gracefully: remaining partner becomes standalone exercise, no orphaned timers.
-- Rationale: antagonist supersets maintain performance while roughly halving session wall-clock; treated as scheduling, not a hypertrophy claim (see SCIENTIFIC_EVIDENCE §Split/Frequency).
+- Rationale: antagonist supersets maintain performance while roughly halving session wall-clock; treated as scheduling, not a hypertrophy claim (see SCIENTIFIC_EVIDENCE §R6).
 
 ## 5. Home-Screen Widget
 
 - Glance-based `TodayWorkoutWidgetProvider`: program day name, target muscles, est. duration, tap → deep link `gymcoach://workout/today` (resolves to session screen; onboarding if uninitialized).
-- Refresh triggers: program change, workout completion (app-scoped broadcasts + `updatePeriodMillis = 0`; we refresh explicitly, never polling).
-- Offline trivially satisfied (Room direct read via remoteviews-safe snapshot).
+- Refresh triggers: program change, workout completion (explicit refresh, never polling).
+- Offline trivially satisfied (direct Room read).
 
 ## 6. Offline-First Data Flow
 
 - **Room is the single source of truth.** Repositories expose Flows from DAOs; UI never caches separately.
 - Writes go repository → DAO synchronously (suspend); optimistic UI from local write, no network round-trip exists to wait on.
-- Seed data (exercises, muscle taxonomy) ships as versioned JSON assets; transactional upsert keyed by `seed_version` in `user_profiles` metadata — content updates without schema migration.
+- Seed data (exercises, muscle taxonomy) ships as versioned JSON assets; transactional upsert keyed by `seed_version` in `user_profiles` — content updates without schema migration.
 - No Retrofit/OkHttp/Ktor anywhere in v2 scope. If sync is ever added, it plugs in at repository implementations behind existing interfaces (offline remains authoritative, last-write-wins per row with `updated_at`).
 
 ## 7. Media Policy
 
-- Exercise demos = **text instructions + static images** (bundled drawables/asset URIs). No Media3/ExoPlayer dependency, no streaming, no `video_url` consumption even though the column exists (forward-compat only).
-- Image loading: Coil, disk-cached, graceful placeholder (muscle-group glyph) — library must render fully with zero network.
+- Exercise demos = **text instructions + static images** (bundled drawables/asset URIs). No Media3/ExoPlayer dependency, no streaming; `video_url` column exists for forward-compat only and is never consumed.
+- Image loading: Coil, disk-cached, graceful placeholder (muscle-group glyph) — library renders fully with zero network.
 
 ## 8. Camera Form Analysis — Unwired, Documented
 
@@ -98,16 +97,16 @@ API contract preserved for future wiring:
 - Output: per-frame joint landmarks → rep-segmented joint-angle series → phase detection + cue list (e.g., "depth below parallel", "bar path drift")
 - Integration point when activated: `ExerciseDetail` "Form Check" tab requesting CAMERA permission contextually; results advisory-only, never scored numerically.
 
-Documented here so the future wiring needs no archaeology; nothing else in the build depends on it.
+Documented here so future wiring needs no archaeology; nothing else in the build depends on it.
 
 ## 9. Concurrency & Process-Death Safety
 
-- All DB access via suspend/Flow on Dispatchers.IO (Room manages its own executors; we do not use `allowMainThreadQueries`).
-- Session writes are incremental: each completed set row committed instantly; workout row finalized on Finish. Process death mid-set loses at most the in-progress entry field state, restored from draft in ViewModel SavedStateHandle.
+- All DB access via suspend/Flow on background dispatchers (Room-managed executors; never `allowMainThreadQueries`).
+- Session writes are incremental: each completed set row committed instantly; workout row finalized on Finish. Process death mid-set loses at most in-progress field state, restored from ViewModel SavedStateHandle.
 - Timers survive process death via service; session cursor survives via Room (session state is data, not memory).
 
 ## 10. Testing Architecture
 
-- DAO tests: in-memory Room, incl. **migration test v4→v5** using exported schema JSONs (see DATA_MODEL §Migration).
-- Engines (`progression`, `program`, `timer`) are pure-Kotlin unit tested (JVM).
+- DAO tests: in-memory Room, incl. **migration test v4→v5** using exported schema JSONs (see DATA_MODEL §6).
+- Engines (`progression`, `program`, `timer`) are pure-Kotlin JVM unit tested.
 - ViewModel tests with faked repositories; Compose UI smoke on critical loop (log set → timer → finish).

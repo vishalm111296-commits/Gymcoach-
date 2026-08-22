@@ -3,7 +3,7 @@
 **Version:** 2.0 (Phase 2 — Rebuild)
 **Date:** 2026-08-22
 **Status:** Approved scope for architecture/data-model design
-**Companion docs:** [GYMCOACH_ARCHITECTURE.md](../GYMCOACH_ARCHITECTURE.md) · [GYMCOACH_DATA_MODEL.md](../GYMCOACH_DATA_MODEL.md) · [research/PRODUCT_BENCHMARK.md](research/PRODUCT_BENCHMARK.md) · [research/SCIENTIFIC_EVIDENCE.md](research/SCIENTIFIC_EVIDENCE.md)
+**Companion docs:** [GYMCOACH_ARCHITECTURE.md](GYMCOACH_ARCHITECTURE.md) · [GYMCOACH_DATA_MODEL.md](GYMCOACH_DATA_MODEL.md) · [research/PRODUCT_BENCHMARK.md](research/PRODUCT_BENCHMARK.md) · [research/SCIENTIFIC_EVIDENCE.md](research/SCIENTIFIC_EVIDENCE.md)
 
 ---
 
@@ -57,7 +57,7 @@ Loop acceptance test: a user can complete one full cycle in under 45 minutes of 
 ## 4. Required Features & Acceptance Criteria
 
 ### PS-1 Onboarding (`PS-1`)
-See §6 for flow. **AC:** completing onboarding produces an active 4-week program whose every `program_exercise` row references equipment present in the user's equipment profile; skipping any step is impossible except preferences/injuries.
+See §6 for flow. **AC:** completing onboarding produces an active 4-week program whose every `program_exercises` row references equipment present in the user's equipment profile; skipping any step is impossible except preferences/injuries.
 
 ### PS-2 Home Dashboard (`PS-2`)
 Today's workout card (program day name, target muscles, estimated duration, START button), last-session summary, current streak, most recent PR, weekly sets-per-muscle vs the 10–20 hard-set band. **AC:** cold start renders today card <300 ms from Room; airplane-mode safe; empty states per §7.
@@ -66,7 +66,7 @@ Today's workout card (program day name, target muscles, estimated duration, STAR
 Collapsible exercise cards; set rows with weight/reps steppers; ghost-text of previous performance for same exercise; set types (warm-up, normal, drop, failure); swipe-to-delete with undo; haptic on set completion. **AC:** logging a set = 1 tap on ✓ (values prefilled); works one-handed; no data loss on process death (each completed set persisted immediately).
 
 ### PS-4 Rest Timer + Lock-Screen Control (`PS-4`)
-Foreground service + ongoing notification with actions: **Complete Set**, **Skip**, **+15 s**, **−15 s**. Timer auto-starts on set completion with per-exercise configured rest; visible on lock screen; survives app close. **AC:** notification countdown updates every second; action buttons mutate running timer without opening app; timer ends → vibration/sound (per settings).
+Foreground service + ongoing notification with actions: **Complete Set**, **Skip**, **+15 s**, **−15 s**. Timer auto-starts on set completion with per-exercise configured rest; visible on lock screen; survives app close. **AC:** notification countdown updates every second; action buttons mutate running timer without opening app; timer end → vibration/sound (per settings).
 
 ### PS-5 Superset Engine (`PS-5`)
 Program days may declare superset groups of antagonist pairs (e.g., bench ↔ row, curls ↔ pushdowns). Completing set A starts a short *transition* timer to partner exercise B; after the pair completes both sides, full rest applies. **AC:** chained transitions never dead-end; user can break the chain manually (Skip) without corrupting session state.
@@ -84,7 +84,7 @@ Chronological workouts with expandable detail; monthly calendar heatmap of train
 Weight plus tape measurements (waist, chest, shoulders, arms, thighs, neck); trend charts (rolling 7-day average for weight). Progress photos stored **in-app private storage**, encrypted-at-rest directory, path + SHA-256 hash recorded, never in system gallery/media store. **AC:** uninstalling removes photos; photo rows expose no absolute paths in exports; waist trend chart carries disclaimer that abdominal exercise does not spot-reduce waist fat.
 
 ### PS-10 Exercise Library (`PS-10`)
-200+ seeded exercises; FTS search over name/alias/tags; filters muscle/equipment/difficulty/pattern/V-taper relevance; favorites + recents; substitution suggestions preserving movement pattern and available equipment. Text + static image demos (no video dependency).
+200+ seeded exercises; search over name/alias/tags; filters muscle/equipment/difficulty/pattern/V-taper relevance; favorites + recents; substitution suggestions preserving movement pattern and available equipment. Text + static image demos (no video dependency).
 
 ### PS-11 Readiness Check-in (`PS-11`)
 Pre-workout micro-check (sleep, soreness, motivation, optional resting HR) feeding only conservative language ("recent training load suggests..."). Never numeric recovery percentages. **AC:** check-in can be skipped; outputs are qualitative only.
@@ -103,7 +103,7 @@ Units kg/lb (stored canonical kg, display conversion), theme, rest defaults, sou
 - ❌ No social feed, no cloud sync, no accounts (unless user adds sync later — architecture permits, product excludes).
 - ❌ No wearable integrations in this phase.
 - ❌ No video playback (Media3) — text + images only.
-- ❌ Camera form analysis stays unwired (see ARCHITECTURE §9).
+- ❌ Camera form analysis stays unwired (see ARCHITECTURE §8).
 
 ## 6. Onboarding Flow
 
@@ -113,7 +113,7 @@ Units kg/lb (stored canonical kg, display conversion), theme, rest defaults, sou
 | 2. Experience | never trained · <1 y · 1–3 y · 3+ y | required |
 | 3. Body | sex, age, height cm, weight kg | height 120–230, weight 35–250 |
 | 4. Schedule | days/week 3–6 (default 4), session length 30/45/60/90 min | required |
-| 5. Equipment | preset Gym / preset Home-Minimal (dumbbells+bench+bodyweight) / Custom toggles per item | ≥1 usable push+pull capability required |
+| 5. Equipment | preset Commercial Gym / preset Home-Minimal (dumbbells+bench+bodyweight) / Custom toggles per item | ≥1 usable push+pull capability required |
 | 6. Preferences | avoid-list, injuries (free text, advisory) | skippable |
 | 7. Generate | builds 4-week program, shows week overview, editable substitutions | — |
 

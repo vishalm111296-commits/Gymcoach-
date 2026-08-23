@@ -1,10 +1,5 @@
 package com.gymcoach.app.core.program
 
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.time.Instant
-import java.time.ZoneId
-import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +14,7 @@ class VolumeCalculator @Inject constructor() {
         val status: VolumeStatus
     )
 
-    enum class VolumeStatus(val label: String, val ordinal: Int) {
+    enum class VolumeStatus(val label: String, val ordinalValue: Int) {
         INSUFFICIENT("Too low", 0),
         MODERATE("Moderate", 1),
         HIGH("High", 2),
@@ -61,11 +56,33 @@ class VolumeCalculator @Inject constructor() {
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
     /**
+     * Compile-safe input record for volume math.
+     *
+     * History: this method previously declared List<WorkoutSetEntity> but read
+     * `date`/`exerciseId` properties that do not exist on that entity - the file
+     * could not compile at all (latent CI failure). Production code currently
+     * derives per-workout muscle volume from domain details (see ProgressViewModel);
+     * this API stays available for program analysis once wired.
+     */
+    data class CompletedSetEntry(
+        val exerciseId: Long,
+        val date: Long,
+        val completed: Boolean,
+        val setType: Int // 0=NORMAL, 1=WARMUP, 2=DROP, 3=FAILURE
+    )
+
+    /**
      * Calculate weekly volume per muscle group with ISO-week bucketing.
-     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25).
+     *
+     * HONESTY NOTE (pinned contract): only weeks that contain at least one
+     * logged set participate in the average. A skipped week neither adds
+     * volume nor dilutes the denominator - so "average weekly sets" means
+     * "average over TRAINED weeks", not calendar weeks. Callers must label
+     * it accordingly; do not present it as an all-weeks average.
      */
     fun calculateWeeklyVolume(
-        completedSets: List<WorkoutSetEntity>,
+        completedSets: List<CompletedSetEntry>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
@@ -81,21 +98,23 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        // Average across weeks (or take most recent week if preferred)
+        // Average across weeks that contain training data.
         val avgWeekly = mutableMapOf<String, Double>()
         for ((_, weekMap) in weekBuckets) {
             for ((muscle, credits) in weekMap) {
                 avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
             }
         }
-        for ((muscle, total) in avgWeekly) {
-            avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+        if (weekBuckets.isNotEmpty()) {
+            for ((muscle, total) in avgWeekly) {
+                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+            }
         }
 
         val directSetsByMuscle = completedSets
             .filter { it.completed && it.setType == 0 }
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
@@ -106,7 +125,7 @@ class VolumeCalculator @Inject constructor() {
         val indirectSetsByMuscle = completedSets
             .filter { it.completed && it.setType == 0 }
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }
@@ -133,8 +152,8 @@ class VolumeCalculator @Inject constructor() {
     }
 
     fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
-        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
+        val primary = (balance.latVolume.status.ordinalValue + balance.lateralDeltVolume.status.ordinalValue) / 2.0
+        val secondary = (balance.rearDeltVolume.status.ordinalValue + balance.upperChestVolume.status.ordinalValue + balance.upperBackVolume.status.ordinalValue) / 3.0
         val text = when {
             primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
             primary >= 2.0 -> "Moderate V-taper focus"
@@ -154,10 +173,10 @@ class VolumeCalculator @Inject constructor() {
     }
 
     private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
+        val calendar = java.util.Calendar.getInstance(java.util.Locale.getDefault())
         calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
+        val weekOfYear = calendar.get(java.util.Calendar.WEEK_OF_YEAR)
+        val year = calendar.get(java.util.Calendar.YEAR)
         return year * 100 + weekOfYear
     }
 }

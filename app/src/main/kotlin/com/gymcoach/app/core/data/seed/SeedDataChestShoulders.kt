@@ -5,8 +5,8 @@ import com.gymcoach.app.core.data.seed.SeedExercise
 
 /**
  * Chest + Shoulders. Equipment: Dumbbell / Bodyweight / Flat Bench ONLY.
- * V-taper honesty rules (audit 2026-08-22): presses/flyes get lat=0;
- * upper-chest scores only where a genuine clavicular bias exists.
+ * V-taper honesty rules (audit 2026-08-22 + Agent-C audit 2026-08-23):
+ * presses/flyes get lat=0; upper-chest scores only where a genuine clavicular bias exists.
  */
 object SeedDataChestShoulders {
 
@@ -68,7 +68,9 @@ object SeedDataChestShoulders {
             vtaperLat = 0, vtaperLateralDelt = 2, vtaperUpperChest = 2, vtaperRearDelt = 0,
             movementPattern = "horizontal_push",
             muscles = listOf(MuscleRef("Chest", "primary"), MuscleRef("Core", "stabilizer"), MuscleRef("Triceps", "secondary")),
-            recommendedRepRange = "8-12 per side", recommendedRestTime = "75s"
+            recommendedRepRange = "8-12 per side", recommendedRestTime = "75s",
+            instructions = "Lie flat holding one dumbbell at chest. Press to lockout while bracing against rotation; lower under control.",
+            tips = "Keep hips and shoulders square to the ceiling; resist the twist."
         ),
         SeedExercise(
             name = "Push-Up",
@@ -161,7 +163,7 @@ object SeedDataChestShoulders {
             muscleGroup = "Shoulders", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "Upper Back", category = "pull",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 9,
-            movementPattern = "horizontal_pull",
+            movementPattern = "reverse_fly",
             muscles = listOf(MuscleRef("Rear Deltoid", "primary"), MuscleRef("Upper Back", "secondary")),
             recommendedRepRange = "12-20", recommendedRestTime = "60s",
             instructions = "Hinge to ~45 degrees or parallel, raise dumbbells out wide with soft elbows, squeeze shoulder blades.",
@@ -173,7 +175,7 @@ object SeedDataChestShoulders {
             muscleGroup = "Shoulders", equipment = "Dumbbell + Flat Bench", difficulty = "Beginner",
             secondaryMuscles = "Upper Back", category = "pull",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 9,
-            movementPattern = "horizontal_pull",
+            movementPattern = "reverse_fly",
             muscles = listOf(MuscleRef("Rear Deltoid", "primary"), MuscleRef("Upper Back", "secondary")),
             recommendedRepRange = "12-20", recommendedRestTime = "60s"
         ),
@@ -223,7 +225,7 @@ object SeedDataChestShoulders {
             muscleGroup = "Shoulders", equipment = "Dumbbell", difficulty = "Intermediate",
             secondaryMuscles = "Traps, Biceps", category = "pull",
             vtaperLat = 0, vtaperLateralDelt = 6, vtaperUpperChest = 0, vtaperRearDelt = 0,
-            movementPattern = "vertical_pull",
+            movementPattern = "abduction",
             muscles = listOf(MuscleRef("Lateral Deltoid", "primary"), MuscleRef("Traps", "secondary"), MuscleRef("Biceps", "secondary")),
             recommendedRepRange = "10-15", recommendedRestTime = "60s",
             safetyNotes = "Stop at sternum height; skip if shoulder impingement history."

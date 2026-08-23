@@ -17,12 +17,21 @@ interface WorkoutDao {
 
     /**
      * The single resumable workout, if any.
-     * v7 semantics: only rows with status='ACTIVE' qualify. Empty zombie rows
-     * were backfilled to ABANDONED by MIGRATION_6_7 and never match again,
-     * and discarded workouts are marked ABANDONED at runtime - so the
-     * phantom "Resume Workout" bug is structurally impossible now.
+     *
+     * Resume requires BOTH conditions:
+     *  1. status = 'ACTIVE'  - legacy zombies were backfilled ABANDONED by
+     *     MIGRATION_6_7; discarded workouts are marked ABANDONED at runtime;
+     *  2. at least one exercise attached - so walking into a session and
+     *     immediately backing out cannot manufacture a resumable ghost.
+     * Empty ACTIVE strays simply become unreachable (never shown again);
+     * explicit abandonment via WorkoutLoggingViewModel.discardWorkout()
+     * deletes them outright.
      */
-    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
+    @Query(
+        "SELECT * FROM workouts WHERE status = 'ACTIVE' " +
+            "AND id IN (SELECT workoutId FROM workout_exercises) " +
+            "ORDER BY date DESC LIMIT 1"
+    )
     suspend fun getActiveWorkout(): WorkoutEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

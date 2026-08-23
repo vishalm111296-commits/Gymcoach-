@@ -15,15 +15,15 @@ interface ExerciseSubstitutionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(substitutions: List<ExerciseSubstitutionEntity>)
 
-    @Query("SELECT * FROM exercise_substitutions WHERE exercise_id = :exerciseId ORDER BY preservation_score DESC")
+    @Query("SELECT * FROM exercise_substitutions WHERE original_exercise_id = :exerciseId")
     fun getByExerciseId(exerciseId: Long): Flow<List<ExerciseSubstitutionEntity>>
 
-    @Query("SELECT * FROM exercise_substitutions WHERE substitute_id = :substituteId")
+    @Query("SELECT * FROM exercise_substitutions WHERE substitute_exercise_id = :substituteId")
     fun getBySubstituteId(substituteId: Long): Flow<List<ExerciseSubstitutionEntity>>
 
-    @Query("DELETE FROM exercise_substitutions WHERE exercise_id = :exerciseId")
+    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :exerciseId")
     suspend fun deleteByExerciseId(exerciseId: Long): Int
 
-    @Query("DELETE FROM exercise_substitutions WHERE exercise_id = :exerciseId AND substitute_id = :substituteId")
+    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :exerciseId AND substitute_exercise_id = :substituteId")
     suspend fun deleteByExerciseAndSubstitute(exerciseId: Long, substituteId: Long): Int
 }

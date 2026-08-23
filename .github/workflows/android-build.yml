@@ -41,15 +41,15 @@ jobs:
       - name: Lint (record result)
         run: |
           mkdir -p ci-status
-          ./gradlew lintDebug --stacktrace > ci-status/lint.log 2>&1 && echo PASS > ci-status/lint.result || { echo FAIL > ci-status/lint.result; tail -100 ci-status/lint.log > ci-status/lint.tail; }
+          ./gradlew lintDebug --stacktrace > ci-status/lint.log 2>&1 && echo PASS > ci-status/lint.result || { echo FAIL > ci-status/lint.result; { grep -E "^(e: |error: )" ci-status/lint.log | head -60; echo '--- last lines ---'; tail -15 ci-status/lint.log; } > ci-status/lint.tail; }
 
       - name: Unit tests (record result)
         run: |
-          ./gradlew testDebugUnitTest --stacktrace > ci-status/test.log 2>&1 && echo PASS > ci-status/test.result || { echo FAIL > ci-status/test.result; tail -100 ci-status/test.log > ci-status/test.tail; }
+          ./gradlew testDebugUnitTest --stacktrace > ci-status/test.log 2>&1 && echo PASS > ci-status/test.result || { echo FAIL > ci-status/test.result; { grep -E "^(e: |error: )" ci-status/test.log | head -60; echo '--- last lines ---'; tail -15 ci-status/test.log; } > ci-status/test.tail; }
 
       - name: Assemble debug APK (record result)
         run: |
-          ./gradlew assembleDebug --stacktrace > ci-status/build.log 2>&1 && echo PASS > ci-status/build.result || { echo FAIL > ci-status/build.result; tail -100 ci-status/build.log > ci-status/build.tail; }
+          ./gradlew assembleDebug --stacktrace > ci-status/build.log 2>&1 && echo PASS > ci-status/build.result || { echo FAIL > ci-status/build.result; { grep -E "^(e: |error: )" ci-status/build.log | head -60; echo '--- last lines ---'; tail -15 ci-status/build.log; } > ci-status/build.tail; }
 
       - name: Fail if any check failed
         run: |

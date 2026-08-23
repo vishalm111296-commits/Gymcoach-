@@ -109,7 +109,10 @@ class ProgressViewModel @Inject constructor(
                 val averageWorkoutVolume = analyticsRepository.getAverageWorkoutVolume()
                 val averageWorkoutDurationMinutes = analyticsRepository.getAverageWorkoutDurationMinutes()
                 val weeklyTrend = calculateWeeklyTrend(weekly)
-                val workoutFrequency = calculateWorkoutFrequency(weekly)
+                // NOTE: weekly.size == number of ISO-week buckets returned by the
+                // analytics layer (weeks that contain any training data), NOT
+                // workouts-per-week. Displayed honestly as "Weeks Tracked".
+                val workoutFrequency = weekly.size
                 val workoutCounts = analyticsRepository.getWorkoutCounts()
                 val longestWorkout = analyticsRepository.getLongestWorkout()
                 val shortestWorkout = analyticsRepository.getShortestWorkout()
@@ -150,10 +153,6 @@ class ProgressViewModel @Inject constructor(
         val prev = recent[0].second
         val curr = recent[1].second
         return if (prev == 0.0) 0.0 else ((curr - prev) / prev) * 100
-    }
-
-    private fun calculateWorkoutFrequency(weekly: List<Pair<Date, Double>>): Int {
-        return weekly.size
     }
 
     fun refresh() = loadData()
@@ -267,20 +266,20 @@ fun ProgressDashboardScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Workout Frequency & Weekly Trend
+                    // Weeks Tracked & Weekly Trend
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatCard(
-                            label = "Weekly Workouts",
+                            label = "Weeks Tracked",
                             value = "${state.workoutFrequency}",
                             modifier = Modifier.weight(1f)
                         )
                         val trendSymbol = when {
                             state.weeklyTrend > 0 -> "▲ +%.1f%%".format(state.weeklyTrend)
                             state.weeklyTrend < 0 -> "▼ %.1f%%".format(state.weeklyTrend)
-                            else -> "• 0.0%%"
+                            else -> "• 0.0%"
                         }
                         StatCard(
                             label = "Weekly Trend",
@@ -546,9 +545,14 @@ private fun StatsOverview(
                 value = "${totalTrainingTimeMinutes}m",
                 modifier = Modifier.weight(1f)
             )
+            // Honest derived metric. Calorie estimates were removed: converting
+            // load-volume to kcal requires individual physiology (body mass,
+            // movement efficiency, heart-rate data) that we do not collect.
+            // A constant multiplier would be fabricated data.
+            val volumePerSet = if (totalSets > 0) totalVolume / totalSets else 0.0
             StatCard(
-                label = "Est. Calories",
-                value = "%.0f".format(totalVolume * 0.05),
+                label = "Volume / Set",
+                value = "%.1f kg".format(volumePerSet),
                 modifier = Modifier.weight(1f)
             )
         }

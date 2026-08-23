@@ -95,8 +95,7 @@ object SeedDataBack {
             muscles = listOf(MuscleRef("Lats", "primary"), MuscleRef("Upper Back", "secondary"), MuscleRef("Biceps", "secondary"), MuscleRef("Core", "stabilizer")),
             recommendedRepRange = "6-15", recommendedRestTime = "90s",
             instructions = "Lie beneath a very sturdy table edge, grip it, body straight heel-to-head. Pull chest to the edge, control down.",
-            safetyNotes = "Verify the surface cannot tip or slide BEFORE loading. Test with partial weight first.",
-            tips = "Walk feet out to increase difficulty; elevate feet on bench to progress further."
+            tips = "Verify the surface cannot tip or slide BEFORE loading. Test with partial weight first. Walk feet out to increase difficulty; elevate feet on bench to progress further."
         ),
         SeedExercise(
             name = "Superman",
@@ -127,7 +126,7 @@ object SeedDataBack {
             movementPattern = "hinge",
             muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Lower Back", "secondary"), MuscleRef("Glutes", "secondary")),
             recommendedRepRange = "10-15", recommendedRestTime = "90s",
-            safetyNotes = "Keep neutral spine; range stops when hamstrings run out — never force depth."
+            tips = "Keep neutral spine; range stops when hamstrings run out — never force depth."
         )
     )
 }

@@ -22,7 +22,7 @@ object SeedDataLegs {
             muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
             secondaryMuscles = "Core, Upper Back", category = "legs",
             movementPattern = "squat",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Core", "stabilizer")),
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Core", "stabilizer")),
             recommendedRepRange = "6-12", recommendedRestTime = "120s"
         ),
         SeedExercise(
@@ -125,7 +125,7 @@ object SeedDataLegs {
             movementPattern = "squat",
             muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Calves", "secondary")),
             recommendedRepRange = "5-12", recommendedRestTime = "90s",
-            safetyNotes = "Land softly, heels down. Skip if knees are irritated."
+            tips = "Land softly, heels down. Skip if knees are irritated."
         ),
         SeedExercise(
             name = "Towel Hamstring Curl",
@@ -136,8 +136,7 @@ object SeedDataLegs {
             muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "secondary")),
             recommendedRepRange = "8-15", recommendedRestTime = "75s",
             instructions = "Lie on back, heels on a towel on a smooth floor. Bridge hips up, slide heels out to near-straight legs, pull heels back under you keeping hips high.",
-            safetyNotes = "Requires smooth flooring; keep hips lifted throughout to protect lower back.",
-            tips = "Harder than it looks — control the eccentric fully."
+            tips = "Keep hips lifted throughout to protect lower back; requires smooth flooring. Harder than it looks — control the eccentric fully."
         ),
         SeedExercise(
             name = "Hip Thrust (Shoulders on Bench)",

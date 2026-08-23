@@ -1,8 +1,5 @@
 package com.gymcoach.app.core.data.seed
 
-import com.gymcoach.app.core.data.seed.MuscleRef
-import com.gymcoach.app.core.data.seed.SeedExercise
-
 /**
  * Chest + Shoulders. Equipment: Dumbbell / Bodyweight / Flat Bench ONLY.
  * V-taper honesty rules (audit 2026-08-22): presses/flyes get lat=0;
@@ -226,7 +223,7 @@ object SeedDataChestShoulders {
             movementPattern = "vertical_pull",
             muscles = listOf(MuscleRef("Lateral Deltoid", "primary"), MuscleRef("Traps", "secondary"), MuscleRef("Biceps", "secondary")),
             recommendedRepRange = "10-15", recommendedRestTime = "60s",
-            safetyNotes = "Stop at sternum height; skip if shoulder impingement history."
+            tips = "Stop at sternum height; skip if shoulder impingement history."
         )
     )
 }

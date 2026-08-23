@@ -84,7 +84,7 @@ object SeedDataArmsCore {
             movementPattern = "elbow_extension",
             muscles = listOf(MuscleRef("Triceps", "primary"), MuscleRef("Front Deltoid", "secondary")),
             recommendedRepRange = "8-15", recommendedRestTime = "60s",
-            safetyNotes = "Keep shoulders down away from ears; stop depth if shoulder discomfort appears."
+            tips = "Keep shoulders down away from ears; stop depth if shoulder discomfort appears."
         ),
         SeedExercise(
             name = "Triceps Kickback",
@@ -179,7 +179,7 @@ object SeedDataArmsCore {
             movementPattern = "rotation",
             muscles = listOf(MuscleRef("Core", "primary")),
             recommendedRepRange = "16-24 total taps", recommendedRestTime = "45s",
-            safetyNotes = "Rotate from mid-back, not lumbar; keep chest tall."
+            tips = "Rotate from mid-back, not lumbar; keep chest tall."
         ),
         SeedExercise(
             name = "Weighted Plank Drag-Through",

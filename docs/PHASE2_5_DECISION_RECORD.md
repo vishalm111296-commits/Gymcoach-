@@ -1,20 +1,28 @@
-## NAVIGATION STATE
+## TIMER
 
-**Current state: BROKEN flows, dead ends.**
+**Current state: ARCHITECTURAL CONCERNS.**
 
-**CRITICAL navigation issues:**
-1. **Duplicate ProgressViewModel** blocks compilation — highest priority
-2. **"View Program" navigates to exercise library** — no screen renders saved program days; generated plan is write-only
-3. **Start Workout ignores today's program day** — navigates to blank `workout_session` without pre-seeding exercises from today's `ProgramDay`
-4. **Enhanced progress experience unreachable** — new chart/heatmap/PR/muscleVolume stack referenced by nothing that renders; dashboard uses legacy VM
-5. **Muscle vocabulary fragmentation** — dashboard keys volume by `uppercase()`, generator uses Title Case, VolumeCalculator expects different tokens; any future data join is wrong by construction
-6. **Sunday week-boundary bug** — `weekStartMillis()` without pinned first-day-of-week; on en_US, Sunday rolls to *next* Monday → completed-Sunday workouts count as 0 this week
-7. **ProfileViewModel bypasses repository** — injects DAO directly; inconsistent architecture; `saveMeasurement` swallows failures
+**RestTimerNotificationService** audit findings:
 
-**Required fixes (ordered):**
-1. Remove duplicate ProgressViewModel (compile blocker)
-2. Wire "Start Workout" to today's `ProgramDay` — pre-seed exercises, navigate to session with workout already configured
-3. Create "Program" tab screen that renders saved program days with exercises
-4. Fix muscle vocabulary alignment — pick one convention (Title Case or snake_case) and convert all datasets
-5. Fix week-boundary — pin first-day-of-week in `weekStartMillis()` or document the convention
-6. Make ProfileViewModel use repository layer like all other VMs; display save errors
+- **shortService type** has ~6min execution window on API 34+; long rests near cap need verification
+- **Foreground service** with CountDownTimer, ongoing low-priority notification (channel `rest_timer_channel`, id 7777)
+- **Complete/Skip/+15/-15 actions** with shared StateFlow for remaining time + pause state
+- **RestTimerReceiver** relays notification action broadcasts to service
+- **Manifest**: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SHORT_SERVICE`, `POST_NOTIFICATIONS`; service (shortService type) + receiver registered
+- **No production caller** of timer completion logic found; timer UI composables exist but may not be fully wired
+
+**Concerns:**
+- shortService ~6min window may not suffice for long rest intervals (e.g., 10-20 min)
+- Background: service may be killed on process death before timer completes; no explicit retry logic observed
+- Notification: channel id 7777 — verify this doesn't conflict with other channels
+- Cancellation: no explicit cancel action observed in composable; rely on system termination or back navigation
+- App restart: timer state not persist across restarts (StateFlow in ViewModel, not in ViewModel + savedInstanceState)
+- Process death: no surviving timer across app restarts
+
+**Test/inspect needs:**
+- Timer accuracy vs system clock
+- Background execution on API 34+ (shortService limits)
+- Notification channel behavior
+- Cancellation on app background/foreground
+- Process death and recovery
+- Repeated timers (multiple workouts in session)

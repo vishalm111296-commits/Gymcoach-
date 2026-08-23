@@ -36,127 +36,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.gymcoach.app.domain.repository.AnalyticsRepository
-import com.gymcoach.app.domain.repository.MuscleGroupStats
-import com.gymcoach.app.domain.repository.PersonalRecord
-import com.gymcoach.app.domain.repository.WorkoutCounts
-import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.presentation.history.formatDuration
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 
-// --- ViewModel ---
-
-data class ProgressUiState(
-    val isLoading: Boolean = true,
-    val volumeHistory: List<Pair<Date, Double>> = emptyList(),
-    val weeklySummary: List<Pair<Date, Double>> = emptyList(),
-    val monthlySummary: List<Pair<Date, Double>> = emptyList(),
-    val personalRecords: List<PersonalRecord> = emptyList(),
-    val muscleGroupDistribution: List<MuscleGroupStats> = emptyList(),
-    val totalWorkouts: Int = 0,
-    val totalSets: Int = 0,
-    val totalReps: Int = 0,
-    val totalExercises: Int = 0,
-    val totalVolume: Double = 0.0,
-    val totalTrainingTimeMinutes: Long = 0,
-    val averageWorkoutVolume: Double = 0.0,
-    val averageWorkoutDurationMinutes: Long = 0,
-    val weeklyTrend: Double = 0.0,
-    val workoutFrequency: Int = 0,
-    val workoutCounts: WorkoutCounts = WorkoutCounts(0,0,0,0),
-    val longestWorkout: WorkoutWithStats? = null,
-    val shortestWorkout: WorkoutWithStats? = null,
-    val error: String? = null
-)
-
-@HiltViewModel
-class ProgressViewModel @Inject constructor(
-    private val analyticsRepository: AnalyticsRepository
-) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(ProgressUiState())
-    val uiState: StateFlow<ProgressUiState> = _uiState.asStateFlow()
-
-    init {
-        loadData()
-    }
-
-    private fun loadData() {
-        viewModelScope.launch {
-            _uiState.value = ProgressUiState(isLoading = true)
-            try {
-                val volume = analyticsRepository.getVolumeHistory()
-                val weekly = analyticsRepository.getWeeklySummary()
-                val monthly = analyticsRepository.getMonthlyVolumes()
-                val prs = analyticsRepository.getAllPersonalRecords()
-                val muscleGroupDistribution = analyticsRepository.getMuscleGroupDistribution()
-                val totalWorkouts = analyticsRepository.getTotalWorkouts()
-                val totalSets = analyticsRepository.getTotalSets()
-                val totalReps = analyticsRepository.getTotalReps()
-                val totalVolume = analyticsRepository.getTotalVolume()
-                val totalTrainingTimeMinutes = analyticsRepository.getTotalTrainingTimeMinutes()
-                val totalExercises = analyticsRepository.getTotalExercises()
-                val averageWorkoutVolume = analyticsRepository.getAverageWorkoutVolume()
-                val averageWorkoutDurationMinutes = analyticsRepository.getAverageWorkoutDurationMinutes()
-                val weeklyTrend = calculateWeeklyTrend(weekly)
-                // NOTE: weekly.size == number of ISO-week buckets returned by the
-                // analytics layer (weeks that contain any training data), NOT
-                // workouts-per-week. Displayed honestly as "Weeks Tracked".
-                val workoutFrequency = weekly.size
-                val workoutCounts = analyticsRepository.getWorkoutCounts()
-                val longestWorkout = analyticsRepository.getLongestWorkout()
-                val shortestWorkout = analyticsRepository.getShortestWorkout()
-
-                _uiState.value = ProgressUiState(
-                    isLoading = false,
-                    volumeHistory = volume,
-                    weeklySummary = weekly,
-                    monthlySummary = monthly,
-                    personalRecords = prs,
-                    muscleGroupDistribution = muscleGroupDistribution,
-                    totalWorkouts = totalWorkouts,
-                    totalSets = totalSets,
-                    totalReps = totalReps,
-                    totalVolume = totalVolume,
-                    totalTrainingTimeMinutes = totalTrainingTimeMinutes,
-                    totalExercises = totalExercises,
-                    averageWorkoutVolume = averageWorkoutVolume,
-                    averageWorkoutDurationMinutes = averageWorkoutDurationMinutes,
-                    weeklyTrend = weeklyTrend,
-                    workoutFrequency = workoutFrequency,
-                    workoutCounts = workoutCounts,
-                    longestWorkout = longestWorkout,
-                    shortestWorkout = shortestWorkout
-                )
-            } catch (e: Exception) {
-                _uiState.value = ProgressUiState(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load progress data"
-                )
-            }
-        }
-    }
-
-    private fun calculateWeeklyTrend(weekly: List<Pair<Date, Double>>): Double {
-        if (weekly.size < 2) return 0.0
-        val recent = weekly.takeLast(2)
-        val prev = recent[0].second
-        val curr = recent[1].second
-        return if (prev == 0.0) 0.0 else ((curr - prev) / prev) * 100
-    }
-
-    fun refresh() = loadData()
-}
+// NOTE: the ViewModel + UiState that previously lived in this file were removed:
+// PR #6 introduced ProgressViewModel.kt in this package whose ProgressUiState
+// is a strict superset of the old shape. Keeping both was a duplicate-class
+// compile error (latent CI failure on main). This screen now binds the shared
+// ProgressViewModel and displays only metrics derived from real recorded data.
 
 // --- Screen ---
 
@@ -271,6 +160,8 @@ fun ProgressDashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Honest labeling: weekly.size counts ISO-week buckets that
+                        // contain any training data - it is NOT workouts per week.
                         StatCard(
                             label = "Weeks Tracked",
                             value = "${state.workoutFrequency}",
@@ -338,7 +229,7 @@ fun ProgressDashboardScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Muscle Group Distribution
+                    // Top Exercises
                     SectionHeader("Top Exercises")
                     Spacer(Modifier.height(8.dp))
                     if (state.muscleGroupDistribution.isNotEmpty()) {
@@ -547,8 +438,8 @@ private fun StatsOverview(
             )
             // Honest derived metric. Calorie estimates were removed: converting
             // load-volume to kcal requires individual physiology (body mass,
-            // movement efficiency, heart-rate data) that we do not collect.
-            // A constant multiplier would be fabricated data.
+            // movement efficiency, heart-rate data) we do not collect. A constant
+            // multiplier would be fabricated data.
             val volumePerSet = if (totalSets > 0) totalVolume / totalSets else 0.0
             StatCard(
                 label = "Volume / Set",

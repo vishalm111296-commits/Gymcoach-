@@ -1,20 +1,28 @@
-## ADVERSARIAL REVIEW
+## FINAL STATUS
 
-**3 CRITICAL findings block "production ready" claim:**
+**NOT PRODUCTION-READY**
 
-| Finding | Impact | Evidence |
-|---------|--------|----------|
-| C1: Duplicate ProgressViewModel + ProgressUiState | Branch cannot compile — hard stop | Two different `ProgressUiState` + `ProgressViewModel` in same package; Kotlin redeclaration error |
-| C2: ProgramGenerator filters out all exercises | Core promise (plan → train) dead at generation time | Seeder stores lowercase/comma-joined equipment tokens; generator checks Title Case singletons; ALL 68 exercises excluded |
-| C3: Room schema crashes on upgrade for existing users | Data intact but unreachable; infinite launch crash | 6 tables have entity/ DDL mismatches; `fallbackToDestructiveMigration` removed (audit P0) → users on v4→5 get `IllegalStateException` on every app launch |
+**Blockers (CRITICAL — must fix before merge):**
 
-**High findings:**
-- H1: sorted-index vs raw-index mismatch → data corruption in workout set editing
-- H2: VolumeCalculator "weekly" volume not weekly → incorrect classification
-- H3: PRDetector dead code → 18 tests celebrate unreachable path
-- H4: Seeder re-seed creates duplicates → accumulated rows on second seed
-- H5: Frequency=2 produces 4-day program → adherence math desync
-- H6: Room DB unencrypted → health data exposed
-- H7: No signing config → cannot ship to Play Store
+1. **C1: Duplicate ProgressViewModel** — branch cannot compile. Remove duplicate; keep enhanced version from main (PR #6), port legacy fields if needed.
 
-**Medium/Low findings** address UI/UX gaps, edge cases, and documentation improvements — not blockers for merge but important for product quality.
+2. **C2: ProgramGenerator zero-exercise programs** — core promise dead. Fix equipment vocabulary mapping (split tokens, map categories/IDs → generator vocabulary); add test asserting non-empty days for all frequencies.
+
+3. **C3: Room migration crashes on upgrade** — existing users on v4→5 get infinite launch crash. Rewrite MIGRATION_4_5 DDL to match entity schemas; add MigrationTestHelper; verify data preservation.
+
+**High findings that must be addressed before merge or very shortly after:**
+
+4. H4: Seeder re-seed duplication — add DELETE/upsert before seeding to guarantee idempotency
+5. H6: Room DB unencrypted — evaluate if encryption is required; at minimum add platform encryption
+6. H7: No signing config — add release build configuration with signing key
+
+**Post-merge candidates:**
+
+- All MEDIUM and LOW findings can be addressed in subsequent iterations
+- VolumeCalculator reconciliation (resolve LoggedSet vs SetWithContext convergence)
+- Navigation wiring (program flow, start workout pre-seeding)
+- Test coverage expansion (migration, navigation, UI tests)
+
+**VERIFIED:** `PARTIALLY VERIFIED` — critical blockers identified and fix orders defined, but not yet implemented. CI currently FAILING. Build type unverified.
+
+**FINAL STATUS: NOT PRODUCTION-READY** — 3 CRITICAL blockers prevent merge. Once C1, C2, C3 are resolved and CI passes, status can be reassessed.

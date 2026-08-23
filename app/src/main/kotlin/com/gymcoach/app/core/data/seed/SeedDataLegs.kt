@@ -1,180 +1,207 @@
 package com.gymcoach.app.core.data.seed
 
 /**
- * Legs — guarantees non-zero hamstring/calf coverage with home equipment
- * (fixes audit finding: previous home config yielded 0 hamstring/calf sets).
+ * Lower body: quads / hamstrings / glutes / calves.
+ * All equipment dumbbell/bodyweight/bench per user inventory.
+ * V-taper scores are 0 here by definition (lower body) — kept explicit
+ * rather than omitted so the honesty contract is visible in code.
  */
 object SeedDataLegs {
 
     val LEGS = listOf(
         SeedExercise(
-            name = "Goblet Squat",
-            description = "Front-loaded squat; easiest squat pattern to learn with excellent depth feedback.",
+            name = "Dumbbell Goblet Squat",
+            description = "Front-loaded squat with a single dumbbell held at chest — easiest full-depth squat pattern to learn.",
             muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "Glutes, Core", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "squat",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Core", "stabilizer")),
-            recommendedRepRange = "8-15", recommendedRestTime = "90s"
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "8-15", recommendedRestTime = "90s",
+            instructions = "Hold dumbbell vertically at chest. Squat between your knees keeping torso upright until thighs reach parallel or below.",
+            tips = "Elbows track inside knees at the bottom."
         ),
         SeedExercise(
             name = "Dumbbell Front Squat",
-            description = "Two-dumbbell rack-position squat for heavier quad loading than goblet allows.",
+            description = "Two-dumbbell front rack squat; more quad-biased than goblet and scales heavier.",
             muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
-            secondaryMuscles = "Core, Upper Back", category = "legs",
+            secondaryMuscles = "Glutes, Core", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "squat",
             muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Core", "stabilizer")),
             recommendedRepRange = "6-12", recommendedRestTime = "120s"
         ),
         SeedExercise(
-            name = "Sumo Squat (Dumbbell)",
-            description = "Wide-stance dumbbell squat biasing adductors and glutes.",
-            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "Quadriceps, Core", category = "legs",
-            movementPattern = "squat",
-            muscles = listOf(MuscleRef("Glutes", "primary"), MuscleRef("Adductors", "primary"), MuscleRef("Quadriceps", "secondary")),
-            recommendedRepRange = "10-15", recommendedRestTime = "75s"
-        ),
-        SeedExercise(
-            name = "Dumbbell Romanian Deadlift",
-            description = "The primary home-equipment hamstring builder; loaded stretch through full hinge.",
-            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "Glutes, Lower Back", category = "legs",
-            movementPattern = "hinge",
-            muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Lower Back", "stabilizer")),
-            recommendedRepRange = "8-12", recommendedRestTime = "90-120s",
-            instructions = "Soft knees, push hips back sliding dumbbells down thighs until deep hamstring stretch, drive hips forward to stand.",
-            tips = "The bar path stays glued to your legs; range is dictated by hamstring flexibility."
-        ),
-        SeedExercise(
-            name = "Single-Leg Dumbbell RDL",
-            description = "Unilateral hinge demanding balance; strong glute-medius and hamstring stimulus.",
-            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
-            secondaryMuscles = "Lower Back, Adductors", category = "legs",
-            movementPattern = "hinge",
-            muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Adductors", "stabilizer")),
-            recommendedRepRange = "8-12 per side", recommendedRestTime = "75s"
-        ),
-        SeedExercise(
-            name = "Bulgarian Split Squat",
-            description = "Rear foot on flat bench; brutal unilateral quad/glute builder — highest leg-exercise value per set at home.",
-            muscleGroup = "Legs", equipment = "Bodyweight + Flat Bench", difficulty = "Intermediate",
+            name = "Dumbbell Bulgarian Split Squat",
+            description = "Rear-foot-elevated split squat using the bench; the highest-yield unilateral leg builder available.",
+            muscleGroup = "Legs", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
             secondaryMuscles = "Glutes, Hamstrings", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "lunge",
             muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Hamstrings", "stabilizer")),
-            recommendedRepRange = "8-12 per side", recommendedRestTime = "90-120s"
+            recommendedRepRange = "8-12 per side", recommendedRestTime = "90-120s",
+            instructions = "Rear foot on bench, dumbbells at sides. Descend until rear knee nears floor and front thigh hits parallel.",
+            tips = "Long stance biases glutes of the front leg; short stance biases quads."
         ),
         SeedExercise(
-            name = "Weighted Bulgarian Split Squat",
-            description = "Dumbbells in hands raise intensity once bodyweight sets exceed target reps easily.",
-            muscleGroup = "Legs", equipment = "Dumbbell + Flat Bench", difficulty = "Advanced",
-            secondaryMuscles = "Hamstrings, Core", category = "legs",
+            name = "Dumbbell Reverse Lunge",
+            description = "Step-back lunge gentler on the knees than forward lunges with equal hypertrophy value.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "Glutes, Hamstrings", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "lunge",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "primary")),
-            recommendedRepRange = "6-10 per side", recommendedRestTime = "120s"
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "10-12 per side", recommendedRestTime = "90s"
         ),
         SeedExercise(
-            name = "Static Split Squat",
-            description = "Floor-based lunge hold position; stepping-stone before Bulgarian variation.",
-            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
+            name = "Dumbbell Walking Lunge",
+            description = "Continuous forward lunges for time-under-tension leg development.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "Glutes, Calves", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "lunge",
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "20 steps", recommendedRestTime = "90s"
+        ),
+        SeedExercise(
+            name = "Dumbbell Step-Up",
+            description = "Step onto the flat bench holding dumbbells; knee-friendly unilateral strength.",
+            muscleGroup = "Legs", equipment = "Dumbbell + Flat Bench", difficulty = "Beginner",
+            secondaryMuscles = "Glutes, Calves", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "lunge",
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "10-12 per side", recommendedRestTime = "75-90s",
+            instructions = "Place whole foot on bench, drive through the top foot to stand tall, lower slowly under control.",
+            tips = "Do not push off the trailing leg; keep box height at knee or below."
+        ),
+        SeedExercise(
+            name = "Bodyweight Squat",
+            description = "Foundational squat pattern for beginners or high-rep finishers.",
+            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
+            secondaryMuscles = "Glutes, Core", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "squat",
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "15-30", recommendedRestTime = "45-60s"
+        ),
+        SeedExercise(
+            name = "Split Squat",
+            description = "Static staggered-stance squat without elevation; bridge from bodyweight to Bulgarian.",
+            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
+            secondaryMuscles = "Glutes", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "lunge",
             muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
             recommendedRepRange = "10-15 per side", recommendedRestTime = "60s"
         ),
         SeedExercise(
-            name = "Reverse Lunge",
-            description = "Knee-friendly lunge pattern; rear-foot emphasis spares the front knee.",
-            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Glutes, Hamstrings", category = "legs",
-            movementPattern = "lunge",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
-            recommendedRepRange = "10-15 per side", recommendedRestTime = "60-75s"
-        ),
-        SeedExercise(
-            name = "Lateral Lunge",
-            description = "Frontal-plane lunge hitting adductors and improving hip mobility.",
-            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Glutes, Quadriceps", category = "legs",
-            movementPattern = "lunge",
-            muscles = listOf(MuscleRef("Adductors", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Quadriceps", "secondary")),
-            recommendedRepRange = "8-12 per side", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
-            name = "Step-Up (Flat Bench)",
-            description = "Explosive single-leg drive onto bench; scales via height of knee drive and tempo.",
-            muscleGroup = "Legs", equipment = "Bodyweight + Flat Bench", difficulty = "Beginner",
-            secondaryMuscles = "Calves, Core", category = "legs",
-            movementPattern = "lunge",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Calves", "stabilizer")),
-            recommendedRepRange = "10-15 per side", recommendedRestTime = "60-75s"
-        ),
-        SeedExercise(
-            name = "Air Squat",
-            description = "Foundational bodyweight squat; high-rep conditioning or warm-up tool.",
-            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Core", category = "legs",
-            movementPattern = "squat",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
-            recommendedRepRange = "12-25", recommendedRestTime = "45-60s"
-        ),
-        SeedExercise(
             name = "Jump Squat",
-            description = "Power development; use sparingly as a finisher when joints feel good.",
+            description = "Explosive bodyweight squat jump; power work and conditioning finisher.",
             muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Intermediate",
-            secondaryMuscles = "Calves", category = "legs",
+            secondaryMuscles = "Calves, Glutes", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "squat",
             muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Calves", "secondary")),
-            recommendedRepRange = "5-12", recommendedRestTime = "90s",
-            safetyNotes = "Land softly, heels down. Skip if knees are irritated."
+            recommendedRepRange = "5-10", recommendedRestTime = "90s",
+            safetyNotes = "Land softly with bent knees; stop when height drops off."
         ),
         SeedExercise(
-            name = "Towel Hamstring Curl",
-            description = "Heels-on-towel sliding curl on smooth floor — direct knee-flexion hamstring work without a machine.",
-            muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Intermediate",
+            name = "Romanian Deadlift",
+            description = "Hip hinge with dumbbells loading hamstrings through stretch — primary hamstring builder.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
             secondaryMuscles = "Glutes, Lower Back", category = "legs",
-            movementPattern = "knee_flexion",
-            muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "secondary")),
-            recommendedRepRange = "8-15", recommendedRestTime = "75s",
-            instructions = "Lie on back, heels on a towel on a smooth floor. Bridge hips up, slide heels out to near-straight legs, pull heels back under you keeping hips high.",
-            safetyNotes = "Requires smooth flooring; keep hips lifted throughout to protect lower back.",
-            tips = "Harder than it looks — control the eccentric fully."
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "hinge",
+            muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "secondary"), MuscleRef("Lower Back", "stabilizer")),
+            recommendedRepRange = "8-12", recommendedRestTime = "90-120s",
+            instructions = "Soft knees, push hips back sliding dumbbells down your thighs until a deep hamstring stretch, drive hips forward to stand.",
+            tips = "The dumbbells stay glued to your legs; spine stays neutral throughout.",
+            setupInstructions = "Stand tall, dumbbells at hip crease, feet hip-width.",
+            executionInstructions = "Hinge at hips — NOT a squat; shins stay roughly vertical."
         ),
         SeedExercise(
-            name = "Hip Thrust (Shoulders on Bench)",
-            description = "Upper back on flat bench, driving hips to full extension — strongest home glute exercise.",
-            muscleGroup = "Legs", equipment = "Bodyweight + Flat Bench", difficulty = "Beginner",
-            secondaryMuscles = "Hamstrings, Core", category = "legs",
-            movementPattern = "hip_extension",
-            muscles = listOf(MuscleRef("Glutes", "primary"), MuscleRef("Hamstrings", "secondary")),
-            recommendedRepRange = "10-20", recommendedRestTime = "60-90s"
+            name = "Single-Leg Romanian Deadlift",
+            description = "Unilateral hinge demanding hamstring length plus balance and anti-rotation control.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
+            secondaryMuscles = "Glutes, Core", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "hinge",
+            muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Glutes", "stabilizer"), MuscleRef("Core", "stabilizer")),
+            recommendedRepRange = "8-12 per side", recommendedRestTime = "75s"
         ),
         SeedExercise(
-            name = "Single-Leg Glute Bridge",
-            description = "Floor-based unilateral hip extension; progression toward full hip thrusts.",
+            name = "Glute Bridge",
+            description = "Floor hip extension biasing glutes; regression/finisher for hip-dominant work.",
             muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Hamstrings, Core", category = "legs",
+            secondaryMuscles = "Hamstrings, Lower Back", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "hip_extension",
             muscles = listOf(MuscleRef("Glutes", "primary"), MuscleRef("Hamstrings", "secondary")),
-            recommendedRepRange = "10-15 per side", recommendedRestTime = "45-60s"
+            recommendedRepRange = "12-20", recommendedRestTime = "60s"
+        ),
+        SeedExercise(
+            name = "Hip Thrust (Bench-Supported)",
+            description = "Shoulders on flat bench, loaded hip extension — strongest glute builder in the inventory.",
+            muscleGroup = "Legs", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
+            secondaryMuscles = "Hamstrings", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "hip_extension",
+            muscles = listOf(MuscleRef("Glutes", "primary"), MuscleRef("Hamstrings", "secondary")),
+            recommendedRepRange = "8-15", recommendedRestTime = "90s",
+            instructions = "Upper back on bench edge, dumbbell over hips, drive hips to ceiling until torso level, squeeze glutes at top."
+        ),
+        SeedExercise(
+            name = "Dumbbell Frog Pump",
+            description = "Feet-together wide-knee bridge maximizing glute contraction at end range.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "hip_extension",
+            muscles = listOf(MuscleRef("Glutes", "primary")),
+            recommendedRepRange = "15-25", recommendedRestTime = "45s"
         ),
         SeedExercise(
             name = "Standing Dumbbell Calf Raise",
-            description = "Loaded calf work off a step edge for full range; fixes zero-calf coverage in home plans.",
+            description = "Straight-knee calf raise targeting gastrocnemius; slow tempo with full range.",
             muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "", category = "legs",
-            movementPattern = "plantarflexion",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "calf_raise",
             muscles = listOf(MuscleRef("Calves", "primary")),
             recommendedRepRange = "12-20", recommendedRestTime = "45-60s",
-            instructions = "Balls of feet on a step/thick book edge, heels dipping below level, rise to top and pause 1s."
+            instructions = "Dumbbells at sides, rise to tiptoes over 2s, pause at top, lower below level of a step if available.",
+            tips = "Full stretch at bottom matters more than load for calves."
         ),
         SeedExercise(
             name = "Single-Leg Calf Raise",
-            description = "Unilateral bodyweight calf raise doubling the load per calf versus two-leg version.",
+            description = "Unilateral calf raise doubling the load per calf; balance demand included free of charge.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
+            secondaryMuscles = "", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "calf_raise",
+            muscles = listOf(MuscleRef("Calves", "primary")),
+            recommendedRepRange = "10-15 per side", recommendedRestTime = "45s"
+        ),
+        SeedExercise(
+            name = "Wall Tibialis Raise",
+            description = "Back-to-wall shin raise for tibialis anterior — injury-proofing and ankle health.",
             muscleGroup = "Legs", equipment = "Bodyweight", difficulty = "Beginner",
             secondaryMuscles = "", category = "legs",
-            movementPattern = "plantarflexion",
-            muscles = listOf(MuscleRef("Calves", "primary")),
-            recommendedRepRange = "12-20 per side", recommendedRestTime = "45s"
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "calf_raise",
+            muscles = listOf(MuscleRef("Calves", "stabilizer")),
+            recommendedRepRange = "15-25", recommendedRestTime = "30-45s"
+        ),
+        SeedExercise(
+            name = "Dumbbell Curtsy Lunge",
+            description = "Diagonal crossover lunge hitting glute medius and adductors alongside quads.",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
+            secondaryMuscles = "Glutes, Quadriceps", category = "legs",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "lunge",
+            muscles = listOf(MuscleRef("Glutes", "primary"), MuscleRef("Quadriceps", "secondary")),
+            recommendedRepRange = "10-12 per side", recommendedRestTime = "75s"
         )
     )
 }

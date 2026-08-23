@@ -4,6 +4,10 @@ package com.gymcoach.app.core.data.seed
  * Back / pulling. This category was completely absent from the old dataset —
  * it carries the highest V-taper weight (lats). Lat scores are ONLY assigned
  * to true pulling/extension movements per audit honesty rules.
+ *
+ * VERTICAL-PULL GAP (documented, not hidden): no pull-up bar exists in the
+ * user inventory. Rows + straight-arm extension work load the lats but do NOT
+ * reproduce the overhead-lengthened range of pull-ups/pulldowns.
  */
 object SeedDataBack {
 
@@ -87,7 +91,7 @@ object SeedDataBack {
         ),
         SeedExercise(
             name = "Inverted Row (Table)",
-            description = "Bodyweight horizontal pull under a sturdy table or fixed bar-height surface — the key vertical-pull substitute at home.",
+            description = "Bodyweight horizontal pull under a very sturdy table edge — the main bodyweight back builder when no bar is available.",
             muscleGroup = "Back", equipment = "Bodyweight", difficulty = "Intermediate",
             secondaryMuscles = "Upper Back, Rear Deltoid, Biceps, Core", category = "pull",
             vtaperLat = 9, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 5,
@@ -96,7 +100,7 @@ object SeedDataBack {
             recommendedRepRange = "6-15", recommendedRestTime = "90s",
             instructions = "Lie beneath a very sturdy table edge, grip it, body straight heel-to-head. Pull chest to the edge, control down.",
             safetyNotes = "Verify the surface cannot tip or slide BEFORE loading. Test with partial weight first.",
-            tips = "Walk feet out to increase difficulty; elevate feet on bench to progress further."
+            tips = "Walk feet out to increase difficulty; elevate feet on bench to progress further. Note: horizontal pulling does not replace overhead vertical-pull range."
         ),
         SeedExercise(
             name = "Superman",
@@ -110,19 +114,19 @@ object SeedDataBack {
         ),
         SeedExercise(
             name = "Reverse Snow Angel",
-            description = "Prone sweeping arm pattern through full shoulder extension-to-flexion arc for rear delts and lower traps.",
+            description = "Prone sweeping arm pattern through full shoulder extension-to-flexion arc for upper back and rear delts.",
             muscleGroup = "Back", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Lower Back", category = "pull",
+            secondaryMuscles = "Rear Deltoid, Lower Back", category = "pull",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 7,
             movementPattern = "scapular",
-            muscles = listOf(MuscleRef("Upper Back", "primary"), MuscleRef("Rear Deltoid", "primary"), MuscleRef("Traps", "secondary")),
-            recommendedRepRange = "8-12 slow reps", recommendedRestTime = "45s"
+            muscles = listOf(MuscleRef("Upper Back", "primary"), MuscleRef("Rear Deltoid", "secondary"), MuscleRef("Traps", "secondary")),
+            recommendedRepRange = "8-12", recommendedRestTime = "45s"
         ),
         SeedExercise(
             name = "Dumbbell Good Morning",
             description = "Hinge pattern loading hamstrings and spinal erectors with light dumbbells.",
-            muscleGroup = "Back", equipment = "Dumbbell", difficulty = "Intermediate",
-            secondaryMuscles = "Hamstrings, Glutes", category = "legs",
+            muscleGroup = "Legs", equipment = "Dumbbell", difficulty = "Intermediate",
+            secondaryMuscles = "Lower Back, Glutes", category = "legs",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "hinge",
             muscles = listOf(MuscleRef("Hamstrings", "primary"), MuscleRef("Lower Back", "secondary"), MuscleRef("Glutes", "secondary")),

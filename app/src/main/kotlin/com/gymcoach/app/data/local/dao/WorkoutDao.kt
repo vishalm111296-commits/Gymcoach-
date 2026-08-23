@@ -23,9 +23,6 @@ interface WorkoutDao {
      *     MIGRATION_7_8; discarded workouts are marked ABANDONED at runtime;
      *  2. at least one exercise attached - so walking into a session and
      *     immediately backing out cannot manufacture a resumable ghost.
-     * Empty ACTIVE strays simply become unreachable (never shown again);
-     * explicit abandonment via WorkoutLoggingViewModel.discardWorkout()
-     * deletes them outright.
      */
     @Query(
         "SELECT * FROM workouts WHERE status = 'ACTIVE' " +
@@ -33,6 +30,21 @@ interface WorkoutDao {
             "ORDER BY date DESC LIMIT 1"
     )
     suspend fun getActiveWorkout(): WorkoutEntity?
+
+    /**
+     * Session-start hygiene (skeptic review finding): a user who removes all
+     * exercises and then force-quits leaves an ACTIVE row with no content.
+     * The resume query already makes such rows unreachable; this reaps them
+     * to ABANDONED so they cannot linger as live-state artifacts.
+     *
+     * @return number of rows transitioned ACTIVE -> ABANDONED.
+     */
+    @Query(
+        "UPDATE workouts SET status = 'ABANDONED' " +
+            "WHERE status = 'ACTIVE' " +
+            "AND id NOT IN (SELECT workoutId FROM workout_exercises)"
+    )
+    suspend fun abandonEmptyActiveWorkouts(): Int
 
     /** Legacy completed=0 lookup. NOT used for resume decisions anymore. */
     @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")

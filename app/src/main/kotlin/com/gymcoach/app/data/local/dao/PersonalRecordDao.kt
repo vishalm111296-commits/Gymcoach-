@@ -19,10 +19,10 @@ interface PersonalRecordDao {
     @Update
     suspend fun update(record: PersonalRecordEntity): Int
 
-    @Query("SELECT * FROM personal_records WHERE exercise_id = :exerciseId ORDER BY estimated_1rm DESC")
+    @Query("SELECT * FROM personal_records WHERE exercise_id = :exerciseId ORDER BY one_rep_max_kg DESC")
     fun getByExerciseId(exerciseId: Long): Flow<List<PersonalRecordEntity>>
 
-    @Query("SELECT * FROM personal_records ORDER BY created_at DESC")
+    @Query("SELECT * FROM personal_records ORDER BY achieved_at DESC")
     fun getAll(): Flow<List<PersonalRecordEntity>>
 
     @Query("SELECT * FROM personal_records WHERE id = :id")

@@ -15,7 +15,7 @@ interface FavoriteExerciseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(favorites: List<FavoriteExerciseEntity>)
 
-    @Query("SELECT * FROM favorite_exercises WHERE exercise_id = :exerciseId")
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_exercises WHERE exercise_id = :exerciseId)")
     fun isFavorite(exerciseId: Long): Flow<Boolean>
 
     @Query("SELECT * FROM favorite_exercises ORDER BY added_at DESC")

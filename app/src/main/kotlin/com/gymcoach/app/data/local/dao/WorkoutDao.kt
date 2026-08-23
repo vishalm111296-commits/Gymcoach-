@@ -288,6 +288,14 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
     suspend fun getIncompleteWorkout(): WorkoutEntity?
+
+    @Query("""
+        SELECT we.exerciseId, w.date as dateMs, ws.completed, ws.setType
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+    """)
+    fun getLoggedSetsRaw(): Flow<List<LoggedSetRaw>>
 }
 
 data class DateVolume(
@@ -317,4 +325,11 @@ data class WorkoutWithStats(
     val setCount: Int,
     val repCount: Int,
     val exerciseCount: Int
+)
+
+data class LoggedSetRaw(
+    val exerciseId: Long,
+    val dateMs: Long,
+    val completed: Boolean,
+    val setType: Int
 )

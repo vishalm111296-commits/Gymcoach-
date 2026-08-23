@@ -1,12 +1,18 @@
 package com.gymcoach.app.core.program
 
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+
+data class LoggedSet(
+    val exerciseId: Long,
+    val dateMs: Long,
+    val completed: Boolean,
+    val setType: String
+)
 
 @Singleton
 class VolumeCalculator @Inject constructor() {
@@ -19,7 +25,7 @@ class VolumeCalculator @Inject constructor() {
         val status: VolumeStatus
     )
 
-    enum class VolumeStatus(val label: String, val ordinal: Int) {
+    enum class VolumeStatus(val label: String, val level: Int) {
         INSUFFICIENT("Too low", 0),
         MODERATE("Moderate", 1),
         HIGH("High", 2),
@@ -62,64 +68,59 @@ class VolumeCalculator @Inject constructor() {
 
     /**
      * Calculate weekly volume per muscle group with ISO-week bucketing.
-     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
      */
     fun calculateWeeklyVolume(
-        completedSets: List<WorkoutSetEntity>,
+        completedSets: List<LoggedSet>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
 
-        for (set in completedSets.filter { it.completed && it.setType == 0 }) {
-            val weekKey = isoWeekKey(set.date)
+        // Filter: completed working sets (setType != "WARMUP")
+        val workingSets = completedSets.filter { it.completed && it.setType != "WARMUP" }
+
+        for (set in workingSets) {
+            val weekKey = isoWeekKey(set.dateMs)
             val muscleAssignments = exerciseMuscleMap[set.exerciseId] ?: emptyList()
 
-            for (assignment in muscleAssignments) {
-                val credits = assignment.role.credit
+            // TODO: If a secondary-muscle mapping exists in MuscleGroupEnum apply 0.5 credit; currently primary-only
+            val primaryAssignments = muscleAssignments.filter { it.role == MuscleRole.PRIMARY }
+
+            for (assignment in primaryAssignments) {
+                val credits = 1.0
                 val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
                 weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + credits
             }
         }
 
-        // Average across weeks (or take most recent week if preferred)
+        // Average across weeks
         val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
+        if (weekBuckets.isNotEmpty()) {
+            for ((_, weekMap) in weekBuckets) {
+                for ((muscle, credits) in weekMap) {
+                    avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
+                }
+            }
+            for ((muscle, total) in avgWeekly) {
+                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
             }
         }
-        for ((muscle, total) in avgWeekly) {
-            avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+
+        // Correct set counting (multiply by the number of sets/occurrences instead of counting distinct exercises)
+        val directSetsByMuscle = mutableMapOf<String, Int>()
+        for (set in workingSets) {
+            val assignments = exerciseMuscleMap[set.exerciseId] ?: emptyList()
+            val primaryAssignments = assignments.filter { it.role == MuscleRole.PRIMARY }
+            for (assignment in primaryAssignments) {
+                directSetsByMuscle[assignment.muscleName] = (directSetsByMuscle[assignment.muscleName] ?: 0) + 1
+            }
         }
-
-        val directSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role == MuscleRole.PRIMARY }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
-
-        val indirectSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
 
         fun vol(muscle: String) = MuscleVolume(
             muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
+            weeklySets = (avgWeekly[muscle] ?: 0.0).toInt(),
             directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
+            indirectSets = 0,
+            status = classify((avgWeekly[muscle] ?: 0.0).toInt())
         )
 
         return TrainingBalance(
@@ -133,8 +134,8 @@ class VolumeCalculator @Inject constructor() {
     }
 
     fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
-        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
+        val primary = (balance.latVolume.status.level + balance.lateralDeltVolume.status.level) / 2.0
+        val secondary = (balance.rearDeltVolume.status.level + balance.upperChestVolume.status.level + balance.upperBackVolume.status.level) / 3.0
         val text = when {
             primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
             primary >= 2.0 -> "Moderate V-taper focus"

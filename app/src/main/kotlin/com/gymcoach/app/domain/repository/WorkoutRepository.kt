@@ -5,6 +5,7 @@ import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
+import com.gymcoach.app.core.program.LoggedSet
 import kotlinx.coroutines.flow.Flow
 
 interface WorkoutRepository {
@@ -29,4 +30,6 @@ interface WorkoutRepository {
     fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
     suspend fun getIncompleteWorkout(): Workout?
+
+    fun getLoggedSets(): Flow<List<LoggedSet>>
 }

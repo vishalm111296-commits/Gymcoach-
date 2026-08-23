@@ -14,6 +14,7 @@ import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.core.program.LoggedSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -154,6 +155,24 @@ class WorkoutRepositoryImpl @Inject constructor(
 
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
+    }
+
+    override fun getLoggedSets(): Flow<List<LoggedSet>> {
+        return workoutDao.getLoggedSetsRaw().map { rawList ->
+            rawList.map { raw ->
+                LoggedSet(
+                    exerciseId = raw.exerciseId,
+                    dateMs = raw.dateMs,
+                    completed = raw.completed,
+                    setType = when (raw.setType) {
+                        1 -> "WARMUP"
+                        2 -> "DROP"
+                        3 -> "FAILURE"
+                        else -> "NORMAL"
+                    }
+                )
+            }
+        }
     }
 }
 

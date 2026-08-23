@@ -1,12 +1,5 @@
-## ANDROID BUILD
+## LINT
 
-**Status: NOT VERIFIED locally.**  
-**GitHub Actions status: FAILING** (see CI section above).
-
-**What would be needed for local verification:**
-- `./gradlew assembleDebug` — would fail with current compilation blockers
-- `./gradlew lintDebug` — would fail with same blockers
-- `./gradlew testDebugUnitTest` — would fail with same blockers
-- Room schema validation would flag MIGRATION_4_5 entity/DB mismatches
-
-**No local build possible until critical blockers (C1, C2, C3) are fixed.**
+**Status: FAILING** (part of CI failures).  
+Lint errors are compilation errors — cannot run lint until Kotlin compilation succeeds.  
+Once compilation is fixed, lint would check: resource conflicts, unused components, security issues, performance issues, code style violations.

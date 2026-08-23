@@ -15,7 +15,7 @@ data class WorkoutEntity(
     val completed: Boolean,
     /**
      * Lifecycle state, see domain.model.WorkoutStatus.
-     * Default value MUST match MIGRATION_6_7's ALTER TABLE DEFAULT exactly -
+     * Default value MUST match MIGRATION_7_8's ALTER TABLE DEFAULT exactly -
      * Room validates schema identity after migration.
      */
     @ColumnInfo(defaultValue = "NOT_STARTED") val status: String = "NOT_STARTED"

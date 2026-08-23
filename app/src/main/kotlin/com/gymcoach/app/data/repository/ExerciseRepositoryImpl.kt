@@ -58,7 +58,26 @@ class ExerciseRepositoryImpl @Inject constructor(
         category = category,
         tags = tags,
         isFavorite = isFavorite,
-        lastViewed = lastViewed
+        lastViewed = lastViewed,
+        // V-taper relevance scores (0-10)
+        vtaperLat = vtaperLat,
+        vtaperLateralDelt = vtaperLateralDelt,
+        vtaperUpperChest = vtaperUpperChest,
+        vtaperRearDelt = vtaperRearDelt,
+        // Movement pattern
+        movementPattern = movementPattern,
+        // Media (nullable, architecture-ready)
+        imageUrl = imageUrl,
+        videoUrl = videoUrl,
+        animationUrl = animationUrl,
+        // Instructions
+        setupInstructions = setupInstructions,
+        executionInstructions = executionInstructions,
+        breathingInstructions = breathingInstructions,
+        tempoGuidance = tempoGuidance,
+        // Progression variants
+        beginnerVariantId = beginnerVariantId,
+        advancedVariantId = advancedVariantId
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -79,6 +98,24 @@ class ExerciseRepositoryImpl @Inject constructor(
         category = category,
         tags = tags,
         isFavorite = isFavorite,
-        lastViewed = lastViewed
+        lastViewed = lastViewed,
+        // V-taper relevance scores (0-10)
+        vtaperLat = vtaperLat,
+        vtaperLateralDelt = vtaperLateralDelt,
+        vtaperUpperChest = vtaperUpperChest,
+        vtaperRearDelt = vtaperRearDelt,
+        // Movement pattern
+        movementPattern = movementPattern,
+        // Media (nullable, architecture-ready)
+        imageUrl = imageUrl,
+        videoUrl = videoUrl,
+        animationUrl = animationUrl,
+        // Instructions
+        setupInstructions = setupInstructions,
+        executionInstructions = executionInstructions,
+        breathingInstructions = breathingInstructions,
+        tempoGuidance = tempoGuidance,
+        // Progression variants
+        beginnerVariantId = beginnerVariantId,
+        advancedVariantId = advancedVariantId
     )
-}

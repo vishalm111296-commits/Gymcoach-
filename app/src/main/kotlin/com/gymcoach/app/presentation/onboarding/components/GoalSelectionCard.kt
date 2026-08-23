@@ -1,11 +1,13 @@
 package com.gymcoach.app.presentation.onboarding.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -66,35 +69,31 @@ fun GoalSelectionCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        color = if (isSelected) AccentBlue else DarkSurfaceVariant,
+                        shape = CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Card(
-                    shape = CircleShape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) AccentBlue else DarkSurfaceVariant
-                    )
-                ) {
-                    Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = iconFor(goal),
-                            contentDescription = null,
-                            tint = if (isSelected) WarmWhite else TextSecondary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = iconFor(goal),
+                    contentDescription = null,
+                    tint = if (isSelected) WarmWhite else TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = goal,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = WarmWhite,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
             }

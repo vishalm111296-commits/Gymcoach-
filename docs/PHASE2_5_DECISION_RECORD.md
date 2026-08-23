@@ -1,24 +1,20 @@
-## VOLUMECALCULATOR RECONCILIATION
+## NAVIGATION STATE
 
-**Canonical architecture: PR #10 / phase 3 `LoggedSet` pipeline.**
+**Current state: BROKEN flows, dead ends.**
 
-**Reasons (evidence-backed):**
-1. Complete producer chain end-to-end (`getLoggedSetsRaw` → `getLoggedSets()`)
-2. Zero data-layer coupling in `core.program`
-3. Correct set counting (per-set increment, not distinct exercise counting)
-4. Minimal DTO matching actual computation ({exerciseId, dateMs, completed, setType})
+**CRITICAL navigation issues:**
+1. **Duplicate ProgressViewModel** blocks compilation — highest priority
+2. **"View Program" navigates to exercise library** — no screen renders saved program days; generated plan is write-only
+3. **Start Workout ignores today's program day** — navigates to blank `workout_session` without pre-seeding exercises from today's `ProgramDay`
+4. **Enhanced progress experience unreachable** — new chart/heatmap/PR/muscleVolume stack referenced by nothing that renders; dashboard uses legacy VM
+5. **Muscle vocabulary fragmentation** — dashboard keys volume by `uppercase()`, generator uses Title Case, VolumeCalculator expects different tokens; any future data join is wrong by construction
+6. **Sunday week-boundary bug** — `weekStartMillis()` without pinned first-day-of-week; on en_US, Sunday rolls to *next* Monday → completed-Sunday workouts count as 0 this week
+7. **ProfileViewModel bypasses repository** — injects DAO directly; inconsistent architecture; `saveMeasurement` swallows failures
 
-**Reconciliation obligations (both sides must agree before merge):**
-
-| Item | Current (#10) | Current (#11) | Required Convergence |
-|------|--------------|--------------|---------------------|
-| Input type | `LoggedSet` (top-level DTO) | `SetWithContext(set, exerciseId, workoutDate)` — nested, entity-coupled | **One input type** — adopt `LoggedSet` |
-| Warmup/drop/failure | `setType != "WARMUP"` (DROP+FAILURE counted) | `setType == 0` (only NORMAL counted) | **One policy** — document rationale; likely `!= "WARMUP"` per entity comments |
-| Role-credit policy | Primary-only, `credits = 1.0`, `indirectSets = 0`, TODO for secondary | Weighted 1.0/0.5/0.25 per ACSM | **One policy** — restore weighted credits if keeping #11 approach, or keep primary-only with TODO cleared |
-| Completed-workout rule | DAO omits `w.completed = 1` (abandoned sets enter pipeline) | N/A (calculator receives pre-filtered list) | **One rule** — add `WHERE w.completed = 1` to `getLoggedSetsRaw` |
-| Time window per metric | `weeklySets = avgWeekly.toInt()` (per-week avg); `directSets` cumulative all-time | `directSets`/`indirectSets` from distinct-exercise `.groupBy` | **One metric** — either make `weeklySets` truly weekly (use `avgWeekly`), or make `directSets` weekly too; currently mixed |
-| Test parity | Zero tests | 10 tests (but broken assertions, contradict impl) | **One test suite** — fix VolumeCalculatorTest assertions; add phase 3 counterpart |
-
-**Remove duplicated/conflicting representations:** After convergence, remove `SetWithContext` from `VolumeCalculator.kt` (or keep only as internal wrapper if needed). Remove `directSetsByMuscle`/`indirectSetsByMuscle` logic if switching to per-set counting. Ensure only one DTO type (`LoggedSet`) is the home for set data flowing into the calculator.
-
-**Add regression tests:** Minimum: empty input, uncompleted exclusion, warmup exclusion, primary muscle distribution, classification thresholds (INSUFFICIENT < 10, MODERATE 10-20, HIGH > 20), first-ever PR, uncompleted set filtering.
+**Required fixes (ordered):**
+1. Remove duplicate ProgressViewModel (compile blocker)
+2. Wire "Start Workout" to today's `ProgramDay` — pre-seed exercises, navigate to session with workout already configured
+3. Create "Program" tab screen that renders saved program days with exercises
+4. Fix muscle vocabulary alignment — pick one convention (Title Case or snake_case) and convert all datasets
+5. Fix week-boundary — pin first-day-of-week in `weekStartMillis()` or document the convention
+6. Make ProfileViewModel use repository layer like all other VMs; display save errors

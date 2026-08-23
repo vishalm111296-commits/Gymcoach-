@@ -1,7 +1,7 @@
 package com.gymcoach.app
 
 import android.app.Application
-import com.gymcoach.app.core.data.seed.ExerciseSeeder
+import com.gymcoach.app.core.exercise.ExerciseSeeder
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ class GymCoachApplication : Application() {
         super.onCreate()
         // Idempotent: no-ops when the library is already seeded.
         applicationScope.launch {
-            exerciseSeeder.seedIfEmpty()
+            exerciseSeeder.seedIfNeeded()
         }
     }
 }

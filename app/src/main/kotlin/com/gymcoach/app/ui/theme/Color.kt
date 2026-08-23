@@ -35,3 +35,7 @@ val MuscleRest = Color(0xFF3A3A5C)
 val VolumeChartLine = Color(0xFF6C63FF)
 val VolumeChartFill = Color(0x336C63FF)
 val VolumeChartGrid = Color(0xFF2A2A44)
+
+// Onboarding/home aliases mapped onto the main palette
+val WarmWhite = TextPrimary
+val AccentBlueDim = AccentBlue.copy(alpha = 0.15f)

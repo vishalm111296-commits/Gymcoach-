@@ -7,12 +7,10 @@ import androidx.room.RoomDatabase
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.dao.EquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseAliasDao
-import com.gymcoach.app.data.local.dao.EquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.ExerciseEquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
 import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
-import com.gymcoach.app.data.local.dao.ExerciseAliasDao
 import com.gymcoach.app.data.local.dao.FavoriteExerciseDao
 import com.gymcoach.app.data.local.dao.MuscleDao
 import com.gymcoach.app.data.local.dao.PersonalRecordDao
@@ -138,9 +136,9 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 database.execSQL("CREATE TABLE IF NOT EXISTS `personal_records` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `weight` REAL NOT NULL DEFAULT 0.0, `reps` INTEGER NOT NULL DEFAULT 0, `estimated_1rm` REAL NOT NULL DEFAULT 0.0, `volume` REAL NOT NULL DEFAULT 0.0, `workout_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`workout_id`) REFERENCES `workouts`(`id`) ON DELETE CASCADE)")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `body_measurements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL DEFAULT 0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `waist_cm` REAL NOT NULL DEFAULT 0.0, `chest_cm` REAL NOT NULL DEFAULT 0.0, `shoulders_cm` REAL NOT NULL DEFAULT 0.0, `arm_cm` REAL NOT NULL DEFAULT 0.0, `thigh_cm` REAL NOT NULL DEFAULT 0.0, `body_fat_estimate` REAL NOT NULL DEFAULT 0.0, `photo_url` TEXT NOT NULL DEFAULT '', `notes` TEXT NOT NULL DEFAULT '')")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `favorite_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `added_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `substitute_id` INTEGER NOT NULL, `preservation_score` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`substitute_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `original_exercise_id` INTEGER NOT NULL, `substitute_exercise_id` INTEGER NOT NULL, `reason` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`original_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`substitute_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_muscles` (`exercise_id` INTEGER NOT NULL, `muscle_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `muscle_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`exercise_id` INTEGER NOT NULL, `equipment_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `equipment_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`exercise_id` INTEGER NOT NULL, `equipment_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'required', PRIMARY KEY(`exercise_id`, `equipment_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE)")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_aliases` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `alias` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
 
                 // Indexes required by @Index declarations on entities
@@ -149,6 +147,8 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_muscle_id` ON `exercise_muscles` (`muscle_id`)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_equipment_exercise_id` ON `exercise_equipment` (`exercise_id`)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_equipment_equipment_id` ON `exercise_equipment` (`equipment_id`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_original_exercise_id` ON `exercise_substitutions` (`original_exercise_id`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_substitute_exercise_id` ON `exercise_substitutions` (`substitute_exercise_id`)")
             }
         }
 

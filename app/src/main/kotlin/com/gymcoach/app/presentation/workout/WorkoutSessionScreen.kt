@@ -82,6 +82,7 @@ fun WorkoutSessionScreen(
     val restTimerState by viewModel.restTimerState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(restTimerState.isRunning) {
@@ -273,6 +274,16 @@ fun WorkoutSessionScreen(
                     Spacer(Modifier.width(4.dp))
                     Text("Complete Workout")
                 }
+
+                TextButton(
+                    onClick = { showDiscardDialog = true },
+                    modifier = Modifier.weight(0.55f)
+                ) {
+                    Text(
+                        "Discard",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -293,6 +304,44 @@ fun WorkoutSessionScreen(
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard workout?") },
+            text = {
+                // Honest wording: the destructive outcome depends on session content.
+                if ((currentWorkout?.exercises?.size ?: 0) > 0) {
+                    Text(
+                        "This session will be marked as abandoned. It will never " +
+                            "reappear as \"Resume Workout\", but any completed sets " +
+                            "stay in your history."
+                    )
+                } else {
+                    Text("This empty session will be deleted permanently.")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDiscardDialog = false
+                        viewModel.discardWorkout()
+                        onBackClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Training")
                 }
             }
         )

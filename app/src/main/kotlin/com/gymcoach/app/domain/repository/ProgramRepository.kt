@@ -2,8 +2,8 @@ package com.gymcoach.app.domain.repository
 
 import com.gymcoach.app.core.program.ProgramGenerator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
-import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
+import com.gymcoach.app.data.local.entity.ProgramEntity
 import kotlinx.coroutines.flow.Flow
 
 // ponytail: returns Room entities directly; introduce domain models if presentation starts leaking persistence concerns.

@@ -5,6 +5,13 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Export Room schemas at build time - required for MigrationTestHelper-based
+// migration tests. v1..v7 JSONs predate this setting and cannot be generated
+// retroactively; 8.json onward will appear under app/schemas.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 android {
     namespace = "com.gymcoach.app"
     compileSdk = 34

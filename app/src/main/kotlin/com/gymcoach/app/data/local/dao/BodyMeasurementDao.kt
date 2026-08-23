@@ -19,10 +19,10 @@ interface BodyMeasurementDao {
     @Update
     suspend fun update(measurement: BodyMeasurementEntity): Int
 
-    @Query("SELECT * FROM body_measurements ORDER BY date DESC")
+    @Query("SELECT * FROM body_measurements ORDER BY recorded_at DESC")
     fun getAll(): Flow<List<BodyMeasurementEntity>>
 
-    @Query("SELECT * FROM body_measurements ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM body_measurements ORDER BY recorded_at DESC LIMIT 1")
     fun getLatest(): Flow<BodyMeasurementEntity?>
 
     @Query("SELECT * FROM body_measurements WHERE id = :id")

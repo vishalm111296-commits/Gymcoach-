@@ -25,11 +25,11 @@ interface EquipmentDao {
     @Query("SELECT * FROM equipment WHERE category = :category ORDER BY name")
     fun getByCategory(category: String): Flow<List<EquipmentEntity>>
 
-    @Query("SELECT * FROM equipment WHERE gym_available = 1 ORDER BY name")
-    fun getGymAvailable(): Flow<List<EquipmentEntity>>
+    @Query("SELECT * FROM equipment WHERE name = :name LIMIT 1")
+    suspend fun getByName(name: String): EquipmentEntity?
 
-    @Query("SELECT * FROM equipment WHERE home_available = 1 ORDER BY name")
-    fun getHomeAvailable(): Flow<List<EquipmentEntity>>
+    @Query("SELECT COUNT(*) FROM equipment")
+    suspend fun count(): Int
 
     @Query("SELECT * FROM equipment WHERE id = :id")
     suspend fun getById(id: Long): EquipmentEntity?

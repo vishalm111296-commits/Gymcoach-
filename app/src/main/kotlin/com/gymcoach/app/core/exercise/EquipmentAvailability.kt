@@ -41,4 +41,19 @@ class EquipmentAvailability @Inject constructor() {
         val available = getAvailableEquipment(equipmentType)
         return equipment in available || equipment == "Bodyweight"
     }
+
+    /**
+     * True when the exercise requires gear outside the user's available set —
+     * used by ProgressionEngine to switch from weight progression to rep/set
+     * progression when load cannot increase further.
+     *
+     * Compound requirements like "Dumbbell + Flat Bench" are satisfied only if
+     * every token is available.
+     */
+    fun isLimited(equipment: String, equipmentType: String): Boolean {
+        if (equipment.isBlank() || equipment == "Bodyweight") return false
+        return equipment.split("+")
+            .map { it.trim() }
+            .any { !isAvailable(it, equipmentType) }
+    }
 }

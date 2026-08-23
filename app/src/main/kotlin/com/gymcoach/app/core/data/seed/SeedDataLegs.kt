@@ -35,10 +35,10 @@ object SeedDataLegs {
             name = "Dumbbell Bulgarian Split Squat",
             description = "Rear-foot-elevated split squat using the bench; the highest-yield unilateral leg builder available.",
             muscleGroup = "Legs", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
-            secondaryMuscles = "Glutes, Hamstrings", category = "legs",
+            secondaryMuscles = "Hamstrings", category = "legs",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "lunge",
-            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "primary"), MuscleRef("Hamstrings", "stabilizer")),
+            muscles = listOf(MuscleRef("Quadriceps", "primary"), MuscleRef("Glutes", "secondary")),
             recommendedRepRange = "8-12 per side", recommendedRestTime = "90-120s",
             instructions = "Rear foot on bench, dumbbells at sides. Descend until rear knee nears floor and front thigh hits parallel.",
             tips = "Long stance biases glutes of the front leg; short stance biases quads."
@@ -190,6 +190,9 @@ object SeedDataLegs {
             secondaryMuscles = "", category = "legs",
             vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "calf_raise",
+            // Taxonomy gap (documented): target muscle tibialis anterior is not
+            // in the 18-muscle model, so this accessory intentionally declares
+            // no primary. Contributes zero training volume by design.
             muscles = listOf(MuscleRef("Calves", "stabilizer")),
             recommendedRepRange = "15-25", recommendedRestTime = "30-45s"
         ),

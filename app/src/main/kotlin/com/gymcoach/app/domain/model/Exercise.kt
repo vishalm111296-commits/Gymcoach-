@@ -18,5 +18,24 @@ data class Exercise(
     val category: String = "",
     val tags: String = "",
     val isFavorite: Boolean = false,
-    val lastViewed: Long = 0L
+    val lastViewed: Long = 0L,
+    // V-taper relevance scores (0-10)
+    val vtaperLat: Int = 0,
+    val vtaperLateralDelt: Int = 0,
+    val vtaperUpperChest: Int = 0,
+    val vtaperRearDelt: Int = 0,
+    // Movement pattern
+    val movementPattern: String = "",
+    // Media (nullable, architecture-ready)
+    val imageUrl: String? = null,
+    val videoUrl: String? = null,
+    val animationUrl: String? = null,
+    // Instructions
+    val setupInstructions: String = "",
+    val executionInstructions: String = "",
+    val breathingInstructions: String = "",
+    val tempoGuidance: String = "",
+    // Progression variants
+    val beginnerVariantId: Long? = null,
+    val advancedVariantId: Long? = null
 )

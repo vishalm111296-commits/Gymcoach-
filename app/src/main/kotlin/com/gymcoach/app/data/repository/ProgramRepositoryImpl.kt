@@ -1,8 +1,8 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.core.program.ProgramGenerator
-import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramDao
+import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramExerciseDao
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ProgramRepositoryImpl @Inject constructor(

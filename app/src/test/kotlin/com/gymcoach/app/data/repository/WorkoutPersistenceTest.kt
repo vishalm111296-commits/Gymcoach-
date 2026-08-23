@@ -104,8 +104,8 @@ class WorkoutPersistenceTest {
             id = 1L,
             date = java.time.Instant.EPOCH,
             startTime = java.time.Instant.EPOCH,
-            endTime = null,
-            duration = null,
+            endTime = java.time.Instant.EPOCH,
+            duration = 0L,
             notes = "",
             completed = false
         )

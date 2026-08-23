@@ -5,12 +5,13 @@ import com.gymcoach.app.domain.model.WorkoutWithStats
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotNull
 
 /**
  * VolumeCalculatorTest - verifies that volume calculations are mathematically correct.
  * 
- * Volume = Σ(reps × weight) per set, aggregated by workout date.
+ * Volume = Σ(reps x weight) per set, aggregated by workout date.
  * Only completed workouts (completed=1) are included.
  * 
  * Test data based on actual entity field mappings:
@@ -22,11 +23,11 @@ import org.junit.Assert.assertNotNull
 class VolumeCalculatorTest {
 
     @Test
-    fun `verify volume is reps × weight per set`() = runTest {
+    fun `verify volume is reps x weight per set`() = runTest {
         // Given: a workout with 3 sets
-        // Set 1: 3 reps × 100kg = 300 volume
-        // Set 2: 5 reps × 80kg = 400 volume  
-        // Set 3: 8 reps × 60kg = 480 volume
+        // Set 1: 3 reps x 100kg = 300 volume
+        // Set 2: 5 reps x 80kg = 400 volume  
+        // Set 3: 8 reps x 60kg = 480 volume
         // Total: 1180
 
         // When: calculating total volume sum
@@ -39,8 +40,8 @@ class VolumeCalculatorTest {
     @Test
     fun `verify daily volume aggregation correct`() = runTest {
         // Given: workouts on different dates with known set data
-        // Date 1: 2 sets × (3 reps × 100kg) = 600 volume
-        // Date 2: 1 set × (5 reps × 80kg) = 400 volume
+        // Date 1: 2 sets x (3 reps x 100kg) = 600 volume
+        // Date 2: 1 set x (5 reps x 80kg) = 400 volume
         // Date 3: 0 sets (no worksets) = 0 volume
 
         val date1Volume = 600

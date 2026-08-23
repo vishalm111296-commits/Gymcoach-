@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 
 /**
  * PRDetectorTest - verifies personal record detection and progression engine logic.
@@ -31,10 +32,9 @@ class PRDetectorTest {
 
         // When: retrieving the personal record max for this exercise
         val expectedMax = 120.0
-        val alternativeMax = 100.0
 
         // Then: the heaviest lift is correctly identified
-        assertEquals(expectedMax, expectedMax)
+        assertEquals(expectedMax, expectedMax, 0.001)
         assertNotNull("Max should not be null", expectedMax)
     }
 

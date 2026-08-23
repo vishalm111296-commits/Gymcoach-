@@ -18,3 +18,7 @@ Thumbs.db
 *.jks
 *.keystore
 secrets.properties
+
+# Local logs and outputs
+run_log.txt
+ci-status/

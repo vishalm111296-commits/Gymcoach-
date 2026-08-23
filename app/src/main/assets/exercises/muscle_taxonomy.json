@@ -1,0 +1,136 @@
+{
+  "muscles": [
+    {
+      "id": "chest",
+      "name": "Chest",
+      "subdivisions": [
+        {
+          "id": "upper_chest",
+          "name": "Upper Chest (Clavicular)"
+        },
+        {
+          "id": "mid_chest",
+          "name": "Mid Chest (Sternal)"
+        },
+        {
+          "id": "lower_chest",
+          "name": "Lower Chest (Abdominal)"
+        }
+      ]
+    },
+    {
+      "id": "back",
+      "name": "Back",
+      "subdivisions": [
+        {
+          "id": "latissimus_dorsi",
+          "name": "Lats"
+        },
+        {
+          "id": "upper_back",
+          "name": "Upper Back (Traps, Rhomboids)"
+        },
+        {
+          "id": "rear_deltoid",
+          "name": "Rear Deltoid"
+        },
+        {
+          "id": "lower_back",
+          "name": "Lower Back (Erector Spinae)"
+        }
+      ]
+    },
+    {
+      "id": "shoulders",
+      "name": "Shoulders",
+      "subdivisions": [
+        {
+          "id": "front_deltoid",
+          "name": "Front Deltoid"
+        },
+        {
+          "id": "lateral_deltoid",
+          "name": "Side Deltoid"
+        }
+      ]
+    },
+    {
+      "id": "arms",
+      "name": "Arms",
+      "subdivisions": [
+        {
+          "id": "biceps",
+          "name": "Biceps"
+        },
+        {
+          "id": "brachialis",
+          "name": "Brachialis"
+        },
+        {
+          "id": "triceps",
+          "name": "Triceps"
+        },
+        {
+          "id": "forearms",
+          "name": "Forearms"
+        }
+      ]
+    },
+    {
+      "id": "legs",
+      "name": "Legs",
+      "subdivisions": [
+        {
+          "id": "quadriceps",
+          "name": "Quadriceps"
+        },
+        {
+          "id": "hamstrings",
+          "name": "Hamstrings"
+        },
+        {
+          "id": "glutes",
+          "name": "Glutes"
+        },
+        {
+          "id": "adductors",
+          "name": "Adductors"
+        },
+        {
+          "id": "calves",
+          "name": "Calves"
+        },
+        {
+          "id": "hip_flexors",
+          "name": "Hip Flexors"
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "name": "Core",
+      "subdivisions": [
+        {
+          "id": "abs",
+          "name": "Abs (Rectus Abdominis)"
+        },
+        {
+          "id": "obliques",
+          "name": "Obliques"
+        },
+        {
+          "id": "deep_core",
+          "name": "Deep Core (Transverse Abdominis)"
+        }
+      ]
+    }
+  ],
+  "body_regions": {
+    "chest": "upper_body",
+    "back": "upper_body",
+    "shoulders": "upper_body",
+    "arms": "upper_body",
+    "legs": "lower_body",
+    "core": "trunk"
+  }
+}

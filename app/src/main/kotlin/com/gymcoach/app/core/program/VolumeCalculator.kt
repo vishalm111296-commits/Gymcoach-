@@ -1,8 +1,6 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.time.Instant
-import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -61,18 +59,32 @@ class VolumeCalculator @Inject constructor() {
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
     /**
+     * Enriched set with workout context needed for volume calculations.
+     * WorkoutSetEntity does not store exerciseId or date directly;
+     * these come from the parent WorkoutExercise and Workout tables.
+     */
+    data class SetWithContext(
+        val set: WorkoutSetEntity,
+        val exerciseId: Long,
+        val workoutDate: Long
+    )
+
+    /**
      * Calculate weekly volume per muscle group with ISO-week bucketing.
      * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     *
+     * @param completedSets sets enriched with exercise ID and workout date context
+     * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
      */
     fun calculateWeeklyVolume(
-        completedSets: List<WorkoutSetEntity>,
+        completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
 
-        for (set in completedSets.filter { it.completed && it.setType == 0 }) {
-            val weekKey = isoWeekKey(set.date)
-            val muscleAssignments = exerciseMuscleMap[set.exerciseId] ?: emptyList()
+        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+            val weekKey = isoWeekKey(ctx.workoutDate)
+            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
             for (assignment in muscleAssignments) {
                 val credits = assignment.role.credit
@@ -81,21 +93,23 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        // Average across weeks (or take most recent week if preferred)
         val avgWeekly = mutableMapOf<String, Double>()
         for ((_, weekMap) in weekBuckets) {
             for ((muscle, credits) in weekMap) {
                 avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
             }
         }
-        for ((muscle, total) in avgWeekly) {
-            avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+        if (weekBuckets.isNotEmpty()) {
+            for ((muscle, total) in avgWeekly) {
+                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+            }
         }
 
-        val directSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
+        val normalSets = completedSets.filter { it.set.completed && it.set.setType == 0 }
+
+        val directSetsByMuscle = normalSets
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
@@ -103,10 +117,9 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        val indirectSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
+        val indirectSetsByMuscle = normalSets
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }
@@ -145,11 +158,11 @@ class VolumeCalculator @Inject constructor() {
 
     private fun classify(sets: Int): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
-            sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
-            sets < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
-            sets < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
-            else -> VolumeStatus.EXCESSIVE          // > 21 = excessive per evidence
+            sets < 10 -> VolumeStatus.INSUFFICIENT
+            sets < 14 -> VolumeStatus.MODERATE
+            sets < 18 -> VolumeStatus.OPTIMAL
+            sets < 22 -> VolumeStatus.HIGH
+            else -> VolumeStatus.EXCESSIVE
         }
     }
 

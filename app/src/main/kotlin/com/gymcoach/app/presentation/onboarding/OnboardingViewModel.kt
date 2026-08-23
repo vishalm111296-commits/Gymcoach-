@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.ProgramGenerator
@@ -7,6 +8,7 @@ import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,9 +47,10 @@ data class OnboardingUiState(
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userProfileRepository: UserProfileRepository,
     private val programGenerator: ProgramGenerator,
-    private val programRepository: ProgramRepository // persists the generated first program
+    private val programRepository: ProgramRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -114,6 +117,11 @@ class OnboardingViewModel @Inject constructor(
                     goal = goal
                 )
                 programRepository.saveGeneratedProgram(generated)
+                // Mark onboarding as complete so returning users skip it
+                context.getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("onboarding_complete", true)
+                    .apply()
                 _uiState.update { it.copy(step = OnboardingStep.COMPLETE, isGenerating = false) }
                 onComplete()
             } catch (e: Exception) {

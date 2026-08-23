@@ -76,7 +76,7 @@ android {
     }
 
     room {
-        schemaDirectory("$projectDir/schemas")
+        schemaDirectory = file("$projectDir/schemas/main")
     }
 }
 

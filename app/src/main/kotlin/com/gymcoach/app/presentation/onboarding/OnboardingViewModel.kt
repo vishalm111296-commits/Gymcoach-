@@ -93,39 +93,40 @@ class OnboardingViewModel @Inject constructor(
         val experience = state.experience ?: return
         _uiState.update { it.copy(isGenerating = true, error = null) }
         viewModelScope.launch {
-            try {//                val equipmentType = mapEquipmentType(state.selectedEquipment)
-//                userProfileRepository.saveProfile(
-//                    UserProfileEntity(
-//                        goal = goal,
-//                        experience = experience,
-//                        age = state.age.toInt(),
-//                        heightCm = state.heightCm.toDouble(),
-//                        weightKg = state.weightKg.toDouble(),
-//                        trainingDaysPerWeek = state.daysPerWeek,
-//                        sessionLengthMinutes = state.sessionMinutes,
-//                        equipmentType = equipmentType
-//                    )
-//                )
-//                val generated = programGenerator.generateProgram(
-//                    frequency = state.daysPerWeek,
-//                    equipmentType = equipmentType,
-//                    experienceLevel = experience,
-//                    goal = goal
-//                )
-//                programRepository.saveGeneratedProgram(generated)
-//                _uiState.update { it.copy(step = OnboardingStep.COMPLETE, isGenerating = false) }
-//                onComplete()
-//            } catch (e: Exception) {
-//                _uiState.update {
-//                    it.copy(isGenerating = false, error = e.message ?: "Could not generate your program")
-//                }
-//            }
-//        }
-//    }
-//
-//    private fun mapEquipmentType(equipment: Set<String>): String = when {
-//        equipment.any { it == "Barbell" || it == "Cable Machine" } -> "gym"
-//        equipment.isNotEmpty() -> "home"
-//        else -> "custom"
-//    }
-//}
+            try {
+                val equipmentType = mapEquipmentType(state.selectedEquipment)
+                userProfileRepository.saveProfile(
+                    UserProfileEntity(
+                        goal = goal,
+                        experience = experience,
+                        age = state.age.toInt(),
+                        heightCm = state.heightCm.toDouble(),
+                        weightKg = state.weightKg.toDouble(),
+                        trainingDaysPerWeek = state.daysPerWeek,
+                        sessionLengthMinutes = state.sessionMinutes,
+                        equipmentType = equipmentType
+                    )
+                )
+                val generated = programGenerator.generateProgram(
+                    frequency = state.daysPerWeek,
+                    equipmentType = equipmentType,
+                    experienceLevel = experience,
+                    goal = goal
+                )
+                programRepository.saveGeneratedProgram(generated)
+                _uiState.update { it.copy(step = OnboardingStep.COMPLETE, isGenerating = false) }
+                onComplete()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isGenerating = false, error = e.message ?: "Could not generate your program")
+                }
+            }
+        }
+    }
+
+    private fun mapEquipmentType(equipment: Set<String>): String = when {
+        equipment.any { it == "Barbell" || it == "Cable Machine" } -> "gym"
+        equipment.isNotEmpty() -> "home"
+        else -> "custom"
+    }
+}

@@ -74,6 +74,10 @@ android {
             useLegacyPackaging = false
         }
     }
+
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
 }
 
 dependencies {

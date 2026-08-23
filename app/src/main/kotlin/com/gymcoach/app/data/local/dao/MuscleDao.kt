@@ -19,14 +19,17 @@ interface MuscleDao {
     @Update
     suspend fun update(muscle: MuscleEntity): Int
 
-    @Query("SELECT * FROM muscles ORDER BY group_name, name")
+    @Query("SELECT * FROM muscles ORDER BY body_region, name")
     fun getAll(): Flow<List<MuscleEntity>>
 
-    @Query("SELECT * FROM muscles WHERE group_name = :groupName ORDER BY name")
-    fun getByGroup(groupName: String): Flow<List<MuscleEntity>>
+    @Query("SELECT * FROM muscles WHERE body_region = :bodyRegion ORDER BY name")
+    fun getByBodyRegion(bodyRegion: String): Flow<List<MuscleEntity>>
 
-    @Query("SELECT * FROM muscles WHERE vtaper_relevance > 0 ORDER BY vtaper_relevance DESC")
-    fun getVtaperRelevant(): Flow<List<MuscleEntity>>
+    @Query("SELECT * FROM muscles WHERE name = :name LIMIT 1")
+    suspend fun getByName(name: String): MuscleEntity?
+
+    @Query("SELECT COUNT(*) FROM muscles")
+    suspend fun count(): Int
 
     @Query("SELECT * FROM muscles WHERE id = :id")
     suspend fun getById(id: Long): MuscleEntity?

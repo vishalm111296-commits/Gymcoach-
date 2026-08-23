@@ -1,6 +1,8 @@
 package com.gymcoach.app.core.di
 
+import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.UserProfileDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import dagger.Module
@@ -26,5 +28,11 @@ object AppModule {
     @Singleton
     fun provideWorkoutDao(database: GymCoachDatabase): WorkoutDao = database.workoutDao()
 
-    // ExerciseRepository and WorkoutRepository are bound via @Binds in RepositoryModule.
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(database: GymCoachDatabase): UserProfileDao = database.userProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideBodyMeasurementDao(database: GymCoachDatabase): BodyMeasurementDao = database.bodyMeasurementDao()
 }

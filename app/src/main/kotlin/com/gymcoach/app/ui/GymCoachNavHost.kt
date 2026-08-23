@@ -57,7 +57,8 @@ fun GymCoachNavHost(
             HomeDashboardScreen(
                 onStartWorkout = { navController.navigate(Routes.workoutSession()) },
                 onViewProgram = { navController.navigate(Routes.EXERCISE_LIST) },
-                onNavigateToProgress = { navController.navigate(Routes.PROGRESS) }
+                onNavigateToProgress = { navController.navigate(Routes.PROGRESS) },
+                onNavigateToProfile = { navController.navigate(Routes.PROFILE) }
             )
         }
 

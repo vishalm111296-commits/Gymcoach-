@@ -20,7 +20,7 @@ interface WorkoutDao {
      *
      * Resume requires BOTH conditions:
      *  1. status = 'ACTIVE'  - legacy zombies were backfilled ABANDONED by
-     *     MIGRATION_6_7; discarded workouts are marked ABANDONED at runtime;
+     *     MIGRATION_7_8; discarded workouts are marked ABANDONED at runtime;
      *  2. at least one exercise attached - so walking into a session and
      *     immediately backing out cannot manufacture a resumable ghost.
      * Empty ACTIVE strays simply become unreachable (never shown again);
@@ -33,6 +33,17 @@ interface WorkoutDao {
             "ORDER BY date DESC LIMIT 1"
     )
     suspend fun getActiveWorkout(): WorkoutEntity?
+
+    /** Legacy completed=0 lookup. NOT used for resume decisions anymore. */
+    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
+    suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
+
+    @Deprecated(
+        "Duplicate of getLatestIncompleteWorkout; kept for existing DAO callers",
+        ReplaceWith("getLatestIncompleteWorkout()")
+    )
+    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
+    suspend fun getIncompleteWorkout(): WorkoutEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkout(workout: WorkoutEntity): Long

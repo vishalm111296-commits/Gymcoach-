@@ -72,11 +72,13 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     /**
-     * v7 semantics: returns only ACTIVE workouts. Legacy `completed=0` zombies
-     * were backfilled to ABANDONED by MIGRATION_6_7 and never surface here,
-     * which is what kills the phantom "Resume Workout" behavior.
+     * v8 semantics: returns only genuinely resumable (ACTIVE + has content)
+     * workouts. Runs the empty-ACTIVE reaping sweep first so rows orphaned by
+     * a force-quit after "remove all exercises" are transitioned to ABANDONED
+     * rather than lingering as live-state artifacts (skeptic review finding).
      */
     override suspend fun getLatestIncompleteWorkout(): Workout? {
+        workoutDao.abandonEmptyActiveWorkouts()
         return workoutDao.getActiveWorkout()?.toDomain()
     }
 

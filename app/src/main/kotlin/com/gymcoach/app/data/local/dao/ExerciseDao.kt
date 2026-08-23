@@ -22,7 +22,13 @@ interface ExerciseDao {
     fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<ExerciseEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(exercise: ExerciseEntity)
+    suspend fun insert(exercise: ExerciseEntity): Long
+
+    @Query("SELECT * FROM exercises WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+    suspend fun getByName(name: String): ExerciseEntity?
+
+    @Query("SELECT COUNT(*) FROM exercises")
+    suspend fun count(): Int
 
     @Update
     suspend fun update(exercise: ExerciseEntity)

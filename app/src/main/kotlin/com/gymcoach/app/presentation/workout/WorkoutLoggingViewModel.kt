@@ -8,6 +8,7 @@ import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.domain.model.WorkoutStatus
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
@@ -41,6 +42,9 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private var workoutTimerJob: kotlinx.coroutines.Job? = null
 
+    /** Single active DB observer; cancelled/replaced on every (re)load so collectors never stack. */
+    private var workoutCollectionJob: kotlinx.coroutines.Job? = null
+
     private val _showExercisePicker = MutableStateFlow(false)
     val showExercisePicker: StateFlow<Boolean> = _showExercisePicker.asStateFlow()
 
@@ -60,17 +64,14 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (workoutId != null) {
-                    workoutRepository.getWorkoutWithDetails(workoutId).collect {
-                        _currentWorkout.value = it
-                        startWorkoutTimer()
-                    }
+                    observeWorkout(workoutId)
                 } else {
+                    // v7 semantics: only genuinely-ACTIVE workouts are resumed.
+                    // Empty/discarded rows are ABANDONED and never match,
+                    // eliminating the phantom "Resume Workout" behavior.
                     val existing = workoutRepository.getLatestIncompleteWorkout()
-                    if (existing != null) {
-                        workoutRepository.getWorkoutWithDetails(existing.id).collect {
-                            _currentWorkout.value = it
-                            startWorkoutTimer()
-                        }
+                    if (existing != null && existing.status == WorkoutStatus.ACTIVE) {
+                        observeWorkout(existing.id)
                     } else {
                         startNewWorkoutInternal()
                     }
@@ -79,6 +80,16 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to load workout"
             }
         }
+    }
+
+    private fun observeWorkout(workoutId: Long) {
+        workoutCollectionJob?.cancel()
+        workoutCollectionJob = viewModelScope.launch {
+            workoutRepository.getWorkoutWithDetails(workoutId).collect {
+                _currentWorkout.value = it
+            }
+        }
+        startWorkoutTimer()
     }
 
     private fun startWorkoutTimer() {
@@ -112,12 +123,45 @@ class WorkoutLoggingViewModel @Inject constructor(
             endTime = now,
             duration = 0,
             notes = "",
-            completed = false
+            completed = false,
+            status = WorkoutStatus.ACTIVE
         )
         val id = workoutRepository.createWorkout(workout)
-        workoutRepository.getWorkoutWithDetails(id).collect {
-            _currentWorkout.value = it
+        observeWorkout(id)
+    }
+
+    /**
+     * Explicit exit that is NOT completion.
+     * - Zero exercises logged -> delete the row entirely (nothing was done).
+     * - Any content present   -> mark ABANDONED (history shows it happened,
+     *                            but it never auto-resumes).
+     */
+    fun discardWorkout() {
+        val details = _currentWorkout.value ?: return
+        workoutTimerJob?.cancel()
+        restTimer.stop()
+        viewModelScope.launch {
+            try {
+                if (details.exercises.isEmpty()) {
+                    workoutRepository.deleteWorkout(details.workout.id)
+                } else {
+                    workoutRepository.updateWorkout(
+                        details.workout.copy(status = WorkoutStatus.ABANDONED, completed = false)
+                    )
+                }
+                clearSessionState()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to discard workout"
+            }
         }
+    }
+
+    private fun clearSessionState() {
+        workoutCollectionJob?.cancel()
+        _currentWorkout.value = null
+        _elapsedSeconds.value = 0L
+        _completed.value = false
+        _showExercisePicker.value = false
     }
 
     fun updateNotes(notes: String) {
@@ -132,7 +176,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     fun updateSetRpe(exerciseIndex: Int, setIndex: Int, rpe: Double) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(rpe = rpe) }
+        updateSetField(exerciseIndex, setIndex) { it.copy(rpe = rpe.coerceIn(0.0, 10.0)) }
     }
 
     fun showExercisePicker() {
@@ -172,15 +216,15 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     fun updateSetReps(exerciseIndex: Int, setIndex: Int, reps: Int) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(reps = reps) }
+        updateSetField(exerciseIndex, setIndex) { it.copy(reps = reps.coerceAtLeast(0)) }
     }
 
     fun updateSetWeight(exerciseIndex: Int, setIndex: Int, weight: Double) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(weight = weight) }
+        updateSetField(exerciseIndex, setIndex) { it.copy(weight = weight.coerceAtLeast(0.0)) }
     }
 
     fun updateSetRestSeconds(exerciseIndex: Int, setIndex: Int, restSeconds: Int) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds) }
+        updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds.coerceAtLeast(0)) }
     }
 
     fun updateSetType(exerciseIndex: Int, setIndex: Int, setType: com.gymcoach.app.domain.model.SetType) {
@@ -242,8 +286,13 @@ class WorkoutLoggingViewModel @Inject constructor(
         workoutTimerJob?.cancel()
         restTimer.stop()
         val now = Instant.now()
-        val duration = now.epochSecond - workout.startTime.epochSecond
-        val updated = workout.copy(endTime = now, duration = duration, completed = true)
+        val duration = (now.epochSecond - workout.startTime.epochSecond).coerceAtLeast(0)
+        val updated = workout.copy(
+            endTime = now,
+            duration = duration,
+            completed = true,
+            status = WorkoutStatus.COMPLETED
+        )
         viewModelScope.launch {
             workoutRepository.updateWorkout(updated)
             _completed.value = true
@@ -264,6 +313,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         workoutTimerJob?.cancel()
+        workoutCollectionJob?.cancel()
         restTimer.stop()
     }
 }

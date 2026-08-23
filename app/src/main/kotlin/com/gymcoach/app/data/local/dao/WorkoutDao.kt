@@ -15,8 +15,15 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id")
     fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
 
-    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
-    suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
+    /**
+     * The single resumable workout, if any.
+     * v7 semantics: only rows with status='ACTIVE' qualify. Empty zombie rows
+     * were backfilled to ABANDONED by MIGRATION_6_7 and never match again,
+     * and discarded workouts are marked ABANDONED at runtime - so the
+     * phantom "Resume Workout" bug is structurally impossible now.
+     */
+    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
+    suspend fun getActiveWorkout(): WorkoutEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkout(workout: WorkoutEntity): Long
@@ -285,9 +292,6 @@ interface WorkoutDao {
         ORDER BY w.date DESC
     """)
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
-
-    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
-    suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
 
 data class DateVolume(
@@ -313,8 +317,8 @@ data class WorkoutWithStats(
     val duration: Long,
     val notes: String,
     val completed: Boolean,
-    val volume: Double,
+    val volume: Double?,
     val setCount: Int,
-    val repCount: Int,
+    val repCount: Int?,
     val exerciseCount: Int
 )

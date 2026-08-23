@@ -8,11 +8,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
+import com.gymcoach.app.presentation.home.HomeDashboardScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
+import com.gymcoach.app.presentation.onboarding.OnboardingScreen
 
 object Routes {
     const val EXERCISE_LIST = "exercise_list"
@@ -22,10 +24,16 @@ object Routes {
     const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
     const val PROGRESS = "progress"
     const val CAMERA = "camera"
+    const val ONBOARDING = "onboarding"
+    const val HOME = "home"
+    const val PROFILE = "profile"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
     fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session?workoutId=$workoutId" else "workout_session"
+    fun onboarding() = "onboarding"
+    fun home() = "home"
+    fun profile() = "profile"
 }
 
 @Composable
@@ -54,13 +62,13 @@ fun GymCoachNavHost(navController: NavHostController) {
             val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
             ExerciseDetailScreen(
                 exerciseId = exerciseId,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBack_stack() }
             )
         }
 
         composable(Routes.WORKOUT_HISTORY) {
             WorkoutHistoryScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.popBack_stack() },
                 onDetailClick = { workoutId ->
                     navController.navigate(Routes.workoutHistoryDetail(workoutId))
                 },
@@ -80,7 +88,7 @@ fun GymCoachNavHost(navController: NavHostController) {
             val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: return@composable
             WorkoutHistoryDetailScreen(
                 workoutId = workoutId,
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.popBack_stack() },
                 onEditClick = { id ->
                     navController.navigate(Routes.workoutSession(id))
                 }
@@ -99,19 +107,41 @@ fun GymCoachNavHost(navController: NavHostController) {
             val arg = backStackEntry.arguments?.getLong("workoutId") ?: -1L
             val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.popBack_stack() },
                 workoutId = workoutId
             )
         }
 
         composable(Routes.PROGRESS) {
             ProgressDashboardScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBack_stack() }
             )
         }
 
         composable(Routes.CAMERA) {
             CameraPreviewScreen()
+        }
+
+        // NEW: Onboarding route - shown when user hasn't completed onboarding
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onComplete = { navController.navigate(Routes.HOME) { popUpTo(Routes.EXERCISE_LIST) inclusive = true } }
+            )
+        }
+
+        // NEW: Home route - main dashboard after onboarding
+        composable(Routes.HOME) {
+            HomeDashboardScreen(
+                onStartWorkout = { navController.navigate(Routes.WORKOUT_SESSION) },
+                onViewProgram = { navController.navigate(Routes.EXERCISE_LIST) },
+                onNavigateToProgress = { navController.navigate(Routes.PROGRESS) },
+                onNavigateToProfile = { navController.navigate(Routes.PROFILE) }
+            )
+        }
+
+        // NEW: Profile route - user profile and measurements
+        composable(Routes.PROFILE) {
+            ProfileScreen()
         }
     }
 }

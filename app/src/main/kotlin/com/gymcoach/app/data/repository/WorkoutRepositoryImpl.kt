@@ -11,6 +11,7 @@ import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.domain.model.WorkoutStatus
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.WorkoutRepository
@@ -70,9 +71,20 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * v7 semantics: returns only ACTIVE workouts. Legacy `completed=0` zombies
+     * were backfilled to ABANDONED by MIGRATION_6_7 and never surface here,
+     * which is what kills the phantom "Resume Workout" behavior.
+     */
     override suspend fun getLatestIncompleteWorkout(): Workout? {
-        return workoutDao.getLatestIncompleteWorkout()?.toDomain()
+        return workoutDao.getActiveWorkout()?.toDomain()
     }
+
+    @Deprecated(
+        "Duplicate of getLatestIncompleteWorkout; kept so existing callers compile",
+        ReplaceWith("getLatestIncompleteWorkout()")
+    )
+    override suspend fun getIncompleteWorkout(): Workout? = getLatestIncompleteWorkout()
 
     override suspend fun createWorkout(workout: Workout): Long {
         return workoutDao.insertWorkout(workout.toEntity())
@@ -83,7 +95,6 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteWorkout(workoutId: Long) {
-        // Get workout entity to delete
         val entity = workoutDao.getWorkoutById(workoutId).first()
         entity?.let { workoutDao.deleteWorkout(it) }
     }
@@ -151,13 +162,9 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun searchWorkouts(query: String): List<WorkoutWithStats> {
         return workoutDao.searchWorkouts(query).map { it.toDomain() }
     }
-
-    override suspend fun getIncompleteWorkout(): Workout? {
-        return workoutDao.getIncompleteWorkout()?.toDomain()
-    }
 }
 
-// Entity → Domain mappers
+// Entity -> Domain mappers
 private fun WorkoutEntity.toDomain() = Workout(
     id = id,
     date = Instant.ofEpochMilli(date),
@@ -165,7 +172,8 @@ private fun WorkoutEntity.toDomain() = Workout(
     endTime = Instant.ofEpochMilli(endTime),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    status = WorkoutStatus.fromString(status, completed)
 )
 
 private fun Workout.toEntity() = WorkoutEntity(
@@ -175,7 +183,8 @@ private fun Workout.toEntity() = WorkoutEntity(
     endTime = endTime.toEpochMilli(),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    status = status.name
 )
 
 private fun WorkoutExerciseEntity.toDomain() = WorkoutExercise(

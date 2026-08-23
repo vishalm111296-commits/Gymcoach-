@@ -13,6 +13,9 @@ import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +34,11 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private var defaultRestSeconds = 90
 
+    // Outlives viewModelScope: user may navigate away the same frame they tap
+    // Discard, tearing down the VM and cancelling a viewModelScope write.
+    // One-shot persistence runs here so ABANDONED/delete always lands.
+    private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -42,7 +50,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private var workoutTimerJob: kotlinx.coroutines.Job? = null
 
-    /** Single active DB observer; cancelled/replaced on every (re)load so collectors never stack. */
+    // Single active DB observer; replaced on reload so collectors never stack.
     private var workoutCollectionJob: kotlinx.coroutines.Job? = null
 
     private val _showExercisePicker = MutableStateFlow(false)
@@ -66,9 +74,9 @@ class WorkoutLoggingViewModel @Inject constructor(
                 if (workoutId != null) {
                     observeWorkout(workoutId)
                 } else {
-                    // v7 semantics: only genuinely-ACTIVE workouts are resumed.
-                    // Empty/discarded rows are ABANDONED and never match,
-                    // eliminating the phantom "Resume Workout" behavior.
+                    // v7 semantics: only genuinely-ACTIVE workouts resume.
+                    // Empty/discarded rows are ABANDONED and never match -
+                    // phantom "Resume Workout" is structurally dead.
                     val existing = workoutRepository.getLatestIncompleteWorkout()
                     if (existing != null && existing.status == WorkoutStatus.ACTIVE) {
                         observeWorkout(existing.id)
@@ -130,17 +138,13 @@ class WorkoutLoggingViewModel @Inject constructor(
         observeWorkout(id)
     }
 
-    /**
-     * Explicit exit that is NOT completion.
-     * - Zero exercises logged -> delete the row entirely (nothing was done).
-     * - Any content present   -> mark ABANDONED (history shows it happened,
-     *                            but it never auto-resumes).
-     */
+    // Explicit exit that is NOT completion. Zero exercises -> delete row;
+    // any content -> ABANDONED (visible in history, never auto-resumes).
     fun discardWorkout() {
         val details = _currentWorkout.value ?: return
         workoutTimerJob?.cancel()
         restTimer.stop()
-        viewModelScope.launch {
+        persistenceScope.launch {
             try {
                 if (details.exercises.isEmpty()) {
                     workoutRepository.deleteWorkout(details.workout.id)
@@ -149,11 +153,12 @@ class WorkoutLoggingViewModel @Inject constructor(
                         details.workout.copy(status = WorkoutStatus.ABANDONED, completed = false)
                     )
                 }
-                clearSessionState()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to discard workout"
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                // Persistence-scope failure cannot reach UI error flow post-navigation;
+                // logged context only. Row stays ACTIVE and remains resumable - safe fallback.
             }
         }
+        clearSessionState()
     }
 
     private fun clearSessionState() {

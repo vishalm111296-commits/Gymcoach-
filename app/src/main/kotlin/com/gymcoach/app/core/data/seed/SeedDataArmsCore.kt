@@ -1,203 +1,222 @@
 package com.gymcoach.app.core.data.seed
 
-/** Arms + Core — completes the home-equipment exercise library. */
+/**
+ * Arms + Core. Biceps/triceps get direct work AFTER the pressing/pulling
+ * volume they already receive indirectly. Core carries anti-rotation +
+ * anti-extension patterns (not just flexion) for real-world transfer.
+ */
 object SeedDataArmsCore {
 
     val ARMS = listOf(
         SeedExercise(
-            name = "Dumbbell Curl",
-            description = "Standard supinated curl; the base biceps mass builder.",
+            name = "Dumbbell Biceps Curl",
+            description = "Standard standing curl; bread-and-butter elbow flexion.",
             muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "Forearms", category = "pull",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "elbow_flexion",
+            muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "secondary")),
+            recommendedRepRange = "8-15", recommendedRestTime = "60s",
+            instructions = "Curl both dumbbells without swinging, supinate slightly at the top, lower over 2-3 seconds.",
+            tips = "Pin elbows to your ribs; no shoulder drift forward."
+        ),
+        SeedExercise(
+            name = "Alternating Dumbbell Curl",
+            description = "One-arm-at-a-time curl allowing stricter focus and slight overload per arm.",
+            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "Forearms", category = "pull",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "elbow_flexion",
+            muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "secondary")),
+            recommendedRepRange = "8-12 per side", recommendedRestTime = "60s"
+        ),
+        SeedExercise(
+            name = "Incline Dumbbell Curl",
+            description = "Bench-reclined curl placing biceps in a long-length stretch — superior stimulus position.",
+            muscleGroup = "Arms", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
+            secondaryMuscles = "", category = "pull",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "elbow_flexion",
+            muscles = listOf(MuscleRef("Biceps", "primary")),
+            recommendedRepRange = "8-12", recommendedRestTime = "75s",
+            instructions = "Sit reclined on the bench, arms hanging straight down behind torso, curl without letting elbows travel forward."
+        ),
+        SeedExercise(
+            name = "Hammer Curl",
+            description = "Neutral-grip curl emphasizing brachialis and forearm depth alongside the biceps.",
+            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "", category = "pull",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "elbow_flexion",
             muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "secondary")),
             recommendedRepRange = "8-15", recommendedRestTime = "60s"
         ),
         SeedExercise(
-            name = "Hammer Curl",
-            description = "Neutral-grip curl biasing brachialis/forearm thickness.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "Biceps", category = "pull",
-            movementPattern = "elbow_flexion",
-            muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "primary")),
-            recommendedRepRange = "8-15", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
             name = "Concentration Curl",
-            description = "Seated single-arm curl with elbow braced on thigh — strictest isolation, strong mind-muscle tool.",
+            description = "Seated single-arm curl braced against the inner thigh for peak isolation.",
             muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
             secondaryMuscles = "", category = "pull",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "elbow_flexion",
             muscles = listOf(MuscleRef("Biceps", "primary")),
             recommendedRepRange = "10-15 per side", recommendedRestTime = "45-60s"
         ),
         SeedExercise(
-            name = "Spider Curl",
-            description = "Chest-supported curl on incline-angled bench edge; peak-tension at the top of the range.",
-            muscleGroup = "Arms", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
-            secondaryMuscles = "", category = "pull",
-            movementPattern = "elbow_flexion",
-            muscles = listOf(MuscleRef("Biceps", "primary")),
-            recommendedRepRange = "10-15", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
-            name = "Cross-Body Hammer Curl",
-            description = "Curl across torso toward opposite shoulder targeting the long head.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "Forearms", category = "pull",
-            movementPattern = "elbow_flexion",
-            muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "stabilizer")),
-            recommendedRepRange = "10-12 per side", recommendedRestTime = "45-60s"
-        ),
-        SeedExercise(
-            name = "Zottman Curl",
-            description = "Curl up supinated, rotate, lower pronated — trains biceps and forearms in one rep.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Intermediate",
-            secondaryMuscles = "Forearms", category = "pull",
-            movementPattern = "elbow_flexion",
-            muscles = listOf(MuscleRef("Biceps", "primary"), MuscleRef("Forearms", "primary")),
-            recommendedRepRange = "8-12", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
-            name = "Overhead Triceps Extension",
-            description = "Single-dumbbell overhead extension placing triceps long head under stretch.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "", category = "push",
-            movementPattern = "elbow_extension",
-            muscles = listOf(MuscleRef("Triceps", "primary")),
-            recommendedRepRange = "10-15", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
             name = "Dumbbell Skull Crusher",
-            description = "Lying extension lowering dumbbells beside the ears; classic medial/lateral head work.",
-            muscleGroup = "Arms", equipment = "Dumbbell + Flat Bench", difficulty = "Beginner",
+            description = "Classic lying triceps extension loading the long head through elbow extension.",
+            muscleGroup = "Arms", equipment = "Dumbbell + Flat Bench", difficulty = "Intermediate",
             secondaryMuscles = "", category = "push",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
             movementPattern = "elbow_extension",
             muscles = listOf(MuscleRef("Triceps", "primary")),
-            recommendedRepRange = "10-15", recommendedRestTime = "60s"
+            recommendedRepRange = "8-12", recommendedRestTime = "75s",
+            instructions = "Lie on bench, dumbbells overhead, bend elbows lowering heads beside your ears, extend back up without moving upper arms.",
+            tips = "Keep upper arms vertical-ish; slight forearm angle toward the head protects the elbows."
+        ),
+        SeedExercise(
+            name = "Overhead Dumbbell Triceps Extension",
+            description = "Overhead stretch-position triceps work; best long-head builder available.",
+            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Intermediate",
+            secondaryMuscles = "Core", category = "push",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "elbow_extension",
+            muscles = listOf(MuscleRef("Triceps", "primary"), MuscleRef("Core", "stabilizer")),
+            recommendedRepRange = "10-15", recommendedRestTime = "75s"
+        ),
+        SeedExercise(
+            name = "Single-Arm Overhead Triceps Extension",
+            description = "Unilateral version exposing and fixing left-right triceps asymmetry.",
+            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "", category = "push",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "elbow_extension",
+            muscles = listOf(MuscleRef("Triceps", "primary")),
+            recommendedRepRange = "10-12 per side", recommendedRestTime = "60s"
+        ),
+        SeedExercise(
+            name = "Close-Grip Push-Up",
+            description = "Hands under shoulders pushing elbows tight — triceps-dominant pressing.",
+            muscleGroup = "Arms", equipment = "Bodyweight", difficulty = "Intermediate",
+            secondaryMuscles = "Chest, Front Deltoid", category = "push",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 1, vtaperRearDelt = 0,
+            movementPattern = "horizontal_push",
+            muscles = listOf(MuscleRef("Triceps", "primary"), MuscleRef("Chest", "secondary")),
+            recommendedRepRange = "8-15", recommendedRestTime = "60s"
         ),
         SeedExercise(
             name = "Bench Dip",
-            description = "Hands on flat bench, bodyweight dip; scalable via foot elevation and tempo.",
+            description = "Hands-behind dip on flat bench; scalable triceps volume from easy to hard leverage.",
             muscleGroup = "Arms", equipment = "Bodyweight + Flat Bench", difficulty = "Beginner",
-            secondaryMuscles = "Front Deltoid, Chest", category = "push",
-            movementPattern = "elbow_extension",
+            secondaryMuscles = "Front Deltoid", category = "push",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "vertical_push",
             muscles = listOf(MuscleRef("Triceps", "primary"), MuscleRef("Front Deltoid", "secondary")),
             recommendedRepRange = "8-15", recommendedRestTime = "60s",
-            safetyNotes = "Keep shoulders down away from ears; stop depth if shoulder discomfort appears."
-        ),
-        SeedExercise(
-            name = "Triceps Kickback",
-            description = "Hinged arm-back extension with peak contraction at full lockout.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "", category = "push",
-            movementPattern = "elbow_extension",
-            muscles = listOf(MuscleRef("Triceps", "primary")),
-            recommendedRepRange = "12-15 per side", recommendedRestTime = "45s"
-        ),
-        SeedExercise(
-            name = "Wrist Curl",
-            description = "Seated forearm flexor work off the knees.",
-            muscleGroup = "Arms", equipment = "Dumbbell", difficulty = "Beginner",
-            secondaryMuscles = "", category = "pull",
-            movementPattern = "wrist",
-            muscles = listOf(MuscleRef("Forearms", "primary")),
-            recommendedRepRange = "15-25", recommendedRestTime = "30-45s"
+            safetyNotes = "Stop short of shoulder discomfort at the bottom; keep hips close to bench.",
+            instructions = "Heels on floor, hands on bench edge, lower until elbows hit ~90 degrees, press back up."
         )
     )
 
     val CORE = listOf(
         SeedExercise(
             name = "Plank",
-            description = "Foundational anti-extension hold; quality over duration.",
+            description = "Isometric brace; foundation for anti-extension core strength.",
             muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Glutes", category = "core",
-            movementPattern = "anti_extension",
+            secondaryMuscles = "Front Deltoid, Glutes", category = "core",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_anti_extension",
             muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Glutes", "stabilizer")),
-            recommendedRepRange = "20-60s hold", recommendedRestTime = "45s",
-            tips = "Squeeze glutes and brace as if about to be poked; stop when form breaks."
+            recommendedRepRange = "30-60s hold", recommendedRestTime = "45s"
         ),
         SeedExercise(
             name = "Side Plank",
-            description = "Anti-lateral-flexion staple for obliques and hip stability.",
+            description = "Anti-lateral-flexion hold building obliques and hip stability.",
             muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
             secondaryMuscles = "Glutes", category = "core",
-            movementPattern = "anti_lateral_flexion",
-            muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Glutes", "stabilizer")),
-            recommendedRepRange = "20-45s per side", recommendedRestTime = "45s"
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_anti_lateral",
+            muscles = listOf(MuscleRef("Core", "primary")),
+            recommendedRepRange = "30-45s per side", recommendedRestTime = "45s"
+        ),
+        SeedExercise(
+            name = "Weighted Plank Drag-Through",
+            description = "Plank while dragging a dumbbell across the floor — dynamic anti-rotation.",
+            muscleGroup = "Core", equipment = "Dumbbell + Bodyweight", difficulty = "Advanced",
+            secondaryMuscles = "Lats, Glutes", category = "core",
+            vtaperLat = 1, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_anti_rotation",
+            muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Lats", "secondary")),
+            recommendedRepRange = "6-10 per side", recommendedRestTime = "60s"
         ),
         SeedExercise(
             name = "Dead Bug",
-            description = "Supinated opposite-arm/leg lower teaching ribcage-pelvis control.",
+            description = "Supine opposite-arm-leg drop teaching rib-down brace under limb motion.",
             muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
             secondaryMuscles = "", category = "core",
-            movementPattern = "anti_extension",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_anti_extension",
             muscles = listOf(MuscleRef("Core", "primary")),
             recommendedRepRange = "8-12 per side", recommendedRestTime = "45s"
         ),
         SeedExercise(
             name = "Bird Dog",
-            description = "Quadruped opposite reach building anti-rotation control and spinal endurance.",
+            description = "Quadruped opposite extension training spinal stability and hip control.",
             muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "Glutes", category = "core",
-            movementPattern = "anti_rotation",
-            muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Glutes", "stabilizer")),
-            recommendedRepRange = "6-10 per side slow", recommendedRestTime = "45s"
-        ),
-        SeedExercise(
-            name = "Hollow Body Hold",
-            description = "Gymnastics-grade anti-extension hold; the base for advanced core strength.",
-            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Intermediate",
-            secondaryMuscles = "", category = "core",
-            movementPattern = "anti_extension",
-            muscles = listOf(MuscleRef("Core", "primary")),
-            recommendedRepRange = "15-40s hold", recommendedRestTime = "60s"
-        ),
-        SeedExercise(
-            name = "Reverse Crunch",
-            description = "Hip-flexion-dominant crunch biasing lower abdominals without neck strain.",
-            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "", category = "core",
-            movementPattern = "spinal_flexion",
-            muscles = listOf(MuscleRef("Core", "primary")),
-            recommendedRepRange = "10-20", recommendedRestTime = "45s"
-        ),
-        SeedExercise(
-            name = "Bicycle Crunch",
-            description = "Rotational crunch combining oblique and rectus loading.",
-            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
-            secondaryMuscles = "", category = "core",
-            movementPattern = "spinal_flexion",
-            muscles = listOf(MuscleRef("Core", "primary")),
-            recommendedRepRange = "12-20 slow", recommendedRestTime = "45s"
+            secondaryMuscles = "Glutes, Upper Back", category = "core",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_stability",
+            muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Glutes", "secondary")),
+            recommendedRepRange = "8-10 per side", recommendedRestTime = "45s"
         ),
         SeedExercise(
             name = "Russian Twist",
-            description = "Seated rotational hold-and-turn; add a dumbbell for load once controlled.",
+            description = "Seated rotation with dumbbell tap; oblique-focused dynamic core.",
+            muscleGroup = "Core", equipment = "Dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "", category = "core",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_rotation",
+            muscles = listOf(MuscleRef("Core", "primary")),
+            recommendedRepRange = "16-24", recommendedRestTime = "45s"
+        ),
+        SeedExercise(
+            name = "Bicycle Crunch",
+            description = "Rotational flexion pairing elbow-to-knee; highest rectus+oblique co-activation crunch variant.",
             muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
             secondaryMuscles = "", category = "core",
-            movementPattern = "rotation",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_flexion",
             muscles = listOf(MuscleRef("Core", "primary")),
-            recommendedRepRange = "16-24 total taps", recommendedRestTime = "45s",
-            safetyNotes = "Rotate from mid-back, not lumbar; keep chest tall."
+            recommendedRepRange = "12-20", recommendedRestTime = "45s"
         ),
         SeedExercise(
-            name = "Weighted Plank Drag-Through",
-            description = "Dumbbell dragged side-to-side under plank position — anti-rotation plus shoulder stability.",
-            muscleGroup = "Core", equipment = "Dumbbell + Bodyweight", difficulty = "Advanced",
+            name = "Reverse Crunch",
+            description = "Pelvis-driven flexion emphasizing lower rectus fibers without neck strain.",
+            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Beginner",
             secondaryMuscles = "", category = "core",
-            movementPattern = "anti_rotation",
-            muscles = listOf(MuscleRef("Core", "primary"), MuscleRef("Lats", "stabilizer")),
-            recommendedRepRange = "6-10 per side", recommendedRestTime = "60s"
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_flexion",
+            muscles = listOf(MuscleRef("Core", "primary")),
+            recommendedRepRange = "10-15", recommendedRestTime = "45s"
         ),
         SeedExercise(
-            name = "V-Sit Hold",
-            description = "Open hip-angle static hold progressing hollow-body strength.",
-            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Intermediate",
-            secondaryMuscles = "", category = "core",
-            movementPattern = "anti_extension",
+            name = "Hollow Body Hold",
+            description = "Gymnastics-grade midline hold; strict anti-extension under maximum lever length.",
+            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Advanced",
+            secondaryMuscles = "Front Deltoid", category = "core",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_anti_extension",
             muscles = listOf(MuscleRef("Core", "primary")),
-            recommendedRepRange = "15-30s hold", recommendedRestTime = "60s"
+            recommendedRepRange = "20-40s hold", recommendedRestTime = "60s"
+        ),
+        SeedExercise(
+            name = "V-Up",
+            description = "Full-body fold from hollow position; advanced flexion power-endurance.",
+            muscleGroup = "Core", equipment = "Bodyweight", difficulty = "Advanced",
+            secondaryMuscles = "Hamstrings", category = "core",
+            vtaperLat = 0, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
+            movementPattern = "core_flexion",
+            muscles = listOf(MuscleRef("Core", "primary")),
+            recommendedRepRange = "8-15", recommendedRestTime = "60s"
         )
     )
 }

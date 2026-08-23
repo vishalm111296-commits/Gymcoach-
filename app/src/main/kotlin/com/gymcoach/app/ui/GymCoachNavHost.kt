@@ -10,11 +10,15 @@ import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
+import com.gymcoach.app.presentation.home.HomeDashboardScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
+import com.gymcoach.app.presentation.onboarding.OnboardingScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 
 object Routes {
+    const val ONBOARDING = "onboarding"
+    const val HOME = "home"
     const val EXERCISE_LIST = "exercise_list"
     const val EXERCISE_DETAIL = "exercise_detail/{exerciseId}"
     const val WORKOUT_HISTORY = "workout_history"
@@ -29,11 +33,32 @@ object Routes {
 }
 
 @Composable
-fun GymCoachNavHost(navController: NavHostController) {
+fun GymCoachNavHost(
+    navController: NavHostController,
+    startDestination: String = Routes.ONBOARDING
+) {
     NavHost(
         navController = navController,
-        startDestination = Routes.EXERCISE_LIST
+        startDestination = startDestination
     ) {
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.HOME) {
+            HomeDashboardScreen(
+                onStartWorkout = { navController.navigate(Routes.workoutSession()) },
+                onViewProgram = { navController.navigate(Routes.EXERCISE_LIST) },
+                onNavigateToProgress = { navController.navigate(Routes.PROGRESS) }
+            )
+        }
+
         composable(Routes.EXERCISE_LIST) {
             ExerciseListScreen(
                 onExerciseClick = { exerciseId ->

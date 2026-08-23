@@ -10,6 +10,9 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".GymCoachApplication"
@@ -32,6 +35,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".core.notification.RestTimerNotificationService"
+            android:foregroundServiceType="shortService"
+            android:exported="false" />
+
+        <receiver
+            android:name=".core.notification.RestTimerReceiver"
+            android:exported="false" />
 
     </application>
 </manifest>

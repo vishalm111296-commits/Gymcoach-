@@ -24,6 +24,6 @@ data class ProgramDayEntity(
     @ColumnInfo(name = "day_number") val dayNumber: Int,
     @ColumnInfo(name = "name") val name: String = "",
     // e.g. "Push", "Pull", "Legs", "Rest"
-    @ColumnInfo(name = "focus") val focus: String = "",
+    @ColumnInfo(name = "target_muscles") val targetMuscles: String = "",
     @ColumnInfo(name = "is_rest_day") val isRestDay: Boolean = false
 )

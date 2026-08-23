@@ -1,19 +1,20 @@
-## ANALYTICS
+## CI
 
-**Current state: CALCULATIONS NOT WIRING TO DATA.**
+**Current state: FAILING on both branches.**
 
-**Volume, reps, sets, duration analytics:**
-- **VolumeCalculator** has zero production callers — Progress UI data flow bypasses it entirely on both branches
-- **PRDetector** has no production caller — celebrated by 18 unit tests testing dead logic
-- **Weekly volume** — `avgWeekly` (per ISO-week credits) computed then discarded; `weeklySets` derived from total sets across entire input, not weekly
-- **PR detection** — uses `Instant.now()` for PR dates instead of workout date; bodyweight proxy (`reps*1.5`) cross-compared against Epley 1RM under same `ESTIMATED_1RM` type; first-ever trivial load always a PR
-- **Weekly trends** — `calculateWeeklyTrend` requires ≥ 2 data points; returns 0.0 if prev=0; `((curr - prev) / prev) * 100` — crashes if prev=0.0 (division by zero in code, though guarded)
-- **Muscle volume** — `TrainingBalance.vol(muscle)` returns `MuscleVolume` with `weeklySets`, `directSets`, `indirectSets`, `status`; but `weeklySets` is not actually weekly; `status` uses wrong counting basis
-- **1RM estimation** — Epley formula verified (100×10→133.33), 12-rep cap verified, invalid input guarded; but `PersonalRecord` test model ≠ `PersonalRecordEntity` (DB row has separate `reps`/`estimated_1rm` columns; mapping layer untested)
-- **Bodyweight handling** — not explicitly tested; `weight == 0.0` path in PRDetector guarded; `reps×1.5` proxy untested
-- **Unit conversion** — no evidence of inch/cm conversion errors; all asset data appears consistent
-- **Time-zone errors** — `isoWeekKey` uses `Calendar.WEEK_OF_YEAR` + locale-default `YEAR`; Dec 29–31 can be week 1 of next year while `YEAR` returns old year → bucket collision/duplication
-- **Week-boundary errors** — `weekStartMillis()` sets `DAY_OF_WEEK, MONDAY` without pinned first-day-of-week/locale; Sunday counts as 0 this week
-- **Month-boundary errors** — no month-aggregation code found; would rely on same `Calendar` patterns
+**Phase 3/p0-stabilization (SHA a24c16702a98e7425bb614dbb195dea205e34fcc):**
+- Lint: FAIL — compilation errors (PersonalRecordDao, BodyMeasurementDao, FavoriteExerciseDao, SeedData files)
+- Test: FAIL — same compilation errors + test setup issues
+- Build: FAIL — same compilation errors
+- Workflow: `.github/workflows/android-build.yml` rebuilt with real `lintDebug`/`testDebugUnitTest`/`assembleDebug` gates; results posted to issue #9; artifacts uploaded
+- Evidence: issue #[ci-run-report] GymCoach CI results records all FAIL; latest run comments capture compiler lines
 
-**Verification status:** Analytics calculations exist but are NOT wired to stored schema or UI. No end-to-end verification path.
+**Phase 2/production-hardening (SHA b514938380f81752ab84f80d938b884058730aa5):**
+- CI status unverifiable (403 on check_runs via MCP token)
+- PR #11 is DRAFT; known compile blockers listed in body (ProgressViewModel duplicate, BodyMeasurementDao fix, ExerciseSubstitutionDao fix, VolumeCalculator SetWithContext, navigation wiring)
+- Mergeable state: `unstable` (failing/pending required checks, not `dirty`/`blocked` from conflicts)
+
+**Required before merge:**
+1. Fix all compilation blockers (C1 duplicate ViewModel, C3 migration crashes, H4 seeder dupes, etc.)
+2. Re-run CI on green
+3. Verify all workflow jobs pass with artifacts

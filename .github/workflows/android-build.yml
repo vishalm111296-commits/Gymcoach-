@@ -110,31 +110,6 @@ jobs:
           echo "Gradle caches are typically stored in ~/.gradle/caches"
           echo "This action should benefit from Gradle cache restoration via setup-java"
 
-      - name: Build Release APK (Unsigned)
-        run: |
-          echo "=== Building Release APK (unsigned) ==="
-          echo "Note: Release signing requires secrets configured in GitHub Actions"
-          echo "Skipping signed release build - use commented section below for production setup"
-
-          echo "=== Debug build gives us APK for testing ==="
-          echo "Build completed! APK is ready for distribution."
-
-          echo "=== Available APKs ==="
-          find app/build/outputs/apk/ -name "*.apk" -type f | sed 's|app/build/| |g' | while read apk; do
-            echo "  📱 $apk"
-          done
-
-      - name: Print Build Statistics
-        run: |
-          echo "=== Build Statistics ==="
-          echo "Build time: $(date)"
-          echo "Workflow: GitHub Actions"
-          echo "Runner: Ubuntu Latest"
-          echo "Gradle Version: $(gradle --version | head -5)"
-          echo "Java Version: $(java -version 2>&1 | head -3)"
-          echo "Android SDK Version: ${{ env.ANDROID_SDK_VERSION }}"
-          echo "Android Build Tools Version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}"
-
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -195,22 +170,13 @@ jobs:
       - name: Run Android Lint
         run: |
           echo "=== Running Android Lint ==="
-          echo "This step runs lint checks on the Android codebase."
-          echo "Skipping this step to save time, but in a real CI/CD pipeline, you would run:"
-          echo "  ./gradlew lint"
-          echo ""
-          echo "Lint would check for:"
-          echo "  - Resource conflicts"
-          echo "  - Unused components"
-          echo "  - Security issues"
-          echo "  - Performance issues"
-          echo "  - Code style violations"
+          ./gradlew lintDebug --stacktrace
 
       - name: Upload Lint Reports
         if: always()
         run: |
-          echo "Lint reports would be available in a real CI/CD pipeline"
-          echo "Generated in ./app/build/reports/lint-results/"
+          echo "Lint reports are available at ./app/build/reports/lint-results/"
+          ls ./app/build/reports/lint-results/ 2>/dev/null || echo "No lint reports found"
 
   test:
     runs-on: ubuntu-latest
@@ -236,7 +202,6 @@ jobs:
       - name: Run Unit Tests
         run: |
           echo "=== Running Unit Tests ==="
-          echo "Running debug unit tests..."
           chmod +x ./gradlew
           ./gradlew testDebugUnitTest --stacktrace
 
@@ -249,8 +214,7 @@ jobs:
       - name: Upload Test Reports
         if: always()
         run: |
-          echo "Test reports would be available in a real CI/CD pipeline"
-          echo "Generated in ./app/build/reports/tests/"
+          echo "Test reports would be available in ./app/build/reports/tests/"
 
   create-release:
     runs-on: ubuntu-latest

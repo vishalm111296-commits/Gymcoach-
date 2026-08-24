@@ -4,11 +4,13 @@ import com.gymcoach.app.data.repository.ExerciseRepositoryImpl
 import com.gymcoach.app.data.repository.WorkoutRepositoryImpl
 import com.gymcoach.app.data.repository.AnalyticsRepositoryImpl
 import com.gymcoach.app.data.repository.ProgramRepositoryImpl
+import com.gymcoach.app.data.repository.ReadinessRepositoryImpl
 import com.gymcoach.app.data.repository.UserProfileRepositoryImpl
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
+import com.gymcoach.app.domain.repository.ReadinessRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.Binds
 import dagger.Module
@@ -48,4 +50,10 @@ abstract class RepositoryModule {
     abstract fun bindProgramRepository(
         impl: ProgramRepositoryImpl
     ): ProgramRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindReadinessRepository(
+        impl: ReadinessRepositoryImpl
+    ): ReadinessRepository
 }

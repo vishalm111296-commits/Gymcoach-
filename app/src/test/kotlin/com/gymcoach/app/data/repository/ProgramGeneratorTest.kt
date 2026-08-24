@@ -1,152 +1,276 @@
 package com.gymcoach.app.data.repository
 
+import com.gymcoach.app.core.exercise.EquipmentAvailability
+import com.gymcoach.app.core.program.ProgramGenerator
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
-import com.gymcoach.app.domain.model.Exercise
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import java.util.*
+import org.junit.Before
+import org.junit.Test
 
 /**
- * ProgramGeneratorTest - verifies program generation logic across frequencies and equipment.
- * 
- * Tests that generated programs have the correct number of days, exercises per day,
- * muscle distribution, and equipment compatibility.
- * 
- * Test data based on actual entity field mappings:
- * - ExerciseEntity: muscleGroup, equipment, difficulty, name
- * - ExerciseSeeder: 69 exercises with dumbbell/bodyweight/bench equipment
- * - Program generation: frequency 2-6 days per week, muscle group distribution
- * - Equipment compatibility: bodyweight, dumbbell, bench, barbell, mixed
+ * ProgramGeneratorTest - real tests using the actual ProgramGenerator.
+ *
+ * Verifies program generation across frequencies, equipment restrictions,
+ * muscle distribution, and exercise selection using mocked DAO and EquipmentAvailability.
  */
 class ProgramGeneratorTest {
 
-    @Test
-    fun `verify program generates correct number of days for frequency 2`() = runTest {
-        // Given: frequency of 2 days per week
-        val frequency = 2
+    private lateinit var generator: ProgramGenerator
+    private lateinit var mockExerciseDao: ExerciseDao
+    private lateinit var mockEquipmentAvailability: EquipmentAvailability
 
-        // When: program is generated with 2 days per week
-        val expectedDays = 2
+    // Test exercises covering all major muscle groups and equipment types
+    private val testExercises = listOf(
+        // Chest exercises
+        exercise(1, "Bench Press", "Chest", "Barbell", 5, 3, 4, 2),
+        exercise(2, "Dumbbell Press", "Chest", "Dumbbell", 3, 2, 3, 1),
+        exercise(3, "Push-up", "Chest", "Bodyweight", 2, 1, 2, 0),
+        exercise(4, "Incline Bench Press", "Chest", "Barbell", 4, 2, 3, 1),
+        // Back exercises
+        exercise(5, "Barbell Row", "Back", "Barbell", 4, 3, 3, 2),
+        exercise(6, "Dumbbell Row", "Back", "Dumbbell", 3, 2, 3, 1),
+        exercise(7, "Pull-up", "Back", "Bodyweight", 3, 1, 3, 1),
+        exercise(8, "Lat Pulldown", "Back", "Cable Machine", 2, 1, 2, 1),
+        // Shoulder exercises
+        exercise(9, "Overhead Press", "Lateral Deltoid", "Barbell", 4, 3, 4, 2),
+        exercise(10, "Lateral Raise", "Lateral Deltoid", "Dumbbell", 2, 1, 2, 1),
+        exercise(11, "Rear Delt Fly", "Rear Deltoid", "Dumbbell", 1, 1, 2, 1),
+        exercise(12, "Face Pull", "Rear Deltoid", "Cable Machine", 1, 1, 1, 1),
+        // Leg exercises
+        exercise(13, "Squat", "Quadriceps", "Barbell", 5, 3, 4, 3),
+        exercise(14, "Leg Press", "Quadriceps", "Leg Press", 3, 2, 3, 2),
+        exercise(15, "Romanian Deadlift", "Hamstrings", "Barbell", 4, 3, 3, 2),
+        exercise(16, "Leg Curl", "Hamstrings", "Leg Curl", 2, 1, 2, 1),
+        exercise(17, "Bulgarian Split Squat", "Glutes", "Dumbbell", 3, 2, 3, 2),
+        exercise(18, "Calf Raise", "Calves", "Machine", 2, 1, 2, 1),
+        // Arm exercises
+        exercise(19, "Barbell Curl", "Biceps", "Barbell", 3, 2, 3, 1),
+        exercise(20, "Dumbbell Curl", "Biceps", "Dumbbell", 2, 1, 2, 1),
+        exercise(21, "Tricep Pushdown", "Triceps", "Cable Machine", 2, 1, 2, 1),
+        exercise(22, "Skull Crusher", "Triceps", "Barbell", 2, 2, 3, 1),
+        // Core exercises
+        exercise(23, "Plank", "Core", "Bodyweight", 1, 1, 1, 0),
+        exercise(24, "Cable Crunch", "Core", "Cable Machine", 1, 1, 1, 1),
+    )
 
-        // Then: the program has the correct number of days
-        assertEquals("Frequency 2 should generate 2 days", expectedDays, frequency)
+    @Before
+    fun setup() {
+        mockExerciseDao = mockk<ExerciseDao>()
+        mockEquipmentAvailability = mockk<EquipmentAvailability>()
+
+        every { mockExerciseDao.getAll() } returns flowOf(testExercises)
+        every { mockEquipmentAvailability.getAvailableEquipment(any()) } returns setOf(
+            "Barbell", "Dumbbell", "Bodyweight", "Flat Bench",
+            "Cable Machine", "Leg Press", "Leg Curl", "Machine"
+        )
+
+        generator = ProgramGenerator(mockExerciseDao, mockEquipmentAvailability)
     }
 
     @Test
-    fun `verify program generates correct number of days for frequency 3`() = runTest {
-        val frequency = 3
-        val expectedDays = 3
-
-        assertEquals("Frequency 3 should generate 3 days", expectedDays, frequency)
+    fun `3-day program generates 3 days`() = runTest {
+        val program = generator.generateProgram(3, "gym", "intermediate", "hypertrophy")
+        assertEquals("3-day program should have 3 days", 3, program.days.size)
     }
 
     @Test
-    fun `verify program generates correct number of days for frequency 4`() = runTest {
-        val frequency = 4
-        val expectedDays = 4
-
-        assertEquals("Frequency 4 should generate 4 days", expectedDays, frequency)
+    fun `4-day program generates 4 days`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+        assertEquals("4-day program should have 4 days", 4, program.days.size)
     }
 
     @Test
-    fun `verify program generates correct number of days for frequency 5`() = runTest {
-        val frequency = 5
-        val expectedDays = 5
-
-        assertEquals("Frequency 5 should generate 5 days", expectedDays, frequency)
+    fun `5-day program generates 5 days`() = runTest {
+        val program = generator.generateProgram(5, "gym", "intermediate", "hypertrophy")
+        assertEquals("5-day program should have 5 days", 5, program.days.size)
     }
 
     @Test
-    fun `verify program generates correct number of days for frequency 6`() = runTest {
-        val frequency = 6
-        val expectedDays = 6
-
-        assertEquals("Frequency 6 should generate 6 days", expectedDays, frequency)
+    fun `6-day program generates 6 days`() = runTest {
+        val program = generator.generateProgram(6, "gym", "intermediate", "hypertrophy")
+        assertEquals("6-day program should have 6 days", 6, program.days.size)
     }
 
     @Test
-    fun `verify program has bodyweight exercises`() = runTest {
-        // Given: exercise library includes bodyweight exercises
-        // When: program is generated
-        val hasBodyweight = true  // bodyweight exercises exist in the seeder
-
-        // Then: program includes bodyweight-compatible days
-        assertTrue("Program should have bodyweight exercises", hasBodyweight)
+    fun `each day has at least 1 exercise`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+        for (day in program.days) {
+            assertTrue(
+                "Day ${day.dayNumber} (${day.name}) should have at least 1 exercise",
+                day.exercises.isNotEmpty()
+            )
+        }
     }
 
     @Test
-    fun `verify program has dumbbell exercises`() = runTest {
-        val hasDumbbell = true  // dumbbell exercises exist in the seeder (69 exercises include dumbbell)
-
-        assertTrue("Program should have dumbbell exercises", hasDumbbell)
+    fun `no duplicate exercises within a day`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+        for (day in program.days) {
+            val exerciseIds = day.exercises.map { it.exerciseId }
+            assertEquals(
+                "Day ${day.dayNumber} should have no duplicate exercises",
+                exerciseIds.size,
+                exerciseIds.toSet().size
+            )
+        }
     }
 
     @Test
-    fun `verify program has barbell exercises`() = runTest {
-        val hasBarbell = true  // barbell exercises exist in the seeder
-
-        assertTrue("Program should have barbell exercises", hasBarbell)
+    fun `program name contains frequency`() = runTest {
+        val program = generator.generateProgram(5, "gym", "intermediate", "hypertrophy")
+        assertTrue(
+            "Program name should contain '5'",
+            program.name.contains("5")
+        )
     }
 
     @Test
-    fun `verify program has bench exercises`() = runTest {
-        val hasBench = true  // bench exercises exist in the seeder
-
-        assertTrue("Program should have bench exercises", hasBench)
+    fun `program goal is passed through`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "strength")
+        assertEquals("Goal should be passed through", "strength", program.goal)
     }
 
     @Test
-    fun `verify muscle distribution across days`() = runTest {
-        // Edge case: verify that generated programs distribute muscles across days
-        // This ensures no single day has all muscle groups
-
-        val muscleGroups = listOf("Chest", "Legs", "Back", "Arms", "Shoulders", "Core")
-        val distributed = muscleGroups.size > 1
-
-        // Then: muscle groups are diversified across the program
-        assertTrue("Should have multiple muscle groups", distributed)
+    fun `program frequency is passed through`() = runTest {
+        val program = generator.generateProgram(6, "gym", "intermediate", "hypertrophy")
+        assertEquals("Frequency should be 6", 6, program.frequency)
     }
 
     @Test
-    fun `verify no impossible exercises in program`() = runTest {
-        // Edge case: generated exercises should be from the valid exercise library
-        // No exercise should be selected that doesn't exist in the seeder
+    fun `dumbbell-only equipment excludes barbell exercises`() = runTest {
+        // Set up equipment availability for dumbbell-only
+        every { mockEquipmentAvailability.getAvailableEquipment("custom") } returns setOf(
+            "Dumbbell", "Bodyweight", "Flat Bench"
+        )
 
-        val validExercises = listOf("Bench Press", "Squat", "Deadlift", "Push-up", "Pull-up")
-        val selectedExercise = "Bench Press"
+        val program = generator.generateProgram(4, "custom", "intermediate", "hypertrophy")
 
-        // Then: selected exercise is from the valid set
-        assertTrue("Selected exercise should be valid", validExercises.contains(selectedExercise))
+        // Check that no exercise requires Barbell
+        for (day in program.days) {
+            for (exercise in day.exercises) {
+                val exerciseEntity = testExercises.find { it.id == exercise.exerciseId }
+                assertNotNull("Exercise should exist in test data", exerciseEntity)
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should not require Barbell (equipment: ${exerciseEntity!!.equipment})",
+                    !exerciseEntity.equipment.contains("Barbell")
+                )
+            }
+        }
     }
 
     @Test
-    fun `verify no empty days in program`() = runTest {
-        // Edge case: every day in the program should have at least one exercise
-        val daysWithExercises = 3
-        val exercisesPerDay = 2
-
-        // Then: no day is empty
-        assertTrue("Each day should have exercises", daysWithExercises > 0)
-        assertTrue("Should have exercises per day", exercisesPerDay > 0)
+    fun `every exercise targets the expected muscle groups`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+        for (day in program.days) {
+            for (exercise in day.exercises) {
+                val exerciseEntity = testExercises.find { it.id == exercise.exerciseId }
+                assertNotNull("Exercise ${exercise.exerciseName} should exist", exerciseEntity)
+                val muscle = exerciseEntity!!.muscleGroup
+                val matchesTarget = day.targetMuscles.any { target ->
+                    target.equals(muscle, ignoreCase = true)
+                } || exerciseEntity.secondaryMuscles.split(",").any { secondary ->
+                    day.targetMuscles.any { target ->
+                        target.trim().equals(secondary.trim(), ignoreCase = true)
+                    }
+                }
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} (muscle: $muscle) should be in target muscles for ${day.name}: ${day.targetMuscles}",
+                    matchesTarget
+                )
+            }
+        }
     }
 
     @Test
-    fun `verify program frequency range`() = runTest {
-        // Given: valid frequency range is 2-6 days per week
-        val minFrequency = 2
-        val maxFrequency = 6
-
-        // When: frequency is within valid range
-        assertTrue("Frequency should be >= min", minFrequency <= maxFrequency)
-        assertTrue("Frequency 2 is valid", 2 >= minFrequency && 2 <= maxFrequency)
-        assertTrue("Frequency 6 is valid", 6 >= minFrequency && 6 <= maxFrequency)
-
-        // Frequencies outside range should be invalid
-        assertTrue("Frequency 1 is invalid", 1 < minFrequency)
-        assertTrue("Frequency 7 is invalid", 7 > maxFrequency)
+    fun `all exercises have valid sets and reps`() = runTest {
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+        for (day in program.days) {
+            for (exercise in day.exercises) {
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should have >0 sets",
+                    exercise.targetSets > 0
+                )
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should have repsMin <= repsMax",
+                    exercise.targetRepsMin <= exercise.targetRepsMax
+                )
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should have repsMin > 0",
+                    exercise.targetRepsMin > 0
+                )
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should have restSeconds > 0",
+                    exercise.restSeconds > 0
+                )
+            }
+        }
     }
+
+    @Test
+    fun `3-day full body covers major muscle groups`() = runTest {
+        val program = generator.generateProgram(3, "gym", "intermediate", "hypertrophy")
+        // Full body program should cover chest, back, legs across 3 days
+        val allMuscles = program.days.flatMap { day ->
+            day.exercises.map { exercise ->
+                testExercises.find { it.id == exercise.exerciseId }?.muscleGroup ?: ""
+            }
+        }.toSet()
+
+        assertTrue("Full body should cover Chest", allMuscles.contains("Chest"))
+        assertTrue("Full body should cover Back", allMuscles.contains("Back"))
+        assertTrue("Full body should cover Quadriceps", allMuscles.contains("Quadriceps"))
+    }
+
+    // Helper function to create test ExerciseEntity
+    private fun exercise(
+        id: Long,
+        name: String,
+        muscleGroup: String,
+        equipment: String,
+        vtaperLat: Int = 0,
+        vtaperLateralDelt: Int = 0,
+        vtaperUpperChest: Int = 0,
+        vtaperRearDelt: Int = 0,
+        secondaryMuscles: String = ""
+    ) = ExerciseEntity(
+        id = id,
+        name = name,
+        description = "Test exercise",
+        muscleGroup = muscleGroup,
+        equipment = equipment,
+        difficulty = "Intermediate",
+        secondaryMuscles = secondaryMuscles,
+        instructions = "",
+        tips = "",
+        commonMistakes = "",
+        safetyNotes = "",
+        recommendedRepRange = "8-12",
+        recommendedRestTime = "90",
+        estimatedCalories = 10,
+        category = "Resistance",
+        tags = "",
+        isFavorite = false,
+        lastViewed = 0L,
+        vtaperLat = vtaperLat,
+        vtaperLateralDelt = vtaperLateralDelt,
+        vtaperUpperChest = vtaperUpperChest,
+        vtaperRearDelt = vtaperRearDelt,
+        movementPattern = "",
+        imageUrl = null,
+        videoUrl = null,
+        animationUrl = null,
+        setupInstructions = "",
+        executionInstructions = "",
+        breathingInstructions = "",
+        tempoGuidance = "",
+        beginnerVariantId = null,
+        advancedVariantId = null
+    )
 }

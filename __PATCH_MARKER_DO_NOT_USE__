@@ -1,4 +1,0 @@
-    // ── Per-exercise analyzer + live UI state ───────────────
-    val formAnalyzer = remember(exerciseType) {
-        FormAnalyzer(exerciseType, FormAnalyzer.defaultFor(exerciseType))
-    }

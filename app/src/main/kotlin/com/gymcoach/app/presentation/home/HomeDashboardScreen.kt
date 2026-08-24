@@ -47,6 +47,7 @@ fun HomeDashboardScreen(
     onViewProgram: () -> Unit,
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToReadiness: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,6 +104,43 @@ fun HomeDashboardScreen(
 
             Spacer(Modifier.height(16.dp))
             WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
+
+            // Readiness quick link
+            Spacer(Modifier.height(16.dp))
+            Card(
+                onClick = onNavigateToReadiness,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "RECOVERY & READINESS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Log how you're feeling today",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                    Text(
+                        text = "→",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = AccentBlue
+                    )
+                }
+            }
 
             if (state.vtaperBars.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))

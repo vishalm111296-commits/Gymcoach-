@@ -67,9 +67,8 @@ class ProgramGenerator @Inject constructor(
         availableEquipment: Set<String>
     ): List<ExerciseEntity> {
         return exercises.filter { ex ->
-            availableEquipment.contains(ex.equipment) ||
-            ex.equipment == "Bodyweight" ||
-            ex.equipment == "Dumbbell"
+            val eq = ex.equipment.split("+").map { it.trim() }
+            eq.all { it == "Bodyweight" || it == "Dumbbell" || availableEquipment.contains(it) }
         }
     }
 

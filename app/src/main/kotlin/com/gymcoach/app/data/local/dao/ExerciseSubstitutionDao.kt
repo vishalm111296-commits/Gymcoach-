@@ -15,15 +15,15 @@ interface ExerciseSubstitutionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(substitutions: List<ExerciseSubstitutionEntity>)
 
-    @Query("SELECT * FROM exercise_substitutions WHERE original_exercise_id = :originalExerciseId ORDER BY reason ASC")
-    fun getByExerciseId(originalExerciseId: Long): Flow<List<ExerciseSubstitutionEntity>>
+    @Query("SELECT * FROM exercise_substitutions WHERE original_exercise_id = :exerciseId")
+    fun getByExerciseId(exerciseId: Long): Flow<List<ExerciseSubstitutionEntity>>
 
-    @Query("SELECT * FROM exercise_substitutions WHERE substitute_exercise_id = :substituteExerciseId")
-    fun getBySubstituteId(substituteExerciseId: Long): Flow<List<ExerciseSubstitutionEntity>>
+    @Query("SELECT * FROM exercise_substitutions WHERE substitute_exercise_id = :substituteId")
+    fun getBySubstituteId(substituteId: Long): Flow<List<ExerciseSubstitutionEntity>>
 
-    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :originalExerciseId")
-    suspend fun deleteByExerciseId(originalExerciseId: Long): Int
+    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :exerciseId")
+    suspend fun deleteByExerciseId(exerciseId: Long): Int
 
-    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :originalExerciseId AND substitute_exercise_id = :substituteExerciseId")
-    suspend fun deleteByExerciseAndSubstitute(originalExerciseId: Long, substituteExerciseId: Long): Int
+    @Query("DELETE FROM exercise_substitutions WHERE original_exercise_id = :exerciseId AND substitute_exercise_id = :substituteId")
+    suspend fun deleteByExerciseAndSubstitute(exerciseId: Long, substituteId: Long): Int
 }

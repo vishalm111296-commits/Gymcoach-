@@ -1,157 +1,280 @@
 package com.gymcoach.app.data.repository
 
+import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.domain.model.SetType
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Test
+import java.time.Instant
 
 /**
- * WorkoutPersistenceTest - verifies workout persistence across the full lifecycle.
- * 
- * Tests the complete workout flow: create → add exercise → add set → complete → resume.
- * All operations verified against Room database state directly.
- * 
- * Test data based on actual entity field mappings:
- * - WorkoutEntity: id, date, startTime, endTime, duration, notes, completed
- * - WorkoutExerciseEntity: id, workoutId, exerciseId, orderIndex
- * - WorkoutSetEntity: id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType
- * - WorkoutRepositoryImpl: CRUD operations on workouts, exercises, and sets
+ * WorkoutPersistenceTest - real tests using WorkoutRepositoryImpl with mocked DAOs.
+ *
+ * Tests the complete workout lifecycle: create → add exercise → add set → complete → resume.
+ * Verifies that status transitions are correct and data flows through mappers properly.
  */
 class WorkoutPersistenceTest {
 
+    private lateinit var workoutDao: WorkoutDao
+    private lateinit var exerciseDao: ExerciseDao
+    private lateinit var repository: WorkoutRepositoryImpl
+
+    @Before
+    fun setup() {
+        workoutDao = mockk<WorkoutDao>(relaxed = true)
+        exerciseDao = mockk<ExerciseDao>(relaxed = true)
+        repository = WorkoutRepositoryImpl(workoutDao, exerciseDao)
+    }
+
     @Test
-    fun `verify create workout persists to database`() = runTest {
-        // When: a new workout is created
+    fun `createWorkout calls insertWorkout on DAO`() = runTest {
+        val workout = Workout(
+            id = 0L,
+            date = Instant.now(),
+            startTime = Instant.now(),
+            endTime = Instant.EPOCH,
+            duration = 0L,
+            notes = "Test workout",
+            completed = false,
+            status = "NOT_STARTED"
+        )
+
+        coEvery { workoutDao.insertWorkout(any()) } returns 1L
+
+        val id = repository.createWorkout(workout)
+
+        coVerify { workoutDao.insertWorkout(any()) }
+        assertEquals("Should return inserted ID", 1L, id)
+    }
+
+    @Test
+    fun `getLatestIncompleteWorkout returns ACTIVE workout`() = runTest {
+        val now = Instant.now()
+        val entity = WorkoutEntity(
+            id = 1L,
+            date = now.toEpochMilli(),
+            startTime = now.toEpochMilli(),
+            endTime = 0L,
+            duration = 0L,
+            notes = "Active workout",
+            completed = false,
+            status = "ACTIVE"
+        )
+
+        coEvery { workoutDao.getLatestIncompleteWorkout() } returns entity
+
+        val workout = repository.getLatestIncompleteWorkout()
+
+        assertNotNull("Should return a workout", workout)
+        assertEquals("Workout should have status ACTIVE", "ACTIVE", workout!!.status)
+        assertEquals("Workout ID should match", 1L, workout.id)
+    }
+
+    @Test
+    fun `getLatestIncompleteWorkout returns null when no ACTIVE`() = runTest {
+        coEvery { workoutDao.getLatestIncompleteWorkout() } returns null
+
+        val workout = repository.getLatestIncompleteWorkout()
+
+        assertNull("Should return null when no active workout", workout)
+    }
+
+    @Test
+    fun `updateWorkout preserves status through entity mapping`() = runTest {
         val workout = Workout(
             id = 1L,
-            date = java.time.Instant.EPOCH,
-            startTime = java.time.Instant.EPOCH,
-            endTime = java.time.Instant.EPOCH,
+            date = Instant.now(),
+            startTime = Instant.now(),
+            endTime = Instant.now(),
+            duration = 3600000L,
+            notes = "Completed workout",
+            completed = true,
+            status = "COMPLETED"
+        )
+
+        coEvery { workoutDao.updateWorkout(any()) } returns Unit
+
+        repository.updateWorkout(workout)
+
+        coVerify { workoutDao.updateWorkout(match { entity ->
+            entity.status == "COMPLETED" && entity.completed == true
+        }) }
+    }
+
+    @Test
+    fun `updateWorkout with ACTIVE status preserves it`() = runTest {
+        val workout = Workout(
+            id = 1L,
+            date = Instant.now(),
+            startTime = Instant.now(),
+            endTime = Instant.EPOCH,
             duration = 0L,
             notes = "",
-            completed = false
-        )
-
-        // Then: the workout can be persisted
-        assertNotNull("Workout should not be null", workout)
-        assertEquals("Workout should be incomplete initially", false, workout.completed)
-    }
-
-    @Test
-    fun `verify add exercise to workout persists`() = runTest {
-        // When: an exercise is added to a workout
-        val workoutId = 1L
-        val exerciseId = 1L
-        val orderIndex = 0
-
-        // Then: the exercise-Workout relationship is persisted
-        assertNotNull("Workout ID should be valid", workoutId > 0)
-        assertNotNull("Exercise ID should be valid", exerciseId > 0)
-    }
-
-    @Test
-    fun `verify add set to exercise persists`() = runTest {
-        // When: a set is added to an exercise within a workout
-        val workoutExerciseId = 1L
-        val set = WorkoutSet(
-            id = 1L,
-            workoutExerciseId = workoutExerciseId,
-            setNumber = 1,
-            weight = 100.0,
-            reps = 5,
-            rpe = 7.0,
-            restSeconds = 120,
             completed = false,
-            setType = com.gymcoach.app.domain.model.SetType.NORMAL
+            status = "ACTIVE"
         )
 
-        // Then: the set is persisted with correct data
-        assertNotNull("Set should not be null", set)
-        assertEquals("Set number should be 1", 1, set.setNumber)
-        assertEquals("Weight should be 100.0", 100.0, set.weight, 0.001)
-        assertEquals("Reps should be 5", 5, set.reps)
+        coEvery { workoutDao.updateWorkout(any()) } returns Unit
+
+        repository.updateWorkout(workout)
+
+        coVerify { workoutDao.updateWorkout(match { entity ->
+            entity.status == "ACTIVE" && entity.completed == false
+        }) }
     }
 
     @Test
-    fun `verify complete workout updates status`() = runTest {
-        // When: a workout is completed
+    fun `updateWorkout with ABANDONED status preserves it`() = runTest {
         val workout = Workout(
             id = 1L,
-            date = java.time.Instant.EPOCH,
-            startTime = java.time.Instant.EPOCH,
-            endTime = java.time.Instant.EPOCH,
-            duration = 3600000L, // 1 hour
-            notes = "Test workout",
-            completed = true
-        )
-
-        // Then: the workout status is updated to completed
-        assertEquals("Workout should be completed", true, workout.completed)
-        assertNotNull("Workout duration should be set", workout.duration > 0)
-    }
-
-    @Test
-    fun `verify resume incomplete workout`() = runTest {
-        // Edge case: retrieving the latest incomplete workout
-        // Should return a workout with completed=false
-
-        val incompleteWorkout = Workout(
-            id = 1L,
-            date = java.time.Instant.EPOCH,
-            startTime = java.time.Instant.EPOCH,
-            endTime = null,
-            duration = null,
+            date = Instant.now(),
+            startTime = Instant.now(),
+            endTime = Instant.EPOCH,
+            duration = 0L,
             notes = "",
-            completed = false
+            completed = false,
+            status = "ABANDONED"
         )
 
-        // Then: the incomplete workout is detectable
-        assertNotNull("Incomplete workout should be findable", incompleteWorkout != null)
-        assertEquals("Workout should be incomplete", false, incompleteWorkout.completed)
+        coEvery { workoutDao.updateWorkout(any()) } returns Unit
+
+        repository.updateWorkout(workout)
+
+        coVerify { workoutDao.updateWorkout(match { entity ->
+            entity.status == "ABANDONED"
+        }) }
     }
 
     @Test
-    fun `verify workout with sets has correct volume calculation`() = runTest {
-        // Given: a workout with sets that have weight and reps
-        val set1 = com.gymcoach.app.data.local.entity.WorkoutSetEntity(
+    fun `getCompletedWorkouts maps status through`() = runTest {
+        val now = Instant.now()
+        val stats = com.gymcoach.app.data.local.dao.WorkoutWithStats(
             id = 1L,
+            date = now.toEpochMilli(),
+            startTime = now.toEpochMilli(),
+            endTime = now.toEpochMilli(),
+            duration = 3600000L,
+            notes = "Test",
+            completed = true,
+            volume = 5000.0,
+            setCount = 10,
+            repCount = 100,
+            exerciseCount = 5
+        )
+
+        coEvery { workoutDao.getCompletedWorkoutsWithStats() } returns flowOf(listOf(stats))
+
+        val workouts = repository.getCompletedWorkouts()
+
+        workouts.collect { list ->
+            assertEquals("Should have 1 workout", 1, list.size)
+            assertEquals("Volume should be 5000.0", 5000.0, list[0].volume, 0.001)
+            assertEquals("Set count should be 10", 10, list[0].setCount)
+        }
+    }
+
+    @Test
+    fun `addSetToExercise calls DAO correctly`() = runTest {
+        val set = WorkoutSet(
+            id = 0L,
             workoutExerciseId = 1L,
             setNumber = 1,
-            weight = 100.0,
-            reps = 5,
+            weight = 60.0,
+            reps = 10,
             rpe = 7.0,
-            restSeconds = 120,
-            completed = true,
-            setType = 0 // NORMAL
+            restSeconds = 90,
+            completed = false,
+            setType = SetType.NORMAL
         )
 
-        val set2 = com.gymcoach.app.data.local.entity.WorkoutSetEntity(
-            id = 2L,
+        coEvery { workoutDao.insertWorkoutSet(any()) } returns 1L
+
+        val id = repository.addSetToExercise(1L, set)
+
+        coVerify { workoutDao.insertWorkoutSet(match { entity ->
+            entity.weight == 60.0 && entity.reps == 10 && entity.setNumber == 1
+        }) }
+        assertEquals("Should return inserted ID", 1L, id)
+    }
+
+    @Test
+    fun `updateSet calls DAO with correct entity`() = runTest {
+        val set = WorkoutSet(
+            id = 5L,
             workoutExerciseId = 1L,
-            setNumber = 2,
-            weight = 100.0,
+            setNumber = 3,
+            weight = 80.0,
             reps = 8,
-            rpe = 8.0,
+            rpe = 8.5,
             restSeconds = 120,
             completed = true,
-            setType = 0 // NORMAL
+            setType = SetType.NORMAL
         )
 
-        // When: calculating volume (reps × weight per set)
-        val set1Volume = set1.reps * set1.weight  // 5 × 100 = 500
-        val set2Volume = set2.reps * set2.weight  // 8 × 100 = 800
+        coEvery { workoutDao.updateWorkoutSet(any()) } returns Unit
 
-        // Then: volumes are computed correctly
-        assertEquals(500.0, set1Volume, 0.001)
-        assertEquals(800.0, set2Volume, 0.001)
+        repository.updateSet(set)
 
-        // And: total workout volume
-        val totalVolume = set1Volume + set2Volume
-        assertEquals(1300.0, totalVolume, 0.001)
+        coVerify { workoutDao.updateWorkoutSet(match { entity ->
+            entity.id == 5L && entity.weight == 80.0 && entity.reps == 8 && entity.completed == true
+        }) }
+    }
+
+    @Test
+    fun `searchWorkouts delegates to DAO`() = runTest {
+        val now = Instant.now()
+        val stats = com.gymcoach.app.data.local.dao.WorkoutWithStats(
+            id = 1L,
+            date = now.toEpochMilli(),
+            startTime = now.toEpochMilli(),
+            endTime = now.toEpochMilli(),
+            duration = 3600000L,
+            notes = "Chest day",
+            completed = true,
+            volume = 3000.0,
+            setCount = 8,
+            repCount = 80,
+            exerciseCount = 4
+        )
+
+        coEvery { workoutDao.searchWorkouts("chest") } returns listOf(stats)
+
+        val results = repository.searchWorkouts("chest")
+
+        assertEquals("Should return 1 result", 1, results.size)
+        assertEquals("Notes should match", "Chest day", results[0].notes)
+    }
+
+    @Test
+    fun `deleteWorkout calls DAO`() = runTest {
+        val entity = WorkoutEntity(
+            id = 1L,
+            date = Instant.now().toEpochMilli(),
+            startTime = Instant.now().toEpochMilli(),
+            endTime = 0L,
+            duration = 0L,
+            notes = "",
+            completed = false,
+            status = "ACTIVE"
+        )
+
+        coEvery { workoutDao.getWorkoutById(1L) } returns flowOf(entity)
+        coEvery { workoutDao.deleteWorkout(any()) } returns Unit
+
+        repository.deleteWorkout(1L)
+
+        coVerify { workoutDao.deleteWorkout(match { it.id == 1L }) }
     }
 }

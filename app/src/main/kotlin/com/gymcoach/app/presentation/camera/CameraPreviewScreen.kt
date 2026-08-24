@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.gymcoach.app.core.ml.ExerciseConfig
 import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.core.ml.FormAnalyzer
 import com.gymcoach.app.core.ml.PoseDetector
@@ -107,7 +106,7 @@ fun CameraPreviewScreen(
 
     // ── Per-exercise analyzer + live UI state ───────────────
     val formAnalyzer = remember(exerciseType) {
-        FormAnalyzer(exerciseType, ExerciseConfig.defaultFor(exerciseType))
+        FormAnalyzer(exerciseType, FormAnalyzer.defaultFor(exerciseType))
     }
     var repCount by remember { mutableIntStateOf(0) }
     var formFeedback by remember { mutableStateOf<String?>(null) }
@@ -223,7 +222,7 @@ fun CameraPreviewScreen(
                 ) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "Preparing AI coach\u2026")
+                    Text(text = "Preparing AI coach…")
                 }
             }
         }

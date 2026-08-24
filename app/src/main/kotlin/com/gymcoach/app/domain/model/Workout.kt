@@ -55,6 +55,7 @@ data class WorkoutWithStats(
     val duration: Long,
     val notes: String,
     val completed: Boolean,
+    val status: String = "NOT_STARTED",
     val volume: Double,
     val setCount: Int,
     val repCount: Int,

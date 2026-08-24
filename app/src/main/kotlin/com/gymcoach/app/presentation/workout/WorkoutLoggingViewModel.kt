@@ -112,7 +112,8 @@ class WorkoutLoggingViewModel @Inject constructor(
             endTime = now,
             duration = 0,
             notes = "",
-            completed = false
+            completed = false,
+            status = "ACTIVE"
         )
         val id = workoutRepository.createWorkout(workout)
         workoutRepository.getWorkoutWithDetails(id).collect {
@@ -245,7 +246,12 @@ class WorkoutLoggingViewModel @Inject constructor(
         restTimer.stop()
         val now = Instant.now()
         val duration = now.epochSecond - workout.startTime.epochSecond
-        val updated = workout.copy(endTime = now, duration = duration, completed = true)
+        val updated = workout.copy(
+            endTime = now,
+            duration = duration,
+            completed = true,
+            status = "COMPLETED"
+        )
         viewModelScope.launch {
             workoutRepository.updateWorkout(updated)
             _completed.value = true

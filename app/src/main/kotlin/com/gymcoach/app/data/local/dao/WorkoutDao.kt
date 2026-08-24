@@ -59,10 +59,9 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE id = :id")
     suspend fun getWorkoutSetById(id: Long): WorkoutSetEntity?
 
-    // Analytics queries — all filter on status = 'COMPLETED' for consistency
-    // with WorkoutStatus enum (migration 7→8 backfills status from completed).
+    // Analytics queries -- all filter on status = 'COMPLETED' for consistency
     @Query("""
-        SELECT MAX(ws.weight) 
+        SELECT MAX(ws.weight)
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
@@ -75,7 +74,8 @@ interface WorkoutDao {
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN exercises e ON e.id = we.exerciseId
-        WHERE 1=1
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE w.status = 'COMPLETED'
         GROUP BY we.exerciseId
         ORDER BY maxWeight DESC
     """)
@@ -149,12 +149,9 @@ interface WorkoutDao {
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id
         WHERE w.status = 'COMPLETED'
-        GROUP BY CAST(w.date / 2629746000 AS INTEGER)
+        GROUP BY strftime('%Y-%m', datetime(w.date / 1000, 'unixepoch'))
         ORDER BY w.date ASC
     """)
-    // Fixed: w.date is epoch-millis, not a date string. strftime('%Y-%m', w.date) returned
-    // '1970-01' for all rows. Now groups by approximate month using integer division.
-    // 2629746000 = avg milliseconds per month (365.25/12 * 86400000).
     suspend fun getMonthlyVolumes(): List<DateVolume>
 
     @Query("""
@@ -289,7 +286,7 @@ interface WorkoutDao {
     """)
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
 
-    @Query("SELECT * FROM workouts WHERE status != 'COMPLETED' ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
 
@@ -316,6 +313,7 @@ data class WorkoutWithStats(
     val duration: Long,
     val notes: String,
     val completed: Boolean,
+    val status: String,
     val volume: Double,
     val setCount: Int,
     val repCount: Int,

@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.IIcons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,128 +36,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.gymcoach.app.domain.repository.AnalyticsRepository
-import com.gymcoach.app.domain.repository.MuscleGroupStats
-import com.gymcoach.app.domain.repository.PersonalRecord
-import com.gymcoach.app.domain.repository.WorkoutCounts
-import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.presentation.history.formatDuration
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
-
-// --- ViewModel ---
-
-data class ProgressUiState(
-    val isLoading: Boolean = true,
-    val volumeHistory: List<Pair<Date, Double>> = emptyList(),
-    val weeklySummary: List<Pair<Date, Double>> = emptyList(),
-    val monthlySummary: List<Pair<Date, Double>> = emptyList(),
-    val personalRecords: List<PersonalRecord> = emptyList(),
-    val muscleGroupDistribution: List<MuscleGroupStats> = emptyList(),
-    val totalWorkouts: Int = 0,
-    val totalSets: Int = 0,
-    val totalReps: Int = 0,
-    val totalExercises: Int = 0,
-    val totalVolume: Double = 0.0,
-    val totalTrainingTimeMinutes: Long = 0,
-    val averageWorkoutVolume: Double = 0.0,
-    val averageWorkoutDurationMinutes: Long = 0,
-    val weeklyTrend: Double = 0.0,
-    val workoutFrequency: Int = 0,
-    val workoutCounts: WorkoutCounts = WorkoutCounts(0,0,0,0),
-    val longestWorkout: WorkoutWithStats? = null,
-    val shortestWorkout: WorkoutWithStats? = null,
-    val error: String? = null
-)
-
-@HiltViewModel
-class ProgressViewModel @Inject constructor(
-    private val analyticsRepository: AnalyticsRepository
-) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(ProgressUiState())
-    val uiState: StateFlow<ProgressUiState> = _uiState.asStateFlow()
-
-    init {
-        loadData()
-    }
-
-    private fun loadData() {
-        viewModelScope.launch {
-            _uiState.value = ProgressUiState(isLoading = true)
-            try {
-                val volume = analyticsRepository.getVolumeHistory()
-                val weekly = analyticsRepository.getWeeklySummary()
-                val monthly = analyticsRepository.getMonthlyVolumes()
-                val prs = analyticsRepository.getAllPersonalRecords()
-                val muscleGroupDistribution = analyticsRepository.getMuscleGroupDistribution()
-                val totalWorkouts = analyticsRepository.getTotalWorkouts()
-                val totalSets = analyticsRepository.getTotalSets()
-                val totalReps = analyticsRepository.getTotalReps()
-                val totalVolume = analyticsRepository.getTotalVolume()
-                val totalTrainingTimeMinutes = analyticsRepository.getTotalTrainingTimeMinutes()
-                val totalExercises = analyticsRepository.getTotalExercises()
-                val averageWorkoutVolume = analyticsRepository.getAverageWorkoutVolume()
-                val averageWorkoutDurationMinutes = analyticsRepository.getAverageWorkoutDurationMinutes()
-                val weeklyTrend = calculateWeeklyTrend(weekly)
-                val workoutFrequency = calculateWorkoutFrequency(weekly)
-                val workoutCounts = analyticsRepository.getWorkoutCounts()
-                val longestWorkout = analyticsRepository.getLongestWorkout()
-                val shortestWorkout = analyticsRepository.getShortestWorkout()
-
-                _uiState.value = ProgressUiState(
-                    isLoading = false,
-                    volumeHistory = volume,
-                    weeklySummary = weekly,
-                    monthlySummary = monthly,
-                    personalRecords = prs,
-                    muscleGroupDistribution = muscleGroupDistribution,
-                    totalWorkouts = totalWorkouts,
-                    totalSets = totalSets,
-                    totalReps = totalReps,
-                    totalVolume = totalVolume,
-                    totalTrainingTimeMinutes = totalTrainingTimeMinutes,
-                    totalExercises = totalExercises,
-                    averageWorkoutVolume = averageWorkoutVolume,
-                    averageWorkoutDurationMinutes = averageWorkoutDurationMinutes,
-                    weeklyTrend = weeklyTrend,
-                    workoutFrequency = workoutFrequency,
-                    workoutCounts = workoutCounts,
-                    longestWorkout = longestWorkout,
-                    shortestWorkout = shortestWorkout
-                )
-            } catch (e: Exception) {
-                _uiState.value = ProgressUiState(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load progress data"
-                )
-            }
-        }
-    }
-
-    private fun calculateWeeklyTrend(weekly: List<Pair<Date, Double>>): Double {
-        if (weekly.size < 2) return 0.0
-        val recent = weekly.takeLast(2)
-        val prev = recent[0].second
-        val curr = recent[1].second
-        return if (prev == 0.0) 0.0 else ((curr - prev) / prev) * 100
-    }
-
-    private fun calculateWorkoutFrequency(weekly: List<Pair<Date, Double>>): Int {
-        return weekly.size
-    }
-
-    fun refresh() = loadData()
-}
 
 // --- Screen ---
 
@@ -278,9 +160,9 @@ fun ProgressDashboardScreen(
                             modifier = Modifier.weight(1f)
                         )
                         val trendSymbol = when {
-                            state.weeklyTrend > 0 -> "▲ +%.1f%%".format(state.weeklyTrend)
-                            state.weeklyTrend < 0 -> "▼ %.1f%%".format(state.weeklyTrend)
-                            else -> "• 0.0%%"
+                            state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
+                            state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
+                            else -> "\u2022 0.0%%"
                         }
                         StatCard(
                             label = "Weekly Trend",

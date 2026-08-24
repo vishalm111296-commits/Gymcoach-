@@ -67,9 +67,16 @@ class ProgramGenerator @Inject constructor(
         availableEquipment: Set<String>
     ): List<ExerciseEntity> {
         return exercises.filter { ex ->
-            availableEquipment.contains(ex.equipment) ||
-            ex.equipment == "Bodyweight" ||
-            ex.equipment == "Dumbbell"
+            val equipmentTokens = ex.equipment.split("+").map { it.trim() }
+            // Compound equipment: all tokens must be available
+            if (equipmentTokens.size > 1) {
+                equipmentTokens.all { availableEquipment.contains(it) }
+            } else {
+                // Single equipment: check availability or allow Bodyweight/Dumbbell
+                availableEquipment.contains(ex.equipment) ||
+                    ex.equipment == "Bodyweight" ||
+                    ex.equipment == "Dumbbell"
+            }
         }
     }
 
@@ -149,4 +156,3 @@ class ProgramGenerator @Inject constructor(
 
         return ProgramDay(dayNum, name, muscles, selected)
     }
-}

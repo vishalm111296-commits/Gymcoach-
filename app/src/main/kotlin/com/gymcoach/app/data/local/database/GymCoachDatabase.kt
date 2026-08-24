@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProgramExerciseEntity::class,
         UserProfileEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -349,6 +349,17 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 9 -> 10: Add preferred schedule and limitations/preferences columns to the
+         * user_profiles table so onboarding can persist a complete profile.
+         */
+        val MIGRATION_9_10 = object : androidx.room.migration.Migration(9, 10) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `limitations_preferences` TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
@@ -357,7 +368,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
             )
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9
+                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
                 )
                 .fallbackToDestructiveMigration(false)
                 .addCallback(object : RoomDatabase.Callback() {
@@ -373,7 +384,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
             val seedData = listOf(
                 // name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed,
                 // vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt, movement_pattern
-                arrayOf<Any>("Bench Press", "Lie on a bench and press the barbell from your chest to full arm extension.", "Chest", "Barbell", "Intermediate", "Triceps, Shoulders", "1. Lie flat on bench. 2. Grip bar slightly wider than shoulder width. 3. Lower bar to mid-chest. 4. Press bar up.", "Keep feet flat on floor.", "Bouncing bar off chest.", "Use a spotter.", "8-12", "90s", 15, "Powerlifting", "Push, Upper Body", 0, 0L, 0, 2, 7, 1, "horizontal_push"),
+                arrayOf<Any>("Bench Press", "Lie on a bench and press the barbell from your chest to full arm extension.", "Chest", "Barbell", "Intermediate", "Triceps, Shoulders", "1. Lie flat on bench. 2. Grip bar. 3. Lower bar to mid-chest. 4. Press bar up.", "Keep feet flat on floor.", "Bouncing bar off chest.", "Use a spotter.", "8-12", "90s", 15, "Powerlifting", "Push, Upper Body", 0, 0L, 0, 2, 7, 1, "horizontal_push"),
                 arrayOf<Any>("Squat", "Lower your hips until your thighs are parallel to the floor, then stand back up.", "Legs", "Barbell", "Beginner", "Glutes, Core", "1. Stand with feet shoulder-width apart. 2. Rest bar on upper back. 3. Bend knees and drop hips. 4. Push through heels to stand.", "Keep chest up.", "Knees caving in.", "Use a squat rack.", "5-10", "120s", 20, "Powerlifting", "Lower Body", 0, 0L, 0, 0, 0, 0, "squat"),
                 arrayOf<Any>("Push-up", "Lower your chest toward the floor while keeping your body in a straight line.", "Chest", "Bodyweight", "Beginner", "Triceps, Shoulders, Core", "1. Start in plank position. 2. Lower body until chest touches floor. 3. Push back up.", "Keep core engaged.", "Sagging hips.", "Do not flare elbows too much.", "10-20", "60s", 10, "Bodyweight", "Push, Home", 0, 0L, 0, 1, 5, 1, "horizontal_push"),
                 arrayOf<Any>("Shoulder Press", "Press the dumbbells overhead until your arms are fully extended.", "Shoulders", "Dumbbell", "Intermediate", "Triceps", "1. Sit or stand with dumbbells at shoulder height. 2. Press weights overhead. 3. Lower with control.", "Don't arch your back.", "Using momentum.", "Control the weight on the way down.", "8-15", "90s", 12, "Resistance", "Push, Upper Body", 0, 0L, 0, 8, 3, 1, "vertical_push"),

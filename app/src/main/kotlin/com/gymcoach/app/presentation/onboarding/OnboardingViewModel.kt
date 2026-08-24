@@ -120,7 +120,9 @@ class OnboardingViewModel @Inject constructor(
                         sessionLengthMinutes = state.sessionMinutes,
                         equipmentType = equipmentType,
                         preferredExercises = "",
-                        exercisesToAvoid = ""
+                        exercisesToAvoid = "",
+                        preferredSchedule = state.preferredSchedule ?: "",
+                        limitationsPreferences = state.limitationsPreferences ?: ""
                     )
                 )
                 val generated = programGenerator.generateProgram(
@@ -158,3 +160,4 @@ class OnboardingViewModel @Inject constructor(
         equipment.isNotEmpty() -> "home"
         else -> "custom"
     }
+}

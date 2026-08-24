@@ -28,13 +28,17 @@ import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 import com.gymcoach.app.ui.theme.WarmWhite
 
+/**
+ * Equipment options matching ExerciseEntity.equipment values in the database.
+ * Names must match exactly what the seed data and ProgramGenerator expect.
+ */
 private val EQUIPMENT_OPTIONS = listOf(
-    "Dumbbells" to "Presses, rows, curls, lateral raises",
+    "Dumbbell" to "Presses, rows, curls, lateral raises",
     "Flat Bench" to "Bench press, supported rows, step-ups",
     "Pull-up Bar" to "Pull-ups, hangs, direct lat work",
-    "Resistance Bands" to "Assisted reps and isolation anywhere",
+    "Resistance Band" to "Assisted reps and isolation anywhere",
     "Barbell" to "Heavy compounds - squat, bench, deadlift",
-    "Cable Machine" to "Constant tension - pulldowns, flyes, pushdowns"
+    "Cable" to "Constant tension - pulldowns, flyes, pushdowns"
 )
 
 /**

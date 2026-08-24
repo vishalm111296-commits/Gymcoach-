@@ -66,6 +66,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.data.local.dao.LastSetData
+import com.gymcoach.app.presentation.history.formatDuration
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +86,8 @@ fun WorkoutSessionScreen(
     val error by viewModel.error.collectAsState()
     val restTimerState by viewModel.restTimerState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
+    val previousPerformance by viewModel.previousPerformance.collectAsState()
+    val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -134,7 +141,7 @@ fun WorkoutSessionScreen(
                     Column {
                         Text("Workout Session")
                         Text(
-                            text = com.gymcoach.app.presentation.history.formatDuration(elapsedSeconds),
+                            text = formatDuration(elapsedSeconds),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -218,10 +225,16 @@ fun WorkoutSessionScreen(
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
+                            // Get previous performance for this exercise
+                            val lastSets = previousPerformance[we.exercise.id]
+                            val lastPerf = lastPerformanceSummary[we.exercise.id]
+
                             ExerciseSetCard(
                                 exerciseName = we.exercise.name,
                                 muscleGroup = we.exercise.muscleGroup,
                                 sets = we.sets,
+                                previousSets = lastSets,
+                                lastPerformance = lastPerf,
                                 onAddSet = { viewModel.addSet(exIdx) },
                                 onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
                                 onRemoveExercise = { viewModel.removeExercise(exIdx) },
@@ -344,6 +357,8 @@ private fun ExerciseSetCard(
     exerciseName: String,
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
+    previousSets: List<LastSetData>?,
+    lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,
@@ -383,6 +398,46 @@ private fun ExerciseSetCard(
                 }
                 IconButton(onClick = onRemoveExercise) {
                     Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                }
+            }
+
+            // Previous performance indicator
+            if (lastPerformance != null) {
+                val lastDate = Instant.ofEpochMilli(lastPerformance.date)
+                    .atZone(ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ofPattern("MMM d"))
+                val bestWeight = lastPerformance.maxWeight
+                val lastSetSummary = previousSets?.joinToString(", ") { 
+                    "${it.weight}kg x ${it.reps}" 
+                } ?: ""
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Last time ($lastDate)",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        if (lastSetSummary.isNotEmpty()) {
+                            Text(
+                                text = lastSetSummary,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        Text(
+                            text = "Best: ${bestWeight}kg",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
                 }
             }
 

@@ -18,7 +18,8 @@ import org.junit.Test
  * ProgramGeneratorTest - real tests using the actual ProgramGenerator.
  *
  * Verifies program generation across frequencies, equipment restrictions,
- * muscle distribution, and exercise selection using mocked DAO and EquipmentAvailability.
+ * muscle distribution, exercise selection, and V-taper prioritization.
+ * Equipment names match ExerciseEntity.equipment values in the DB seed data.
  */
 class ProgramGeneratorTest {
 
@@ -27,6 +28,7 @@ class ProgramGeneratorTest {
     private lateinit var mockEquipmentAvailability: EquipmentAvailability
 
     // Test exercises covering all major muscle groups and equipment types
+    // Equipment names MUST match DB seed data: "Barbell", "Dumbbell", "Bodyweight", "Cable", "Machine"
     private val testExercises = listOf(
         // Chest exercises
         exercise(1, "Bench Press", "Chest", "Barbell", 5, 3, 4, 2),
@@ -37,27 +39,27 @@ class ProgramGeneratorTest {
         exercise(5, "Barbell Row", "Back", "Barbell", 4, 3, 3, 2),
         exercise(6, "Dumbbell Row", "Back", "Dumbbell", 3, 2, 3, 1),
         exercise(7, "Pull-up", "Back", "Bodyweight", 3, 1, 3, 1),
-        exercise(8, "Lat Pulldown", "Back", "Cable Machine", 2, 1, 2, 1),
+        exercise(8, "Lat Pulldown", "Back", "Cable", 2, 1, 2, 1),
         // Shoulder exercises
         exercise(9, "Overhead Press", "Lateral Deltoid", "Barbell", 4, 3, 4, 2),
         exercise(10, "Lateral Raise", "Lateral Deltoid", "Dumbbell", 2, 1, 2, 1),
         exercise(11, "Rear Delt Fly", "Rear Deltoid", "Dumbbell", 1, 1, 2, 1),
-        exercise(12, "Face Pull", "Rear Deltoid", "Cable Machine", 1, 1, 1, 1),
+        exercise(12, "Face Pull", "Rear Deltoid", "Cable", 1, 1, 1, 1),
         // Leg exercises
         exercise(13, "Squat", "Quadriceps", "Barbell", 5, 3, 4, 3),
-        exercise(14, "Leg Press", "Quadriceps", "Leg Press", 3, 2, 3, 2),
+        exercise(14, "Leg Press", "Quadriceps", "Machine", 3, 2, 3, 2),
         exercise(15, "Romanian Deadlift", "Hamstrings", "Barbell", 4, 3, 3, 2),
-        exercise(16, "Leg Curl", "Hamstrings", "Leg Curl", 2, 1, 2, 1),
+        exercise(16, "Leg Curl", "Hamstrings", "Machine", 2, 1, 2, 1),
         exercise(17, "Bulgarian Split Squat", "Glutes", "Dumbbell", 3, 2, 3, 2),
         exercise(18, "Calf Raise", "Calves", "Machine", 2, 1, 2, 1),
         // Arm exercises
         exercise(19, "Barbell Curl", "Biceps", "Barbell", 3, 2, 3, 1),
         exercise(20, "Dumbbell Curl", "Biceps", "Dumbbell", 2, 1, 2, 1),
-        exercise(21, "Tricep Pushdown", "Triceps", "Cable Machine", 2, 1, 2, 1),
+        exercise(21, "Tricep Pushdown", "Triceps", "Cable", 2, 1, 2, 1),
         exercise(22, "Skull Crusher", "Triceps", "Barbell", 2, 2, 3, 1),
         // Core exercises
         exercise(23, "Plank", "Core", "Bodyweight", 1, 1, 1, 0),
-        exercise(24, "Cable Crunch", "Core", "Cable Machine", 1, 1, 1, 1),
+        exercise(24, "Cable Crunch", "Core", "Cable", 1, 1, 1, 1),
     )
 
     @Before
@@ -68,7 +70,7 @@ class ProgramGeneratorTest {
         every { mockExerciseDao.getAll() } returns flowOf(testExercises)
         every { mockEquipmentAvailability.getAvailableEquipment(any()) } returns setOf(
             "Barbell", "Dumbbell", "Bodyweight", "Flat Bench",
-            "Cable Machine", "Leg Press", "Leg Curl", "Machine"
+            "Cable", "Machine"
         )
 
         generator = ProgramGenerator(mockExerciseDao, mockEquipmentAvailability)
@@ -145,14 +147,12 @@ class ProgramGeneratorTest {
 
     @Test
     fun `dumbbell-only equipment excludes barbell exercises`() = runTest {
-        // Set up equipment availability for dumbbell-only
         every { mockEquipmentAvailability.getAvailableEquipment("custom") } returns setOf(
             "Dumbbell", "Bodyweight", "Flat Bench"
         )
 
         val program = generator.generateProgram(4, "custom", "intermediate", "hypertrophy")
 
-        // Check that no exercise requires Barbell
         for (day in program.days) {
             for (exercise in day.exercises) {
                 val exerciseEntity = testExercises.find { it.id == exercise.exerciseId }
@@ -161,6 +161,112 @@ class ProgramGeneratorTest {
                     "Exercise ${exercise.exerciseName} should not require Barbell (equipment: ${exerciseEntity!!.equipment})",
                     !exerciseEntity.equipment.contains("Barbell")
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `dumbbell-only equipment excludes cable exercises`() = runTest {
+        every { mockEquipmentAvailability.getAvailableEquipment("custom") } returns setOf(
+            "Dumbbell", "Bodyweight", "Flat Bench"
+        )
+
+        val program = generator.generateProgram(4, "custom", "intermediate", "hypertrophy")
+
+        for (day in program.days) {
+            for (exercise in day.exercises) {
+                val exerciseEntity = testExercises.find { it.id == exercise.exerciseId }
+                assertNotNull("Exercise should exist in test data", exerciseEntity)
+                assertTrue(
+                    "Exercise ${exercise.exerciseName} should not require Cable (equipment: ${exerciseEntity!!.equipment})",
+                    !exerciseEntity.equipment.contains("Cable")
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `bodyweight exercises always included regardless of equipment`() = runTest {
+        every { mockEquipmentAvailability.getAvailableEquipment("custom") } returns setOf("Bodyweight")
+
+        val program = generator.generateProgram(4, "custom", "intermediate", "hypertrophy")
+
+        val exerciseIds = program.days.flatMap { it.exercises }.map { it.exerciseId }.toSet()
+        // Push-up (id=3) and Pull-up (id=7) are Bodyweight and should be included
+        assertTrue("Push-up should be included", exerciseIds.contains(3))
+        assertTrue("Pull-up should be included", exerciseIds.contains(7))
+    }
+
+    @Test
+    fun `vtaper sorting prioritizes high vtaper exercises over low vtaper exercises`() = runTest {
+        // Create exercises where one has higher vtaper scores for the same muscle
+        val vtaperExercises = listOf(
+            exercise(100, "Lateral Raise", "Lateral Deltoid", "Dumbbell",
+                vtaperLat = 1, vtaperLateralDelt = 10, vtaperUpperChest = 0, vtaperRearDelt = 2),
+            exercise(101, "Shoulder Shrug", "Lateral Deltoid", "Dumbbell",
+                vtaperLat = 0, vtaperLateralDelt = 1, vtaperUpperChest = 0, vtaperRearDelt = 0),
+            exercise(102, "Barbell Row", "Back", "Barbell",
+                vtaperLat = 9, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 5),
+            exercise(103, "Bicep Curl", "Back", "Dumbbell",
+                vtaperLat = 1, vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0),
+        )
+
+        every { mockExerciseDao.getAll() } returns flowOf(vtaperExercises)
+        every { mockEquipmentAvailability.getAvailableEquipment("gym") } returns setOf(
+            "Barbell", "Dumbbell", "Bodyweight"
+        )
+
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+
+        // Find the Pull/Lateral Deltoid days and verify vtaper-prioritized exercises come first
+        for (day in program.days) {
+            if (day.targetMuscles.contains("Lateral Deltoid")) {
+                val firstExercise = day.exercises.firstOrNull()
+                if (firstExercise != null) {
+                    val entity = vtaperExercises.find { it.id == firstExercise.exerciseId }
+                    assertNotNull(entity)
+                    assertTrue(
+                        "First Lateral Deltoid exercise should have high vtaper_lateral_delt (got ${entity!!.vtaperLateralDelt})",
+                        entity.vtaperLateralDelt >= 5
+                    )
+                }
+            }
+            if (day.targetMuscles.contains("Back")) {
+                val firstBackExercise = day.exercises.firstOrNull()
+                if (firstBackExercise != null) {
+                    val entity = vtaperExercises.find { it.id == firstBackExercise.exerciseId }
+                    assertNotNull(entity)
+                    assertTrue(
+                        "First Back exercise should have high vtaper_lat (got ${entity!!.vtaperLat})",
+                        entity.vtaperLat >= 5
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `difficulty tiebreaker prefers beginner over advanced when vtaper equal`() = runTest {
+        val exercises = listOf(
+            exercise(200, "Easy Lateral", "Lateral Deltoid", "Dumbbell",
+                vtaperLat = 0, vtaperLateralDelt = 5, vtaperUpperChest = 0, vtaperRearDelt = 0,
+                difficulty = "Beginner"),
+            exercise(201, "Hard Lateral", "Lateral Deltoid", "Dumbbell",
+                vtaperLat = 0, vtaperLateralDelt = 5, vtaperUpperChest = 0, vtaperRearDelt = 0,
+                difficulty = "Advanced"),
+        )
+
+        every { mockExerciseDao.getAll() } returns flowOf(exercises)
+        every { mockEquipmentAvailability.getAvailableEquipment("gym") } returns setOf(
+            "Barbell", "Dumbbell", "Bodyweight"
+        )
+
+        val program = generator.generateProgram(4, "gym", "intermediate", "hypertrophy")
+
+        for (day in program.days) {
+            if (day.targetMuscles.contains("Lateral Deltoid") && day.exercises.isNotEmpty()) {
+                val firstExercise = day.exercises.first()
+                assertEquals("Beginner exercise should come first when vtaper scores equal", 200L, firstExercise.exerciseId)
             }
         }
     }
@@ -216,7 +322,6 @@ class ProgramGeneratorTest {
     @Test
     fun `3-day full body covers major muscle groups`() = runTest {
         val program = generator.generateProgram(3, "gym", "intermediate", "hypertrophy")
-        // Full body program should cover chest, back, legs across 3 days
         val allMuscles = program.days.flatMap { day ->
             day.exercises.map { exercise ->
                 testExercises.find { it.id == exercise.exerciseId }?.muscleGroup ?: ""
@@ -238,14 +343,15 @@ class ProgramGeneratorTest {
         vtaperLateralDelt: Int = 0,
         vtaperUpperChest: Int = 0,
         vtaperRearDelt: Int = 0,
-        secondaryMuscles: String = ""
+        secondaryMuscles: String = "",
+        difficulty: String = "Intermediate"
     ) = ExerciseEntity(
         id = id,
         name = name,
         description = "Test exercise",
         muscleGroup = muscleGroup,
         equipment = equipment,
-        difficulty = "Intermediate",
+        difficulty = difficulty,
         secondaryMuscles = secondaryMuscles,
         instructions = "",
         tips = "",

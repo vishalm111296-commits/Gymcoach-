@@ -133,8 +133,16 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Maps UI equipment selection to the equipment type used by ProgramGenerator.
+     * "gym" = has barbell/cable/machine access → full equipment set
+     * "home" = has dumbbells/bands/bench → filtered equipment set
+     * "custom" = no equipment → bodyweight only
+     *
+     * Equipment names now match ExerciseEntity.equipment values exactly.
+     */
     private fun mapEquipmentType(equipment: Set<String>): String = when {
-        equipment.any { it == "Barbell" || it == "Cable Machine" } -> "gym"
+        equipment.any { it == "Barbell" || it == "Cable" } -> "gym"
         equipment.isNotEmpty() -> "home"
         else -> "custom"
     }

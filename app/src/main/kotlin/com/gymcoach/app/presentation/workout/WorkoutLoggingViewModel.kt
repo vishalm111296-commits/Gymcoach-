@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
+import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
@@ -52,6 +54,14 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // Previous performance: exerciseId -> last sets data
+    private val _previousPerformance = MutableStateFlow<Map<Long, List<LastSetData>>>(emptyMap())
+    val previousPerformance: StateFlow<Map<Long, List<LastSetData>>> = _previousPerformance.asStateFlow()
+
+    // Previous performance: exerciseId -> last performance summary
+    private val _lastPerformanceSummary = MutableStateFlow<Map<Long, LastPerformance>>(emptyMap())
+    val lastPerformanceSummary: StateFlow<Map<Long, LastPerformance>> = _lastPerformanceSummary.asStateFlow()
+
     fun dismissError() {
         _error.value = null
     }
@@ -62,6 +72,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
+                        loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                         startWorkoutTimer()
                     }
                 } else {
@@ -69,6 +80,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     if (existing != null) {
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
+                            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             startWorkoutTimer()
                         }
                     } else {
@@ -79,6 +91,36 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to load workout"
             }
         }
+    }
+
+    /**
+     * Load previous performance data for all exercises in the current workout.
+     * Shows what the user did last time for each exercise.
+     */
+    private suspend fun loadPreviousPerformanceForExercises(
+        exercises: List<WorkoutExerciseWithSets>
+    ) {
+        val perfMap = mutableMapOf<Long, List<LastSetData>>()
+        val summaryMap = mutableMapOf<Long, LastPerformance>()
+
+        for (we in exercises) {
+            val exerciseId = we.exercise.id
+            try {
+                val lastSets = workoutRepository.getLastSetsForExercise(exerciseId)
+                if (lastSets.isNotEmpty()) {
+                    perfMap[exerciseId] = lastSets
+                }
+                val lastPerf = workoutRepository.getLastPerformanceForExercise(exerciseId)
+                if (lastPerf != null) {
+                    summaryMap[exerciseId] = lastPerf
+                }
+            } catch (_: Exception) {
+                // Silently skip if query fails (e.g., no history yet)
+            }
+        }
+
+        _previousPerformance.value = perfMap
+        _lastPerformanceSummary.value = summaryMap
     }
 
     private fun startWorkoutTimer() {
@@ -150,6 +192,15 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
             _showExercisePicker.value = false
+            // Load previous performance for newly added exercise
+            val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
+            if (lastSets.isNotEmpty()) {
+                _previousPerformance.value = _previousPerformance.value + (exercise.id to lastSets)
+            }
+            val lastPerf = workoutRepository.getLastPerformanceForExercise(exercise.id)
+            if (lastPerf != null) {
+                _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
+            }
         }
     }
 

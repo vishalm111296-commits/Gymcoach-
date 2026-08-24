@@ -14,6 +14,7 @@ import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_5_6
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_6_7
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_7_8
+import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_8_9
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -25,7 +26,7 @@ import org.junit.runner.RunWith
  * Room migration tests using MigrationTestHelper.
  *
  * Schema JSONs (v1–v7) are exported under app/schemas by KSP.
- * v8.json is generated at build time; tests referencing it will pass on CI.
+ * v8/v9.json is generated at build time; tests referencing it will pass on CI.
  *
  * Strategy:
  * - MigrationTestHelper.createDatabase() reads the schema JSON for the
@@ -35,6 +36,8 @@ import org.junit.runner.RunWith
  *   target version.
  * - For v7→v8 (status column backfill), we also do a manual SQL-level
  *   test because the backfill logic is the most critical migration.
+ * - For v8→v9 (V-taper scores), we verify the UPDATE statements apply
+ *   correct scores to each exercise.
  */
 @RunWith(AndroidJUnit4::class)
 class RoomMigrationTest {
@@ -51,19 +54,20 @@ class RoomMigrationTest {
     )
 
     // ──────────────────────────────────────────────
-    //  Full chain: v1 → v7 (schema JSONs exist)
+    //  Full chain: v1 → v9 (schema JSONs exist)
     // ──────────────────────────────────────────────
 
     @Test
-    fun migrate1To7() {
+    fun migrate1To9() {
         // Create at v1 (only exercises table with basic columns)
         migrationTestHelper.createDatabase(TEST_DB, 1).close()
 
-        // Run the complete chain to v7
+        // Run the complete chain to v9
         migrationTestHelper.runMigrationsAndValidate(
-            TEST_DB, 7, true,
+            TEST_DB, 9, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
-            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9
         ).close()
     }
 
@@ -119,17 +123,14 @@ class RoomMigrationTest {
 
     @Test
     fun migrate7To8_addsStatusColumnAndBackfills() {
-        // Start from v7 schema (all tables exist)
         migrationTestHelper.createDatabase(TEST_DB, 7).close()
 
-        // Run the full chain to v8
         val db = migrationTestHelper.runMigrationsAndValidate(
             TEST_DB, 8, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8
         )
 
-        // Verify status column exists via PRAGMA
         val pragmaCursor = db.query("PRAGMA table_info(workouts)")
         var hasStatusColumn = false
         while (pragmaCursor.moveToNext()) {
@@ -140,29 +141,16 @@ class RoomMigrationTest {
         }
         pragmaCursor.close()
         assertTrue("workouts table should have 'status' column after 7→8 migration", hasStatusColumn)
-
-        // Verify backfill: insert a completed workout before migration,
-        // it should be backfilled to COMPLETED
-        // (MigrationTestHelper applies migrations to an empty DB, so there's no
-        // existing data to backfill. The DDL default is 'NOT_STARTED' which
-        // matches the entity annotation.)
         db.close()
     }
 
     @Test
     fun migration7To8_statusBackfillLogic() {
-        // Manual test: create a v7 DB, insert test data, run migration 7→8,
-        // verify the backfill assigns correct statuses.
-
-        // We can't use MigrationTestHelper for this because we need to insert
-        // data before running the migration. Instead, we test the SQL directly.
-
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dbHelper = object : android.database.sqlite.SQLiteOpenHelper(
             context, "test-backfill.db", null, 7
         ) {
             override fun onCreate(db: android.database.sqlite.SQLiteDatabase) {
-                // v7 schema: exercises + workouts (no status column)
                 db.execSQL(
                     """CREATE TABLE IF NOT EXISTS workouts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -183,22 +171,10 @@ class RoomMigrationTest {
                     )"""
                 )
 
-                // Insert test rows
-                // Row 1: completed=1 → should become COMPLETED
-                db.execSQL(
-                    "INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'completed workout', 1)"
-                )
-                // Row 2: completed=0, has exercises → should become ACTIVE
-                db.execSQL(
-                    "INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'active workout', 0)"
-                )
-                db.execSQL(
-                    "INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES (2, 1, 0)"
-                )
-                // Row 3: completed=0, no exercises → should become ABANDONED
-                db.execSQL(
-                    "INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'zombie workout', 0)"
-                )
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'completed workout', 1)")
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'active workout', 0)")
+                db.execSQL("INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES (2, 1, 0)")
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'zombie workout', 0)")
             }
 
             override fun onUpgrade(db: android.database.sqlite.SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
@@ -206,13 +182,9 @@ class RoomMigrationTest {
         }
 
         val db = dbHelper.writableDatabase
-
-        // Apply MIGRATION_7_8 SQL manually
         MIGRATION_7_8.migrate(db)
 
-        // Verify status column was added and backfilled correctly
         val cursor = db.rawQuery("SELECT id, status, notes FROM workouts ORDER BY id", null)
-
         val results = mutableListOf<Triple<Long, String, String>>()
         while (cursor.moveToNext()) {
             results.add(
@@ -228,13 +200,11 @@ class RoomMigrationTest {
         dbHelper.close()
 
         assertEquals("Should have 3 rows", 3, results.size)
-
         val statusByNote = results.associate { it.third to it.second }
         assertEquals("completed workout → COMPLETED", "COMPLETED", statusByNote["completed workout"])
         assertEquals("active workout → ACTIVE", "ACTIVE", statusByNote["active workout"])
         assertEquals("zombie workout → ABANDONED", "ABANDONED", statusByNote["zombie workout"])
 
-        // Verify all statuses are valid
         val validStatuses = setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")
         for ((_, status, _) in results) {
             assertTrue("Invalid status: $status", status in validStatuses)
@@ -243,7 +213,6 @@ class RoomMigrationTest {
 
     @Test
     fun migration7To8_statusDefaultIsNotStarted() {
-        // After migration, new inserts should default to NOT_STARTED
         migrationTestHelper.createDatabase(TEST_DB, 7).close()
 
         val db = migrationTestHelper.runMigrationsAndValidate(
@@ -252,7 +221,6 @@ class RoomMigrationTest {
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8
         )
 
-        // Insert a new workout after migration
         db.execSQL(
             "INSERT INTO workouts (date, startTime, endTime, duration, notes, completed, status) VALUES (0, 0, 0, 0, 'new workout', 0, 'NOT_STARTED')"
         )
@@ -261,6 +229,114 @@ class RoomMigrationTest {
         assertTrue(cursor.moveToFirst())
         assertEquals("NOT_STARTED", cursor.getString(0))
         cursor.close()
+        db.close()
+    }
+
+    // ──────────────────────────────────────────────
+    //  v8→v9: V-taper scores backfill
+    // ──────────────────────────────────────────────
+
+    @Test
+    fun migrate8To9_setsVtaperScores() {
+        // Start from v8, run to v9, verify vtaper scores were set
+        migrationTestHelper.createDatabase(TEST_DB, 8).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 9, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9
+        )
+
+        // Verify Lateral Raise has vtaper_lateral_delt=10
+        val cursor = db.query(
+            "SELECT vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt FROM exercises WHERE name='Lateral Raise'"
+        )
+        assertTrue("Lateral Raise should exist", cursor.moveToFirst())
+        assertEquals("Lateral Raise vtaper_lat should be 1", 1, cursor.getInt(0))
+        assertEquals("Lateral Raise vtaper_lateral_delt should be 10", 10, cursor.getInt(1))
+        assertEquals("Lateral Raise vtaper_upper_chest should be 0", 0, cursor.getInt(2))
+        assertEquals("Lateral Raise vtaper_rear_delt should be 2", 2, cursor.getInt(3))
+        cursor.close()
+
+        // Verify Pull-up has vtaper_lat=10
+        val cursor2 = db.query(
+            "SELECT vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt FROM exercises WHERE name='Pull-up'"
+        )
+        assertTrue("Pull-up should exist", cursor2.moveToFirst())
+        assertEquals("Pull-up vtaper_lat should be 10", 10, cursor2.getInt(0))
+        assertEquals("Pull-up vtaper_lateral_delt should be 1", 1, cursor2.getInt(1))
+        assertEquals("Pull-up vtaper_upper_chest should be 1", 1, cursor2.getInt(2))
+        assertEquals("Pull-up vtaper_rear_delt should be 4", 4, cursor2.getInt(3))
+        cursor2.close()
+
+        // Verify Bench Press has vtaper_upper_chest=7
+        val cursor3 = db.query(
+            "SELECT vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt FROM exercises WHERE name='Bench Press'"
+        )
+        assertTrue("Bench Press should exist", cursor3.moveToFirst())
+        assertEquals("Bench Press vtaper_upper_chest should be 7", 7, cursor3.getInt(2))
+        cursor3.close()
+
+        // Verify Squat (lower body) has all zeros
+        val cursor4 = db.query(
+            "SELECT vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt FROM exercises WHERE name='Squat'"
+        )
+        assertTrue("Squat should exist", cursor4.moveToFirst())
+        assertEquals("Squat vtaper_lat should be 0", 0, cursor4.getInt(0))
+        assertEquals("Squat vtaper_lateral_delt should be 0", 0, cursor4.getInt(1))
+        assertEquals("Squat vtaper_upper_chest should be 0", 0, cursor4.getInt(2))
+        assertEquals("Squat vtaper_rear_delt should be 0", 0, cursor4.getInt(3))
+        cursor4.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate8To9_movementPatternColumnExists() {
+        migrationTestHelper.createDatabase(TEST_DB, 8).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 9, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9
+        )
+
+        // Verify movement_pattern column exists
+        val pragmaCursor = db.query("PRAGMA table_info(exercises)")
+        var hasMovementPattern = false
+        while (pragmaCursor.moveToNext()) {
+            if (pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")) == "movement_pattern") {
+                hasMovementPattern = true
+                break
+            }
+        }
+        pragmaCursor.close()
+        assertTrue("exercises table should have 'movement_pattern' column", hasMovementPattern)
+        db.close()
+    }
+
+    @Test
+    fun migrateFullChain1To9_withVtaperScores() {
+        // Full chain test: create at v1, migrate all the way to v9
+        migrationTestHelper.createDatabase(TEST_DB, 1).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 9, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9
+        )
+
+        // Verify vtaper scores are set (migration 8→9 runs UPDATE statements)
+        val cursor = db.query(
+            "SELECT COUNT(*) FROM exercises WHERE vtaper_lateral_delt > 0 OR vtaper_lat > 0 OR vtaper_upper_chest > 0 OR vtaper_rear_delt > 0"
+        )
+        assertTrue(cursor.moveToFirst())
+        val countWithVtaper = cursor.getInt(0)
+        cursor.close()
+        assertTrue("At least some exercises should have non-zero vtaper scores", countWithVtaper > 0)
         db.close()
     }
 }

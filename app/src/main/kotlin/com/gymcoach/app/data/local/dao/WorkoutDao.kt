@@ -59,7 +59,40 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE id = :id")
     suspend fun getWorkoutSetById(id: Long): WorkoutSetEntity?
 
-    // Analytics queries -- all filter on status = 'COMPLETED' for consistency
+    // ─── Previous Performance Queries ───────────────────────────────────
+
+    /**
+     * Get the last completed workout's date and max weight for a given exercise.
+     * Returns the most recent completed workout date + max weight achieved.
+     */
+    @Query("""
+        SELECT w.date, MAX(ws.weight) as maxWeight
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
+        ORDER BY w.date DESC
+        LIMIT 1
+    """)
+    suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
+
+    /**
+     * Get the last completed workout's sets for a given exercise.
+     * Returns the weight, reps, rpe, and rest from the most recent session.
+     */
+    @Query("""
+        SELECT ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.setType, w.date
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
+        ORDER BY w.date DESC, ws.setNumber ASC
+        LIMIT 10
+    """)
+    suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
+
+    // ─── Analytics Queries ──────────────────────────────────────────────
+
     @Query("""
         SELECT MAX(ws.weight)
         FROM workout_sets ws
@@ -289,6 +322,20 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
+
+data class LastPerformance(
+    val date: Long,
+    val maxWeight: Double
+)
+
+data class LastSetData(
+    val weight: Double,
+    val reps: Int,
+    val rpe: Double,
+    val restSeconds: Int,
+    val setType: Int,
+    val date: Long
+)
 
 data class DateVolume(
     val date: Long,

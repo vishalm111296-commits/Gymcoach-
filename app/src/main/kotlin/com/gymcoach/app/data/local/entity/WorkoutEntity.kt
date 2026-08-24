@@ -1,5 +1,6 @@
 package com.gymcoach.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -11,5 +12,6 @@ data class WorkoutEntity(
     val endTime: Long,
     val duration: Long,
     val notes: String,
-    val completed: Boolean
+    val completed: Boolean,
+    @ColumnInfo(defaultValue = "NOT_STARTED") val status: String = "NOT_STARTED"
 )

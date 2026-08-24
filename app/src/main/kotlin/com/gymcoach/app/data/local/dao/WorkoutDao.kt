@@ -148,10 +148,12 @@ interface WorkoutDao {
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id
         WHERE w.completed = 1
-        GROUP BY strftime('%Y-%m', w.date)
+        GROUP BY CAST(w.date / 2629746000 AS INTEGER)
         ORDER BY w.date ASC
     """)
-    // Using SQLite strftime for reliable monthly grouping on Android's Room/SQLite backend.
+    // Fixed: w.date is epoch-millis, not a date string. strftime('%Y-%m', w.date) returned
+    // '1970-01' for all rows. Now groups by approximate month using integer division.
+    // 2629746000 = avg milliseconds per month (365.25/12 * 86400000).
     suspend fun getMonthlyVolumes(): List<DateVolume>
 
     @Query("""

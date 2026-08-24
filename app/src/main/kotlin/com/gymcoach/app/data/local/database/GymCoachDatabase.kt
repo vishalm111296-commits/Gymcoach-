@@ -4,60 +4,28 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.gymcoach.app.data.local.dao.BodyMeasurementDao
-import com.gymcoach.app.data.local.dao.EquipmentDao
-import com.gymcoach.app.data.local.dao.ExerciseAliasDao
-import com.gymcoach.app.data.local.dao.ExerciseDao
-import com.gymcoach.app.data.local.dao.ExerciseEquipmentDao
-import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
-import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
-import com.gymcoach.app.data.local.dao.FavoriteExerciseDao
-import com.gymcoach.app.data.local.dao.MuscleDao
-import com.gymcoach.app.data.local.dao.PersonalRecordDao
-import com.gymcoach.app.data.local.dao.ProgramDayDao
-import com.gymcoach.app.data.local.dao.ProgramDao
-import com.gymcoach.app.data.local.dao.ProgramExerciseDao
-import com.gymcoach.app.data.local.dao.UserProfileDao
-import com.gymcoach.app.data.local.dao.WorkoutDao
-import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
-import com.gymcoach.app.data.local.entity.EquipmentEntity
-import com.gymcoach.app.data.local.entity.ExerciseAliasEntity
-import com.gymcoach.app.data.local.entity.ExerciseEquipmentEntity
-import com.gymcoach.app.data.local.entity.ExerciseEntity
-import com.gymcoach.app.data.local.entity.ExerciseFtsEntity
-import com.gymcoach.app.data.local.entity.ExerciseMuscleEntity
-import com.gymcoach.app.data.local.entity.ExerciseSubstitutionEntity
-import com.gymcoach.app.data.local.entity.FavoriteExerciseEntity
-import com.gymcoach.app.data.local.entity.MuscleEntity
-import com.gymcoach.app.data.local.entity.PersonalRecordEntity
-import com.gymcoach.app.data.local.entity.ProgramDayEntity
-import com.gymcoach.app.data.local.entity.ProgramEntity
-import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
-import com.gymcoach.app.data.local.entity.UserProfileEntity
-import com.gymcoach.app.data.local.entity.WorkoutEntity
-import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.gymcoach.app.data.local.dao.*
+import com.gymcoach.app.data.local.entity.*
 
 @Database(
     entities = [
         ExerciseEntity::class,
-        ExerciseFtsEntity::class,
         WorkoutEntity::class,
         WorkoutExerciseEntity::class,
         WorkoutSetEntity::class,
-        BodyMeasurementEntity::class,
-        EquipmentEntity::class,
-        ExerciseAliasEntity::class,
-        ExerciseEquipmentEntity::class,
-        ExerciseMuscleEntity::class,
-        ExerciseSubstitutionEntity::class,
-        FavoriteExerciseEntity::class,
-        MuscleEntity::class,
-        PersonalRecordEntity::class,
-        ProgramDayEntity::class,
         ProgramEntity::class,
+        ProgramDayEntity::class,
         ProgramExerciseEntity::class,
-        UserProfileEntity::class
+        PersonalRecordEntity::class,
+        BodyMeasurementEntity::class,
+        FavoriteExerciseEntity::class,
+        ExerciseSubstitutionEntity::class,
+        MuscleEntity::class,
+        EquipmentEntity::class,
+        ExerciseMuscleEntity::class,
+        ExerciseEquipmentEntity::class,
+        ExerciseAliasEntity::class
     ],
     version = 8,
     exportSchema = true
@@ -65,19 +33,21 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutDao(): WorkoutDao
-    abstract fun userProfileDao(): UserProfileDao
+    abstract fun workoutExerciseDao(): WorkoutExerciseDao
+    abstract fun workoutSetDao(): WorkoutSetDao
     abstract fun programDao(): ProgramDao
     abstract fun programDayDao(): ProgramDayDao
     abstract fun programExerciseDao(): ProgramExerciseDao
+    abstract fun userProfileDao(): UserProfileDao
     abstract fun personalRecordDao(): PersonalRecordDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao
+    abstract fun favoriteExerciseDao(): FavoriteExerciseDao
+    abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
     abstract fun muscleDao(): MuscleDao
     abstract fun equipmentDao(): EquipmentDao
-    abstract fun favoriteExerciseDao(): FavoriteExerciseDao
-    abstract fun exerciseAliasDao(): ExerciseAliasDao
     abstract fun exerciseMuscleDao(): ExerciseMuscleDao
     abstract fun exerciseEquipmentDao(): ExerciseEquipmentDao
-    abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
+    abstract fun exerciseAliasDao(): ExerciseAliasDao
 
     companion object {
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
@@ -102,7 +72,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
 
         val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // New exercise metadata columns
+                // Exercise metadata columns
                 database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lat` INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lateral_delt` INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_upper_chest` INTEGER NOT NULL DEFAULT 0")
@@ -122,7 +92,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 database.execSQL("DROP TABLE IF EXISTS `muscles_legacy_v4`")
                 database.execSQL("ALTER TABLE `muscles` RENAME TO `muscles_legacy_v4`")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `muscles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `display_name` TEXT NOT NULL, `parent_muscle_id` INTEGER, `body_region` TEXT NOT NULL DEFAULT '')")
-                database.execSQL("INSERT INTO `muscles` (`id`, `name`, `display_name`, `body_region`) SELECT `id`, `name`, COALESCE(`name`, ''), '' FROM `muscles_legacy_v4`")
+                database.execSQL("INSERT INTO `muscles` (`id`, `name`, `display_name`, `parent_muscle_id`, `body_region`) SELECT `id`, `name`, COALESCE(`name`, ''), `parent_muscle_id`, '' FROM `muscles_legacy_v4`")
                 database.execSQL("DROP TABLE IF EXISTS `muscles_legacy_v4`")
 
                 database.execSQL("ALTER TABLE `equipment` RENAME TO `equipment_legacy_v4`")
@@ -131,16 +101,17 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 database.execSQL("DROP TABLE IF EXISTS `equipment_legacy_v4`")
 
                 // Remaining new tables (schemas mirror entities exactly)
-                database.execSQL("CREATE TABLE IF NOT EXISTS `user_profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goal` TEXT NOT NULL DEFAULT '', `experience` TEXT NOT NULL DEFAULT '', `age` INTEGER NOT NULL DEFAULT 0, `sex` TEXT NOT NULL DEFAULT '', `height_cm` REAL NOT NULL DEFAULT 0.0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `training_days_per_week` INTEGER NOT NULL DEFAULT 4, `session_length_minutes` INTEGER NOT NULL DEFAULT 60, `equipment_type` TEXT NOT NULL DEFAULT 'gym', `preferred_exercises` TEXT NOT NULL DEFAULT '', `exercises_to_avoid` TEXT NOT NULL DEFAULT '', `created_at` INTEGER NOT NULL DEFAULT 0)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `programs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL DEFAULT '', `description` TEXT NOT NULL DEFAULT '', `goal` TEXT NOT NULL DEFAULT '', `frequency` INTEGER NOT NULL DEFAULT 4, `is_active` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL DEFAULT 0)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `program_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_id` INTEGER NOT NULL, `day_number` INTEGER NOT NULL, `name` TEXT NOT NULL DEFAULT '', `target_muscles` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `program_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_day_id` INTEGER NOT NULL, `exercise_id` INTEGER NOT NULL, `order_index` INTEGER NOT NULL DEFAULT 0, `target_sets` INTEGER NOT NULL DEFAULT 3, `target_reps_min` INTEGER NOT NULL DEFAULT 8, `target_reps_max` INTEGER NOT NULL DEFAULT 12, `target_rpe` REAL NOT NULL DEFAULT 7.0, `rest_seconds` INTEGER NOT NULL DEFAULT 90, FOREIGN KEY(`program_day_id`) REFERENCES `program_days`(`id`) ON DELETE CASCADE, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `personal_records` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `weight` REAL NOT NULL DEFAULT 0.0, `reps` INTEGER NOT NULL DEFAULT 0, `estimated_1rm` REAL NOT NULL DEFAULT 0.0, `volume` REAL NOT NULL DEFAULT 0.0, `workout_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`workout_id`) REFERENCES `workouts`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `body_measurements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL DEFAULT 0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `waist_cm` REAL NOT NULL DEFAULT 0.0, `chest_cm` REAL NOT NULL DEFAULT 0.0, `shoulders_cm` REAL NOT NULL DEFAULT 0.0, `arm_cm` REAL NOT NULL DEFAULT 0.0, `thigh_cm` REAL NOT NULL DEFAULT 0.0, `body_fat_estimate` REAL NOT NULL DEFAULT 0.0, `photo_url` TEXT NOT NULL DEFAULT '', `notes` TEXT NOT NULL DEFAULT '')")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `user_profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goal` TEXT NOT NULL DEFAULT '', `experience` TEXT NOT NULL DEFAULT '', `age` INTEGER NOT NULL DEFAULT 0, `sex` TEXT NOT NULL DEFAULT '', `height_cm` REAL NOT NULL DEFAULT 0.0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `training_days_per_week` INTEGER NOT NULL DEFAULT 4, `session_length_minutes` INTEGER NOT NULL DEFAULT 60, `equipment_type` TEXT NOT NULL DEFAULT 'gym', `preferred_exercises` TEXT NOT NULL DEFAULT '', `exercises_to_avoid` TEXT NOT NULL DEFAULT '', `created_at` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `programs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL DEFAULT '', `description` TEXT NOT NULL DEFAULT '', `goal` TEXT NOT NULL DEFAULT '', `split_type` TEXT NOT NULL DEFAULT '', `duration_weeks` INTEGER NOT NULL DEFAULT 0, `days_per_week` INTEGER NOT NULL DEFAULT 0, `difficulty` TEXT NOT NULL DEFAULT '', `is_active` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `program_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_id` INTEGER NOT NULL, `day_number` INTEGER NOT NULL, `name` TEXT NOT NULL DEFAULT '', `focus` TEXT NOT NULL DEFAULT '', `is_rest_day` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `program_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `program_day_id` INTEGER NOT NULL, `exercise_id` INTEGER NOT NULL, `order_index` INTEGER NOT NULL DEFAULT 0, `sets` INTEGER NOT NULL DEFAULT 3, `target_reps` TEXT NOT NULL DEFAULT '', `target_weight_kg` REAL NOT NULL DEFAULT 0.0, `rest_seconds` INTEGER NOT NULL DEFAULT 90, `notes` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`program_day_id`) REFERENCES `program_days`(`id`) ON DELETE CASCADE, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
+
+                database.execSQL("CREATE TABLE IF NOT EXISTS `personal_records` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `weight` REAL NOT NULL DEFAULT 0.0, `reps` INTEGER NOT NULL DEFAULT 0, `estimated_1rm` REAL NOT NULL DEFAULT 0.0, `volume` REAL NOT NULL DEFAULT 0.0, `workout_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`workout_id`) REFERENCES `workouts`(`id`) ON DELETE CASCADE")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `body_measurements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL DEFAULT 0, `weight_kg` REAL NOT NULL DEFAULT 0.0, `waist_cm` REAL NOT NULL DEFAULT 0.0, `chest_cm` REAL NOT NULL DEFAULT 0.0, `shoulders_cm` REAL NOT NULL DEFAULT 0.0, `arm_cm` REAL NOT NULL DEFAULT 0.0, `thigh_cm` REAL NOT NULL DEFAULT 0.0, `body_fat_estimate` REAL NOT NULL DEFAULT 0.0, `photo_url` TEXT NOT NULL DEFAULT '', `notes` TEXT NOT NULL DEFAULT '')
                 database.execSQL("CREATE TABLE IF NOT EXISTS `favorite_exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `added_at` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `original_exercise_id` INTEGER NOT NULL, `substitute_exercise_id` INTEGER NOT NULL, `reason` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`original_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`substitute_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_muscles` (`exercise_id` INTEGER NOT NULL, `muscle_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `muscle_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE)")
-                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`exercise_id` INTEGER NOT NULL, `equipment_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'required', PRIMARY KEY(`exercise_id`, `equipment_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_substitutions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `original_exercise_id` INTEGER NOT NULL, `substitute_exercise_id` INTEGER NOT NULL, `reason` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`original_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`substitute_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_muscles` (`exercise_id` INTEGER NOT NULL, `muscle_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'primary', PRIMARY KEY(`exercise_id`, `muscle_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_equipment` (`exercise_id` INTEGER NOT NULL, `equipment_id` INTEGER NOT NULL, `role` TEXT NOT NULL DEFAULT 'required', PRIMARY KEY(`exercise_id`, `equipment_id`), FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE, FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `exercise_aliases` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `exercise_id` INTEGER NOT NULL, `alias` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE)")
 
                 // Indexes required by @Index declarations on entities
@@ -149,7 +120,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_muscle_id` ON `exercise_muscles` (`muscle_id`)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_equipment_exercise_id` ON `exercise_equipment` (`exercise_id`)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_equipment_equipment_id` ON `exercise_equipment` (`equipment_id`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_original_exercise_id` ON `exercise_substitutions` (`original_exercise_id`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_original_exercise_id` ON `exercise_substitutions` (`original_exercise_id`")
                 database.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_substitute_exercise_id` ON `exercise_substitutions` (`substitute_exercise_id`)")
             }
         }
@@ -201,9 +172,45 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 "gymcoach.db"
             )
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .fallbackToDestructiveMigration(false)
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        seedExercises(db)
+                    }
+                })
                 .build()
-            // NOTE: fallbackToDestructiveMigration() removed (security audit P0).
-            // Seeding is handled by ExerciseSeeder.seedIfNeeded() at first app start.
+        }
+
+        private fun seedExercises(db: SupportSQLiteDatabase) {
+            val seedData = listOf(
+                arrayOf<Any>("Bench Press", "Lie on a bench and press the barbell from your chest to full arm extension.", "Chest", "Barbell", "Intermediate", "Triceps, Shoulders", "1. Lie flat on bench. 2. Grip bar slightly wider than shoulder width. 3. Lower bar to mid-chest. 4. Press bar up.", "Keep feet flat on floor.", "Bouncing bar off chest.", "Use a spotter.", "8-12", "90s", 15, "Powerlifting", "Push, Upper Body", 0, 0L),
+                arrayOf<Any>("Squat", "Lower your hips until your thighs are parallel to the floor, then stand back up.", "Legs", "Barbell", "Beginner", "Glutes, Core", "1. Stand with feet shoulder-width apart. 2. Rest bar on upper back. 3. Bend knees and drop hips. 4. Push through heels to stand.", "Keep chest up.", "Knees caving in.", "Use a squat rack.", "5-10", "120s", 20, "Powerlifting", "Lower Body", 0, 0L),
+                arrayOf<Any>("Push-up", "Lower your chest toward the floor while keeping your body in a straight line.", "Chest", "Bodyweight", "Beginner", "Triceps, Shoulders, Core", "1. Start in plank position. 2. Lower body until chest touches floor. 3. Push back up.", "Keep core engaged.", "Sagging hips.", "Do not flare elbows too much.", "10-20", "60s", 10, "Bodyweight", "Push, Home", 0, 0L),
+                arrayOf<Any>("Shoulder Press", "Press the dumbbells overhead until your arms are fully extended.", "Shoulders", "Dumbbell", "Intermediate", "Triceps", "1. Sit or stand with dumbbells at shoulder height. 2. Press weights overhead. 3. Lower with control.", "Don't arch your back.", "Using momentum.", "Control the weight on the way down.", "8-15", "90s", 12, "Resistance", "Push, Upper Body", 0, 0L),
+                arrayOf<Any>("Lateral Raise", "Raise dumbbells out to the sides until your arms are parallel with the floor.", "Shoulders", "Dumbbell", "Beginner", "Traps", "1. Stand with dumbbells at sides. 2. Raise arms out to sides. 3. Lower slowly.", "Slight bend in elbows.", "Swinging torso.", "Use light weight.", "12-20", "60s", 8, "Resistance", "Isolation, Upper Body", 0, 0L),
+                arrayOf<Any>("Bent-over Row", "Hinge at the hips and pull the barbell toward your torso.", "Back", "Barbell", "Intermediate", "Biceps, Core", "1. Hinge forward at hips. 2. Keep back straight. 3. Pull bar to stomach. 4. Lower bar.", "Squeeze shoulder blades together.", "Rounding the lower back.", "Keep spine neutral.", "8-12", "90s", 15, "Resistance", "Pull, Upper Body", 0, 0L),
+                arrayOf<Any>("Plank", "Hold a straight-body position supported on your forearms and toes.", "Core", "Bodyweight", "Beginner", "Shoulders, Glutes", "1. Rest on forearms and toes. 2. Keep body in a straight line. 3. Hold position.", "Breathe steadily.", "Hips too high or too low.", "Stop if lower back hurts.", "30-60s", "60s", 5, "Bodyweight", "Core, Home", 0, 0L),
+                arrayOf<Any>("Deadlift", "Hinge at the hips and lift the loaded barbell to a standing position.", "Back", "Barbell", "Advanced", "Glutes, Hamstrings, Core", "1. Stand with mid-foot under bar. 2. Bend and grab bar. 3. Lift chest and straighten back. 4. Stand up with the weight.", "Keep bar close to legs.", "Rounding the back.", "Keep spine neutral to avoid injury.", "3-8", "180s", 25, "Powerlifting", "Pull, Full Body", 0, 0L),
+                arrayOf<Any>("Bicep Curl", "Curl the dumbbells toward your shoulders with your elbows pinned to your sides.", "Arms", "Dumbbell", "Beginner", "Forearms", "1. Stand with dumbbells at sides. 2. Curl weights up. 3. Lower slowly.", "Keep elbows stationary.", "Using back momentum.", "Control the eccentric phase.", "10-15", "60s", 8, "Resistance", "Isolation, Arms", 0, 0L),
+                arrayOf<Any>("Pull-up", "Pull your body up to a bar until the chin is over it.", "Back", "Bodyweight", "Intermediate", "Biceps, Core", "1. Hang from bar. 2. Pull body up until chin clears bar. 3. Lower with control.", "Engage lats first.", "Kicking legs.", "Use assistance if needed.", "5-15", "120s", 15, "Bodyweight", "Pull, Upper Body", 0, 0L),
+                arrayOf<Any>("Leg Press", "Press weight away from you using your legs on a machine.", "Legs", "Machine", "Beginner", "Glutes, Calves", "1. Sit in machine. 2. Place feet on sled. 3. Lower sled. 4. Press sled up.", "Don't lock knees.", "Lifting hips off pad.", "Use safety stops.", "10-15", "90s", 15, "Machine", "Lower Body", 0, 0L),
+                arrayOf<Any>("Tricep Extension", "Extend your arms against resistance to work the triceps.", "Arms", "Cable", "Beginner", "Shoulders", "1. Grip cable attachment. 2. Keep elbows tucked. 3. Extend arms down. 4. Return slowly.", "Squeeze at bottom.", "Moving elbows.", "Don't use too much weight.", "12-15", "60s", 8, "Cable", "Isolation, Arms", 0, 0L),
+                arrayOf<Any>("Lunge", "Step forward and lower your hips until both knees are bent at 90 degrees.", "Legs", "Bodyweight", "Beginner", "Glutes, Core", "1. Step forward. 2. Lower hips. 3. Push back up.", "Keep torso upright.", "Knee going past toes.", "Maintain balance.", "10-20", "60s", 12, "Bodyweight", "Lower Body, Home", 0, 0L),
+                arrayOf<Any>("Crunch", "Curl your shoulders toward your pelvis while lying on your back.", "Core", "Bodyweight", "Beginner", "Obliques", "1. Lie on back. 2. Curl shoulders up. 3. Lower back down.", "Don't pull neck.", "Using momentum.", "Perform on a mat.", "15-25", "45s", 5, "Bodyweight", "Core, Home", 0, 0L),
+                arrayOf<Any>("Calf Raise", "Raise your heels off the ground to work the calves.", "Legs", "Machine", "Beginner", "None", "1. Stand on edge of step. 2. Lower heels. 3. Raise heels high.", "Full stretch at bottom.", "Bouncing.", "Use support for balance.", "15-20", "60s", 5, "Machine", "Isolation, Lower Body", 0, 0L),
+                arrayOf<Any>("Lat Pulldown", "Pull the bar down to your chest while seated.", "Back", "Cable", "Beginner", "Biceps", "1. Sit at machine. 2. Grip bar wide. 3. Pull bar to upper chest. 4. Return slowly.", "Pull with lats.", "Leaning back too far.", "Control the weight.", "8-12", "90s", 12, "Cable", "Pull, Upper Body", 0, 0L),
+                arrayOf<Any>("Leg Curl", "Curl your legs against resistance to work the hamstrings.", "Legs", "Machine", "Beginner", "Calves", "1. Lie on machine. 2. Curl weight up. 3. Lower slowly.", "Keep hips down.", "Using momentum.", "Adjust machine to fit.", "10-15", "60s", 10, "Machine", "Isolation, Lower Body", 0, 0L),
+                arrayOf<Any>("Leg Extension", "Extend your legs against resistance to work the quads.", "Legs", "Machine", "Beginner", "None", "1. Sit on machine. 2. Extend legs. 3. Lower slowly.", "Squeeze at top.", "Swinging the weight.", "Don't hyperextend knees.", "10-15", "60s", 10, "Machine", "Isolation, Lower Body", 0, 0L),
+                arrayOf<Any>("Dumbbell Fly", "Raise dumbbells to the side to work the shoulders.", "Shoulders", "Dumbbell", "Beginner", "Traps", "1. Stand with dumbbells. 2. Raise to sides. 3. Lower slowly.", "Slight elbow bend.", "Shrugging shoulders.", "Use light weights.", "12-15", "60s", 8, "Resistance", "Isolation, Upper Body", 0, 0L),
+                arrayOf<Any>("Barbell Curl", "Curl a barbell to work the biceps.", "Arms", "Barbell", "Intermediate", "Forearms", "1. Stand holding bar. 2. Curl bar up. 3. Lower slowly.", "Keep elbows tucked.", "Swinging back.", "Control the descent.", "8-12", "90s", 10, "Resistance", "Isolation, Arms", 0, 0L)
+            )
+            seedData.forEach { row ->
+                db.execSQL(
+                    "INSERT INTO exercises (name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    row
+                )
+            }
         }
     }
 }

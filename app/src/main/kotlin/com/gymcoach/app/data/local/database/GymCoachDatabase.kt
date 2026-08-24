@@ -25,9 +25,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProgramDayEntity::class,
         ProgramEntity::class,
         ProgramExerciseEntity::class,
-        UserProfileEntity::class
+        UserProfileEntity::class,
+        ReadinessEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -48,6 +49,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseMuscleDao(): ExerciseMuscleDao
     abstract fun exerciseEquipmentDao(): ExerciseEquipmentDao
     abstract fun exerciseAliasDao(): ExerciseAliasDao
+    abstract fun readinessDao(): ReadinessDao
 
     companion object {
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
@@ -298,12 +300,6 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * 8 -> 9: V-taper scores for exercise seed data.
-         * Sets vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt
-         * based on exercise biomechanics for V-taper program prioritization.
-         * Scores 0-10: 0=none, 5=moderate, 10=primary mover.
-         */
         val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Bench Press: moderate upper chest, moderate triceps
@@ -349,6 +345,26 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 9 -> 10: Add readiness table for daily recovery tracking.
+         */
+        val MIGRATION_9_10 = object : androidx.room.migration.Migration(9, 10) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `readiness` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL DEFAULT 1,
+                        `recorded_at` INTEGER NOT NULL,
+                        `sleep_quality` INTEGER NOT NULL DEFAULT 3,
+                        `soreness` INTEGER NOT NULL DEFAULT 3,
+                        `energy` INTEGER NOT NULL DEFAULT 3,
+                        `motivation` INTEGER NOT NULL DEFAULT 3,
+                        `notes` TEXT NOT NULL DEFAULT ''
+                    )
+                """)
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
@@ -357,7 +373,8 @@ abstract class GymCoachDatabase : RoomDatabase() {
             )
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9
+                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
+                    MIGRATION_9_10
                 )
                 .fallbackToDestructiveMigration(false)
                 .addCallback(object : RoomDatabase.Callback() {

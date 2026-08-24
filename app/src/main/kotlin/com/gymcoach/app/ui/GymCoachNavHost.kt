@@ -11,17 +11,23 @@ import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
+import com.gymcoach.app.presentation.home.HomeDashboardScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
+import com.gymcoach.app.presentation.onboarding.OnboardingScreen
+import com.gymcoach.app.presentation.profile.ProfileScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 
 object Routes {
+    const val HOME = "home"
+    const val ONBOARDING = "onboarding"
     const val EXERCISE_LIST = "exercise_list"
     const val EXERCISE_DETAIL = "exercise_detail/{exerciseId}"
     const val WORKOUT_HISTORY = "workout_history"
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
     const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
     const val PROGRESS = "progress"
+    const val PROFILE = "profile"
     const val CAMERA = "camera/{exerciseType}"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
@@ -31,11 +37,41 @@ object Routes {
 }
 
 @Composable
-fun GymCoachNavHost(navController: NavHostController) {
+fun GymCoachNavHost(
+    navController: NavHostController,
+    startDestination: String = Routes.HOME
+) {
     NavHost(
         navController = navController,
-        startDestination = Routes.EXERCISE_LIST
+        startDestination = startDestination
     ) {
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.HOME) {
+            HomeDashboardScreen(
+                onStartWorkout = {
+                    navController.navigate(Routes.workoutSession())
+                },
+                onViewProgram = {
+                    navController.navigate(Routes.EXERCISE_LIST)
+                },
+                onNavigateToProgress = {
+                    navController.navigate(Routes.PROGRESS)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Routes.PROFILE)
+                }
+            )
+        }
+
         composable(Routes.EXERCISE_LIST) {
             ExerciseListScreen(
                 onExerciseClick = { exerciseId ->
@@ -110,6 +146,12 @@ fun GymCoachNavHost(navController: NavHostController) {
 
         composable(Routes.PROGRESS) {
             ProgressDashboardScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.PROFILE) {
+            ProfileScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

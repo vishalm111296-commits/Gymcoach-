@@ -26,12 +26,15 @@ data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.WELCOME,
     val goal: String? = null,
     val experience: String? = null,
+    val sex: String? = null,
     val age: Float = 25f,
     val heightCm: Float = 175f,
     val weightKg: Float = 75f,
     val daysPerWeek: Int = 4,
     val sessionMinutes: Int = 60,
     val selectedEquipment: Set<String> = emptySet(),
+    val preferredSchedule: String? = null,
+    val limitationsPreferences: String? = null,
     val isGenerating: Boolean = false,
     val error: String? = null
 ) {
@@ -67,9 +70,15 @@ class OnboardingViewModel @Inject constructor(
 
     fun setWeight(weightKg: Float) = _uiState.update { it.copy(weightKg = weightKg) }
 
+    fun setSex(sex: String) = _uiState.update { it.copy(sex = sex) }
+
     fun setDaysPerWeek(days: Int) = _uiState.update { it.copy(daysPerWeek = days) }
 
     fun setSessionMinutes(minutes: Int) = _uiState.update { it.copy(sessionMinutes = minutes) }
+
+    fun setPreferredSchedule(schedule: String) = _uiState.update { it.copy(preferredSchedule = schedule) }
+
+    fun setLimitationsPreferences(limitations: String) = _uiState.update { it.copy(limitationsPreferences = limitations) }
 
     fun toggleEquipment(item: String) = _uiState.update { state ->
         val next = if (item in state.selectedEquipment) state.selectedEquipment - item
@@ -103,12 +112,15 @@ class OnboardingViewModel @Inject constructor(
                     UserProfileEntity(
                         goal = goal,
                         experience = experience,
+                        sex = state.sex ?: "",
                         age = state.age.toInt(),
                         heightCm = state.heightCm.toDouble(),
                         weightKg = state.weightKg.toDouble(),
                         trainingDaysPerWeek = state.daysPerWeek,
                         sessionLengthMinutes = state.sessionMinutes,
-                        equipmentType = equipmentType
+                        equipmentType = equipmentType,
+                        preferredExercises = "",
+                        exercisesToAvoid = ""
                     )
                 )
                 val generated = programGenerator.generateProgram(
@@ -146,4 +158,3 @@ class OnboardingViewModel @Inject constructor(
         equipment.isNotEmpty() -> "home"
         else -> "custom"
     }
-}

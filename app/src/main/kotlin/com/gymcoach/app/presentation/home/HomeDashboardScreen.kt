@@ -81,6 +81,8 @@ fun HomeDashboardScreen(
             GreetingHeader()
             Spacer(Modifier.height(20.dp))
 
+            // Capture once: delegated properties cannot be smart-cast inside branches.
+            val todayWorkout = state.todayWorkout
             when {
                 state.isLoading -> {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp)) {
@@ -88,13 +90,13 @@ fun HomeDashboardScreen(
                     }
                 }
 
-                state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
+                todayWorkout == null -> EmptyProgramCard(onViewProgram)
 
                 else -> TodayWorkoutCard(
-                    workoutName = state.todayWorkout.name,
-                    targetMuscles = state.todayWorkout.targetMuscles,
-                    exerciseCount = state.todayWorkout.exerciseCount,
-                    estimatedDuration = state.todayWorkout.estimatedDurationMin,
+                    workoutName = todayWorkout.name,
+                    targetMuscles = todayWorkout.targetMuscles,
+                    exerciseCount = todayWorkout.exerciseCount,
+                    estimatedDuration = todayWorkout.estimatedDurationMin,
                     onStartClick = onStartWorkout
                 )
             }

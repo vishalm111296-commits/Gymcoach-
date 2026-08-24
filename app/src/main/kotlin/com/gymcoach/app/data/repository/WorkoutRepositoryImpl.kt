@@ -83,7 +83,6 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteWorkout(workoutId: Long) {
-        // Get workout entity to delete
         val entity = workoutDao.getWorkoutById(workoutId).first()
         entity?.let { workoutDao.deleteWorkout(it) }
     }
@@ -165,7 +164,8 @@ private fun WorkoutEntity.toDomain() = Workout(
     endTime = Instant.ofEpochMilli(endTime),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    status = status
 )
 
 private fun Workout.toEntity() = WorkoutEntity(
@@ -175,7 +175,8 @@ private fun Workout.toEntity() = WorkoutEntity(
     endTime = endTime.toEpochMilli(),
     duration = duration,
     notes = notes,
-    completed = completed
+    completed = completed,
+    status = status
 )
 
 private fun WorkoutExerciseEntity.toDomain() = WorkoutExercise(

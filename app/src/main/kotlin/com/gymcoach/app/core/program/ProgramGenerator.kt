@@ -145,7 +145,7 @@ class ProgramGenerator @Inject constructor(
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
                     compareByDescending<ExerciseEntity> { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
-                        .thenBy { it.difficulty排序(it.difficulty) }
+                        .thenBy { difficultyOrder(it.difficulty) }
                 )
                 .take(2)
 
@@ -169,7 +169,7 @@ class ProgramGenerator @Inject constructor(
     }
 
     /** Sort difficulty: Beginner < Intermediate < Advanced */
-    private fun difficulty排序(difficulty: String): Int = when {
+    private fun difficultyOrder(difficulty: String): Int = when {
         difficulty.contains("Beginner", ignoreCase = true) -> 0
         difficulty.contains("Intermediate", ignoreCase = true) -> 1
         difficulty.contains("Advanced", ignoreCase = true) -> 2

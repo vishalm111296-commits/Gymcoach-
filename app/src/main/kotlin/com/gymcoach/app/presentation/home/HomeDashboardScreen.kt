@@ -46,6 +46,7 @@ fun HomeDashboardScreen(
     onStartWorkout: () -> Unit,
     onViewProgram: () -> Unit,
     onNavigateToProgress: () -> Unit,
+    onNavigateToProfile: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +61,7 @@ fun HomeDashboardScreen(
                         "workout" -> onStartWorkout()
                         "program" -> onViewProgram()
                         "progress" -> onNavigateToProgress()
+                        "profile" -> onNavigateToProfile()
                         else -> Unit
                     }
                 }

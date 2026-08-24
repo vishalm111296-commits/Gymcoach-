@@ -112,6 +112,7 @@ class AnalyticsRepositoryImpl @Inject constructor(
         duration = duration,
         notes = notes,
         completed = completed,
+        status = status,
         volume = volume,
         setCount = setCount,
         repCount = repCount,

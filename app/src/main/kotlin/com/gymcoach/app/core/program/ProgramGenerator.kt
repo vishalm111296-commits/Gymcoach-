@@ -62,20 +62,28 @@ class ProgramGenerator @Inject constructor(
         )
     }
 
+    /**
+     * Filters exercises by available equipment.
+     * Bodyweight exercises are always available.
+     * Compound equipment requirements (e.g. "Dumbbell + Flat Bench") require all tokens.
+     */
     private fun filterByEquipment(
         exercises: List<ExerciseEntity>,
         availableEquipment: Set<String>
     ): List<ExerciseEntity> {
         return exercises.filter { ex ->
+            // Bodyweight exercises are always available
+            if (ex.equipment == "Bodyweight" || ex.equipment.isBlank()) return@filter true
+
             val equipmentTokens = ex.equipment.split("+").map { it.trim() }
-            // Compound equipment: all tokens must be available
             if (equipmentTokens.size > 1) {
-                equipmentTokens.all { availableEquipment.contains(it) }
+                // Compound equipment: all tokens must be available
+                equipmentTokens.all { token ->
+                    availableEquipment.contains(token) || token == "Bodyweight"
+                }
             } else {
-                // Single equipment: check availability or allow Bodyweight/Dumbbell
-                availableEquipment.contains(ex.equipment) ||
-                    ex.equipment == "Bodyweight" ||
-                    ex.equipment == "Dumbbell"
+                // Single equipment: check availability
+                availableEquipment.contains(ex.equipment)
             }
         }
     }
@@ -135,7 +143,10 @@ class ProgramGenerator @Inject constructor(
             val candidates = allExercises
                 .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
                 .filter { it.id !in usedExerciseIds }
-                .sortedByDescending { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
+                .sortedWith(
+                    compareByDescending<ExerciseEntity> { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
+                        .thenBy { it.difficulty排序(it.difficulty) }
+                )
                 .take(2)
 
             for (ex in candidates) {
@@ -156,3 +167,12 @@ class ProgramGenerator @Inject constructor(
 
         return ProgramDay(dayNum, name, muscles, selected)
     }
+
+    /** Sort difficulty: Beginner < Intermediate < Advanced */
+    private fun difficulty排序(difficulty: String): Int = when {
+        difficulty.contains("Beginner", ignoreCase = true) -> 0
+        difficulty.contains("Intermediate", ignoreCase = true) -> 1
+        difficulty.contains("Advanced", ignoreCase = true) -> 2
+        else -> 1
+    }
+}

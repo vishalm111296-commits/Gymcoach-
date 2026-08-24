@@ -9,6 +9,8 @@
         android:name="android.hardware.camera.front"
         android:required="false" />
 
+    <!-- Required to download the MediaPipe pose model on first launch. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />

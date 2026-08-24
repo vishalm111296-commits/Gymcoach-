@@ -1,6 +1,7 @@
 package com.gymcoach.app.ui
 
 import android.os.Bundle
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +22,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GymCoachNavHost(navController = rememberNavController())
+                    val navController = rememberNavController()
+                    val prefs = getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
+                    val onboardingComplete = prefs.getBoolean("onboarding_complete", false)
+                    val startDest = if (onboardingComplete) Routes.HOME else Routes.ONBOARDING
+
+                    GymCoachNavHost(
+                        navController = navController,
+                        startDestination = startDest
+                    )
                 }
             }
         }

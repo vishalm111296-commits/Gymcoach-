@@ -2,6 +2,8 @@ package com.gymcoach.app.presentation.progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.data.local.dao.BodyMeasurementDao
+import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.MuscleGroupStats
@@ -22,20 +24,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Weekly session target driving adherence until programs carry real frequency.
 private const val TARGET_SESSIONS_PER_WEEK = 4
-// Weekly set targets per muscle until a program store supplies real ranges.
 private const val DEFAULT_MUSCLE_MIN_SETS = 10
 private const val DEFAULT_MUSCLE_MAX_SETS = 20
 
-// ponytail: bodyweight/waist trends are empty — no measurement storage exists.
-// Ceiling: static empty lists. Upgrade: add MeasurementRepository + Room table,
-// feed logs into bodyweightTrend/waistTrend below.
-
-/**
- * Superset of the legacy dashboard state plus enhanced progress data.
- * Legacy fields keep ProgressDashboardScreen compiling unchanged.
- */
 data class ProgressUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -70,13 +62,20 @@ data class ProgressUiState(
     val waistTrend: List<TrendPoint> = emptyList(),
     val bodyweightDirection: TrendDirection = TrendDirection.STABLE,
     val waistDirection: TrendDirection = TrendDirection.STABLE,
-    val workoutDays: Set<LocalDate> = emptySet()
+    val workoutDays: Set<LocalDate> = emptySet(),
+    // Body measurements
+    val latestWeight: Double? = null,
+    val latestWaist: Double? = null,
+    val latestChest: Double? = null,
+    val latestBodyFat: Double? = null,
+    val showMeasurementDialog: Boolean = false
 )
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val bodyMeasurementDao: BodyMeasurementDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProgressUiState())
@@ -98,6 +97,30 @@ class ProgressViewModel @Inject constructor(
         load()
     }
 
+    fun showMeasurementDialog() {
+        _uiState.update { it.copy(showMeasurementDialog = true) }
+    }
+
+    fun hideMeasurementDialog() {
+        _uiState.update { it.copy(showMeasurementDialog = false) }
+    }
+
+    fun saveMeasurement(weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) {
+        viewModelScope.launch {
+            bodyMeasurementDao.insert(
+                BodyMeasurementEntity(
+                    weightKg = weightKg,
+                    waistCm = waistCm,
+                    chestCm = chestCm,
+                    bodyFatPct = bodyFatPct,
+                    notes = notes
+                )
+            )
+            _uiState.update { it.copy(showMeasurementDialog = false) }
+            load()
+        }
+    }
+
     private fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -114,8 +137,6 @@ class ProgressViewModel @Inject constructor(
                 val workoutsThisWeek = completed.count { it.date.toLocalDate(zone) >= weekStart }
                 val adherence = (workoutsThisWeek.toFloat() / TARGET_SESSIONS_PER_WEEK).coerceIn(0f, 1f)
 
-                // Single pass over recent workout details feeds heatmap, muscle
-                // volume, strength series and PRs.
                 val windowStart = today.minusWeeks(HEATMAP_WEEKS.toLong())
                 val muscleSets = linkedMapOf<String, Int>()
                 val workoutDays = sortedSetOf<LocalDate>()
@@ -151,6 +172,32 @@ class ProgressViewModel @Inject constructor(
                     ?.sortedBy { it.date }
                     ?: emptyList()
 
+                // --- Body Measurements from DAO ---
+                val measurements = bodyMeasurementDao.getAll().first()
+                val zoneId = ZoneId.systemDefault()
+
+                val bodyweightTrend = measurements
+                    .filter { it.weightKg > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.weightKg
+                        )
+                    }
+
+                val waistTrend = measurements
+                    .filter { it.waistCm != null && it.waistCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.waistCm!!
+                        )
+                    }
+
+                val latest = measurements.firstOrNull()
+
                 val volumeHistory = analyticsRepository.getVolumeHistory()
                 val weekly = analyticsRepository.getWeeklySummary()
                 val state = ProgressUiState(
@@ -177,8 +224,8 @@ class ProgressViewModel @Inject constructor(
                             date = pr.third
                         )
                     }.sortedByDescending { it.date },
-                    bodyweightTrend = emptyList(),
-                    waistTrend = emptyList(),
+                    bodyweightTrend = bodyweightTrend,
+                    waistTrend = waistTrend,
                     workoutDays = workoutDays,
                     volumeHistory = volumeHistory,
                     weeklySummary = weekly,
@@ -197,7 +244,11 @@ class ProgressViewModel @Inject constructor(
                     workoutFrequency = weekly.size,
                     workoutCounts = analyticsRepository.getWorkoutCounts(),
                     longestWorkout = analyticsRepository.getLongestWorkout(),
-                    shortestWorkout = analyticsRepository.getShortestWorkout()
+                    shortestWorkout = analyticsRepository.getShortestWorkout(),
+                    latestWeight = latest?.weightKg,
+                    latestWaist = latest?.waistCm,
+                    latestChest = latest?.chestCm,
+                    latestBodyFat = latest?.bodyFatPct
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),

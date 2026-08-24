@@ -70,6 +70,9 @@ fun GymCoachNavHost(
                 },
                 onNavigateToProfile = {
                     navController.navigate(Routes.PROFILE)
+                },
+                onNavigateToReadiness = {
+                    navController.navigate(Routes.READINESS)
                 }
             )
         }

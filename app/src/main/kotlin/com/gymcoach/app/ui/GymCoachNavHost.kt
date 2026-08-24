@@ -91,7 +91,7 @@ fun GymCoachNavHost(
 
         composable(Routes.WORKOUT_HISTORY) {
             WorkoutHistoryScreen(
-                onBackClick = { navController.popBack_stack() },
+                onBackClick = { navController.popBackStack() },
                 onDetailClick = { workoutId ->
                     navController.navigate(Routes.workoutHistoryDetail(workoutId))
                 },
@@ -111,12 +111,12 @@ fun GymCoachNavHost(
             val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: return@composable
             WorkoutHistoryDetailScreen(
                 workoutId = workoutId,
-                onBackClick = { navController.popBack_stack() },
+                onBackClick = { navController.popBackStack() },
                 onEditClick = { id ->
                     navController.navigate(Routes.workoutSession(id))
                 }
             )
-        )
+        }
 
         composable(
             route = Routes.WORKOUT_SESSION,
@@ -130,20 +130,20 @@ fun GymCoachNavHost(
             val arg = backStackEntry.arguments?.getLong("workoutId") ?: -1L
             val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
-                onBackClick = { navController.popBack_stack() },
+                onBackClick = { navController.popBackStack() },
                 workoutId = workoutId
             )
         }
 
         composable(Routes.PROGRESS) {
             ProgressDashboardScreen(
-                onBackClick = { navController.popBack_stack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
         composable(Routes.PROFILE) {
             ProfileScreen(
-                onBackClick = { navController.popBack_stack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 

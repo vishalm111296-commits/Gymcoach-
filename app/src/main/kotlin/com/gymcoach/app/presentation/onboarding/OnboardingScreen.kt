@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -328,7 +329,7 @@ private fun SexSelection(
     onSelect: (String) -> Unit
 ) {
     var sex by remember { mutableStateOf(selectedSex) }
-    Column(horizontalArrangement = Arrangement.spaceBetween) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SEXES.forEach { (label, _) ->
             FilterChip(
                 selected = sex == label,
@@ -351,7 +352,7 @@ private fun PreferredScheduleChipGroup(
     onSelect: (String) -> Unit
 ) {
     var schedule by remember { mutableStateOf(selectedSchedule) }
-    Column(horizontalArrangement = Arrangement.spaceBetween) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PREFERRED_SCHEDULES.forEach { (label, _) ->
             FilterChip(
                 selected = schedule == label,
@@ -374,7 +375,7 @@ private fun LimitationsChipGroup(
     onSelect: (String) -> Unit
 ) {
     var limitation by remember { mutableStateOf(selectedLimitation) }
-    Column(horizontalArrangement = Arrangement.spaceBetween) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LIMITATIONS.forEach { (label, _) ->
             FilterChip(
                 selected = limitation == label,

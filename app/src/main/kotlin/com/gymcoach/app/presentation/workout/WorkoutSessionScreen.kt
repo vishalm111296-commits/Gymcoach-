@@ -31,10 +31,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -42,8 +40,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,7 +64,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.presentation.history.formatDuration
 import java.time.Instant
@@ -88,6 +89,7 @@ fun WorkoutSessionScreen(
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val previousPerformance by viewModel.previousPerformance.collectAsState()
     val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
+    val sessionVolume by viewModel.sessionVolume.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -140,11 +142,20 @@ fun WorkoutSessionScreen(
                 title = { 
                     Column {
                         Text("Workout Session")
-                        Text(
-                            text = formatDuration(elapsedSeconds),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = formatDuration(elapsedSeconds),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (sessionVolume > 0) {
+                                Text(
+                                    text = "${String.format("%.0f", sessionVolume)} kg·reps",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -169,55 +180,20 @@ fun WorkoutSessionScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentWorkout?.let { workout ->
+                    // Rest timer card with preset buttons
                     if (restTimerState.isRunning) {
                         item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                                )
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.PlayArrow, contentDescription = "Rest")
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                text = "Rest: ${restTimerState.timeRemaining}s",
-                                                style = MaterialTheme.typography.headlineSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        }
-                                        Row {
-                                            IconButton(onClick = { 
-                                                if (restTimerState.isPaused) viewModel.resumeRestTimer() 
-                                                else viewModel.pauseRestTimer() 
-                                            }) {
-                                                Icon(if (restTimerState.isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause/Resume")
-                                            }
-                                            IconButton(onClick = { viewModel.stopRestTimer() }) {
-                                                Icon(Icons.Default.SkipNext, contentDescription = "Skip")
-                                            }
-                                        }
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                    LinearProgressIndicator(
-                                        progress = { 
-                                            if (restTimerState.totalDuration > 0) 
-                                                restTimerState.timeRemaining.toFloat() / restTimerState.totalDuration 
-                                            else 0f 
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    )
-                                }
-                            }
+                            RestTimerCard(
+                                timeRemaining = restTimerState.timeRemaining,
+                                totalDuration = restTimerState.totalDuration,
+                                isPaused = restTimerState.isPaused,
+                                onPauseResume = {
+                                    if (restTimerState.isPaused) viewModel.resumeRestTimer()
+                                    else viewModel.pauseRestTimer()
+                                },
+                                onSkip = { viewModel.stopRestTimer() },
+                                onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
+                            )
                         }
                     }
 
@@ -225,7 +201,6 @@ fun WorkoutSessionScreen(
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
-                            // Get previous performance for this exercise
                             val lastSets = previousPerformance[we.exercise.id]
                             val lastPerf = lastPerformanceSummary[we.exercise.id]
 
@@ -348,6 +323,104 @@ fun WorkoutSessionScreen(
                 }
             }
         )
+    }
+}
+
+/**
+ * Rest timer card with progress bar and quick-select preset buttons.
+ */
+@Composable
+private fun RestTimerCard(
+    timeRemaining: Int,
+    totalDuration: Int,
+    isPaused: Boolean,
+    onPauseResume: () -> Unit,
+    onSkip: () -> Unit,
+    onPresetTap: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Rest")
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Rest: ${timeRemaining}s",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                Row {
+                    IconButton(onClick = onPauseResume) {
+                        Icon(
+                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = "Pause/Resume"
+                        )
+                    }
+                    IconButton(onClick = onSkip) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Skip")
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = {
+                    if (totalDuration > 0) timeRemaining.toFloat() / totalDuration else 0f
+                },
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            )
+
+            // Quick-select rest duration presets
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Adjust rest:",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val presets = listOf(
+                    "30s" to RestPresets.SHORT,
+                    "60s" to RestPresets.MEDIUM,
+                    "90s" to RestPresets.STANDARD,
+                    "120s" to RestPresets.LONG,
+                    "180s" to RestPresets.VERY_LONG
+                )
+                presets.forEach { (label, seconds) ->
+                    FilterChip(
+                        selected = totalDuration == seconds,
+                        onClick = { onPresetTap(seconds) },
+                        label = {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -629,7 +702,6 @@ private fun SetRow(
             )
             IconButton(
                 onClick = { 
-                    // Cycle through set types
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
                         com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP

@@ -5,6 +5,40 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.gymcoach.app.data.local.dao.BodyMeasurementDao
+import com.gymcoach.app.data.local.dao.EquipmentDao
+import com.gymcoach.app.data.local.dao.ExerciseAliasDao
+import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.ExerciseEquipmentDao
+import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
+import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
+import com.gymcoach.app.data.local.dao.FavoriteExerciseDao
+import com.gymcoach.app.data.local.dao.MuscleDao
+import com.gymcoach.app.data.local.dao.PersonalRecordDao
+import com.gymcoach.app.data.local.dao.ProgramDao
+import com.gymcoach.app.data.local.dao.ProgramDayDao
+import com.gymcoach.app.data.local.dao.ProgramExerciseDao
+import com.gymcoach.app.data.local.dao.ReadinessDao
+import com.gymcoach.app.data.local.dao.UserProfileDao
+import com.gymcoach.app.data.local.dao.WorkoutDao
+import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
+import com.gymcoach.app.data.local.entity.EquipmentEntity
+import com.gymcoach.app.data.local.entity.ExerciseAliasEntity
+import com.gymcoach.app.data.local.entity.ExerciseEntity
+import com.gymcoach.app.data.local.entity.ExerciseFtsEntity
+import com.gymcoach.app.data.local.entity.ExerciseMuscleEntity
+import com.gymcoach.app.data.local.entity.ExerciseSubstitutionEntity
+import com.gymcoach.app.data.local.entity.FavoriteExerciseEntity
+import com.gymcoach.app.data.local.entity.MuscleEntity
+import com.gymcoach.app.data.local.entity.PersonalRecordEntity
+import com.gymcoach.app.data.local.entity.ProgramDayEntity
+import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
+import com.gymcoach.app.data.local.entity.ReadinessEntity
+import com.gymcoach.app.data.local.entity.UserProfileEntity
+import com.gymcoach.app.data.local.entity.WorkoutEntity
+import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
+import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 
 @Database(
     entities = [
@@ -16,7 +50,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BodyMeasurementEntity::class,
         EquipmentEntity::class,
         ExerciseAliasEntity::class,
-        ExerciseEquipmentEntity::class,
         ExerciseMuscleEntity::class,
         ExerciseSubstitutionEntity::class,
         FavoriteExerciseEntity::class,
@@ -34,8 +67,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutDao(): WorkoutDao
-    abstract fun workoutExerciseDao(): WorkoutExerciseDao
-    abstract fun workoutSetDao(): WorkoutSetDao
     abstract fun programDao(): ProgramDao
     abstract fun programDayDao(): ProgramDayDao
     abstract fun programExerciseDao(): ProgramExerciseDao
@@ -376,7 +407,8 @@ abstract class GymCoachDatabase : RoomDatabase() {
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
                     MIGRATION_9_10
                 )
-                .fallbackToDestructiveMigration(false)
+                // Room 2.6.1 API: destructive fallback only when no migration path exists.
+                .fallbackToDestructiveMigration()
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -406,7 +438,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 arrayOf<Any>("Crunch", "Curl your shoulders toward your pelvis while lying on your back.", "Core", "Bodyweight", "Beginner", "Obliques", "1. Lie on back. 2. Curl shoulders up. 3. Lower back down.", "Don't pull neck.", "Using momentum.", "Perform on a mat.", "15-25", "45s", 5, "Bodyweight", "Core, Home", 0, 0L, 0, 0, 0, 0, "isolation"),
                 arrayOf<Any>("Calf Raise", "Raise your heels off the ground to work the calves.", "Legs", "Machine", "Beginner", "None", "1. Stand on edge of step. 2. Lower heels. 3. Raise heels high.", "Full stretch at bottom.", "Bouncing.", "Use support for balance.", "15-20", "60s", 5, "Machine", "Isolation, Lower Body", 0, 0L, 0, 0, 0, 0, "isolation"),
                 arrayOf<Any>("Lat Pulldown", "Pull the bar down to your chest while seated.", "Back", "Cable", "Beginner", "Biceps", "1. Sit at machine. 2. Grip bar wide. 3. Pull bar to upper chest. 4. Return slowly.", "Pull with lats.", "Leaning back too far.", "Control the weight.", "8-12", "90s", 12, "Cable", "Pull, Upper Body", 0, 0L, 9, 0, 0, 3, "vertical_pull"),
-                arrayOf<Any>("Leg Curl", "Curl your legs against resistance to work the hamstrings.", "Legs", "Machine", "Beginner", "Calves", "1. Lie on machine. 2. Curl weight up. 3. Lower slowly.", "Keep hips down.", "Using momentum.", "Adjust machine to fit.", "10-15", "60s", 10, "Machine", "Isolation, Lower Body", 0, 0L, 0, 0, 0, 0, "isolation"),
+                arrayOf<Any>("Leg Curl", "Curl your legs against resistance to work the hamstrings.", "Legs", "Machine", "Beginner", "Calves", "1. Lie on machine. 2. Curl weight up. 3. Lower slowly.", "Keep hips down.", "Using momentum.", "Adjust machine to fit.", "10-15", "90s", 10, "Machine", "Isolation, Lower Body", 0, 0L, 0, 0, 0, 0, "isolation"),
                 arrayOf<Any>("Leg Extension", "Extend your legs against resistance to work the quads.", "Legs", "Machine", "Beginner", "None", "1. Sit on machine. 2. Extend legs. 3. Lower slowly.", "Squeeze at top.", "Swinging the weight.", "Don't hyperextend knees.", "10-15", "60s", 10, "Machine", "Isolation, Lower Body", 0, 0L, 0, 0, 0, 0, "isolation"),
                 arrayOf<Any>("Dumbbell Fly", "Raise dumbbells to the side to work the shoulders.", "Shoulders", "Dumbbell", "Beginner", "Traps", "1. Stand with dumbbells. 2. Raise to sides. 3. Lower slowly.", "Slight elbow bend.", "Shrugging shoulders.", "Use light weights.", "12-15", "60s", 8, "Resistance", "Isolation, Upper Body", 0, 0L, 0, 3, 6, 1, "lateral_raise"),
                 arrayOf<Any>("Barbell Curl", "Curl a barbell to work the biceps.", "Arms", "Barbell", "Intermediate", "Forearms", "1. Stand holding bar. 2. Curl bar up. 3. Lower slowly.", "Keep elbows tucked.", "Swinging back.", "Control the descent.", "8-12", "90s", 10, "Resistance", "Isolation, Arms", 0, 0L, 1, 0, 0, 0, "isolation")

@@ -156,7 +156,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 }
 
-// Entity → Domain mappers
+// Entity -> Domain mappers
 private fun WorkoutEntity.toDomain() = Workout(
     id = id,
     date = Instant.ofEpochMilli(date),
@@ -227,6 +227,7 @@ private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = com.gy
     duration = duration,
     notes = notes,
     completed = completed,
+    status = status,
     volume = volume ?: 0.0,
     setCount = setCount,
     repCount = repCount ?: 0,

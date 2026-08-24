@@ -1,7 +1,9 @@
 package com.gymcoach.app.presentation.progress
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,16 +11,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,9 +36,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -38,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.history.formatDuration
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 
@@ -99,6 +114,23 @@ fun ProgressDashboardScreen(
                 ) {
                     Spacer(Modifier.height(8.dp))
 
+                    // Date Range Selector
+                    DateRangeSelector(
+                        selected = state.dateRange,
+                        onSelect = { viewModel.selectDateRange(it) }
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Weekly Adherence
+                    WorkoutAdherenceCard(
+                        workoutsThisWeek = state.workoutsThisWeek,
+                        targetSessionsPerWeek = 4,
+                        adherence = state.adherence
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
                     // Stats Overview
                     StatsOverview(
                         totalWorkouts = state.workoutCounts.total,
@@ -113,7 +145,8 @@ fun ProgressDashboardScreen(
                     )
 
                     Spacer(Modifier.height(16.dp))
-                    
+
+                    // Workout Extremes
                     SectionHeader("Workout Extremes")
                     Spacer(Modifier.height(8.dp))
                     Row(
@@ -121,10 +154,18 @@ fun ProgressDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         state.longestWorkout?.let {
-                            StatCard(label = "Longest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
+                            StatCard(
+                                label = "Longest Workout",
+                                value = formatDuration(it.duration),
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                         state.shortestWorkout?.let {
-                            StatCard(label = "Shortest Workout", value = formatDuration(it.duration), modifier = Modifier.weight(1f))
+                            StatCard(
+                                label = "Shortest Workout",
+                                value = formatDuration(it.duration),
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
 
@@ -173,6 +214,47 @@ fun ProgressDashboardScreen(
 
                     Spacer(Modifier.height(24.dp))
 
+                    // Strength Progression Chart
+                    SectionHeader("Strength Progression")
+                    Spacer(Modifier.height(8.dp))
+                    if (state.selectedExercise != null) {
+                        ExerciseSelector(
+                            selectedExercise = state.selectedExercise!!,
+                            onSelect = { viewModel.selectExercise(it) }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    if (state.strengthPoints.isNotEmpty()) {
+                        StrengthLineChart(
+                            data = state.strengthPoints,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                        )
+                    } else {
+                        EmptyPlaceholder("No strength data yet")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Muscle Volume Heatmap
+                    SectionHeader("Muscle Volume")
+                    Spacer(Modifier.height(8.dp))
+                    if (state.muscleVolume.isNotEmpty()) {
+                        state.muscleVolume.forEach { muscle ->
+                            MuscleVolumeBar(
+                                muscleName = muscle.muscleName,
+                                currentSets = muscle.currentSets,
+                                targetMin = muscle.targetMin,
+                                targetMax = muscle.targetMax
+                            )
+                        }
+                    } else {
+                        EmptyPlaceholder("No muscle volume data yet")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
                     // Volume History Chart
                     SectionHeader("Volume History")
                     Spacer(Modifier.height(8.dp))
@@ -185,6 +267,23 @@ fun ProgressDashboardScreen(
                         )
                     } else {
                         EmptyPlaceholder("No volume data yet")
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Recent Personal Records
+                    SectionHeader("Recent PRs")
+                    Spacer(Modifier.height(8.dp))
+                    if (state.recentPRs.isNotEmpty()) {
+                        state.recentPRs.forEach { pr ->
+                            PRCard(
+                                exerciseName = pr.exerciseName,
+                                achievement = pr.achievement,
+                                date = pr.date
+                            )
+                        }
+                    } else {
+                        EmptyPlaceholder("No PRs recorded yet")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -219,38 +318,6 @@ fun ProgressDashboardScreen(
                         EmptyPlaceholder("No monthly data yet")
                     }
 
-                    Spacer(Modifier.height(24.dp))
-
-                    // Muscle Group Distribution
-                    SectionHeader("Top Exercises")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.muscleGroupDistribution.isNotEmpty()) {
-                        state.muscleGroupDistribution.forEach { stat ->
-                            SummaryRow(
-                                label = stat.name,
-                                value = "${stat.totalReps} reps"
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No exercise data yet")
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Personal Records
-                    SectionHeader("Personal Records")
-                    Spacer(Modifier.height(8.dp))
-                    if (state.personalRecords.isNotEmpty()) {
-                        state.personalRecords.forEach { pr ->
-                            SummaryRow(
-                                label = pr.exerciseName,
-                                value = "%.1f kg".format(pr.maxWeight)
-                            )
-                        }
-                    } else {
-                        EmptyPlaceholder("No PRs recorded yet")
-                    }
-
                     Spacer(Modifier.height(16.dp))
                 }
             }
@@ -259,6 +326,303 @@ fun ProgressDashboardScreen(
 }
 
 // --- Components ---
+
+@Composable
+private fun DateRangeSelector(
+    selected: ProgressDateRange,
+    onSelect: (ProgressDateRange) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        ProgressDateRange.entries.forEach { range ->
+            FilterChip(
+                selected = range == selected,
+                onClick = { onSelect(range) },
+                label = { Text(range.label) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutAdherenceCard(
+    workoutsThisWeek: Int,
+    targetSessionsPerWeek: Int,
+    adherence: Float
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Weekly Adherence",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "$workoutsThisWeek/$targetSessionsPerWeek",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { adherence },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = when {
+                    adherence >= 0.8f -> Color(0xFF2E7D32)
+                    adherence >= 0.5f -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.error
+                },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "${(adherence * 100).toInt()}% of goal",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StrengthLineChart(
+    data: List<ProgressPoint>,
+    modifier: Modifier = Modifier
+) {
+    val lineColor = MaterialTheme.colorScheme.primary
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+    Canvas(modifier = modifier) {
+        if (data.size < 2) return@Canvas
+
+        val paddingLeft = 8f
+        val paddingBottom = 8f
+        val chartWidth = size.width - paddingLeft
+        val chartHeight = size.height - paddingBottom
+
+        val values = data.map { it.value }
+        val minVal = values.min()
+        val maxVal = values.max()
+        val range = (maxVal - minVal).coerceAtLeast(1.0)
+
+        // Grid lines
+        for (i in 0..3) {
+            val y = chartHeight - (chartHeight * i / 3f)
+            drawLine(
+                color = gridColor,
+                start = Offset(paddingLeft, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1f
+            )
+        }
+
+        // Line path
+        val path = Path()
+        val stepX = chartWidth / (data.size - 1).toFloat()
+
+        data.forEachIndexed { index, point ->
+            val x = paddingLeft + index * stepX
+            val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+
+        drawPath(
+            path = path,
+            color = lineColor,
+            style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        )
+
+        // Data point dots
+        data.forEachIndexed { index, point ->
+            val x = paddingLeft + index * stepX
+            val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+            drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+        }
+    }
+}
+
+@Composable
+private fun ExerciseSelector(
+    selectedExercise: String,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = selectedExercise,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "\u25bc",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // Show common exercises as dropdown options
+            listOf(
+                "Bench Press", "Squat", "Deadlift", "Overhead Press",
+                "Barbell Row", "Pull-Up", "Dumbbell Curl", "Tricep Pushdown"
+            ).forEach { exercise ->
+                DropdownMenuItem(
+                    text = { Text(exercise) },
+                    onClick = {
+                        onSelect(exercise)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MuscleVolumeBar(
+    muscleName: String,
+    currentSets: Int,
+    targetMin: Int,
+    targetMax: Int
+) {
+    val progress = (currentSets.toFloat() / targetMax.toFloat()).coerceIn(0f, 1f)
+    val inRange = currentSets in targetMin..targetMax
+    val isOver = currentSets > targetMax
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = muscleName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "$currentSets sets (target: $targetMin-$targetMax)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                color = when {
+                    inRange -> Color(0xFF2E7D32)
+                    isOver -> Color(0xFFF57F17)
+                    else -> MaterialTheme.colorScheme.primary
+                },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun PRCard(
+    exerciseName: String,
+    achievement: String,
+    date: LocalDate
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.EmojiEvents,
+                contentDescription = "PR",
+                tint = Color(0xFFF57F17),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = exerciseName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                Text(
+                    text = achievement,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                )
+            }
+            Text(
+                text = date.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
 
 @Composable
 private fun SectionHeader(title: String) {

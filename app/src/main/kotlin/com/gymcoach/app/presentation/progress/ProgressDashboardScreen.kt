@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -51,12 +53,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.history.formatDuration
+import com.gymcoach.app.presentation.progress.components.BodyMeasurementTrend
+import com.gymcoach.app.presentation.progress.components.MeasurementLogDialog
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
-
-// --- Screen ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,20 @@ fun ProgressDashboardScreen(
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // Measurement dialog
+    if (state.showMeasurementDialog) {
+        MeasurementLogDialog(
+            latestWeight = state.latestWeight,
+            latestWaist = state.latestWaist,
+            latestChest = state.latestChest,
+            latestBodyFat = state.latestBodyFat,
+            onDismiss = { viewModel.hideMeasurementDialog() },
+            onSave = { weight, waist, chest, bodyFat, notes ->
+                viewModel.saveMeasurement(weight, waist, chest, bodyFat, notes)
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -79,6 +95,18 @@ fun ProgressDashboardScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.showMeasurementDialog() },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Log Measurement",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         }
     ) { padding ->
         when {
@@ -128,6 +156,35 @@ fun ProgressDashboardScreen(
                         targetSessionsPerWeek = 4,
                         adherence = state.adherence
                     )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Body Measurements
+                    SectionHeader("Body Measurements")
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        BodyMeasurementTrend(
+                            label = "Bodyweight",
+                            currentValue = state.latestWeight ?: 0.0,
+                            unit = "kg",
+                            trend = state.bodyweightDirection,
+                            dataPoints = state.bodyweightTrend,
+                            modifier = Modifier.weight(1f),
+                            goodWhenDown = false
+                        )
+                        BodyMeasurementTrend(
+                            label = "Waist",
+                            currentValue = state.latestWaist ?: 0.0,
+                            unit = "cm",
+                            trend = state.waistDirection,
+                            dataPoints = state.waistTrend,
+                            modifier = Modifier.weight(1f),
+                            goodWhenDown = true
+                        )
+                    }
 
                     Spacer(Modifier.height(16.dp))
 
@@ -427,7 +484,6 @@ private fun StrengthLineChart(
         val maxVal = values.max()
         val range = (maxVal - minVal).coerceAtLeast(1.0)
 
-        // Grid lines
         for (i in 0..3) {
             val y = chartHeight - (chartHeight * i / 3f)
             drawLine(
@@ -438,7 +494,6 @@ private fun StrengthLineChart(
             )
         }
 
-        // Line path
         val path = Path()
         val stepX = chartWidth / (data.size - 1).toFloat()
 
@@ -454,7 +509,6 @@ private fun StrengthLineChart(
             style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // Data point dots
         data.forEachIndexed { index, point ->
             val x = paddingLeft + index * stepX
             val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
@@ -502,7 +556,6 @@ private fun ExerciseSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Show common exercises as dropdown options
             listOf(
                 "Bench Press", "Squat", "Deadlift", "Overhead Press",
                 "Barbell Row", "Pull-Up", "Dumbbell Curl", "Tricep Pushdown"
@@ -696,7 +749,6 @@ private fun VolumeLineChart(
         val maxVal = values.max()
         val range = (maxVal - minVal).coerceAtLeast(1.0)
 
-        // Grid lines (3 horizontal)
         for (i in 0..3) {
             val y = chartHeight - (chartHeight * i / 3f)
             drawLine(
@@ -707,7 +759,6 @@ private fun VolumeLineChart(
             )
         }
 
-        // Line path
         val path = Path()
         val stepX = chartWidth / (data.size - 1).toFloat()
 
@@ -723,7 +774,6 @@ private fun VolumeLineChart(
             style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // Data point dots
         data.forEachIndexed { index, (_, volume) ->
             val x = paddingLeft + index * stepX
             val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()

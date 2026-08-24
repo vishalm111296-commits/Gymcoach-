@@ -24,6 +24,12 @@ class ExerciseRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun searchExercises(query: String): Flow<List<Exercise>> {
+        return exerciseDao.searchExercises(query).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override fun getExerciseById(id: Long): Flow<Exercise?> {
         return exerciseDao.getById(id).map { it?.toDomain() }
     }
@@ -119,3 +125,4 @@ class ExerciseRepositoryImpl @Inject constructor(
         beginnerVariantId = beginnerVariantId,
         advancedVariantId = advancedVariantId
     )
+}

@@ -168,7 +168,7 @@ fun ProfileScreen(
                     SectionHeader("Training")
                     Spacer(Modifier.height(8.dp))
                     ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Experience", value = p.experience.ifBlank { "Not specified" })
-                    ProfileInfoRow(icon = Icons.Default.Days, label = "Training Days/Week", value = "${p.trainingDaysPerWeek}")
+                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Training Days/Week", value = "${p.trainingDaysPerWeek}")
                     ProfileInfoRow(icon = Icons.Default.Timer, label = "Session Length", value = "${p.sessionLengthMinutes} minutes")
                     ProfileInfoRow(icon = Icons.Default.DirectionsRun, label = "Goal", value = p.goal.ifBlank { "Not specified" })
 
@@ -208,7 +208,7 @@ fun ProfileScreen(
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "AI-powered fitness coach with smart program generation, V-taper optimization, and progressive overload tracking.",
+                                text = "Rule-based fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Exercise substitutions use deterministic matching, not AI.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

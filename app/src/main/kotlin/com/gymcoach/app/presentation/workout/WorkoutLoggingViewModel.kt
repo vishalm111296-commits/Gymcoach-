@@ -2,11 +2,13 @@ package com.gymcoach.app.presentation.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
 import com.gymcoach.app.data.local.dao.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.domain.model.Exercise
+import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
@@ -62,6 +64,10 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _lastPerformanceSummary = MutableStateFlow<Map<Long, LastPerformance>>(emptyMap())
     val lastPerformanceSummary: StateFlow<Map<Long, LastPerformance>> = _lastPerformanceSummary.asStateFlow()
 
+    // Accumulated volume for the current workout session
+    private val _sessionVolume = MutableStateFlow(0.0)
+    val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
+
     fun dismissError() {
         _error.value = null
     }
@@ -73,6 +79,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
                         loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                        calculateSessionVolume(it)
                         startWorkoutTimer()
                     }
                 } else {
@@ -81,6 +88,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                            calculateSessionVolume(it)
                             startWorkoutTimer()
                         }
                     } else {
@@ -121,6 +129,23 @@ class WorkoutLoggingViewModel @Inject constructor(
 
         _previousPerformance.value = perfMap
         _lastPerformanceSummary.value = summaryMap
+    }
+
+    /** Calculate accumulated volume (weight × reps) for the current session. */
+    private fun calculateSessionVolume(workout: WorkoutWithDetails?) {
+        if (workout == null) {
+            _sessionVolume.value = 0.0
+            return
+        }
+        var volume = 0.0
+        for (we in workout.exercises) {
+            for (set in we.sets) {
+                if (set.completed && set.weight > 0 && set.reps > 0) {
+                    volume += set.weight * set.reps
+                }
+            }
+        }
+        _sessionVolume.value = volume
     }
 
     private fun startWorkoutTimer() {
@@ -204,18 +229,42 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Add a new set. If previous performance exists, pre-fill weight and reps.
+     * The first new set copies from the last completed set of the same exercise.
+     */
     fun addSet(exerciseIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
+        val exerciseId = we.exercise.id
         val nextSetNumber = (we.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
+
+        // Auto-populate from previous session if available
+        val lastSets = _previousPerformance.value[exerciseId]
+        val prefilledWeight: Double
+        val prefilledReps: Int
+        val prefilledRest: Int
+
+        if (lastSets != null && lastSets.isNotEmpty()) {
+            // Use the last set's data as default
+            val lastSet = lastSets.last()
+            prefilledWeight = lastSet.weight
+            prefilledReps = lastSet.reps
+            prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
+        } else {
+            prefilledWeight = 0.0
+            prefilledReps = 0
+            prefilledRest = defaultRestSeconds
+        }
+
         val newSet = WorkoutSet(
             workoutExerciseId = we.workoutExercise.id,
             setNumber = nextSetNumber,
-            weight = 0.0,
-            reps = 0,
+            weight = prefilledWeight,
+            reps = prefilledReps,
             rpe = 0.0,
-            restSeconds = 0,
+            restSeconds = prefilledRest,
             completed = false
         )
         viewModelScope.launch {
@@ -235,7 +284,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds) }
     }
 
-    fun updateSetType(exerciseIndex: Int, setIndex: Int, setType: com.gymcoach.app.domain.model.SetType) {
+    fun updateSetType(exerciseIndex: Int, setIndex: Int, setType: SetType) {
         updateSetField(exerciseIndex, setIndex) { it.copy(setType = setType) }
     }
 
@@ -268,9 +317,14 @@ class WorkoutLoggingViewModel @Inject constructor(
         val updated = set.copy(completed = !set.completed)
         viewModelScope.launch {
             workoutRepository.updateSet(updated)
+            // Recalculate session volume
+            val refreshed = _currentWorkout.value
+            calculateSessionVolume(refreshed)
         }
         if (updated.completed) {
-            val restSeconds = if (updated.restSeconds > 0) updated.restSeconds else defaultRestSeconds
+            // Use the recommended rest time based on RPE and set type
+            val recommendedRest = RestPresets.recommended(set.setType, set.rpe, we.sets.count { it.completed })
+            val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
             restTimer.start(restSeconds, viewModelScope)
         } else {
             restTimer.stop()
@@ -287,6 +341,11 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun stopRestTimer() {
         restTimer.stop()
+    }
+
+    /** Change the rest timer duration while it's running (e.g., user taps a preset). */
+    fun changeRestTimerDuration(seconds: Int) {
+        restTimer.restart(seconds, viewModelScope)
     }
 
     fun completeWorkout() {
@@ -318,6 +377,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         val updated = transform(we.sets[setIndex])
         viewModelScope.launch {
             workoutRepository.updateSet(updated)
+            // Recalculate session volume after any field update
+            calculateSessionVolume(_currentWorkout.value)
         }
     }
 

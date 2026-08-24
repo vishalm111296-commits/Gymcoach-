@@ -23,7 +23,7 @@ data class ProgramDayEntity(
     @ColumnInfo(name = "program_id") val programId: Long,
     @ColumnInfo(name = "day_number") val dayNumber: Int,
     @ColumnInfo(name = "name") val name: String = "",
-    // e.g. "Push", "Pull", "Legs", "Rest"
-    @ColumnInfo(name = "target_muscles") val targetMuscles: String = "",
+    // Comma-separated focus muscles, e.g. "Push", "Chest,Lateral Deltoid,Triceps"
+    @ColumnInfo(name = "focus") val focus: String = "",
     @ColumnInfo(name = "is_rest_day") val isRestDay: Boolean = false
 )

@@ -6,65 +6,36 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
-import com.gymcoach.app.presentation.home.HomeDashboardScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
-import com.gymcoach.app.presentation.onboarding.OnboardingScreen
-import com.gymcoach.app.presentation.profile.ProfileScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 
 object Routes {
-    const val ONBOARDING = "onboarding"
-    const val HOME = "home"
     const val EXERCISE_LIST = "exercise_list"
     const val EXERCISE_DETAIL = "exercise_detail/{exerciseId}"
     const val WORKOUT_HISTORY = "workout_history"
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
     const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
     const val PROGRESS = "progress"
-    const val PROFILE = "profile"
-    const val CAMERA = "camera"
+    const val CAMERA = "camera/{exerciseType}"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
     fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session?workoutId=$workoutId" else "workout_session"
-    fun onboarding() = "onboarding"
-    fun home() = "home"
-    fun profile() = "profile"
+    fun camera(exerciseType: ExerciseType) = "camera/${exerciseType.name}"
 }
 
 @Composable
-fun GymCoachNavHost(
-    navController: NavHostController,
-    startDestination: String = Routes.ONBOARDING
-) {
+fun GymCoachNavHost(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = Routes.EXERCISE_LIST
     ) {
-        composable(Routes.ONBOARDING) {
-            OnboardingScreen(
-                onComplete = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(Routes.HOME) {
-            HomeDashboardScreen(
-                onStartWorkout = { navController.navigate(Routes.workoutSession()) },
-                onViewProgram = { navController.navigate(Routes.EXERCISE_LIST) },
-                onNavigateToProgress = { navController.navigate(Routes.PROGRESS) },
-                onNavigateToProfile = { navController.navigate(Routes.PROFILE) }
-            )
-        }
-
         composable(Routes.EXERCISE_LIST) {
             ExerciseListScreen(
                 onExerciseClick = { exerciseId ->
@@ -72,7 +43,9 @@ fun GymCoachNavHost(
                 },
                 onHistoryClick = { navController.navigate(Routes.WORKOUT_HISTORY) },
                 onProgressClick = { navController.navigate(Routes.PROGRESS) },
-                onCameraClick = { navController.navigate(Routes.CAMERA) }
+                onCameraClick = { exerciseType ->
+                    navController.navigate(Routes.camera(exerciseType))
+                }
             )
         }
 
@@ -121,7 +94,7 @@ fun GymCoachNavHost(
         composable(
             route = Routes.WORKOUT_SESSION,
             arguments = listOf(
-                navArgument("workoutId") {
+                navArgument("workoutId") { 
                     type = NavType.LongType
                     defaultValue = -1L
                 }
@@ -141,14 +114,20 @@ fun GymCoachNavHost(
             )
         }
 
-        composable(Routes.PROFILE) {
-            ProfileScreen(
-                onBackClick = { navController.popBackStack() }
+        composable(
+            route = Routes.CAMERA,
+            arguments = listOf(
+                navArgument("exerciseType") {
+                    type = NavType.StringType
+                    defaultValue = ExerciseType.BICEP_CURL.name
+                }
             )
-        }
-
-        composable(Routes.CAMERA) {
-            CameraPreviewScreen()
+        ) { backStackEntry ->
+            val rawType = backStackEntry.arguments?.getString("exerciseType")
+                ?: ExerciseType.BICEP_CURL.name
+            val exerciseType = ExerciseType.entries.firstOrNull { it.name == rawType }
+                ?: ExerciseType.BICEP_CURL
+            CameraPreviewScreen(exerciseType = exerciseType)
         }
     }
 }

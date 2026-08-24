@@ -18,6 +18,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Search
@@ -41,8 +42,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.presentation.ExerciseViewModel
 import com.gymcoach.app.presentation.components.ExerciseItemCard
+
+/** Human-readable label, e.g. BENT_OVER_ROW -> "Bent Over Row". */
+private fun ExerciseType.displayLabel(): String =
+    name.lowercase()
+        .split('_')
+        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +59,7 @@ fun ExerciseListScreen(
     onExerciseClick: (Long) -> Unit = {},
     onHistoryClick: () -> Unit = {},
     onProgressClick: () -> Unit = {},
-    onCameraClick: () -> Unit = {}
+    onCameraClick: (ExerciseType) -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
@@ -60,6 +68,7 @@ fun ExerciseListScreen(
     var textFieldValue by rememberSaveable { mutableStateOf("") }
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var showCameraPicker by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -108,7 +117,7 @@ fun ExerciseListScreen(
                 }
             }
 
-            IconButton(onClick = onCameraClick) {
+            IconButton(onClick = { showCameraPicker = true }) {
                 Icon(Icons.Filled.CameraAlt, contentDescription = "Form Analysis")
             }
 
@@ -194,6 +203,41 @@ fun ExerciseListScreen(
                     }
                 }
                 Spacer(Modifier.height(32.dp))
+            }
+        }
+    }
+
+    if (showCameraPicker) {
+        val pickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showCameraPicker = false },
+            sheetState = pickerSheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Which exercise are you doing?",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(12.dp))
+                ExerciseType.entries.forEach { type ->
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            showCameraPicker = false
+                            onCameraClick(type)
+                        },
+                        label = { Text(type.displayLabel()) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    )
+                }
+                Spacer(Modifier.height(24.dp))
             }
         }
     }

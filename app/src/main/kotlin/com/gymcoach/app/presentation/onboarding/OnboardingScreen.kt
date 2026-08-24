@@ -51,6 +51,19 @@ import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 import com.gymcoach.app.ui.theme.WarmWhite
 
+private val GOALS = listOf(
+    "V-Taper" to "Wider back and shoulders with a lean waist",
+    "Build Muscle" to "Increase overall size and mass",
+    "Lose Fat" to "Burn fat while preserving lean muscle",
+    "Strength" to "Get as strong as possible on the big lifts"
+)
+
+private val EXPERIENCES = listOf(
+    "Beginner" to "New to structured training",
+    "Intermediate" to "Training consistently for months",
+    "Advanced" to "Years of focused training"
+)
+
 private val SEXES = listOf(
     "Male" to "Male",
     "Female" to "Female",

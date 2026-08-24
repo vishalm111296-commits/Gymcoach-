@@ -26,15 +26,17 @@ data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.WELCOME,
     val goal: String? = null,
     val experience: String? = null,
-    val sex: String? = null,
+    // Pre-selected defaults match the chips shown in PersonalInfoStep so the persisted
+    // profile is never silently empty when the user skips tapping these controls.
+    val sex: String? = "Male",
     val age: Float = 25f,
     val heightCm: Float = 175f,
     val weightKg: Float = 75f,
     val daysPerWeek: Int = 4,
     val sessionMinutes: Int = 60,
     val selectedEquipment: Set<String> = emptySet(),
-    val preferredSchedule: String? = null,
-    val limitationsPreferences: String? = null,
+    val preferredSchedule: String? = "Morning",
+    val limitationsPreferences: String? = "None",
     val isGenerating: Boolean = false,
     val error: String? = null
 ) {
@@ -112,7 +114,7 @@ class OnboardingViewModel @Inject constructor(
                     UserProfileEntity(
                         goal = goal,
                         experience = experience,
-                        sex = state.sex ?: "",
+                        sex = state.sex ?: "Male",
                         age = state.age.toInt(),
                         heightCm = state.heightCm.toDouble(),
                         weightKg = state.weightKg.toDouble(),
@@ -121,8 +123,8 @@ class OnboardingViewModel @Inject constructor(
                         equipmentType = equipmentType,
                         preferredExercises = "",
                         exercisesToAvoid = "",
-                        preferredSchedule = state.preferredSchedule ?: "",
-                        limitationsPreferences = state.limitationsPreferences ?: ""
+                        preferredSchedule = state.preferredSchedule ?: "Morning",
+                        limitationsPreferences = state.limitationsPreferences ?: "None"
                     )
                 )
                 val generated = programGenerator.generateProgram(

@@ -48,8 +48,9 @@ jobs:
 
       - name: Validate Project Configuration
         run: |
-          echo "=== Print Gradle version ==="
-          gradle --version | head -20
+          echo "=== Print Gradle wrapper version ==="
+          chmod +x ./gradlew
+          ./gradlew --version | head -20
 
           echo "=== Print Java version ==="
           java -version
@@ -85,7 +86,8 @@ jobs:
         run: |
           echo "=== Building Debug APK ==="
           echo "Starting debug build..."
-          gradle assembleDebug --stacktrace
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
           echo "Debug build completed successfully"
 
       - name: Verify Build Output
@@ -127,7 +129,7 @@ jobs:
           echo "📱 **APK Location**: ./app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_STEP_SUMMARY
           echo "🕐 **Build Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "🎯 **Workflow**: GitHub Actions CI/CD Pipeline" >> $GITHUB_STEP_SUMMARY
-          echo "📋 **Gradle Version**: $(gradle --version | head -1)" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Gradle Version**: $(./gradlew --version | head -1)" >> $GITHUB_STEP_SUMMARY
           echo "☕ **Java Version**: $(java -version 2>&1 | head -1 | cut -d' ' -f2)" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify if Build Failed
@@ -170,6 +172,7 @@ jobs:
       - name: Run Android Lint
         run: |
           echo "=== Running Android Lint ==="
+          chmod +x ./gradlew
           ./gradlew lintDebug --stacktrace
 
       - name: Upload Lint Reports

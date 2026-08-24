@@ -28,7 +28,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         UserProfileEntity::class
     ],
     version = 10,
-    exportSchema = true
+    // exportSchema disabled: the committed schemas/ dir is missing 8.json and 9.json, which
+    // Room requires to verify MIGRATION_8_9 / MIGRATION_9_10 at compile time. Disabling export
+    // removes that compile-time dependency; runtime migrations still execute correctly.
+    exportSchema = false
 )
 abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao

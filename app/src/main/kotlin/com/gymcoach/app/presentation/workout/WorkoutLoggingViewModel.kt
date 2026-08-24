@@ -239,6 +239,8 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun completeWorkout() {
         val workout = _currentWorkout.value?.workout ?: return
+        // Terminal-state guard: refuse to complete an already-completed or abandoned workout.
+        if (workout.completed) return
         workoutTimerJob?.cancel()
         restTimer.stop()
         val now = Instant.now()

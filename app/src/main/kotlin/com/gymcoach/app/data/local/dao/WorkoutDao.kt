@@ -15,7 +15,7 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id")
     fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
 
-    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -59,13 +59,14 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE id = :id")
     suspend fun getWorkoutSetById(id: Long): WorkoutSetEntity?
 
-    // Analytics queries
+    // Analytics queries — all filter on status = 'COMPLETED' for consistency
+    // with WorkoutStatus enum (migration 7→8 backfills status from completed).
     @Query("""
         SELECT MAX(ws.weight) 
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE we.exerciseId = :exerciseId AND w.completed = 1
+        WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
     """)
     suspend fun getPersonalRecordMax(exerciseId: Long): Double?
 
@@ -85,25 +86,25 @@ interface WorkoutDao {
         FROM workouts w
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.date
         ORDER BY w.date ASC
     """)
     suspend fun getAllWorkoutVolumes(): List<DateVolume>
 
-    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1")
+    @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED'")
     suspend fun getTotalWorkoutsCount(): Int
 
-    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :todayStart")
+    @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :todayStart")
     suspend fun getWorkoutsTodayCount(todayStart: Long): Int
 
-    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :weekStart")
+    @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :weekStart")
     suspend fun getWorkoutsThisWeekCount(weekStart: Long): Int
 
-    @Query("SELECT COUNT(*) FROM workouts WHERE completed = 1 AND date >= :monthStart")
+    @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :monthStart")
     suspend fun getWorkoutsThisMonthCount(monthStart: Long): Int
 
-    @Query("SELECT COUNT(*) FROM workout_exercises WHERE workoutId IN (SELECT id FROM workouts WHERE completed = 1)")
+    @Query("SELECT COUNT(*) FROM workout_exercises WHERE workoutId IN (SELECT id FROM workouts WHERE status = 'COMPLETED')")
     suspend fun getTotalExercisesCount(): Int
 
     @Query("""
@@ -111,7 +112,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration DESC
         LIMIT 1
@@ -123,23 +124,23 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration ASC
         LIMIT 1
     """)
     suspend fun getShortestWorkout(): WorkoutWithStats?
 
-    @Query("SELECT SUM(duration) FROM workouts WHERE completed = 1")
+    @Query("SELECT SUM(duration) FROM workouts WHERE status = 'COMPLETED'")
     suspend fun getTotalTrainingTimeSeconds(): Long?
 
-    @Query("SELECT COUNT(*) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.completed = 1")
+    @Query("SELECT COUNT(*) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
     suspend fun getTotalSetsCount(): Int
 
-    @Query("SELECT SUM(reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.completed = 1")
+    @Query("SELECT SUM(reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
     suspend fun getTotalRepsCount(): Int?
 
-    @Query("SELECT SUM(weight * reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.completed = 1")
+    @Query("SELECT SUM(weight * reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
     suspend fun getTotalVolumeSum(): Double?
 
     @Query("""
@@ -147,7 +148,7 @@ interface WorkoutDao {
         FROM workouts w
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY CAST(w.date / 2629746000 AS INTEGER)
         ORDER BY w.date ASC
     """)
@@ -162,24 +163,24 @@ interface WorkoutDao {
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
         INNER JOIN exercises e ON e.id = we.exerciseId
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY we.exerciseId
         ORDER BY totalReps DESC
         LIMIT 5
     """)
     suspend fun getTopMuscleGroups(): List<MuscleGroupStats>
 
-    @Query("SELECT COALESCE(AVG(weight * reps), 0.0) FROM workout_sets ws INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId INNER JOIN workouts w ON w.id = we.workoutId WHERE w.completed = 1")
+    @Query("SELECT COALESCE(AVG(weight * reps), 0.0) FROM workout_sets ws INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId INNER JOIN workouts w ON w.id = we.workoutId WHERE w.status = 'COMPLETED'")
     suspend fun getAverageWorkoutVolume(): Double
 
-    @Query("SELECT COALESCE(AVG(duration), 0.0) FROM workouts WHERE completed = 1")
+    @Query("SELECT COALESCE(AVG(duration), 0.0) FROM workouts WHERE status = 'COMPLETED'")
     suspend fun getAverageWorkoutDurationSeconds(): Long
 
     // Workout History queries
-    @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY date DESC")
+    @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date DESC")
     fun getCompletedWorkouts(): Flow<List<WorkoutEntity>>
 
-    @Query("SELECT * FROM workouts WHERE completed = 1 AND date >= :startDate AND date <= :endDate ORDER BY date DESC")
+    @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' AND date >= :startDate AND date <= :endDate ORDER BY date DESC")
     fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
 
     @Query("""
@@ -187,13 +188,13 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1 AND w.date >= :startDate AND w.date <= :endDate
+        WHERE w.status = 'COMPLETED' AND w.date >= :startDate AND w.date <= :endDate
         GROUP BY w.id
         ORDER BY w.date DESC
     """)
     fun getWorkoutsInDateRangeWithStats(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>>
 
-    @Query("SELECT * FROM workouts WHERE completed = 1 ORDER BY date ASC")
+    @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date ASC")
     fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 
     @Query("""
@@ -201,7 +202,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration DESC
     """)
@@ -212,7 +213,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration ASC
     """)
@@ -223,7 +224,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.date DESC
     """)
@@ -234,7 +235,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY volume DESC
     """)
@@ -245,7 +246,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY volume ASC
     """)
@@ -256,7 +257,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration DESC
     """)
@@ -267,7 +268,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1
+        WHERE w.status = 'COMPLETED'
         GROUP BY w.id
         ORDER BY w.duration ASC
     """)
@@ -278,7 +279,7 @@ interface WorkoutDao {
         FROM workouts w
         LEFT JOIN workout_exercises we ON we.workoutId = w.id
         LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id
-        WHERE w.completed = 1 AND (w.notes LIKE '%' || :query || '%' OR EXISTS (
+        WHERE w.status = 'COMPLETED' AND (w.notes LIKE '%' || :query || '%' OR EXISTS (
             SELECT 1 FROM workout_exercises we2
             INNER JOIN exercises e ON e.id = we2.exerciseId
             WHERE we2.workoutId = w.id AND e.name LIKE '%' || :query || '%'
@@ -288,7 +289,7 @@ interface WorkoutDao {
     """)
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
 
-    @Query("SELECT * FROM workouts WHERE completed = 0 ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM workouts WHERE status != 'COMPLETED' ORDER BY date DESC LIMIT 1")
     suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
 

@@ -1,6 +1,8 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
@@ -110,6 +112,18 @@ class WorkoutRepositoryImpl @Inject constructor(
         val entity = workoutDao.getWorkoutSetById(setId)
         entity?.let { workoutDao.deleteWorkoutSet(it) }
     }
+
+    // ─── Previous Performance ──────────────────────────────────────────
+
+    override suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance? {
+        return workoutDao.getLastPerformanceForExercise(exerciseId)
+    }
+
+    override suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData> {
+        return workoutDao.getLastSetsForExercise(exerciseId)
+    }
+
+    // ─── History ───────────────────────────────────────────────────────
 
     override fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>> {
         return workoutDao.getCompletedWorkoutsWithStats().map { entities ->

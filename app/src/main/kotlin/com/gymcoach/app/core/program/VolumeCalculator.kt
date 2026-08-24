@@ -1,8 +1,6 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.time.Instant
-import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -61,18 +59,32 @@ class VolumeCalculator @Inject constructor() {
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
     /**
+     * Enriched set with workout context needed for volume calculations.
+     * WorkoutSetEntity does not store exerciseId or date directly;
+     * these come from the parent WorkoutExercise and Workout tables.
+     */
+    data class SetWithContext(
+        val set: WorkoutSetEntity,
+        val exerciseId: Long,
+        val workoutDate: Long
+    )
+
+    /**
      * Calculate weekly volume per muscle group with ISO-week bucketing.
      * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     *
+     * @param completedSets sets enriched with exercise ID and workout date context
+     * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
      */
     fun calculateWeeklyVolume(
-        completedSets: List<WorkoutSetEntity>,
+        completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
 
-        for (set in completedSets.filter { it.completed && it.setType == 0 }) {
-            val weekKey = isoWeekKey(set.date)
-            val muscleAssignments = exerciseMuscleMap[set.exerciseId] ?: emptyList()
+        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+            val weekKey = isoWeekKey(ctx.workoutDate)
+            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
             for (assignment in muscleAssignments) {
                 val credits = assignment.role.credit
@@ -81,21 +93,22 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        // Average across weeks (or take most recent week if preferred)
         val avgWeekly = mutableMapOf<String, Double>()
         for ((_, weekMap) in weekBuckets) {
             for ((muscle, credits) in weekMap) {
                 avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
             }
         }
-        for ((muscle, total) in avgWeekly) {
-            avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+        if (weekBuckets.isNotEmpty()) {
+            for ((muscle, total) in avgWeekly) {
+                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+            }
         }
 
         val directSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
+            .filter { it.set.completed && it.set.setType == 0 }
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
@@ -104,9 +117,9 @@ class VolumeCalculator @Inject constructor() {
             .mapValues { (_, v) -> v.size }
 
         val indirectSetsByMuscle = completedSets
-            .filter { it.completed && it.setType == 0 }
+            .filter { it.set.completed && it.set.setType == 0 }
             .groupBy { it.exerciseId }
-            .flatMap { (exId, sets) ->
+            .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }

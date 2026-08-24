@@ -17,7 +17,7 @@ class VolumeCalculator @Inject constructor() {
         val status: VolumeStatus
     )
 
-    enum class VolumeStatus(val label: String, val ordinal: Int) {
+    enum class VolumeStatus(val label: String, val rank: Int) {
         INSUFFICIENT("Too low", 0),
         MODERATE("Moderate", 1),
         HIGH("High", 2),
@@ -146,8 +146,8 @@ class VolumeCalculator @Inject constructor() {
     }
 
     fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
-        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
+        val primary = (balance.latVolume.status.rank + balance.lateralDeltVolume.status.rank) / 2.0
+        val secondary = (balance.rearDeltVolume.status.rank + balance.upperChestVolume.status.rank + balance.upperBackVolume.status.rank) / 3.0
         val text = when {
             primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
             primary >= 2.0 -> "Moderate V-taper focus"

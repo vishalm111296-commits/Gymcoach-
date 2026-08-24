@@ -1,5 +1,7 @@
 package com.gymcoach.app.presentation.history
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,6 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,10 +43,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,6 +65,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -80,8 +89,6 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = WorkoutHistoryDetailUiState(isLoading = true)
             try {
-                // Use .first() to wait for the actual emission instead of .stateIn().value
-                // which would return the initial null value immediately.
                 val workout = workoutRepository.getWorkoutWithDetails(workoutId).first()
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
@@ -130,6 +137,7 @@ fun WorkoutHistoryDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
@@ -145,6 +153,14 @@ fun WorkoutHistoryDetailScreen(
                     }
                 },
                 actions = {
+                    // Share button
+                    IconButton(onClick = {
+                        state.workout?.let { workout ->
+                            shareWorkoutSummary(context, workout)
+                        }
+                    }) {
+                        Icon(Icons.Filled.Share, contentDescription = "Share")
+                    }
                     IconButton(onClick = { onEditClick(workoutId) }) {
                         Icon(Icons.Filled.Edit, contentDescription = "Edit")
                     }
@@ -196,6 +212,34 @@ fun WorkoutHistoryDetailScreen(
 
                         Spacer(Modifier.height(16.dp))
 
+                        // Workout Summary Card
+                        WorkoutSummaryCard(workout = workout)
+
+                        Spacer(Modifier.height(16.dp))
+
+                        // Muscle Group Breakdown
+                        SectionHeader("Muscle Groups")
+                        Spacer(Modifier.height(8.dp))
+                        val muscleBreakdown = calculateMuscleBreakdown(workout)
+                        if (muscleBreakdown.isNotEmpty()) {
+                            muscleBreakdown.forEach { (muscle, data) ->
+                                MuscleGroupRow(
+                                    muscleName = muscle,
+                                    sets = data.sets,
+                                    totalVolume = data.volume,
+                                    totalReps = data.reps
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "No muscle data available",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
                         // Exercises
                         SectionHeader("Exercises")
                         Spacer(Modifier.height(8.dp))
@@ -231,6 +275,213 @@ fun WorkoutHistoryDetailScreen(
                 }
             }
         )
+    }
+}
+
+// --- Share ---
+
+private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
+    val w = workout.workout
+    val date = formatDate(w.date)
+    val duration = formatDuration(w.duration)
+
+    // Calculate totals
+    var totalSets = 0
+    var totalReps = 0
+    var totalVolume = 0.0
+    val muscleGroups = linkedMapOf<String, Int>()
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        totalSets += doneSets.size
+        totalReps += doneSets.sumOf { it.reps }
+        totalVolume += doneSets.sumOf { it.weight * it.reps }
+        val muscle = entry.exercise.muscleGroup
+        muscleGroups[muscle] = (muscleGroups[muscle] ?: 0) + doneSets.size
+    }
+
+    val sb = StringBuilder()
+    sb.appendLine("\uD83C\uDFCB\uFE0F Workout Summary")
+    sb.appendLine("Date: $date")
+    sb.appendLine("Duration: $duration")
+    sb.appendLine("Total Volume: %.1f kg".format(totalVolume))
+    sb.appendLine("Sets: $totalSets | Reps: $totalReps")
+    sb.appendLine()
+
+    // Muscle groups
+    if (muscleGroups.isNotEmpty()) {
+        sb.appendLine("\uD83C\uDFAF Muscles Hit:")
+        muscleGroups.entries.sortedByDescending { it.value }.forEach { (muscle, sets) ->
+            sb.appendLine("  $muscle: $sets sets")
+        }
+        sb.appendLine()
+    }
+
+    // Exercises
+    sb.appendLine("\uD83D\uDCAA Exercises:")
+    workout.exercises.forEach { entry ->
+        sb.appendLine("  ${entry.exercise.name}")
+        entry.sets.sortedBy { it.setNumber }.forEach { set ->
+            if (set.completed) {
+                sb.appendLine("    Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps (RPE ${set.rpe})")
+            }
+        }
+    }
+
+    if (w.notes.isNotBlank()) {
+        sb.appendLine()
+        sb.appendLine("\uD83D\uDCDD Notes: ${w.notes}")
+    }
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, sb.toString())
+        putExtra(Intent.EXTRA_SUBJECT, "My Workout - $date")
+    }
+    context.startActivity(Intent.createChooser(intent, "Share Workout"))
+}
+
+// --- Muscle Breakdown ---
+
+private data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
+
+private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
+    val breakdown = linkedMapOf<String, MuscleData>()
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        if (doneSets.isEmpty()) return@forEach
+
+        val muscle = entry.exercise.muscleGroup.uppercase()
+        val data = breakdown.getOrPut(muscle) { MuscleData() }
+        data.sets += doneSets.size
+        data.reps += doneSets.sumOf { it.reps }
+        data.volume += doneSets.sumOf { it.weight * it.reps }
+    }
+
+    return breakdown.entries
+        .sortedByDescending { it.value.sets }
+        .associate { it.key to it.value }
+}
+
+// --- UI Components ---
+
+@Composable
+fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
+    val w = workout.workout
+    var totalSets = 0
+    var totalReps = 0
+    var totalVolume = 0.0
+    val exerciseCount = workout.exercises.size
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        totalSets += doneSets.size
+        totalReps += doneSets.sumOf { it.reps }
+        totalVolume += doneSets.sumOf { it.weight * it.reps }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Workout Summary",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryStatItem(label = "Duration", value = formatDuration(w.duration))
+                SummaryStatItem(label = "Exercises", value = "$exerciseCount")
+                SummaryStatItem(label = "Sets", value = "$totalSets")
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryStatItem(label = "Reps", value = "$totalReps")
+                SummaryStatItem(label = "Volume", value = "%.1f kg".format(totalVolume))
+                SummaryStatItem(label = "Est. Calories", value = "%.0f".format(totalVolume * 0.05))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryStatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
+private fun MuscleGroupRow(
+    muscleName: String,
+    sets: Int,
+    totalVolume: Double,
+    totalReps: Int
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = muscleName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(0.4f)
+            )
+            Text(
+                text = "$sets sets",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(0.2f)
+            )
+            Text(
+                text = "$totalReps reps",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(0.2f)
+            )
+            Text(
+                text = "%.0f kg".format(totalVolume),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(0.2f)
+            )
+        }
     }
 }
 
@@ -355,19 +606,16 @@ fun SetRow(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.2f)
         )
-        // RPE
         Text(
             text = "RPE ${"%.1f".format(rpe)}",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.15f)
         )
-        // Rest
         Text(
             text = "${restSeconds}s",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.15f)
         )
-        // Completed indicator
         if (completed) {
             Text(
                 text = "✓",

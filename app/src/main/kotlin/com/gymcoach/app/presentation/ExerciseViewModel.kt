@@ -39,18 +39,23 @@ class ExerciseViewModel @Inject constructor(
     ) { q, cat, diff, equip ->
         FilterState(q, cat, diff, equip)
     }.flatMapLatest { filters ->
-        val catFilter = if (filters.category == "All") null else filters.category
-        val diffFilter = if (filters.difficulty == "All") null else filters.difficulty
-        val equipFilter = if (filters.equipment == "All") null else filters.equipment
+        // Use FTS4 full-text search for text queries, fall back to filtered list for empty queries
+        val baseFlow = if (filters.query.isNotBlank()) {
+            repository.searchExercises(filters.query)
+        } else {
+            val catFilter = if (filters.category == "All") null else filters.category
+            val diffFilter = if (filters.difficulty == "All") null else filters.difficulty
+            val equipFilter = if (filters.equipment == "All") null else filters.equipment
+            repository.getFilteredExercises(catFilter, diffFilter, equipFilter)
+        }
         
-        repository.getFilteredExercises(catFilter, diffFilter, equipFilter).map { list ->
-            if (filters.query.isBlank()) list
-            else list.filter { 
-                it.name.contains(filters.query, ignoreCase = true) || 
-                it.muscleGroup.contains(filters.query, ignoreCase = true) ||
-                it.equipment.contains(filters.query, ignoreCase = true) ||
-                it.category.contains(filters.query, ignoreCase = true) ||
-                it.tags.contains(filters.query, ignoreCase = true)
+        // Apply additional filters on top of FTS results when search is active
+        baseFlow.map { list ->
+            list.filter { exercise ->
+                val matchesCategory = filters.category == "All" || exercise.muscleGroup.equals(filters.category, ignoreCase = true)
+                val matchesDifficulty = filters.difficulty == "All" || exercise.difficulty.equals(filters.difficulty, ignoreCase = true)
+                val matchesEquipment = filters.equipment == "All" || exercise.equipment.contains(filters.equipment, ignoreCase = true)
+                matchesCategory && matchesDifficulty && matchesEquipment
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

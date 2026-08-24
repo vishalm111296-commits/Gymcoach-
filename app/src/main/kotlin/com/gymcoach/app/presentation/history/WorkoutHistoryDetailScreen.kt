@@ -35,8 +35,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,10 +53,11 @@ import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.PersonalRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,7 +80,9 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = WorkoutHistoryDetailUiState(isLoading = true)
             try {
-                val workout = workoutRepository.getWorkoutWithDetails(workoutId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null).value
+                // Use .first() to wait for the actual emission instead of .stateIn().value
+                // which would return the initial null value immediately.
+                val workout = workoutRepository.getWorkoutWithDetails(workoutId).first()
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
                     workout = workout,
@@ -211,7 +212,7 @@ fun WorkoutHistoryDetailScreen(
     }
 
     // Delete confirmation dialog
-    if (viewModel.deleteTarget.collectAsState().value != null) {
+    if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelDelete() },
             title = { Text("Delete Workout") },
@@ -408,4 +409,3 @@ fun formatDuration(seconds: Long): String {
     val minutes = (seconds % 3600) / 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
-

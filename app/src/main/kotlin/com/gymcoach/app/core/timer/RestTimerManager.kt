@@ -17,6 +17,32 @@ data class RestTimerState(
     val totalDuration: Int = 0
 )
 
+/** Common rest duration presets (seconds). */
+object RestPresets {
+    val SHORT = 30       // Isolation exercises
+    val MEDIUM = 60      // Moderate compounds
+    val STANDARD = 90    // Heavy compounds
+    val LONG = 120       // Squats, deadlifts
+    val VERY_LONG = 180  // Max effort
+
+    /** Returns the recommended rest time for a given exercise set type and RPE. */
+    fun recommended(setType: com.gymcoach.app.domain.model.SetType, rpe: Double, setsCompleted: Int): Int {
+        return when (setType) {
+            com.gymcoach.app.domain.model.SetType.WARMUP -> 60
+            com.gymcoach.app.domain.model.SetType.DROP -> 30
+            com.gymcoach.app.domain.model.SetType.FAILURE -> 120
+            com.gymcoach.app.domain.model.SetType.NORMAL -> {
+                when {
+                    rpe >= 9.0 -> 180     // Near failure → long rest
+                    rpe >= 7.5 -> 120     // Heavy → long rest
+                    rpe >= 6.0 -> 90      // Moderate → standard rest
+                    else -> 60            // Light → short rest
+                }
+            }
+        }
+    }
+}
+
 @Singleton
 class RestTimerManager @Inject constructor() {
 
@@ -32,6 +58,11 @@ class RestTimerManager @Inject constructor() {
         _state.value = RestTimerState(timeRemaining = seconds, isRunning = true, totalDuration = seconds)
 
         startTicking(scope)
+    }
+
+    /** Restart the timer with a new duration (e.g., when user taps a preset). */
+    fun restart(seconds: Int, scope: CoroutineScope) {
+        start(seconds, scope)
     }
 
     private fun startTicking(scope: CoroutineScope) {
@@ -67,6 +98,6 @@ class RestTimerManager @Inject constructor() {
     fun stop() {
         tickJob?.cancel()
         tickJob = null
-        _state.value = _state.value.copy(timeRemaining = 0, isRunning = false, isPaused = false, totalDuration = 0)
+        _state.value = RestTimerState()
     }
 }

@@ -8,6 +8,10 @@ import org.junit.Test
 
 /**
  * Tests for body measurement entities and trend calculations.
+ *
+ * Note: optional measurement columns are Double? by design (a user may log
+ * weight without waist). Assertions use !! after construction since these
+ * tests always supply explicit values.
  */
 class BodyMeasurementTest {
 
@@ -32,19 +36,19 @@ class BodyMeasurementTest {
     @Test
     fun `BodyMeasurementEntity stores waist correctly`() {
         val entity = BodyMeasurementEntity(waistCm = 78.3)
-        assertEquals(78.3, entity.waistCm, 0.01)
+        assertEquals(78.3, entity.waistCm!!, 0.01)
     }
 
     @Test
     fun `BodyMeasurementEntity stores chest correctly`() {
         val entity = BodyMeasurementEntity(chestCm = 102.0)
-        assertEquals(102.0, entity.chestCm, 0.01)
+        assertEquals(102.0, entity.chestCm!!, 0.01)
     }
 
     @Test
     fun `BodyMeasurementEntity stores body fat correctly`() {
         val entity = BodyMeasurementEntity(bodyFatPct = 15.5)
-        assertEquals(15.5, entity.bodyFatPct, 0.01)
+        assertEquals(15.5, entity.bodyFatPct!!, 0.01)
     }
 
     @Test
@@ -71,17 +75,17 @@ class BodyMeasurementTest {
             notes = "Full measurements"
         )
         assertEquals(80.0, entity.weightKg, 0.01)
-        assertEquals(14.0, entity.bodyFatPct, 0.01)
-        assertEquals(100.0, entity.chestCm, 0.01)
-        assertEquals(76.0, entity.waistCm, 0.01)
-        assertEquals(95.0, entity.hipsCm, 0.01)
-        assertEquals(120.0, entity.shouldersCm, 0.01)
-        assertEquals(38.0, entity.leftArmCm, 0.01)
-        assertEquals(38.5, entity.rightArmCm, 0.01)
-        assertEquals(60.0, entity.leftThighCm, 0.01)
-        assertEquals(59.5, entity.rightThighCm, 0.01)
-        assertEquals(40.0, entity.leftCalfCm, 0.01)
-        assertEquals(39.5, entity.rightCalfCm, 0.01)
+        assertEquals(14.0, entity.bodyFatPct!!, 0.01)
+        assertEquals(100.0, entity.chestCm!!, 0.01)
+        assertEquals(76.0, entity.waistCm!!, 0.01)
+        assertEquals(95.0, entity.hipsCm!!, 0.01)
+        assertEquals(120.0, entity.shouldersCm!!, 0.01)
+        assertEquals(38.0, entity.leftArmCm!!, 0.01)
+        assertEquals(38.5, entity.rightArmCm!!, 0.01)
+        assertEquals(60.0, entity.leftThighCm!!, 0.01)
+        assertEquals(59.5, entity.rightThighCm!!, 0.01)
+        assertEquals(40.0, entity.leftCalfCm!!, 0.01)
+        assertEquals(39.5, entity.rightCalfCm!!, 0.01)
     }
 
     @Test
@@ -114,10 +118,10 @@ class BodyMeasurementTest {
             latestChest = 102.0,
             latestBodyFat = 15.0
         )
-        assertEquals(82.5, state.latestWeight, 0.01)
-        assertEquals(78.0, state.latestWaist, 0.01)
-        assertEquals(102.0, state.latestChest, 0.01)
-        assertEquals(15.0, state.latestBodyFat, 0.01)
+        assertEquals(82.5, state.latestWeight!!, 0.01)
+        assertEquals(78.0, state.latestWaist!!, 0.01)
+        assertEquals(102.0, state.latestChest!!, 0.01)
+        assertEquals(15.0, state.latestBodyFat!!, 0.01)
     }
 
     @Test

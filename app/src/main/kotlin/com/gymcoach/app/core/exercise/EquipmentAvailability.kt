@@ -7,34 +7,34 @@ import javax.inject.Singleton
  * Equipment availability by access level.
  * Equipment names MUST match ExerciseEntity.equipment values in the database seed data.
  *
- * Database seed equipment values:
- * "Barbell", "Dumbbell", "Bodyweight", "Cable", "Machine"
+ * Database seed equipment keys (lowercase):
+ * "dumbbell", "bench", "bodyweight", "cable", "machine", "kettlebell", "barbell", etc.
  *
- * Compound equipment uses "+" separator: "Dumbbell + Flat Bench"
+ * Compound equipment uses "+" separator: "dumbbell+bench"
  */
 @Singleton
 class EquipmentAvailability @Inject constructor() {
 
     private val GYM_EQUIPMENT = setOf(
-        "Barbell", "Dumbbell", "Kettlebell", "EZ Bar", "Trap Bar",
-        "Cable", "Smith Machine", "Leg Press", "Hack Squat",
-        "Leg Extension", "Leg Curl", "Pec Deck", "Lat Pulldown",
-        "Seated Row", "Chest Press Machine", "Shoulder Press Machine",
-        "Dip Station", "Pull-up Bar", "Bench", "Incline Bench",
-        "Decline Bench", "Preacher Bench", "Cable Crossover",
-        "Functional Trainer", "Landmine", "Safety Squat Bar",
-        "Swiss Bar", "Bulgarian Bag", "Battle Rope", "Sled",
-        "Bodyweight"
+        "barbell", "dumbbell", "kettlebell", "ez bar", "trap bar",
+        "cable", "smith machine", "leg press", "hack squat",
+        "leg extension", "leg curl", "pec deck", "lat pulldown",
+        "seated row", "chest press machine", "shoulder press machine",
+        "dip station", "pull-up bar", "bench", "incline bench",
+        "decline bench", "preacher bench", "cable crossover",
+        "functional trainer", "landmine", "safety squat bar",
+        "swiss bar", "bulgarian bag", "battle rope", "sled",
+        "bodyweight"
     )
 
     private val HOME_EQUIPMENT = setOf(
-        "Dumbbell", "Kettlebell", "Resistance Band", "Bodyweight",
-        "Pull-up Bar", "Dip Station", "Bench", "Floor",
-        "Adjustable Dumbbell", "Doorway Pull-up Bar",
-        "Suspension Trainer", "Foam Roller", "Flat Bench"
+        "dumbbell", "kettlebell", "resistance band", "bodyweight",
+        "pull-up bar", "dip station", "bench", "floor",
+        "adjustable dumbbell", "doorway pull-up bar",
+        "suspension trainer", "foam roller"
     )
 
-    private val CUSTOM_EQUIPMENT = setOf("Bodyweight")
+    private val CUSTOM_EQUIPMENT = setOf("bodyweight")
 
     fun getAvailableEquipment(equipmentType: String): Set<String> {
         return when (equipmentType.lowercase()) {
@@ -47,7 +47,7 @@ class EquipmentAvailability @Inject constructor() {
 
     fun isAvailable(equipment: String, equipmentType: String): Boolean {
         val available = getAvailableEquipment(equipmentType)
-        return equipment in available || equipment == "Bodyweight"
+        return equipment in available || equipment == "bodyweight"
     }
 
     /**
@@ -55,13 +55,13 @@ class EquipmentAvailability @Inject constructor() {
      * used by ProgressionEngine to switch from weight progression to rep/set
      * progression when load cannot increase further.
      *
-     * Compound requirements like "Dumbbell + Flat Bench" are satisfied only if
+     * Compound requirements like "dumbbell+bench" are satisfied only if
      * every token is available.
      */
     fun isLimited(equipment: String, equipmentType: String): Boolean {
-        if (equipment.isBlank() || equipment == "Bodyweight") return false
+        if (equipment.isBlank() || equipment == "bodyweight") return false
         return equipment.split("+")
-            .map { it.trim() }
+            .map { it.trim().lowercase() }
             .any { !isAvailable(it, equipmentType) }
     }
 }

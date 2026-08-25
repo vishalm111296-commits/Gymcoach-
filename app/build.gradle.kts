@@ -5,11 +5,15 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
-// Export Room schemas at build time - required for MigrationTestHelper-based
-// migration tests. v1..v7 JSONs predate this setting and cannot be generated
-// retroactively; 8.json onward will appear under app/schemas.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Release signing: reads keystore path + passwords from local.properties
+// (git-ignored) or environment variables (CI).
+val keystorePropertiesFile = rootProject.file("local.properties")
+val keystoreProperties = java.util.Properties().apply {
+    if (keystorePropertiesFile.exists()) load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -20,8 +24,8 @@ android {
         applicationId = "com.gymcoach.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -39,13 +43,34 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            // Priority: environment variables (CI) > local.properties (dev)
+            storeFile = file(
+                System.getenv("KEYSTORE_PATH")
+                    ?: keystoreProperties.getProperty("KEYSTORE_PATH", "keystore/release.jks")
+            )
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+                ?: keystoreProperties.getProperty("KEYSTORE_PASSWORD", "")
+            keyAlias = System.getenv("KEY_ALIAS")
+                ?: keystoreProperties.getProperty("KEY_ALIAS", "gymcoach")
+            keyPassword = System.getenv("KEY_PASSWORD")
+                ?: keystoreProperties.getProperty("KEY_PASSWORD", "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 

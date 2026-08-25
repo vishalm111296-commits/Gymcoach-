@@ -4,6 +4,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -75,14 +76,20 @@ class RestTimerManagerTest {
     @Test
     fun `tick decrements timeRemaining`() = testScope.runTest {
         manager.start(5, this)
-        advanceTimeBy(3000L) // 3 seconds
+        // advanceTimeBy deliberately does not execute tasks scheduled exactly AT
+        // the boundary instant; runCurrent() flushes the third 1s tick at t=3000.
+        advanceTimeBy(3000L)
+        runCurrent()
         assertEquals(2, manager.state.value.timeRemaining)
     }
 
     @Test
     fun `timer completes when timeRemaining reaches 0`() = testScope.runTest {
         manager.start(2, this)
-        advanceTimeBy(2000L) // 2 seconds
+        // Same boundary semantics as above: the terminal decrement fires at
+        // t=2000 exactly, so runCurrent() is required to observe completion.
+        advanceTimeBy(2000L)
+        runCurrent()
         assertFalse(manager.state.value.isRunning)
         assertEquals(0, manager.state.value.timeRemaining)
     }

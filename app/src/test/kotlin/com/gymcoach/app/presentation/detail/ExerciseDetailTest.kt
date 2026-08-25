@@ -89,7 +89,7 @@ class ExerciseDetailTest {
 
     @Test
     fun `preservation score calculation matches expected logic`() {
-        // Simulate the preservation score calculation from SubstitutionEngine
+        // Replicates SubstitutionEngine.calculatePreservationScore exactly.
         val original = createTestExercise(
             muscleGroup = "Chest",
             equipment = "Barbell",
@@ -120,9 +120,11 @@ class ExerciseDetailTest {
             tags = "compound chest"
         )
         val dumbbellScore = calculatePreservationScore(original, dumbbellSub)
-        assertEquals(80, dumbbellScore) // 40+20+0+10+10 = 80
+        assertEquals(80, dumbbellScore) // 40+0+15+10+10 = 80 (category still matches)
 
-        // Different muscle group
+        // Different muscle group: no muscle points, but category, equipment,
+        // difficulty all match and BOTH tags contain "compound" - the engine
+        // awards the movement-pattern bonus independently of muscle match.
         val differentSub = createTestExercise(
             name = "Squat",
             muscleGroup = "Legs",
@@ -132,7 +134,7 @@ class ExerciseDetailTest {
             tags = "compound legs"
         )
         val differentScore = calculatePreservationScore(original, differentSub)
-        assertEquals(45, differentScore) // 0+20+15+10+0 = 45
+        assertEquals(55, differentScore) // 0+20+15+10+10 = 55
     }
 
     @Test
@@ -167,7 +169,14 @@ class ExerciseDetailTest {
 
     @Test
     fun `exercise with vtaper scores shows non-empty`() {
-        val exercise = createTestExercise(vtaperUpperChest = 8, vtaperLat = 3)
+        // Explicitly zero the deltas: the helper defaults them to 1, which would
+        // leak into the >0 filter and inflate the expected count to 4.
+        val exercise = createTestExercise(
+            vtaperLat = 3,
+            vtaperLateralDelt = 0,
+            vtaperUpperChest = 8,
+            vtaperRearDelt = 0
+        )
         val scores = listOf(
             "Lats" to exercise.vtaperLat,
             "Lateral Delt" to exercise.vtaperLateralDelt,
@@ -179,6 +188,7 @@ class ExerciseDetailTest {
     }
 
     // Replicate SubstitutionEngine's preservation score logic for testing
+    // (kept byte-equivalent with core/exercise/SubstitutionEngine.kt).
     private fun calculatePreservationScore(original: Exercise, substitute: Exercise): Int {
         var score = 0
         if (original.muscleGroup.equals(substitute.muscleGroup, ignoreCase = true)) score += 40

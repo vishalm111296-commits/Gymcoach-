@@ -144,7 +144,8 @@ class ProgramGenerator @Inject constructor(
                 .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
-                    compareByDescending<ExerciseEntity> { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
+                    compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
+                        .thenByDescending { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
                         .thenBy { difficultyOrder(it.difficulty) }
                 )
                 .take(2)
@@ -166,6 +167,26 @@ class ProgramGenerator @Inject constructor(
         }
 
         return ProgramDay(dayNum, name, muscles, selected)
+    }
+
+    /**
+     * V-taper relevance of an exercise TO the specific muscle slot being filled.
+     *
+     * Ranking candidates by their aggregate V-taper total buried specialists:
+     * on a mixed Upper day processed Back-first, a Lat=9 row out-aggregated the
+     * Lateral Deltoid=10 lateral raise, so the deltoid slot never led with its
+     * best exercise. Selection ranks by relevance to the slot; the aggregate
+     * serves only as a tiebreaker, with difficulty last (beginner-friendly).
+     */
+    private fun relevantVtaperScore(exercise: ExerciseEntity, targetMuscle: String): Int = when {
+        targetMuscle.contains("Back", ignoreCase = true) ||
+            targetMuscle.contains("Lat", ignoreCase = true) -> exercise.vtaperLat
+        targetMuscle.contains("Lateral Deltoid", ignoreCase = true) -> exercise.vtaperLateralDelt
+        targetMuscle.contains("Rear Deltoid", ignoreCase = true) -> exercise.vtaperRearDelt
+        // Chest slots rank by upper-chest emphasis: that is the V-taper-relevant
+        // clavicular region this program is built around.
+        targetMuscle.contains("Chest", ignoreCase = true) -> exercise.vtaperUpperChest
+        else -> 0 // Biceps/Triceps/legs/Core have no dedicated V-taper axis
     }
 
     /** Sort difficulty: Beginner < Intermediate < Advanced */

@@ -1,10 +1,11 @@
 package com.gymcoach.app.presentation.history
 
 import com.gymcoach.app.domain.model.Exercise
-import com.gymcoach.app.domain.model.ExerciseSet
 import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
+import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
+import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import java.time.Instant
 import org.junit.Assert.assertEquals
@@ -13,6 +14,10 @@ import org.junit.Test
 
 /**
  * Tests for workout detail utilities and summary generation.
+ *
+ * Exercises the production aggregation helpers directly:
+ * - formatDuration / formatDate (public top-level in this package)
+ * - calculateMuscleBreakdown + MuscleData (internal, same module)
  */
 class WorkoutHistoryDetailTest {
 
@@ -20,10 +25,11 @@ class WorkoutHistoryDetailTest {
         val workout = Workout(
             id = 1L,
             date = Instant.parse("2026-08-24T10:00:00Z"),
+            startTime = Instant.parse("2026-08-24T10:00:00Z"),
+            endTime = Instant.parse("2026-08-24T11:00:00Z"),
             duration = 3600L, // 1 hour
             notes = "Leg Day",
-            completed = true,
-            programId = null
+            completed = true
         )
 
         val benchPress = Exercise(
@@ -32,8 +38,8 @@ class WorkoutHistoryDetailTest {
             muscleGroup = "Chest",
             equipment = "Barbell",
             description = "Flat barbell bench press",
-            difficulty = 3,
-            vtaper_upper_chest = 8.0
+            difficulty = "Intermediate",
+            vtaperUpperChest = 8
         )
 
         val squat = Exercise(
@@ -42,26 +48,34 @@ class WorkoutHistoryDetailTest {
             muscleGroup = "Quads",
             equipment = "Barbell",
             description = "Back squat",
-            difficulty = 4,
-            vtaper_lateral_delt = 1.0
+            difficulty = "Advanced",
+            vtaperLateralDelt = 1
         )
 
         val benchSets = listOf(
-            ExerciseSet(id = 1L, workoutExerciseId = 1L, setNumber = 1, weight = 80.0, reps = 8, rpe = 7.0, restSeconds = 90, completed = true, setType = SetType.NORMAL),
-            ExerciseSet(id = 2L, workoutExerciseId = 1L, setNumber = 2, weight = 85.0, reps = 6, rpe = 8.0, restSeconds = 120, completed = true, setType = SetType.NORMAL),
-            ExerciseSet(id = 3L, workoutExerciseId = 1L, setNumber = 3, weight = 85.0, reps = 5, rpe = 9.0, restSeconds = 120, completed = true, setType = SetType.NORMAL)
+            WorkoutSet(id = 1L, workoutExerciseId = 1L, setNumber = 1, weight = 80.0, reps = 8, rpe = 7.0, restSeconds = 90, completed = true, setType = SetType.NORMAL),
+            WorkoutSet(id = 2L, workoutExerciseId = 1L, setNumber = 2, weight = 85.0, reps = 6, rpe = 8.0, restSeconds = 120, completed = true, setType = SetType.NORMAL),
+            WorkoutSet(id = 3L, workoutExerciseId = 1L, setNumber = 3, weight = 85.0, reps = 5, rpe = 9.0, restSeconds = 120, completed = true, setType = SetType.NORMAL)
         )
 
         val squatSets = listOf(
-            ExerciseSet(id = 4L, workoutExerciseId = 2L, setNumber = 1, weight = 100.0, reps = 6, rpe = 8.0, restSeconds = 180, completed = true, setType = SetType.NORMAL),
-            ExerciseSet(id = 5L, workoutExerciseId = 2L, setNumber = 2, weight = 105.0, reps = 5, rpe = 9.0, restSeconds = 180, completed = true, setType = SetType.NORMAL)
+            WorkoutSet(id = 4L, workoutExerciseId = 2L, setNumber = 1, weight = 100.0, reps = 6, rpe = 8.0, restSeconds = 180, completed = true, setType = SetType.NORMAL),
+            WorkoutSet(id = 5L, workoutExerciseId = 2L, setNumber = 2, weight = 105.0, reps = 5, rpe = 9.0, restSeconds = 180, completed = true, setType = SetType.NORMAL)
         )
 
         return WorkoutWithDetails(
             workout = workout,
             exercises = listOf(
-                WorkoutExerciseWithSets(exercise = benchPress, sets = benchSets),
-                WorkoutExerciseWithSets(exercise = squat, sets = squatSets)
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 1L, exerciseId = 1L, orderIndex = 0),
+                    exercise = benchPress,
+                    sets = benchSets
+                ),
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 2L, workoutId = 1L, exerciseId = 2L, orderIndex = 1),
+                    exercise = squat,
+                    sets = squatSets
+                )
             )
         )
     }
@@ -146,7 +160,6 @@ class WorkoutHistoryDetailTest {
     fun `shareWorkoutSummary generates expected format`() {
         // Test the share text generation (unit test for the formatting logic)
         val workout = createTestWorkout()
-        val w = workout.workout
 
         var totalSets = 0
         var totalReps = 0

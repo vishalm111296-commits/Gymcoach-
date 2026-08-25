@@ -22,5 +22,7 @@ data class UserProfileEntity(
     @ColumnInfo(name = "equipment_type", defaultValue = "gym") val equipmentType: String = "gym",
     @ColumnInfo(name = "preferred_exercises", defaultValue = "") val preferredExercises: String = "",
     @ColumnInfo(name = "exercises_to_avoid", defaultValue = "") val exercisesToAvoid: String = "",
+    @ColumnInfo(name = "preferred_schedule", defaultValue = "") val preferredSchedule: String = "",
+    @ColumnInfo(name = "limitations_preferences", defaultValue = "") val limitationsPreferences: String = "",
     @ColumnInfo(name = "created_at", defaultValue = "0") val createdAt: Long = System.currentTimeMillis()
 )

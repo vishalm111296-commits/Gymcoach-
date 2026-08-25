@@ -27,7 +27,7 @@ import androidx.room.RoomDatabase
         UserProfileEntity::class,
         ReadinessEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -387,6 +387,16 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 10 -> 11: Add preferred_schedule and limitations_preferences to user_profiles table.
+         */
+        val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `limitations_preferences` TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
@@ -396,7 +406,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                    MIGRATION_9_10
+                    MIGRATION_9_10, MIGRATION_10_11
                 )
                 .fallbackToDestructiveMigration()
                 .build()

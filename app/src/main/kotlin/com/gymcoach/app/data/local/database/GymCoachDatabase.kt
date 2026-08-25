@@ -283,6 +283,31 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 // v7 added external-content FTS4 index over exercises for search
                 database.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `exercise_fts` USING FTS4(`name` TEXT NOT NULL, `description` TEXT NOT NULL, `muscleGroup` TEXT NOT NULL, `equipment` TEXT NOT NULL, `difficulty` TEXT NOT NULL, `category` TEXT NOT NULL, content=`exercises`)")
                 database.execSQL("INSERT INTO exercise_fts(exercise_fts) VALUES('rebuild')")
+
+                // Sync triggers to keep exercise_fts consistent with exercises table
+                database.execSQL("""
+                    CREATE TRIGGER IF NOT EXISTS exercises_ai AFTER INSERT ON exercises BEGIN
+                        INSERT INTO exercise_fts(rowid, name, description, muscleGroup, equipment, difficulty, category)
+                        VALUES (new.id, new.name, new.description, new.muscleGroup, new.equipment, new.difficulty, new.category);
+                    END
+                """)
+                database.execSQL("""
+                    CREATE TRIGGER IF NOT EXISTS exercises_au AFTER UPDATE ON exercises BEGIN
+                        UPDATE exercise_fts SET
+                            name = new.name,
+                            description = new.description,
+                            muscleGroup = new.muscleGroup,
+                            equipment = new.equipment,
+                            difficulty = new.difficulty,
+                            category = new.category
+                        WHERE rowid = new.id;
+                    END
+                """)
+                database.execSQL("""
+                    CREATE TRIGGER IF NOT EXISTS exercises_ad AFTER DELETE ON exercises BEGIN
+                        DELETE FROM exercise_fts WHERE rowid = old.id;
+                    END
+                """)
             }
         }
 

@@ -2,11 +2,14 @@ package com.gymcoach.app.presentation.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.progression.ProgressionEngine
+import com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommendation
 import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
 import com.gymcoach.app.data.local.dao.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
+import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
@@ -20,7 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.Instant
 import javax.inject.Inject
@@ -29,7 +33,8 @@ import javax.inject.Inject
 class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
-    private val restTimer: RestTimerManager
+    private val restTimer: RestTimerManager,
+    private val progressionEngine: ProgressionEngine
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
@@ -63,6 +68,10 @@ class WorkoutLoggingViewModel @Inject constructor(
     // Previous performance: exerciseId -> last performance summary
     private val _lastPerformanceSummary = MutableStateFlow<Map<Long, LastPerformance>>(emptyMap())
     val lastPerformanceSummary: StateFlow<Map<Long, LastPerformance>> = _lastPerformanceSummary.asStateFlow()
+
+    // Progression recommendations: exerciseId -> recommendation
+    private val _progressionRecommendations = MutableStateFlow<Map<Long, ProgressionRecommendation>>(emptyMap())
+    val progressionRecommendations: StateFlow<Map<Long, ProgressionRecommendation>> = _progressionRecommendations.asStateFlow()
 
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
@@ -129,6 +138,9 @@ class WorkoutLoggingViewModel @Inject constructor(
 
         _previousPerformance.value = perfMap
         _lastPerformanceSummary.value = summaryMap
+
+        // Calculate initial progression recommendations
+        calculateProgressionRecommendations(exercises)
     }
 
     /** Calculate accumulated volume (weight × reps) for the current session. */
@@ -226,6 +238,11 @@ class WorkoutLoggingViewModel @Inject constructor(
             if (lastPerf != null) {
                 _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
             }
+            // Calculate progression for new exercise
+            val refreshed = _currentWorkout.value
+            if (refreshed != null) {
+                calculateProgressionRecommendations(refreshed.exercises)
+            }
         }
     }
 
@@ -305,6 +322,9 @@ class WorkoutLoggingViewModel @Inject constructor(
         val we = workout.exercises[exerciseIndex]
         viewModelScope.launch {
             workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
+            // Remove progression recommendation for removed exercise
+            val updated = _progressionRecommendations.value - we.exercise.id
+            _progressionRecommendations.value = updated
         }
     }
 
@@ -320,6 +340,10 @@ class WorkoutLoggingViewModel @Inject constructor(
             // Recalculate session volume
             val refreshed = _currentWorkout.value
             calculateSessionVolume(refreshed)
+            // Recalculate progression recommendations after set completion change
+            if (refreshed != null) {
+                calculateProgressionRecommendations(refreshed.exercises)
+            }
         }
         if (updated.completed) {
             // Use the recommended rest time based on RPE and set type
@@ -369,6 +393,34 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Calculate progression recommendations for all exercises in the workout.
+     * Uses ProgressionEngine with double progression logic.
+     */
+    private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
+        val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
+        for (we in exercises) {
+            val exercise = we.exercise
+            val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
+            if (normalSets.isNotEmpty()) {
+                val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
+                val recommendation = progressionEngine.calculateProgression(
+                    exerciseId = exercise.id,
+                    exerciseName = exercise.name,
+                    exerciseEquipment = exercise.equipment,
+                    targetRepsMin = 8,
+                    targetRepsMax = 12,
+                    targetSets = 3,
+                    previousSets = lastSets.map { WorkoutSetEntity.fromLastSetData(it) },
+                    currentSets = normalSets.map { it.toEntity() },
+                    equipmentType = "home" // TODO: get from user profile
+                )
+                recommendations[exercise.id] = recommendation
+            }
+        }
+        _progressionRecommendations.value = recommendations
+    }
+
     private fun updateSetField(exerciseIndex: Int, setIndex: Int, transform: (WorkoutSet) -> WorkoutSet) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
@@ -379,6 +431,11 @@ class WorkoutLoggingViewModel @Inject constructor(
             workoutRepository.updateSet(updated)
             // Recalculate session volume after any field update
             calculateSessionVolume(_currentWorkout.value)
+            // Recalculate progression recommendations
+            val refreshed = _currentWorkout.value
+            if (refreshed != null) {
+                calculateProgressionRecommendations(refreshed.exercises)
+            }
         }
     }
 

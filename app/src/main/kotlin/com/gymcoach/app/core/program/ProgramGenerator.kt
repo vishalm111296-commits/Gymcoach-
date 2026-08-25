@@ -65,7 +65,7 @@ class ProgramGenerator @Inject constructor(
     /**
      * Filters exercises by available equipment.
      * Bodyweight exercises are always available.
-     * Compound equipment requirements (e.g. "Dumbbell + Flat Bench") require all tokens.
+     * Compound equipment requirements (e.g. "dumbbell,bench") require all tokens.
      */
     private fun filterByEquipment(
         exercises: List<ExerciseEntity>,
@@ -73,17 +73,17 @@ class ProgramGenerator @Inject constructor(
     ): List<ExerciseEntity> {
         return exercises.filter { ex ->
             // Bodyweight exercises are always available
-            if (ex.equipment == "Bodyweight" || ex.equipment.isBlank()) return@filter true
+            if (ex.equipment == "bodyweight" || ex.equipment.isBlank()) return@filter true
 
-            val equipmentTokens = ex.equipment.split("+").map { it.trim() }
+            val equipmentTokens = ex.equipment.split(",").map { it.trim().lowercase() }
             if (equipmentTokens.size > 1) {
                 // Compound equipment: all tokens must be available
                 equipmentTokens.all { token ->
-                    availableEquipment.contains(token) || token == "Bodyweight"
+                    availableEquipment.contains(token) || token == "bodyweight"
                 }
             } else {
                 // Single equipment: check availability
-                availableEquipment.contains(ex.equipment)
+                availableEquipment.contains(ex.equipment.lowercase())
             }
         }
     }

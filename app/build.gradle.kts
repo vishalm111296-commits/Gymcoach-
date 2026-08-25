@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -11,8 +13,14 @@ ksp {
 
 // Release signing: reads keystore path + passwords from local.properties
 // (git-ignored) or environment variables (CI).
+//
+// NOTE: use an explicit import + bare `Properties()` here. A fully-qualified
+// inline `java.util.Properties()` does NOT compile in Gradle Kotlin DSL:
+// once the Java plugin is applied, the bare identifier `java` binds to the
+// JavaPluginExtension project accessor on the implicit receiver, shadowing
+// the java.* package namespace ("Unresolved reference: util").
 val keystorePropertiesFile = rootProject.file("local.properties")
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) load(keystorePropertiesFile.inputStream())
 }
 
@@ -107,9 +115,10 @@ android {
         }
     }
 
-    room {
-        schemaDirectory = file("$projectDir/schemas")
-    }
+    // NOTE: no `room { schemaDirectory = ... }` block here. Applying it
+    // requires the androidx.room Gradle plugin, which is not present in
+    // gradle/libs.versions.toml [plugins]. Schema export is handled by the
+    // ksp { arg("room.schemaLocation", ...) } block above.
 }
 
 dependencies {

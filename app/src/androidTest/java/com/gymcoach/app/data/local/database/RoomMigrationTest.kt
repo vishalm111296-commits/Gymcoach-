@@ -15,6 +15,7 @@ import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_6_7
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_7_8
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_8_9
+import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_9_10
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -25,8 +26,7 @@ import org.junit.runner.RunWith
 /**
  * Room migration tests using MigrationTestHelper.
  *
- * Schema JSONs (v1–v7) are exported under app/schemas by KSP.
- * v8/v9.json is generated at build time; tests referencing it will pass on CI.
+ * Schema JSONs (v1–v10) are exported under app/schemas by KSP.
  *
  * Strategy:
  * - MigrationTestHelper.createDatabase() reads the schema JSON for the
@@ -38,6 +38,7 @@ import org.junit.runner.RunWith
  *   test because the backfill logic is the most critical migration.
  * - For v8→v9 (V-taper scores), we verify the UPDATE statements apply
  *   correct scores to each exercise.
+ * - For v9→v10 (readiness table), we verify the table is created correctly.
  */
 @RunWith(AndroidJUnit4::class)
 class RoomMigrationTest {
@@ -54,8 +55,22 @@ class RoomMigrationTest {
     )
 
     // ──────────────────────────────────────────────
-    //  Full chain: v1 → v9 (schema JSONs exist)
+    //  Full chain: v1 → v10 (schema JSONs exist)
     // ──────────────────────────────────────────────
+
+    @Test
+    fun migrate1To10() {
+        // Create at v1 (only exercises table with basic columns)
+        migrationTestHelper.createDatabase(TEST_DB, 1).close()
+
+        // Run the complete chain to v10
+        migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 10, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+        ).close()
+    }
 
     @Test
     fun migrate1To9() {
@@ -317,26 +332,84 @@ class RoomMigrationTest {
         db.close()
     }
 
+    // ──────────────────────────────────────────────
+    //  v9→v10: Readiness table
+    // ──────────────────────────────────────────────
+
     @Test
-    fun migrateFullChain1To9_withVtaperScores() {
-        // Full chain test: create at v1, migrate all the way to v9
+    fun migrate9To10_createsReadinessTable() {
+        migrationTestHelper.createDatabase(TEST_DB, 9).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 10, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+        )
+
+        // Verify readiness table exists
+        val cursor = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='readiness'")
+        assertTrue("readiness table should exist after 9→10 migration", cursor.moveToFirst())
+        cursor.close()
+
+        // Verify readiness table schema
+        val pragmaCursor = db.query("PRAGMA table_info(readiness)")
+        val expectedColumns = setOf("id", "user_id", "recorded_at", "sleep_quality", "soreness", "energy", "motivation", "notes")
+        val foundColumns = mutableSetOf<String>()
+        while (pragmaCursor.moveToNext()) {
+            foundColumns.add(pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")))
+        }
+        pragmaCursor.close()
+        assertTrue("readiness table should have all expected columns", expectedColumns.subsetOf(foundColumns))
+
+        // Verify default values
+        db.execSQL("INSERT INTO readiness (recorded_at) VALUES (0)")
+        val checkCursor = db.rawQuery("SELECT sleep_quality, soreness, energy, motivation, notes FROM readiness WHERE id = 1", null)
+        assertTrue(checkCursor.moveToFirst())
+        assertEquals("Default sleep_quality should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("sleep_quality")))
+        assertEquals("Default soreness should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("soreness")))
+        assertEquals("Default energy should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("energy")))
+        assertEquals("Default motivation should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("motivation")))
+        assertEquals("Default notes should be empty", "", checkCursor.getString(checkCursor.getColumnIndexOrThrow("notes")))
+        checkCursor.close()
+        db.close()
+    }
+
+    @Test
+    fun migrateFullChain1To10_withReadiness() {
+        // Full chain test: create at v1, migrate all the way to v10
         migrationTestHelper.createDatabase(TEST_DB, 1).close()
 
         val db = migrationTestHelper.runMigrationsAndValidate(
-            TEST_DB, 9, true,
+            TEST_DB, 10, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-            MIGRATION_7_8, MIGRATION_8_9
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
         )
 
+        // Verify readiness table exists and is queryable
+        val cursor = db.query("SELECT COUNT(*) FROM readiness")
+        assertTrue(cursor.moveToFirst())
+        cursor.close()
+
         // Verify vtaper scores are set (migration 8→9 runs UPDATE statements)
-        val cursor = db.query(
+        val vtaperCursor = db.query(
             "SELECT COUNT(*) FROM exercises WHERE vtaper_lateral_delt > 0 OR vtaper_lat > 0 OR vtaper_upper_chest > 0 OR vtaper_rear_delt > 0"
         )
-        assertTrue(cursor.moveToFirst())
-        val countWithVtaper = cursor.getInt(0)
-        cursor.close()
+        assertTrue(vtaperCursor.moveToFirst())
+        val countWithVtaper = vtaperCursor.getInt(0)
+        vtaperCursor.close()
         assertTrue("At least some exercises should have non-zero vtaper scores", countWithVtaper > 0)
+
+        // Verify status column exists and has valid values
+        val statusCursor = db.rawQuery("SELECT DISTINCT status FROM workouts", null)
+        val statuses = mutableSetOf<String>()
+        while (statusCursor.moveToNext()) {
+            statuses.add(statusCursor.getString(0))
+        }
+        statusCursor.close()
+        assertTrue("Should have valid status values", statuses.subsetOf(setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")))
+
         db.close()
     }
 }

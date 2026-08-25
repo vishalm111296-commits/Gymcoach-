@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude database files from backup -->
+    <exclude domain="database" path="gymcoach_database" />
+    <exclude domain="database" path="gymcoach_database-wal" />
+    <exclude domain="database" path="gymcoach_database-shm" />
+    <!-- Exclude shared preferences with seed version -->
+    <exclude domain="sharedpref" path="gymcoach_seed.xml" />
+</full-backup-content>

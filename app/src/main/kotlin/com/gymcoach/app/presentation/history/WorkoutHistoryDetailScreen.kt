@@ -343,9 +343,10 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
 
 // --- Muscle Breakdown ---
 
-private data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
+// internal (not private) so unit tests can exercise the aggregation directly.
+internal data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
 
-private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
+internal fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
     val breakdown = linkedMapOf<String, MuscleData>()
 
     workout.exercises.forEach { entry ->

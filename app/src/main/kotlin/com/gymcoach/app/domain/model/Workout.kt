@@ -1,5 +1,6 @@
 package com.gymcoach.app.domain.model
 
+import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import java.time.Instant
 
 data class Workout(
@@ -34,7 +35,21 @@ data class WorkoutSet(
     val restSeconds: Int,
     val completed: Boolean,
     val setType: SetType = SetType.NORMAL
-)
+) {
+    fun toEntity(): WorkoutSetEntity {
+        return WorkoutSetEntity(
+            id = id,
+            workoutExerciseId = workoutExerciseId,
+            setNumber = setNumber,
+            weight = weight,
+            reps = reps,
+            rpe = rpe,
+            restSeconds = restSeconds,
+            completed = completed,
+            setType = setType.ordinal
+        )
+    }
+}
 
 data class WorkoutWithDetails(
     val workout: Workout,

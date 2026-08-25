@@ -1,6 +1,7 @@
 package com.gymcoach.app.core.exercise
 
 import android.content.Context
+import android.util.Log
 import androidx.room.withTransaction
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import com.gymcoach.app.data.local.entity.EquipmentEntity
@@ -148,8 +149,11 @@ class ExerciseSeeder @Inject constructor(
                         }
                     )
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to seed exercise file $file", e)
+            }
         }
+        Log.i(TAG, "Seeded ${result.size} exercises from ${ALL_EXERCISE_FILES.size} asset files")
         return result
     }
 
@@ -173,7 +177,9 @@ class ExerciseSeeder @Inject constructor(
                     )
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to seed substitutions", e)
+        }
     }
 
     private fun rebuildSearchIndex() {
@@ -181,6 +187,7 @@ class ExerciseSeeder @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "ExerciseSeeder"
         const val SEED_VERSION = 2
         private const val PREFS_NAME = "gymcoach_seed"
         private const val KEY_SEED_VERSION = "exercise_seed_version"

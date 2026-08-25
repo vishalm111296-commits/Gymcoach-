@@ -144,7 +144,7 @@ class ProgramGenerator @Inject constructor(
                 .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
-                    compareByDescending<ExerciseEntity> { it.vtaperLat + it.vtaperLateralDelt + it.vtaperUpperChest + it.vtaperRearDelt }
+                    compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
                         .thenBy { difficultyOrder(it.difficulty) }
                 )
                 .take(2)
@@ -166,6 +166,21 @@ class ProgramGenerator @Inject constructor(
         }
 
         return ProgramDay(dayNum, name, muscles, selected)
+    }
+
+    /**
+     * V-taper relevance of an exercise *for a specific muscle slot*.
+     *
+     * Ranking per slot (instead of summing all four V-taper scores) prevents a
+     * single high-lat back exercise from outranking genuine chest/delt builders
+     * when filling those slots — each slot competes on its own relevant axis.
+     */
+    private fun relevantVtaperScore(exercise: ExerciseEntity, muscle: String): Int = when {
+        muscle.equals("Back", ignoreCase = true) -> exercise.vtaperLat
+        muscle.equals("Lateral Deltoid", ignoreCase = true) -> exercise.vtaperLateralDelt
+        muscle.equals("Chest", ignoreCase = true) -> exercise.vtaperUpperChest
+        muscle.equals("Rear Deltoid", ignoreCase = true) -> exercise.vtaperRearDelt
+        else -> 0
     }
 
     /** Sort difficulty: Beginner < Intermediate < Advanced */

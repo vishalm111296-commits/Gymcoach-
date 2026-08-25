@@ -10,7 +10,8 @@ import javax.inject.Singleton
  * Database seed equipment keys (lowercase):
  * "dumbbell", "bench", "bodyweight", "cable", "machine", "kettlebell", "barbell", etc.
  *
- * Compound equipment uses "+" separator: "dumbbell+bench"
+ * Compound equipment uses "," separator (ExerciseSeeder joins asset arrays with
+ * joinToString(",")), e.g. "dumbbell,bench". Legacy "+" separators are tolerated.
  */
 @Singleton
 class EquipmentAvailability @Inject constructor() {
@@ -55,13 +56,15 @@ class EquipmentAvailability @Inject constructor() {
      * used by ProgressionEngine to switch from weight progression to rep/set
      * progression when load cannot increase further.
      *
-     * Compound requirements like "dumbbell+bench" are satisfied only if
+     * Compound requirements like "dumbbell,bench" are satisfied only if
      * every token is available.
      */
     fun isLimited(equipment: String, equipmentType: String): Boolean {
-        if (equipment.isBlank() || equipment == "bodyweight") return false
-        return equipment.split("+")
+        if (equipment.isBlank()) return false
+        return equipment.replace("+", ",")
+            .split(",")
             .map { it.trim().lowercase() }
+            .filter { it.isNotEmpty() && it != "bodyweight" }
             .any { !isAvailable(it, equipmentType) }
     }
 }

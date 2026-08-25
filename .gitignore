@@ -14,7 +14,13 @@ local.properties
 .DS_Store
 Thumbs.db
 
-# Secrets
+# Secrets - NEVER commit these
 *.jks
 *.keystore
 secrets.properties
+keystore/
+
+# Build artifacts
+/app/release/
+*.apk
+*.aab

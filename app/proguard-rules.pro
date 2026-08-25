@@ -1,72 +1,58 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# GymCoach ProGuard Rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# Keep the Room database entities and DAOs
+# ── Room ─────────────────────────────────────────────────────
 -keep class com.gymcoach.app.data.local.entity.** { *; }
 -keep class com.gymcoach.app.data.local.dao.** { *; }
 -keep class com.gymcoach.app.data.local.database.** { *; }
-
-# Keep the domain models
--keep class com.gymcoach.app.domain.model.** { *; }
-
-# Keep the repository interfaces and implementations
--keep class com.gymcoach.app.domain.repository.** { *; }
--keep class com.gymcoach.app.data.repository.** { *; }
-
-# Keep the ViewModels
--keep class com.gymcoach.app.presentation.** { *; }
-
-# Keep the FormAnalyzer
--keep class com.gymcoach.app.core.ml.** { *; }
-
-# Keep the FormAnalyzer
--keep class com.gymcoach.app.core.timer.** { *; }
-
-# Keep Room auto-generated classes
 -keep class * extends androidx.room.RoomDatabase { *; }
 -keep class * implements androidx.room.RoomDatabase.Callback { *; }
 -keep class * extends androidx.room.migration.Migration { *; }
 
-# Keep Coroutines
+# ── Domain & Repository ──────────────────────────────────────
+-keep class com.gymcoach.app.domain.model.** { *; }
+-keep class com.gymcoach.app.domain.repository.** { *; }
+-keep class com.gymcoach.app.data.repository.** { *; }
+
+# ── Presentation (ViewModels, Screens) ───────────────────────
+-keep class com.gymcoach.app.presentation.** { *; }
+
+# ── ML / MediaPipe ───────────────────────────────────────────
+-keep class com.gymcoach.app.core.ml.** { *; }
+-keep class com.google.mediapipe.** { *; }
+-keep class com.google.mediapipe.framework.** { *; }
+-keep class com.google.mediapipe.solutions.** { *; }
+-keep class com.google.mediapipe.tasks.** { *; }
+-dontwarn com.google.mediapipe.**
+
+# ── Timer / Notification ─────────────────────────────────────
+-keep class com.gymcoach.app.core.timer.** { *; }
+-keep class com.gymcoach.app.core.notification.** { *; }
+
+# ── Hilt ─────────────────────────────────────────────────────
+-keep class dagger.hilt.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$ViewWithFragmentContextWrapper { *; }
+-dontwarn dagger.hilt.**
+
+# ── Kotlin Coroutines ────────────────────────────────────────
 -keep class kotlinx.coroutines.** { *; }
 -keep class kotlinx.coroutines.flow.** { *; }
 
-# Keep Hilt
--keep class dagger.hilt.** { *; }
--keep class com.gymcoach.app.** { *; }
-
-# Keep Coil
--keep class coil.** { *; }
--keep class com.github.bumptech.glide.** { *; }
-
-# Keep Media3
--keep class androidx.media3.** { *; }
--keep class com.google.android.exoplayer2.** { *; }
-
-# Keep CameraX
+# ── CameraX ──────────────────────────────────────────────────
 -keep class androidx.camera.** { *; }
+-dontwarn androidx.camera.**
 
-# Keep MediaPipe
--keep class com.google.mediapipe.** { *; }
-
-# Keep Coil
+# ── Coil Image Loading ───────────────────────────────────────
 -keep class coil.** { *; }
+-dontwarn coil.**
+
+# ── Remove logging in release builds ─────────────────────────
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
+# ── Prevent renaming of source files for cleaner stack traces ─
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

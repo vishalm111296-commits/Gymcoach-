@@ -66,6 +66,26 @@ private val EXPERIENCES = listOf(
     "Advanced" to "Three-plus years. You know your numbers."
 )
 
+private val SEXES = listOf(
+    "Male" to "Male",
+    "Female" to "Female",
+    "Other" to "Other"
+)
+
+private val PREFERRED_SCHEDULES = listOf(
+    "Morning" to "Morning (6am-12pm)",
+    "Afternoon" to "Afternoon (12pm-6pm)",
+    "Evening" to "Evening (6pm-10pm)"
+)
+
+private val LIMITATIONS = listOf(
+    "None" to "None",
+    "Injury" to "Injury/recurring niggles",
+    "Mobility" to "Mobility limitations",
+    "Time" to "Time constraints",
+    "Other" to "Other"
+)
+
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit,
@@ -108,7 +128,10 @@ fun OnboardingScreen(
                         state,
                         viewModel::setAge,
                         viewModel::setHeight,
-                        viewModel::setWeight
+                        viewModel::setWeight,
+                        viewModel::setSex,
+                        viewModel::setPreferredSchedule,
+                        viewModel::setLimitationsPreferences
                     )
                     OnboardingStep.SCHEDULE -> ScheduleStep(
                         state,
@@ -225,7 +248,10 @@ private fun PersonalInfoStep(
     state: OnboardingUiState,
     onAge: (Float) -> Unit,
     onHeight: (Float) -> Unit,
-    onWeight: (Float) -> Unit
+    onWeight: (Float) -> Unit,
+    onSex: (String) -> Unit,
+    onPreferredSchedule: (String) -> Unit,
+    onLimitationsPreferences: (String) -> Unit
 ) {
     StepHeader("THE BASICS", "Used to calibrate pacing and starting loads.")
 
@@ -255,6 +281,24 @@ private fun PersonalInfoStep(
     NumberField(label = "WEIGHT (KG)", initialValue = state.weightKg.toInt().toString()) { text ->
         text.toFloatOrNull()?.let(onWeight)
     }
+
+    Spacer(Modifier.height(16.dp))
+    SexSelection(
+        selectedSex = state.sex ?: "Male",
+        onSelect = onSex
+    )
+
+    Spacer(Modifier.height(16.dp))
+    PreferredScheduleChipGroup(
+        selectedSchedule = state.preferredSchedule ?: "Morning",
+        onSelect = onPreferredSchedule
+    )
+
+    Spacer(Modifier.height(16.dp))
+    LimitationsChipGroup(
+        selectedLimitation = state.limitationsPreferences ?: "None",
+        onSelect = onLimitationsPreferences
+    )
 }
 
 @Composable
@@ -291,6 +335,75 @@ private fun NumberField(
             ),
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Composable
+private fun SexSelection(
+    selectedSex: String,
+    onSelect: (String) -> Unit
+) {
+    var sex by remember { mutableStateOf(selectedSex) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SEXES.forEach { (label, _) ->
+            FilterChip(
+                selected = sex == label,
+                onClick = { sex = label; onSelect(sex) },
+                label = { Text(label, color = if (sex == label) WarmWhite else TextSecondary) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = DarkSurfaceVariant,
+                    selectedContainerColor = AccentBlueDim,
+                    labelColor = TextSecondary,
+                    selectedLabelColor = WarmWhite
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreferredScheduleChipGroup(
+    selectedSchedule: String,
+    onSelect: (String) -> Unit
+) {
+    var schedule by remember { mutableStateOf(selectedSchedule) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PREFERRED_SCHEDULES.forEach { (label, _) ->
+            FilterChip(
+                selected = schedule == label,
+                onClick = { schedule = label; onSelect(schedule) },
+                label = { Text(label, color = if (schedule == label) WarmWhite else TextSecondary) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = DarkSurfaceVariant,
+                    selectedContainerColor = AccentBlueDim,
+                    labelColor = TextSecondary,
+                    selectedLabelColor = WarmWhite
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun LimitationsChipGroup(
+    selectedLimitation: String,
+    onSelect: (String) -> Unit
+) {
+    var limitation by remember { mutableStateOf(selectedLimitation) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LIMITATIONS.forEach { (label, _) ->
+            FilterChip(
+                selected = limitation == label,
+                onClick = { limitation = label; onSelect(limitation) },
+                label = { Text(label, color = if (limitation == label) WarmWhite else TextSecondary) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = DarkSurfaceVariant,
+                    selectedContainerColor = AccentBlueDim,
+                    labelColor = TextSecondary,
+                    selectedLabelColor = WarmWhite
+                )
+            )
+        }
     }
 }
 
@@ -366,14 +479,16 @@ private fun ReviewStep(state: OnboardingUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ReviewRow("Goal", state.goal ?: "-")
         ReviewRow("Experience", state.experience ?: "-")
+        ReviewRow("Sex", state.sex ?: "-")
         ReviewRow("Age", "${state.age.toInt()} years")
         ReviewRow("Height", "${state.heightCm.toInt()} cm")
         ReviewRow("Weight", "${state.weightKg.toInt()} kg")
-        ReviewRow("Schedule", "${state.daysPerWeek} days / ${state.sessionMinutes} min")
+        ReviewRow("Schedule", state.preferredSchedule ?: "-")
         ReviewRow(
-            "Equipment",
-            if (state.selectedEquipment.isEmpty()) "Bodyweight only" else state.selectedEquipment.joinToString(", ")
+            "Limitations/Preferences",
+            state.limitationsPreferences ?: "None"
         )
+        ReviewRow("Equipment", if (state.selectedEquipment.isEmpty()) "Bodyweight only" else state.selectedEquipment.joinToString(", "))
     }
 }
 

@@ -65,4 +65,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBodyMeasurementDao(database: GymCoachDatabase): BodyMeasurementDao = database.bodyMeasurementDao()
+
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(@ApplicationContext ctx: android.content.Context): android.content.SharedPreferences =
+        ctx.getSharedPreferences("gymcoach_prefs", android.content.Context.MODE_PRIVATE)
 }

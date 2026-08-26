@@ -85,10 +85,13 @@ class ExerciseSeeder @Inject constructor(
                 }
             }
         }
-        return equipmentMap.associate { (name, display) ->
-            name to db.equipmentDao().insert(EquipmentEntity(name = name, displayName = display, category = name))
+        val ids = mutableMapOf<String, Long>()
+        for ((name, display) in equipmentMap) {
+            ids[name] = db.equipmentDao().insert(EquipmentEntity(name = name, displayName = display, category = name))
         }
+        return ids
     }
+
 
 
     private suspend fun seedExercises(

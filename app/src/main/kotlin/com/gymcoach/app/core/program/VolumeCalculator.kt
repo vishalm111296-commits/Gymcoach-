@@ -17,7 +17,7 @@ class VolumeCalculator @Inject constructor() {
         val status: VolumeStatus
     )
 
-    enum class VolumeStatus(val label: String, val ordinal: Int) {
+    enum class VolumeStatus(val label: String, val level: Int) {
         INSUFFICIENT("Too low", 0),
         MODERATE("Moderate", 1),
         HIGH("High", 2),

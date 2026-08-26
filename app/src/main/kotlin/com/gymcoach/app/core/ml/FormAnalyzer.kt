@@ -173,13 +173,6 @@ class FormAnalyzer(
 
     private fun benchPressElbowAngle(pose: Pose): Double = elbowAngle(pose)
 
-    private fun hipTrunkAngle(pose: Pose): Double {
-        val shoulder = safeLandmark(pose, 12)
-        val hip      = safeLandmark(pose, 24)
-        val knee     = safeLandmark(pose, 26)
-        return angle(shoulder, hip, knee)
-    }
-
     private fun plankBodyAngle(pose: Pose): Double {
         val shoulder = safeLandmark(pose, 12)
         val hip      = safeLandmark(pose, 24)

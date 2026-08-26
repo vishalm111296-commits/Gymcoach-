@@ -18,6 +18,7 @@ import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -38,10 +39,23 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
     private val restTimer: RestTimerManager,
-    private val progressionEngine: ProgressionEngine
+    private val progressionEngine: ProgressionEngine,
+    private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
+
+    private val _equipmentType = MutableStateFlow("home")
+
+    init {
+        viewModelScope.launch {
+            userProfileRepository.getLatestProfile().collect { profile ->
+                if (profile != null) {
+                    _equipmentType.value = profile.equipmentType
+                }
+            }
+        }
+    }
 
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -417,7 +431,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetSets = 3,
                     previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = "home" // TODO: get from user profile
+                    equipmentType = _equipmentType.value
                 )
                 recommendations[exercise.id] = recommendation
             }

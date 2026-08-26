@@ -194,13 +194,6 @@ class FormAnalyzer(
         return angle(hip, knee, ankle)
     }
 
-    private fun deadliftShoulderHip(pose: Pose): Double {
-        val shoulder = safeLandmark(pose, 12)
-        val hip      = safeLandmark(pose, 24)
-        val knee     = safeLandmark(pose, 26)
-        return angle(shoulder, hip, knee)
-    }
-
     // ── Movement validation ──────────────────────────────
 
     private fun validateMovement(angle: Double): MovementValidation {

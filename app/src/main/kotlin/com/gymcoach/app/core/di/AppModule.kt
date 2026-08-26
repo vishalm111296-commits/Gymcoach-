@@ -32,4 +32,37 @@ object AppModule {
     fun provideReadinessDao(database: GymCoachDatabase): ReadinessDao = database.readinessDao()
 
     // ExerciseRepository and WorkoutRepository are bound via @Binds in RepositoryModule.
+
+
+    @Provides
+    @Singleton
+    fun provideExerciseSubstitutionDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao = database.exerciseSubstitutionDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.ProgramDao = database.programDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramDayDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.ProgramDayDao = database.programDayDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramExerciseDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.ProgramExerciseDao = database.programExerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.UserProfileDao = database.userProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideBodyMeasurementDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.BodyMeasurementDao = database.bodyMeasurementDao()
+
+    @Provides
+    @Singleton
+    fun provideExerciseMuscleDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.ExerciseMuscleDao = database.exerciseMuscleDao()
+
+    @Provides
+    @Singleton
+    fun providePersonalRecordDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.PersonalRecordDao = database.personalRecordDao()
 }

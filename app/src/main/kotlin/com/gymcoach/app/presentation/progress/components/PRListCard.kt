@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gymcoach.app.presentation.progress.PersonalRecordItem
 import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.PRHighlight

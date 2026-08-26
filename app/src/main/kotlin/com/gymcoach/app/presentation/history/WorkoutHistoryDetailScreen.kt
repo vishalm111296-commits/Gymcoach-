@@ -343,9 +343,9 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
 
 // --- Muscle Breakdown ---
 
-private data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
+data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
 
-private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
+fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
     val breakdown = linkedMapOf<String, MuscleData>()
 
     workout.exercises.forEach { entry ->

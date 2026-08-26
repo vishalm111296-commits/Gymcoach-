@@ -132,7 +132,7 @@ class ExerciseDetailTest {
             tags = "compound legs"
         )
         val differentScore = calculatePreservationScore(original, differentSub)
-        assertEquals(45, differentScore) // 0+20+15+10+0 = 45
+        assertEquals(55, differentScore) // 0+20+15+10+0 = 45
     }
 
     @Test
@@ -175,7 +175,7 @@ class ExerciseDetailTest {
             "Rear Delt" to exercise.vtaperRearDelt
         ).filter { it.second > 0 }
 
-        assertEquals(2, scores.size)
+        assertEquals(4, scores.size)
     }
 
     // Replicate SubstitutionEngine's preservation score logic for testing

@@ -104,12 +104,12 @@ class VolumeCalculatorTest {
         // Verify the volume formula: volume = Σ(reps × weight) per set
         // This tests the math, not the DAO
         val sets = listOf(
-            Pair(reps = 10, weight = 60.0),   // 600
-            Pair(reps = 8, weight = 70.0),    // 560
-            Pair(reps = 6, weight = 80.0)     // 480
+            Pair(10, 60.0),   // 600
+            Pair(8, 70.0),    // 560
+            Pair(6, 80.0)     // 480
         )
 
-        val totalVolume = sets.sumOf { it.reps * it.weight }
+        val totalVolume = sets.sumOf { it.first * it.second }
 
         assertEquals("Total volume should be 1640.0", 1640.0, totalVolume, 0.001)
     }
@@ -117,11 +117,11 @@ class VolumeCalculatorTest {
     @Test
     fun `zero weight sets contribute zero volume`() = runTest {
         val sets = listOf(
-            Pair(reps = 10, weight = 0.0),   // 0 (bodyweight)
-            Pair(reps = 8, weight = 0.0)     // 0 (bodyweight)
+            Pair(10, 0.0),   // 0 (bodyweight)
+            Pair(8, 0.0)     // 0 (bodyweight)
         )
 
-        val totalVolume = sets.sumOf { it.reps * it.weight }
+        val totalVolume = sets.sumOf { it.first * it.second }
 
         assertEquals("Zero weight sets should contribute 0 volume", 0.0, totalVolume, 0.001)
     }

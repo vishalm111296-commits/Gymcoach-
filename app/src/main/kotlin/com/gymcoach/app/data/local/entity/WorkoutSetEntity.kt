@@ -29,7 +29,7 @@ data class WorkoutSetEntity(
     val setType: Int = 0 // 0=NORMAL, 1=WARMUP, 2=DROP, 3=FAILURE
 )
 
-fun WorkoutSetEntity.fromLastSetData(data: com.gymcoach.app.data.local.dao.LastSetData): WorkoutSetEntity {
+fun fromLastSetData(data: com.gymcoach.app.data.local.dao.LastSetData): WorkoutSetEntity {
     return WorkoutSetEntity(
         id = 0,
         workoutExerciseId = 0,

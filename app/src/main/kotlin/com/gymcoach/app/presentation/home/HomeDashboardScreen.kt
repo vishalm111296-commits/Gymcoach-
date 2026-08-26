@@ -91,10 +91,10 @@ fun HomeDashboardScreen(
                 state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
 
                 else -> TodayWorkoutCard(
-                    workoutName = state.todayWorkout.name,
-                    targetMuscles = state.todayWorkout.targetMuscles,
-                    exerciseCount = state.todayWorkout.exerciseCount,
-                    estimatedDuration = state.todayWorkout.estimatedDurationMin,
+                    workoutName = state.todayWorkout!!.name,
+                    targetMuscles = state.todayWorkout!!.targetMuscles,
+                    exerciseCount = state.todayWorkout!!.exerciseCount,
+                    estimatedDuration = state.todayWorkout!!.estimatedDurationMin,
                     onStartClick = onStartWorkout
                 )
             }

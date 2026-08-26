@@ -4,6 +4,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -73,16 +74,16 @@ class RestTimerManagerTest {
     }
 
     @Test
-    fun `tick decrements timeRemaining`() = testScope.runTest {
+    fun `tick decrements timeRemaining`() = runTest {
         manager.start(5, this)
-        advanceTimeBy(3000L) // 3 seconds
+        advanceTimeBy(3001L); runCurrent() // 3 seconds
         assertEquals(2, manager.state.value.timeRemaining)
     }
 
     @Test
-    fun `timer completes when timeRemaining reaches 0`() = testScope.runTest {
+    fun `timer completes when timeRemaining reaches 0`() = runTest {
         manager.start(2, this)
-        advanceTimeBy(2000L) // 2 seconds
+        advanceTimeBy(2001L); runCurrent() // 2 seconds
         assertFalse(manager.state.value.isRunning)
         assertEquals(0, manager.state.value.timeRemaining)
     }

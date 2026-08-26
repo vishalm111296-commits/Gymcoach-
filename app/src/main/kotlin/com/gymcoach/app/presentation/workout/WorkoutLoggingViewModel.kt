@@ -1,5 +1,7 @@
 package com.gymcoach.app.presentation.workout
 
+import com.gymcoach.app.data.local.entity.fromLastSetData
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.progression.ProgressionEngine
@@ -22,6 +24,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -411,7 +414,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetRepsMin = 8,
                     targetRepsMax = 12,
                     targetSets = 3,
-                    previousSets = lastSets.map { WorkoutSetEntity.fromLastSetData(it) },
+                    previousSets = lastSets.map { fromLastSetData(it) },
                     currentSets = normalSets.map { it.toEntity() },
                     equipmentType = "home" // TODO: get from user profile
                 )

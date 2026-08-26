@@ -15,8 +15,10 @@ import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +39,7 @@ import javax.inject.Inject
 class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val userProfileRepository: UserProfileRepository,
     private val restTimer: RestTimerManager,
     private val progressionEngine: ProgressionEngine
 ) : ViewModel() {
@@ -80,6 +83,19 @@ class WorkoutLoggingViewModel @Inject constructor(
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
+
+    private var userProfile: UserProfileEntity? = null
+
+    init {
+        viewModelScope.launch {
+            userProfileRepository.getLatestProfile().collect { profile ->
+                userProfile = profile
+                _currentWorkout.value?.let { workout ->
+                    calculateProgressionRecommendations(workout.exercises)
+                }
+            }
+        }
+    }
 
     fun dismissError() {
         _error.value = null
@@ -417,7 +433,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetSets = 3,
                     previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = "home" // TODO: get from user profile
+                    equipmentType = userProfile?.equipmentType ?: "home"
                 )
                 recommendations[exercise.id] = recommendation
             }

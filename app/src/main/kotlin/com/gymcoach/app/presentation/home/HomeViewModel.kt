@@ -152,7 +152,7 @@ class HomeViewModel @Inject constructor(
             hasProgram = true,
             todayWorkout = TodayWorkoutUiModel(
                 name = core.todayDay?.name?.takeIf { it.isNotBlank() } ?: "Training Session",
-                targetMuscles = focusMuscles(core.todayDay),
+                targetMuscles = targetMusclesMuscles(core.todayDay),
                 exerciseCount = todayExercises.size,
                 estimatedDurationMin = estimatedDuration
             ),
@@ -164,10 +164,10 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun focusMuscles(day: ProgramDayEntity?): List<String> =
-        day?.focus?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+    private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
+        day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day focus tags and exercise set counts. */
+    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
     private fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
         days: List<ProgramDayEntity>
@@ -176,7 +176,7 @@ class HomeViewModel @Inject constructor(
         for (day in days) {
             val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
             if (daySets == 0) continue
-            day.focus.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
+            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
                 result[muscle] = (result[muscle] ?: 0) + daySets
             }
         }

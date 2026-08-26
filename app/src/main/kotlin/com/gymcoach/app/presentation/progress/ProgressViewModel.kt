@@ -110,9 +110,9 @@ class ProgressViewModel @Inject constructor(
             bodyMeasurementDao.insert(
                 BodyMeasurementEntity(
                     weightKg = weightKg,
-                    waistCm = waistCm,
-                    chestCm = chestCm,
-                    bodyFatPct = bodyFatPct,
+                    waistCm = waistCm ?: 0.0,
+                    chestCm = chestCm ?: 0.0,
+                    bodyFatPct = bodyFatPct ?: 0.0,
                     notes = notes
                 )
             )

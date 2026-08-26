@@ -107,7 +107,7 @@ fun CameraPreviewScreen(
 
     // ── Per-exercise analyzer + live UI state ───────────────
     val formAnalyzer = remember(exerciseType) {
-        FormAnalyzer(exerciseType, ExerciseConfig.defaultFor(exerciseType))
+        FormAnalyzer(exerciseType, FormAnalyzer.Companion.defaultFor(exerciseType))
     }
     var repCount by remember { mutableIntStateOf(0) }
     var formFeedback by remember { mutableStateOf<String?>(null) }

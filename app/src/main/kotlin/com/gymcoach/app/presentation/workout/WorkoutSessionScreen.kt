@@ -573,8 +573,7 @@ private fun ExerciseSetCard(
                         onRpeChange = { rpe -> onRpeChange(index, rpe) },
                         onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
                         onSetTypeChange = { type -> onSetTypeChange(index, type) },
-                        onToggleComplete = { onToggleComplete(index) },
-                        onRemoveSet = { onRemoveSet(index) }
+                        onToggleComplete = { onToggleComplete(index) }
                     )
                 }
             }
@@ -602,8 +601,7 @@ private fun SetRow(
     onRpeChange: (Double) -> Unit,
     onRestSecondsChange: (Int) -> Unit,
     onSetTypeChange: (com.gymcoach.app.domain.model.SetType) -> Unit,
-    onToggleComplete: () -> Unit,
-    onRemoveSet: () -> Unit
+    onToggleComplete: () -> Unit
 ) {
     var weightText by rememberSaveable { mutableStateOf(if (weight > 0) weight.toString() else "") }
     var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }

@@ -101,11 +101,11 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addSetToExercise(workoutExerciseId: Long, set: WorkoutSet): Long {
-        return workoutDao.insertWorkoutSet(set.toEntity().copy(workoutExerciseId = workoutExerciseId))
+        return workoutDao.insertWorkoutSet(set.toWorkoutSetEntity().copy(workoutExerciseId = workoutExerciseId))
     }
 
     override suspend fun updateSet(set: WorkoutSet) {
-        workoutDao.updateWorkoutSet(set.toEntity())
+        workoutDao.updateWorkoutSet(set.toWorkoutSetEntity())
     }
 
     override suspend fun deleteSet(setId: Long) {
@@ -212,7 +212,7 @@ private fun WorkoutSetEntity.toDomain() = WorkoutSet(
     setType = com.gymcoach.app.domain.model.SetType.values().getOrElse(setType) { com.gymcoach.app.domain.model.SetType.NORMAL }
 )
 
-private fun WorkoutSet.toEntity() = WorkoutSetEntity(
+private fun WorkoutSet.toWorkoutSetEntity() = WorkoutSetEntity(
     id = id,
     workoutExerciseId = workoutExerciseId,
     setNumber = setNumber,
@@ -268,8 +268,8 @@ private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = com.gy
     notes = notes,
     completed = completed,
     status = status,
-    volume = volume ?: 0.0,
+    volume = volume,
     setCount = setCount,
-    repCount = repCount ?: 0,
+    repCount = repCount,
     exerciseCount = exerciseCount
 )

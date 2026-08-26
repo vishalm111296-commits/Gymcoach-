@@ -15,7 +15,6 @@ data class LastSessionData(val date: String, val sets: List<SetData>)
 
 @Composable
 fun PreviousPerformanceRow(
-    exerciseName: String,
     lastSession: LastSessionData?,
     modifier: Modifier = Modifier
 ) {

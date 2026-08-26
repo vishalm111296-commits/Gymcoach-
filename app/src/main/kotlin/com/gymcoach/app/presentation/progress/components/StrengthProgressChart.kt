@@ -132,7 +132,7 @@ fun StrengthProgressChart(
                     )
 
                     // Points; highlight latest
-                    coordinates.forEachIndexed { index, c ->
+                    coordinates.forEachIndexed { _, c ->
                         drawCircle(color = VolumeChartLine, radius = 4f, center = c)
                     }
                     val last = coordinates.last()

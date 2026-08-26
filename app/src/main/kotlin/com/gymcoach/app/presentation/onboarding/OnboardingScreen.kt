@@ -105,8 +105,10 @@ fun OnboardingScreen(
                 .padding(padding)
         ) {
             LinearProgressIndicator(
-                progress = (stepIndex.coerceAtMost(order.indexOf(OnboardingStep.REVIEW))) /
-                    order.indexOf(OnboardingStep.REVIEW).toFloat(),
+                progress = {
+                    (stepIndex.coerceAtMost(order.indexOf(OnboardingStep.REVIEW))) /
+                        order.indexOf(OnboardingStep.REVIEW).toFloat()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp),

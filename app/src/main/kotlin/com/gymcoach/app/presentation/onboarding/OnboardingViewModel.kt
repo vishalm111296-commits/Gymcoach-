@@ -130,7 +130,6 @@ class OnboardingViewModel @Inject constructor(
                 val generated = programGenerator.generateProgram(
                     frequency = state.daysPerWeek,
                     equipmentType = equipmentType,
-                    experienceLevel = experience,
                     goal = goal
                 )
                 programRepository.saveGeneratedProgram(generated)

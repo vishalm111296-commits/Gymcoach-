@@ -187,12 +187,12 @@ class ProgressViewModel @Inject constructor(
                     }
 
                 val waistTrend = measurements
-                    .filter { it.waistCm != null && it.waistCm > 0 }
+                    .filter { it.waistCm > 0 }
                     .sortedBy { it.recordedAt }
                     .map { measurement ->
                         TrendPoint(
                             date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
-                            value = measurement.waistCm!!
+                            value = measurement.waistCm
                         )
                     }
 

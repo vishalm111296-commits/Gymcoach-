@@ -351,7 +351,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
         if (updated.completed) {
             // Use the recommended rest time based on RPE and set type
-            val recommendedRest = RestPresets.recommended(set.setType, set.rpe, we.sets.count { it.completed })
+            val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
             val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
             restTimer.start(restSeconds, viewModelScope)
         } else {

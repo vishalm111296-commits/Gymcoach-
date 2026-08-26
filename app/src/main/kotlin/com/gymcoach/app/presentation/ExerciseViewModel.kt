@@ -30,7 +30,7 @@ class ExerciseViewModel @Inject constructor(
     val difficulties = listOf("All", "Beginner", "Intermediate", "Advanced")
     val equipments = listOf("All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Resistance Band")
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
     val exercises = combine(
         searchQuery.debounce(300),
         filterCategory,

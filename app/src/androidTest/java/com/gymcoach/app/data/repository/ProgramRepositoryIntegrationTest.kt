@@ -90,7 +90,7 @@ class ProgramRepositoryIntegrationTest {
         )
         exercises.forEach { exerciseDao.insert(it) }
 
-        val program = programGenerator.generateProgram(4, "home", "intermediate", "hypertrophy")
+        val program = programGenerator.generateProgram(4, "home", "hypertrophy")
 
         assertEquals("Should have 4 days", 4, program.days.size)
         program.days.forEach { day ->

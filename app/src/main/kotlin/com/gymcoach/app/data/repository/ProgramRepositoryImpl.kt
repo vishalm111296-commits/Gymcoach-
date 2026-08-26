@@ -55,7 +55,7 @@ class ProgramRepositoryImpl @Inject constructor(
                     programId = programId,
                     dayNumber = day.dayNumber,
                     name = day.name,
-                    focus = day.targetMuscles.joinToString(",")
+                    targetMuscles = day.targetMuscles.joinToString(",")
                 )
             )
             programExerciseDao.insertAll(

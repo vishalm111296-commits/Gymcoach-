@@ -20,8 +20,12 @@ import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
+
+
+
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -411,7 +415,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetRepsMin = 8,
                     targetRepsMax = 12,
                     targetSets = 3,
-                    previousSets = lastSets.map { WorkoutSetEntity.fromLastSetData(it) },
+                    previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
                     equipmentType = "home" // TODO: get from user profile
                 )

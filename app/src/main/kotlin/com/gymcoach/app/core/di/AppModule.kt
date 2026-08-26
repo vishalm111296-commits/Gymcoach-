@@ -1,7 +1,14 @@
 package com.gymcoach.app.core.di
 
+import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
+import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
+import com.gymcoach.app.data.local.dao.ProgramDao
+import com.gymcoach.app.data.local.dao.ProgramDayDao
+import com.gymcoach.app.data.local.dao.ProgramExerciseDao
 import com.gymcoach.app.data.local.dao.ReadinessDao
+import com.gymcoach.app.data.local.dao.UserProfileDao
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import dagger.Module
@@ -31,5 +38,31 @@ object AppModule {
     @Singleton
     fun provideReadinessDao(database: GymCoachDatabase): ReadinessDao = database.readinessDao()
 
-    // ExerciseRepository and WorkoutRepository are bound via @Binds in RepositoryModule.
+    @Provides
+    @Singleton
+    fun provideExerciseMuscleDao(database: GymCoachDatabase): ExerciseMuscleDao = database.exerciseMuscleDao()
+
+    @Provides
+    @Singleton
+    fun provideExerciseSubstitutionDao(database: GymCoachDatabase): ExerciseSubstitutionDao = database.exerciseSubstitutionDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramDao(database: GymCoachDatabase): ProgramDao = database.programDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramDayDao(database: GymCoachDatabase): ProgramDayDao = database.programDayDao()
+
+    @Provides
+    @Singleton
+    fun provideProgramExerciseDao(database: GymCoachDatabase): ProgramExerciseDao = database.programExerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(database: GymCoachDatabase): UserProfileDao = database.userProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideBodyMeasurementDao(database: GymCoachDatabase): BodyMeasurementDao = database.bodyMeasurementDao()
 }

@@ -337,6 +337,29 @@ class RoomMigrationTest {
     // ──────────────────────────────────────────────
 
     @Test
+    fun migrate10To11_addsScheduleAndLimitationsColumns() {
+        migrationTestHelper.createDatabase(TEST_DB, 10).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 11, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
+        )
+
+        val pragmaCursor = db.query("PRAGMA table_info(user_profiles)")
+        val foundColumns = mutableSetOf<String>()
+        while (pragmaCursor.moveToNext()) {
+            foundColumns.add(pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")))
+        }
+        pragmaCursor.close()
+
+        assertTrue("Should have preferred_schedule", foundColumns.contains("preferred_schedule"))
+        assertTrue("Should have limitations_preferences", foundColumns.contains("limitations_preferences"))
+        db.close()
+    }
+
+    @Test
     fun migrate9To10_createsReadinessTable() {
         migrationTestHelper.createDatabase(TEST_DB, 9).close()
 
@@ -346,6 +369,7 @@ class RoomMigrationTest {
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
             MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
         )
+
 
         // Verify readiness table exists
         val cursor = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='readiness'")

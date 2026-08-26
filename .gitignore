@@ -24,3 +24,7 @@ keystore/
 /app/release/
 *.apk
 *.aab
+
+# Local build/debug logs
+build_output.txt
+build_output_clean.txt

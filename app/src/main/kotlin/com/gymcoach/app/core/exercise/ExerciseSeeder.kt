@@ -72,11 +72,24 @@ class ExerciseSeeder @Inject constructor(
         return ids
     }
 
-    private suspend fun seedEquipment(): Map<String, Long> =
-        listOf("dumbbell" to "Dumbbell", "bench" to "Flat Bench", "bodyweight" to "Bodyweight")
-            .associate { (name, display) ->
-                name to db.equipmentDao().insert(EquipmentEntity(name = name, displayName = display, category = name))
+    private suspend fun seedEquipment(): Map<String, Long> {
+        val equipmentMap = mutableMapOf<String, String>()
+        for (file in ALL_EXERCISE_FILES) {
+            val root = JSONArray(asset(file))
+            for (i in 0 until root.length()) {
+                val e = root.getJSONObject(i)
+                strings(e.optJSONArray("equipment")).forEach { eq ->
+                    if (eq !in equipmentMap) {
+                        equipmentMap[eq] = eq.replace("_", " ").replaceFirstChar { it.uppercase() }
+                    }
+                }
             }
+        }
+        return equipmentMap.associate { (name, display) ->
+            name to db.equipmentDao().insert(EquipmentEntity(name = name, displayName = display, category = name))
+        }
+    }
+
 
     private suspend fun seedExercises(
         muscleIds: Map<String, Long>, equipmentIds: Map<String, Long>

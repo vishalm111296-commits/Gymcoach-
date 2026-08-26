@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.gymcoach.app.data.local.entity.*
+import com.gymcoach.app.data.local.dao.*
+
 
 @Database(
     entities = [
@@ -408,7 +411,6 @@ abstract class GymCoachDatabase : RoomDatabase() {
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
                     MIGRATION_9_10, MIGRATION_10_11
                 )
-                .fallbackToDestructiveMigration()
                 .build()
         }
     }

@@ -80,9 +80,11 @@ class VolumeCalculator @Inject constructor() {
         completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
+        val validSets = completedSets.filter { it.set.completed && it.set.setType == 0 }
+
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+        for (ctx in validSets) {
             val weekKey = isoWeekKey(ctx.workoutDate)
             val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
@@ -105,8 +107,7 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val directSetsByMuscle = validSets
             .groupBy { it.exerciseId }
             .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())
@@ -116,8 +117,7 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val indirectSetsByMuscle = validSets
             .groupBy { it.exerciseId }
             .flatMap { (exId, _) ->
                 (exerciseMuscleMap[exId] ?: emptyList())

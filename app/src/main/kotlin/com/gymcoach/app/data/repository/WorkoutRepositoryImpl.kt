@@ -123,6 +123,23 @@ class WorkoutRepositoryImpl @Inject constructor(
         return workoutDao.getLastSetsForExercise(exerciseId)
     }
 
+    override suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, LastPerformance> {
+        if (exerciseIds.isEmpty()) return emptyMap()
+        val results = workoutDao.getLastPerformancesForExercises(exerciseIds)
+        return results.associate {
+            it.exerciseId to LastPerformance(date = it.date, maxWeight = it.maxWeight)
+        }
+    }
+
+    override suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<LastSetData>> {
+        if (exerciseIds.isEmpty()) return emptyMap()
+        val results = workoutDao.getLastSetsForExercises(exerciseIds)
+        return results.groupBy(
+            keySelector = { it.exerciseId },
+            valueTransform = { LastSetData(weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, setType = it.setType, date = it.date) }
+        )
+    }
+
     // ─── History ───────────────────────────────────────────────────────
 
     override fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>> {

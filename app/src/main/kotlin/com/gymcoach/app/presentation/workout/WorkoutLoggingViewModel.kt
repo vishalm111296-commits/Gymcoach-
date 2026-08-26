@@ -121,23 +121,20 @@ class WorkoutLoggingViewModel @Inject constructor(
     private suspend fun loadPreviousPerformanceForExercises(
         exercises: List<WorkoutExerciseWithSets>
     ) {
-        val perfMap = mutableMapOf<Long, List<LastSetData>>()
-        val summaryMap = mutableMapOf<Long, LastPerformance>()
+        if (exercises.isEmpty()) return
 
-        for (we in exercises) {
-            val exerciseId = we.exercise.id
-            try {
-                val lastSets = workoutRepository.getLastSetsForExercise(exerciseId)
-                if (lastSets.isNotEmpty()) {
-                    perfMap[exerciseId] = lastSets
-                }
-                val lastPerf = workoutRepository.getLastPerformanceForExercise(exerciseId)
-                if (lastPerf != null) {
-                    summaryMap[exerciseId] = lastPerf
-                }
-            } catch (_: Exception) {
-                // Silently skip if query fails (e.g., no history yet)
-            }
+        val exerciseIds = exercises.map { it.exercise.id }.distinct()
+
+        val perfMap = try {
+            workoutRepository.getLastSetsForExercises(exerciseIds)
+        } catch (_: Exception) {
+            emptyMap<Long, List<LastSetData>>()
+        }
+
+        val summaryMap = try {
+            workoutRepository.getLastPerformancesForExercises(exerciseIds)
+        } catch (_: Exception) {
+            emptyMap<Long, LastPerformance>()
         }
 
         _previousPerformance.value = perfMap

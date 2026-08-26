@@ -91,6 +91,47 @@ interface WorkoutDao {
     """)
     suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
 
+
+    /**
+     * Batched version of getLastPerformanceForExercise
+     */
+    @Query("""
+        WITH LastWorkouts AS (
+            SELECT we.exerciseId, MAX(w.date) as maxDate
+            FROM workouts w
+            INNER JOIN workout_exercises we ON we.workoutId = w.id
+            WHERE w.status = 'COMPLETED' AND we.exerciseId IN (:exerciseIds)
+            GROUP BY we.exerciseId
+        )
+        SELECT we.exerciseId, w.date, MAX(ws.weight) as maxWeight
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        INNER JOIN LastWorkouts lw ON lw.exerciseId = we.exerciseId AND lw.maxDate = w.date
+        WHERE w.status = 'COMPLETED'
+        GROUP BY we.exerciseId
+    """)
+    suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): List<LastPerformanceWithExercise>
+
+    /**
+     * Batched version of getLastSetsForExercise
+     */
+    @Query("""
+        SELECT we.exerciseId, ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.setType, w.date
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE w.status = 'COMPLETED' AND we.exerciseId IN (:exerciseIds)
+        AND w.date = (
+            SELECT MAX(w2.date)
+            FROM workouts w2
+            INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+            WHERE w2.status = 'COMPLETED' AND we2.exerciseId = we.exerciseId
+        )
+        ORDER BY we.exerciseId, ws.setNumber ASC
+    """)
+    suspend fun getLastSetsForExercises(exerciseIds: List<Long>): List<LastSetDataWithExercise>
+
     // ─── Analytics Queries ──────────────────────────────────────────────
 
     @Query("""
@@ -328,7 +369,23 @@ data class LastPerformance(
     val maxWeight: Double
 )
 
+data class LastPerformanceWithExercise(
+    val exerciseId: Long,
+    val date: Long,
+    val maxWeight: Double
+)
+
 data class LastSetData(
+    val weight: Double,
+    val reps: Int,
+    val rpe: Double,
+    val restSeconds: Int,
+    val setType: Int,
+    val date: Long
+)
+
+data class LastSetDataWithExercise(
+    val exerciseId: Long,
     val weight: Double,
     val reps: Int,
     val rpe: Double,

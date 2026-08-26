@@ -11,9 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.gymcoach.app.ui.theme.GymCoachTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import android.content.SharedPreferences
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sharedPreferences: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -23,8 +29,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val prefs = getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
-                    val onboardingComplete = prefs.getBoolean("onboarding_complete", false)
+                    val onboardingComplete = sharedPreferences.getBoolean("onboarding_complete", false)
                     val startDest = if (onboardingComplete) Routes.HOME else Routes.ONBOARDING
 
                     GymCoachNavHost(

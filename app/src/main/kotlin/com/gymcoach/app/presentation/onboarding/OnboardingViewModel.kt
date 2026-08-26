@@ -10,6 +10,7 @@ import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.SharedPreferences
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,7 +54,7 @@ data class OnboardingUiState(
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val sharedPreferences: SharedPreferences,
     private val userProfileRepository: UserProfileRepository,
     private val programGenerator: ProgramGenerator,
     private val programRepository: ProgramRepository // persists the generated first program
@@ -134,7 +135,7 @@ class OnboardingViewModel @Inject constructor(
                 )
                 programRepository.saveGeneratedProgram(generated)
                 // Mark onboarding as complete so returning users skip it
-                context.getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
+                sharedPreferences
                     .edit()
                     .putBoolean("onboarding_complete", true)
                     .apply()

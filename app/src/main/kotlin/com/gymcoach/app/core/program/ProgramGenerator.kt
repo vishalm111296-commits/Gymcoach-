@@ -40,7 +40,6 @@ class ProgramGenerator @Inject constructor(
     suspend fun generateProgram(
         frequency: Int,
         equipmentType: String,
-        experienceLevel: String,
         goal: String
     ): GeneratedProgram {
         val availableEquipment = equipmentAvailability.getAvailableEquipment(equipmentType)

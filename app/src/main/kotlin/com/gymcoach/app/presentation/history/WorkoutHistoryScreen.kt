@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,7 +78,6 @@ fun WorkoutHistoryScreen(
     val workouts by viewModel.workouts.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filterOption by viewModel.filterOption.collectAsState()
-    val sortOption by viewModel.sortOption.collectAsState()
     val incompleteWorkout by viewModel.incompleteWorkout.collectAsState()
     val deleteTarget by viewModel.deleteTarget.collectAsState()
     val showDeleteConfirmation = deleteTarget != null
@@ -129,7 +128,7 @@ fun WorkoutHistoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 edgePadding = 16.dp
             ) {
-                WorkoutHistoryViewModel.FilterOption.values().forEachIndexed { index, filter ->
+                WorkoutHistoryViewModel.FilterOption.values().forEachIndexed { _, filter ->
                     Tab(
                         selected = filterOption == filter,
                         onClick = {
@@ -146,7 +145,7 @@ fun WorkoutHistoryScreen(
             // Sort dropdown
             Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                 IconButton(onClick = { showSortOptions = true }) {
-                    Icon(Icons.Filled.Sort, contentDescription = "Sort")
+                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
                 }
                 DropdownMenu(
                     expanded = showSortOptions,

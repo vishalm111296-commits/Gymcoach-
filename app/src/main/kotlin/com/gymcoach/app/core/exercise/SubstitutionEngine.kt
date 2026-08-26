@@ -28,7 +28,6 @@ class SubstitutionEngine @Inject constructor(
         maxResults: Int = 5
     ): List<SubstitutionResult> {
         val original = exerciseDao.getById(exerciseId).first() ?: return emptyList()
-        val availableEquipment = equipmentAvailability.getAvailableEquipment(equipmentType)
         val substitutes = mutableListOf<SubstitutionResult>()
 
         // Check predefined substitutions first

@@ -15,7 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.Info
@@ -170,7 +170,7 @@ fun ProfileScreen(
                     ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Experience", value = p.experience.ifBlank { "Not specified" })
                     ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Training Days/Week", value = "${p.trainingDaysPerWeek}")
                     ProfileInfoRow(icon = Icons.Default.Timer, label = "Session Length", value = "${p.sessionLengthMinutes} minutes")
-                    ProfileInfoRow(icon = Icons.Default.DirectionsRun, label = "Goal", value = p.goal.ifBlank { "Not specified" })
+                    ProfileInfoRow(icon = Icons.AutoMirrored.Filled.DirectionsRun, label = "Goal", value = p.goal.ifBlank { "Not specified" })
 
                     Spacer(Modifier.height(24.dp))
 

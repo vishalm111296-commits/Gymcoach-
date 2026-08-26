@@ -12,7 +12,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -31,7 +31,7 @@ private val BOTTOM_NAV_ITEMS = listOf(
     BottomNavItem("home", "Home", Icons.Filled.Home),
     BottomNavItem("workout", "Workout", Icons.Filled.FitnessCenter),
     BottomNavItem("program", "Program", Icons.Filled.CalendarMonth),
-    BottomNavItem("progress", "Progress", Icons.Filled.TrendingUp),
+    BottomNavItem("progress", "Progress", Icons.AutoMirrored.Filled.TrendingUp),
     BottomNavItem("profile", "Profile", Icons.Filled.Person)
 )
 

@@ -78,9 +78,11 @@ fun VtaperFocusCard(
                         modifier = Modifier.width(110.dp)
                     )
                     LinearProgressIndicator(
-                        progress = if (data.target > 0) {
-                            (data.current.toFloat() / data.target).coerceIn(0f, 1f)
-                        } else 0f,
+                        progress = {
+                            if (data.target > 0) {
+                                (data.current.toFloat() / data.target).coerceIn(0f, 1f)
+                            } else 0f
+                        },
                         color = MuscleActive,
                         trackColor = MuscleRest,
                         modifier = Modifier

@@ -73,7 +73,7 @@ class ProgramGeneratorTest {
 
     private suspend fun generate(equipmentType: String): ProgramGenerator.GeneratedProgram {
         coEvery { dao.getAll() } returns flowOf(all())
-        return generator.generateProgram(4, equipmentType, "intermediate", "vtaper")
+        return generator.generateProgram(4, equipmentType, "vtaper")
     }
 
     @Test

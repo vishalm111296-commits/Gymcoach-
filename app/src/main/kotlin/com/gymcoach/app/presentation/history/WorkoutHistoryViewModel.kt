@@ -35,6 +35,7 @@ class WorkoutHistoryViewModel @Inject constructor(
     private val _filterOption = MutableStateFlow(FilterOption.ALL)
     val filterOption: StateFlow<FilterOption> = _filterOption
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val _sortOption = MutableStateFlow(SortOption.NEWEST)
     val sortOption: StateFlow<SortOption> = _sortOption
 
@@ -60,6 +61,7 @@ class WorkoutHistoryViewModel @Inject constructor(
         loadIncompleteWorkout()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeWorkouts() {
         viewModelScope.launch {
             val filtersFlow = combine(
@@ -98,11 +100,11 @@ class WorkoutHistoryViewModel @Inject constructor(
                         filtered.filter { it.date.toEpochMilli() >= todayStart }
                     }
                     FilterOption.THIS_WEEK -> {
-                        val weekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000
+                        val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
                         filtered.filter { it.date.toEpochMilli() >= weekAgo }
                     }
                     FilterOption.THIS_MONTH -> {
-                        val monthAgo = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000
+                        val monthAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
                         filtered.filter { it.date.toEpochMilli() >= monthAgo }
                     }
                     FilterOption.CUSTOM -> {

@@ -43,7 +43,7 @@ fun WorkoutSetEntity.fromLastSetData(data: com.gymcoach.app.data.local.dao.LastS
     )
 }
 
-fun com.gymcoach.app.domain.model.WorkoutSet.toEntity(): WorkoutSetEntity {
+fun com.gymcoach.app.domain.model.WorkoutSet.toWorkoutSetEntity(): WorkoutSetEntity {
     return WorkoutSetEntity(
         id = id,
         workoutExerciseId = workoutExerciseId,

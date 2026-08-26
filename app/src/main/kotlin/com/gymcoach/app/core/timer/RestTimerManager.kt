@@ -26,7 +26,7 @@ object RestPresets {
     val VERY_LONG = 180  // Max effort
 
     /** Returns the recommended rest time for a given exercise set type and RPE. */
-    fun recommended(setType: com.gymcoach.app.domain.model.SetType, rpe: Double, setsCompleted: Int): Int {
+    fun recommended(setType: com.gymcoach.app.domain.model.SetType, rpe: Double): Int {
         return when (setType) {
             com.gymcoach.app.domain.model.SetType.WARMUP -> 60
             com.gymcoach.app.domain.model.SetType.DROP -> 30

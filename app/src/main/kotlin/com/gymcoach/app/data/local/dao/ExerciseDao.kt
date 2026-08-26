@@ -56,6 +56,9 @@ interface ExerciseDao {
     """)
     fun searchExercises(query: String): Flow<List<ExerciseEntity>>
 
+    @Query("INSERT INTO exercise_fts(exercise_fts) VALUES('rebuild')")
+    suspend fun rebuildFtsIndex()
+
     @Query("SELECT * FROM exercises WHERE isFavorite = 1 ORDER BY LOWER(name) ASC")
     fun getFavorites(): Flow<List<ExerciseEntity>>
 

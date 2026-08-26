@@ -56,3 +56,4 @@
 # ── Prevent renaming of source files for cleaner stack traces ─
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+-dontwarn javax.lang.model.**

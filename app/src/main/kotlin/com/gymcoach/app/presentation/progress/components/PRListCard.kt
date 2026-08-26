@@ -53,7 +53,7 @@ fun PRListCard(
                 text = "PERSONAL RECORDS",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.5.sp,
+                letterSpacing = 1.5f.sp,
                 color = TextSecondary
             )
 

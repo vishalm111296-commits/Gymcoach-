@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 11,
-    "identityHash": "c2ab17ef160c29ed4395ab514ceed74d",
+    "identityHash": "9e032960f2ec9783d88077042128f38d",
     "entities": [
       {
         "tableName": "exercises",
@@ -510,7 +510,7 @@
       },
       {
         "tableName": "body_measurements",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `recorded_at` INTEGER NOT NULL, `weight_kg` REAL NOT NULL, `body_fat_pct` REAL NOT NULL, `chest_cm` REAL NOT NULL, `waist_cm` REAL NOT NULL, `hips_cm` REAL NOT NULL, `shoulders_cm` REAL NOT NULL, `left_arm_cm` REAL NOT NULL, `right_arm_cm` REAL NOT NULL, `left_thigh_cm` REAL NOT NULL, `right_thigh_cm` REAL NOT NULL, `left_calf_cm` REAL NOT NULL, `right_calf_cm` REAL NOT NULL, `notes` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `recorded_at` INTEGER NOT NULL, `weight_kg` REAL NOT NULL, `body_fat_pct` REAL, `chest_cm` REAL, `waist_cm` REAL, `hips_cm` REAL, `shoulders_cm` REAL, `left_arm_cm` REAL, `right_arm_cm` REAL, `left_thigh_cm` REAL, `right_thigh_cm` REAL, `left_calf_cm` REAL, `right_calf_cm` REAL, `notes` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -540,67 +540,67 @@
             "fieldPath": "bodyFatPct",
             "columnName": "body_fat_pct",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "chestCm",
             "columnName": "chest_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "waistCm",
             "columnName": "waist_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "hipsCm",
             "columnName": "hips_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "shouldersCm",
             "columnName": "shoulders_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "leftArmCm",
             "columnName": "left_arm_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "rightArmCm",
             "columnName": "right_arm_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "leftThighCm",
             "columnName": "left_thigh_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "rightThighCm",
             "columnName": "right_thigh_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "leftCalfCm",
             "columnName": "left_calf_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "rightCalfCm",
             "columnName": "right_calf_cm",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "notes",
@@ -1593,7 +1593,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c2ab17ef160c29ed4395ab514ceed74d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9e032960f2ec9783d88077042128f38d')"
     ]
   }
 }

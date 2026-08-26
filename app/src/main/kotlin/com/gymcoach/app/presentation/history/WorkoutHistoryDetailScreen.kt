@@ -328,10 +328,7 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
         }
     }
 
-    if (w.notes.isNotBlank()) {
-        sb.appendLine()
-        sb.appendLine("\uD83D\uDCDD Notes: ${w.notes}")
-    }
+    // SECURITY: Do not include notes in the shared summary as they may contain sensitive health data
 
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"

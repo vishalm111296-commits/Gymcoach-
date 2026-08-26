@@ -16,35 +16,35 @@ class BodyMeasurementTest {
         val entity = BodyMeasurementEntity()
         assertEquals(0L, entity.id)
         assertEquals(1L, entity.userId)
-        assertEquals(0.0, entity.weightKg!!, 0.01)
-        assertNull(entity.bodyFatPct)
-        assertNull(entity.chestCm)
-        assertNull(entity.waistCm)
+        assertEquals(0.0, entity.weightKg, 0.01)
+        assertEquals(0.0, entity.bodyFatPct, 0.01)
+        assertEquals(0.0, entity.chestCm, 0.01)
+        assertEquals(0.0, entity.waistCm, 0.01)
         assertEquals("", entity.notes)
     }
 
     @Test
     fun `BodyMeasurementEntity stores weight correctly`() {
         val entity = BodyMeasurementEntity(weightKg = 82.5)
-        assertEquals(82.5, entity.weightKg!!, 0.01)
+        assertEquals(82.5, entity.weightKg, 0.01)
     }
 
     @Test
     fun `BodyMeasurementEntity stores waist correctly`() {
         val entity = BodyMeasurementEntity(waistCm = 78.3)
-        assertEquals(78.3, entity.waistCm!!, 0.01)
+        assertEquals(78.3, entity.waistCm, 0.01)
     }
 
     @Test
     fun `BodyMeasurementEntity stores chest correctly`() {
         val entity = BodyMeasurementEntity(chestCm = 102.0)
-        assertEquals(102.0, entity.chestCm!!, 0.01)
+        assertEquals(102.0, entity.chestCm, 0.01)
     }
 
     @Test
     fun `BodyMeasurementEntity stores body fat correctly`() {
         val entity = BodyMeasurementEntity(bodyFatPct = 15.5)
-        assertEquals(15.5, entity.bodyFatPct!!, 0.01)
+        assertEquals(15.5, entity.bodyFatPct, 0.01)
     }
 
     @Test
@@ -70,18 +70,18 @@ class BodyMeasurementTest {
             rightCalfCm = 39.5,
             notes = "Full measurements"
         )
-        assertEquals(80.0, entity.weightKg!!, 0.01)
-        assertEquals(14.0, entity.bodyFatPct!!, 0.01)
-        assertEquals(100.0, entity.chestCm!!, 0.01)
-        assertEquals(76.0, entity.waistCm!!, 0.01)
-        assertEquals(95.0, entity.hipsCm!!, 0.01)
-        assertEquals(120.0, entity.shouldersCm!!, 0.01)
-        assertEquals(38.0, entity.leftArmCm!!, 0.01)
-        assertEquals(38.5, entity.rightArmCm!!, 0.01)
-        assertEquals(60.0, entity.leftThighCm!!, 0.01)
-        assertEquals(59.5, entity.rightThighCm!!, 0.01)
-        assertEquals(40.0, entity.leftCalfCm!!, 0.01)
-        assertEquals(39.5, entity.rightCalfCm!!, 0.01)
+        assertEquals(80.0, entity.weightKg, 0.01)
+        assertEquals(14.0, entity.bodyFatPct, 0.01)
+        assertEquals(100.0, entity.chestCm, 0.01)
+        assertEquals(76.0, entity.waistCm, 0.01)
+        assertEquals(95.0, entity.hipsCm, 0.01)
+        assertEquals(120.0, entity.shouldersCm, 0.01)
+        assertEquals(38.0, entity.leftArmCm, 0.01)
+        assertEquals(38.5, entity.rightArmCm, 0.01)
+        assertEquals(60.0, entity.leftThighCm, 0.01)
+        assertEquals(59.5, entity.rightThighCm, 0.01)
+        assertEquals(40.0, entity.leftCalfCm, 0.01)
+        assertEquals(39.5, entity.rightCalfCm, 0.01)
     }
 
     @Test

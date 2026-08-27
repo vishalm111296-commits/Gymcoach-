@@ -15,8 +15,10 @@ import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,11 +39,15 @@ import javax.inject.Inject
 class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val userProfileRepository: UserProfileRepository,
     private val restTimer: RestTimerManager,
     private val progressionEngine: ProgressionEngine
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
+
+    private val userProfile: StateFlow<UserProfileEntity?> = userProfileRepository.getLatestProfile()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -408,6 +414,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
             if (normalSets.isNotEmpty()) {
                 val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
+                val currentEquipmentType = userProfile.value?.equipmentType ?: "gym"
                 val recommendation = progressionEngine.calculateProgression(
                     exerciseId = exercise.id,
                     exerciseName = exercise.name,
@@ -417,7 +424,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetSets = 3,
                     previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = "gym" // Temporarily hardcoded, should be mapped properly
+                    equipmentType = currentEquipmentType
                 )
                 recommendations[exercise.id] = recommendation
             }

@@ -10,6 +10,7 @@ import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Workout
+
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.SetType
 import kotlinx.coroutines.Dispatchers
@@ -147,7 +148,7 @@ class WorkoutRepositoryIntegrationTest {
             workoutDao.insertWorkout(workout)
         }
 
-        val completed = repository.getCompletedWorkouts().first()
+        val completed = repository.getCompletedWorkouts().value
         assertEquals("Should only return COMPLETED workouts", 2, completed.size)
         completed.forEach { assertEquals("COMPLETED", it.status) }
     }
@@ -167,9 +168,9 @@ class WorkoutRepositoryIntegrationTest {
             status = "COMPLETED"
         )
         val completedId = workoutDao.insertWorkout(completedWorkout)
-        val exEntity = WorkoutExerciseEntity(completedId, exerciseId, 0)
+        val exEntity = WorkoutExerciseEntity(workoutId = completedId, exerciseId = exerciseId, orderIndex = 0)
         val exId = workoutDao.insertWorkoutExercise(exEntity)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(exId, 1, 100.0, 5, 8.0, 180, true, 0))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = exId, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
 
         // ACTIVE workout with heavier weight (should be ignored)
         val activeWorkout = WorkoutEntity(
@@ -182,9 +183,9 @@ class WorkoutRepositoryIntegrationTest {
             status = "ACTIVE"
         )
         val activeId = workoutDao.insertWorkout(activeWorkout)
-        val activeExEntity = WorkoutExerciseEntity(activeId, exerciseId, 0)
+        val activeExEntity = WorkoutExerciseEntity(workoutId = activeId, exerciseId = exerciseId, orderIndex = 0)
         val activeExId = workoutDao.insertWorkoutExercise(activeExEntity)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(activeExId, 1, 150.0, 5, 8.0, 180, true, 0))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = activeExId, setNumber = 1, weight = 150.0, reps = 5, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
 
         val pr = repository.getPersonalRecordMax(exerciseId)
         assertEquals("PR should be from COMPLETED only", 100.0, pr!!, 0.001)
@@ -212,12 +213,12 @@ class WorkoutRepositoryIntegrationTest {
                 status = "COMPLETED"
             )
             val wId = workoutDao.insertWorkout(workout)
-            val exEntity = WorkoutExerciseEntity(wId, 1L, 0)
+            val exEntity = WorkoutExerciseEntity(workoutId = wId, exerciseId = 1L, orderIndex = 0)
             val exId = workoutDao.insertWorkoutExercise(exEntity)
-            workoutDao.insertWorkoutSet(WorkoutSetEntity(exId, 1, 100.0, 10, 8.0, 180, true, 0))
+            workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = exId, setNumber = 1, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
         }
 
-        val monthly = repository.getMonthlyVolumes().first()
+        val monthly = repository.getMonthlyVolumes().value
         assertTrue("Should have at least 1 month of data", monthly.size >= 1)
     }
 
@@ -234,9 +235,9 @@ class WorkoutRepositoryIntegrationTest {
             status = "COMPLETED"
         )
         val wId1 = workoutDao.insertWorkout(workout1)
-        val ex1 = WorkoutExerciseEntity(wId1, 1L, 0)
+        val ex1 = WorkoutExerciseEntity(workoutId = wId1, exerciseId = 1L, orderIndex = 0)
         val exId1 = workoutDao.insertWorkoutExercise(ex1)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(exId1, 1, 100.0, 10, 8.0, 180, true, 0))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = exId1, setNumber = 1, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
 
         val workout2 = WorkoutEntity(
             date = Instant.now().toEpochMilli(),

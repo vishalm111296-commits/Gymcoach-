@@ -1,5 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.GymCoach.Splash" parent="Theme.SplashScreen">
+        <!-- Background color of the splash screen (DarkBackground) -->
+        <item name="windowSplashScreenBackground">#1A1A2E</item>
+        <!-- The icon to display in the center -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- Set the theme to use after the splash screen finishes -->
+        <item name="postSplashScreenTheme">@style/Theme.GymCoach</item>
+    </style>
+
     <style name="Theme.GymCoach" parent="android:Theme.Material.Light.NoActionBar">
         <!-- Customize your theme here. -->
+        <item name="android:statusBarColor">#1A1A2E</item>
+        <item name="android:navigationBarColor">#1A1A2E</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

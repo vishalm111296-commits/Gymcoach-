@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.detail
 
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -162,6 +163,26 @@ fun ExerciseDetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                // Placeholder Hero Image via Typography
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            RoundedCornerShape(24.dp)
+                        )
+                        .padding(bottom = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 // Description section
                 Text(
                     text = "Description",

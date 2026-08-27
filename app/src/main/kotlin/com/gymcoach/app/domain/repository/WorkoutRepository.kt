@@ -25,6 +25,8 @@ interface WorkoutRepository {
     // Previous performance
     suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
     suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
+    suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, LastPerformance>
+    suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<LastSetData>>
 
     // History
     fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>>

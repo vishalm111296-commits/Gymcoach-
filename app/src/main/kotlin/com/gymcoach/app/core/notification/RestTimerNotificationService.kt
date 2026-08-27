@@ -31,10 +31,10 @@ class RestTimerNotificationService : Service() {
         const val ACTION_PAUSE = "com.gymcoach.app.resttimer.PAUSE"
         const val ACTION_RESUME = "com.gymcoach.app.resttimer.RESUME"
         const val ACTION_CANCEL = "com.gymcoach.app.resttimer.CANCEL"
-        const val ACTION_COMPLETE = "action_complete"
-        const val ACTION_SKIP = "action_skip"
-        const val ACTION_PLUS_15 = "action_plus"
-        const val ACTION_MINUS_15 = "action_minus"
+        const val ACTION_COMPLETE = "com.gymcoach.app.resttimer.COMPLETE"
+        const val ACTION_SKIP = "com.gymcoach.app.resttimer.SKIP"
+        const val ACTION_PLUS_15 = "com.gymcoach.app.resttimer.PLUS_15"
+        const val ACTION_MINUS_15 = "com.gymcoach.app.resttimer.MINUS_15"
 
         const val EXTRA_SECONDS = "extra_seconds"
         const val EXTRA_NEXT_SET = "extra_next_set"
@@ -166,7 +166,7 @@ class RestTimerNotificationService : Service() {
             PendingIntent.getBroadcast(
                 this,
                 requestCode,
-                Intent(this, RestTimerReceiver::class.java).setAction(action),
+                Intent(this, RestTimerReceiver::class.java).setAction(action).setPackage(this.packageName),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 

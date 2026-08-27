@@ -139,6 +139,7 @@ dependencies {
 
     // Core
     implementation(libs.core.ktx)
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation(libs.activity.compose)
 
     // Lifecycle
@@ -182,9 +183,6 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
-    androidTestImplementation("androidx.room:room-testing:2.6.1")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.test.ext)

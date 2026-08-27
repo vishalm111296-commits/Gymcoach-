@@ -58,6 +58,3 @@
 -renamesourcefileattribute SourceFile
 -dontwarn javax.lang.model.**
 -dontwarn javax.lang.model.**
--dontwarn javax.lang.model.**
--dontwarn javax.lang.model.**
--dontwarn javax.lang.model.**

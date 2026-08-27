@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -162,6 +163,13 @@ fun ExerciseDetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                ExerciseTypographyPlaceholder(
+                    name = ex.name,
+                    muscleGroup = ex.muscleGroup,
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                )
+                Spacer(Modifier.height(24.dp))
+
                 // Description section
                 Text(
                     text = "Description",
@@ -529,5 +537,48 @@ private fun DetailRow(
             modifier = Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+@Composable
+private fun ExerciseTypographyPlaceholder(
+    name: String,
+    muscleGroup: String,
+    modifier: Modifier = Modifier
+) {
+    val initial = name.firstOrNull()?.uppercase() ?: "?"
+    val backgroundColor = when (muscleGroup.lowercase()) {
+        "chest" -> Color(0xFFE57373)
+        "back" -> Color(0xFF64B5F6)
+        "legs" -> Color(0xFF81C784)
+        "shoulders" -> Color(0xFFFFB74D)
+        "arms" -> Color(0xFFBA68C8)
+        "core" -> Color(0xFF4DB6AC)
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 80.sp,
+                    fontWeight = FontWeight.Black
+                ),
+                color = Color.White.copy(alpha = 0.8f)
+            )
+            Text(
+                text = muscleGroup.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }

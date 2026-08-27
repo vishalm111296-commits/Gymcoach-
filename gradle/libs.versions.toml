@@ -1,4 +1,5 @@
 [versions]
+splashscreen = "1.0.1"
 agp = "8.2.2"
 kotlin = "1.9.22"
 ksp = "1.9.22-1.0.17"
@@ -22,6 +23,7 @@ androidx-test-ext = "1.1.5"
 espresso = "3.5.1"
 
 [libraries]
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 # Compose BOM
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }

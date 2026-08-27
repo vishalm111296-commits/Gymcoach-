@@ -140,6 +140,7 @@ dependencies {
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Lifecycle
     implementation(libs.lifecycle.runtime.ktx)
@@ -179,6 +180,7 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.android)
     testImplementation(libs.coroutines.test)
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
     // Testing
     testImplementation(libs.junit)

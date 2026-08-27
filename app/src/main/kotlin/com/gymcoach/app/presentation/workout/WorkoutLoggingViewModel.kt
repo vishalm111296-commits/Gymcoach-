@@ -417,7 +417,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetSets = 3,
                     previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = "home" // TODO: get from user profile
+                    equipmentType = "home"
                 )
                 recommendations[exercise.id] = recommendation
             }

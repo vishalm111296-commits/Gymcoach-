@@ -16,13 +16,11 @@ import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_7_8
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_8_9
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_9_10
-import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_10_11
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import kotlinx.coroutines.test.runTest
 import org.junit.runner.RunWith
 
 /**
@@ -162,9 +160,80 @@ class RoomMigrationTest {
     }
 
     @Test
-    fun migration7To8_statusBackfillLogic() = runTest {
-        val db = migrationTestHelper.runMigrationsAndValidate(TEST_DB, 8, true, MIGRATION_7_8)
-        val cursor = db.query("SELECT id, status, notes FROM workouts ORDER BY id")
+    fun migration7To8_statusBackfillLogic() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbHelper = object : android.database.sqlite.SQLiteOpenHelper(
+            context, "test-backfill.db", null, 7
+        ) {
+            override fun onCreate(db: android.database.sqlite.SQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS workouts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        date INTEGER NOT NULL,
+                        startTime INTEGER NOT NULL,
+                        endTime INTEGER NOT NULL,
+                        duration INTEGER NOT NULL,
+                        notes TEXT NOT NULL,
+                        completed INTEGER NOT NULL
+                    )"""
+                )
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS workout_exercises (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        workoutId INTEGER NOT NULL,
+                        exerciseId INTEGER NOT NULL,
+                        orderIndex INTEGER NOT NULL
+                    )"""
+                )
+
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'completed workout', 1)")
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'active workout', 0)")
+                db.execSQL("INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES (2, 1, 0)")
+                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'zombie workout', 0)")
+            }
+
+            override fun onUpgrade(db: android.database.sqlite.SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            override fun onDowngrade(db: android.database.sqlite.SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+        }
+
+        val dbHelperFactory = androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory()
+        val dbConfig = androidx.sqlite.db.SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test-backfill.db")
+            .callback(object : androidx.sqlite.db.SupportSQLiteOpenHelper.Callback(7) {
+                override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """CREATE TABLE IF NOT EXISTS workouts (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            date INTEGER NOT NULL,
+                            startTime INTEGER NOT NULL,
+                            endTime INTEGER NOT NULL,
+                            duration INTEGER NOT NULL,
+                            notes TEXT NOT NULL,
+                            completed INTEGER NOT NULL
+                        )"""
+                    )
+                    db.execSQL(
+                        """CREATE TABLE IF NOT EXISTS workout_exercises (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            workoutId INTEGER NOT NULL,
+                            exerciseId INTEGER NOT NULL,
+                            orderIndex INTEGER NOT NULL
+                        )"""
+                    )
+
+                    db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'completed workout', 1)")
+                    db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'active workout', 0)")
+                    db.execSQL("INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES (2, 1, 0)")
+                    db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'zombie workout', 0)")
+                }
+                override fun onUpgrade(db: androidx.sqlite.db.SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+        val supportDbHelper = dbHelperFactory.create(dbConfig)
+        val db = supportDbHelper.writableDatabase
+        MIGRATION_7_8.migrate(db)
+
+        val cursor = db.query("SELECT id, status, notes FROM workouts ORDER BY id", emptyArray())
         val results = mutableListOf<Triple<Long, String, String>>()
         while (cursor.moveToNext()) {
             results.add(
@@ -176,8 +245,19 @@ class RoomMigrationTest {
             )
         }
         cursor.close()
+        db.close()
+        supportDbHelper.close()
 
-        assert(results.any { it.second == "ACTIVE" })
+        assertEquals("Should have 3 rows", 3, results.size)
+        val statusByNote = results.associate { it.third to it.second }
+        assertEquals("completed workout → COMPLETED", "COMPLETED", statusByNote["completed workout"])
+        assertEquals("active workout → ACTIVE", "ACTIVE", statusByNote["active workout"])
+        assertEquals("zombie workout → ABANDONED", "ABANDONED", statusByNote["zombie workout"])
+
+        val validStatuses = setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")
+        for ((_, status, _) in results) {
+            assertTrue("Invalid status: $status", status in validStatuses)
+        }
     }
 
     @Test
@@ -298,7 +378,8 @@ class RoomMigrationTest {
             TEST_DB, 11, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+            // Note: MIGRATION_10_11 does not exist in GymCoachDatabase.kt yet, test logic here is probably from an unmerged branch.
         )
 
         val pragmaCursor = db.query("PRAGMA table_info(user_profiles)")

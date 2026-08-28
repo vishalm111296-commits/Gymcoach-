@@ -9,12 +9,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.gymcoach.app.ui.theme.GymCoachTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
             GymCoachTheme {
@@ -27,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     val onboardingComplete = prefs.getBoolean("onboarding_complete", false)
                     val startDest = if (onboardingComplete) Routes.HOME else Routes.ONBOARDING
 
-                    GymCoachNavHost(
+                    com.gymcoach.app.ui.shell.GymCoachAppShell(
                         navController = navController,
                         startDestination = startDest
                     )

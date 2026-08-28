@@ -19,7 +19,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,31 +51,13 @@ fun HomeDashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        containerColor = DarkBackground,
-        bottomBar = {
-            GymCoachBottomNav(
-                currentRoute = "home",
-                onNavigate = { route ->
-                    when (route) {
-                        "workout" -> onStartWorkout()
-                        "program" -> onViewProgram()
-                        "progress" -> onNavigateToProgress()
-                        "profile" -> onNavigateToProfile()
-                        else -> Unit
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DarkBackground)
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkBackground)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+    ) {
             Spacer(Modifier.height(24.dp))
             GreetingHeader()
             Spacer(Modifier.height(20.dp))
@@ -148,7 +129,6 @@ fun HomeDashboardScreen(
             }
 
             Spacer(Modifier.height(32.dp))
-        }
     }
 }
 

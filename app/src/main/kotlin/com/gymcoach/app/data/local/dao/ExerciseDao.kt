@@ -17,9 +17,10 @@ interface ExerciseDao {
         WHERE (:muscle IS NULL OR LOWER(muscleGroup) = LOWER(:muscle))
         AND (:difficulty IS NULL OR LOWER(difficulty) = LOWER(:difficulty))
         AND (:equipment IS NULL OR LOWER(equipment) = LOWER(:equipment))
+        AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
         ORDER BY LOWER(name) ASC
     """)
-    fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<ExerciseEntity>>
+    fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?, isFavorite: Boolean?): Flow<List<ExerciseEntity>>
 
     // --- Enhanced library queries ---
 

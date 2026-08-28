@@ -10,9 +10,10 @@ import com.gymcoach.app.data.local.entity.ReadinessEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import kotlinx.coroutines.flow.first
+
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import kotlinx.coroutines.flow.first
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -117,7 +118,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun isRestDayRecommended_when_score_below_2_5() = runTest {
+    fun isRestDayRecommended_whenScoreBelow2_5() = runTest {
         val low = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
         assertTrue(low.isRestDayRecommended)
 

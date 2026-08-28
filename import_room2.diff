@@ -1,0 +1,15 @@
+<<<<<<< SEARCH
+    val migrationTestHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation().targetContext,
+        GymCoachDatabase::class.java,
+        emptyList<AutoMigrationSpec>(),
+        FrameworkSQLiteOpenHelperFactory()
+    )
+=======
+    val migrationTestHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        GymCoachDatabase::class.java,
+        emptyList(),
+        FrameworkSQLiteOpenHelperFactory()
+    )
+>>>>>>> REPLACE

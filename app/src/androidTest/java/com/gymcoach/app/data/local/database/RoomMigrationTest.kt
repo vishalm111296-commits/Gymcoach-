@@ -1,6 +1,5 @@
 package com.gymcoach.app.data.local.database
 
-
 import androidx.room.testing.MigrationTestHelper
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase

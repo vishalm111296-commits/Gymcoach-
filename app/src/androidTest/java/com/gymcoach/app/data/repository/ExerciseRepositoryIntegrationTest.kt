@@ -10,6 +10,7 @@ import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -44,13 +45,13 @@ class ExerciseRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getAllExercises returns seeded exercises`() = runTest {
+    fun getAllExercises_returns_seeded_exercises() = runTest {
         val exercises = repository.getAllExercises().first()
         assertTrue("Should have seeded exercises", exercises.size > 0)
     }
 
     @Test
-    fun `searchExercises uses FTS4 for text queries`() = runTest {
+    fun searchExercises_uses_FTS4_for_text_queries() = runTest {
         // Insert test exercises
         val benchPress = ExerciseEntity(
             name = "Bench Press",
@@ -120,7 +121,7 @@ class ExerciseRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getFilteredExercises filters by equipment`() = runTest {
+    fun getFilteredExercises_filters_by_equipment() = runTest {
         val dumbbellEx = ExerciseEntity(
             name = "DB Press",
             description = "",
@@ -182,7 +183,7 @@ class ExerciseRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getFilteredExercises filters by difficulty`() = runTest {
+    fun getFilteredExercises_filters_by_difficulty() = runTest {
         val beginnerEx = ExerciseEntity(
             name = "Push-up",
             description = "",
@@ -242,7 +243,7 @@ class ExerciseRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getFilteredExercises filters by muscle group`() = runTest {
+    fun getFilteredExercises_filters_by_muscle_group() = runTest {
         val chestEx = ExerciseEntity(
             name = "Bench Press",
             description = "",
@@ -302,7 +303,7 @@ class ExerciseRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getById returns correct exercise`() = runTest {
+    fun getById_returns_correct_exercise() = runTest {
         val exercise = ExerciseEntity(
             name = "Test Exercise",
             description = "Test",

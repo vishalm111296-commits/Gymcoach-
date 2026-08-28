@@ -85,12 +85,6 @@ fun HomeDashboardScreen(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
-
-            Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
-
             // Readiness quick link
             Spacer(Modifier.height(16.dp))
             Card(
@@ -108,14 +102,14 @@ fun HomeDashboardScreen(
                 ) {
                     Column {
                         Text(
-                            text = "RECOVERY & READINESS",
+                            text = "READINESS",
                             style = MaterialTheme.typography.labelSmall,
                             color = AccentBlue,
                             letterSpacing = 1.5.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Log how you're feeling today",
+                            text = "Update today's recovery status",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
@@ -128,12 +122,54 @@ fun HomeDashboardScreen(
                 }
             }
 
+            Spacer(Modifier.height(16.dp))
+            CoachInsightCard(state.coachInsight)
+
+            if (state.latestCompletedWorkout != null) {
+                Spacer(Modifier.height(16.dp))
+                LatestCompletedWorkoutCard(state.latestCompletedWorkout!!)
+            }
+
+            Spacer(Modifier.height(16.dp))
+            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
+
             if (state.vtaperBars.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
             }
 
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun LatestCompletedWorkoutCard(workout: com.gymcoach.app.domain.model.WorkoutWithStats) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+    ) {
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "RECENT SESSION",
+                style = MaterialTheme.typography.labelSmall,
+                color = AccentBlue,
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Session Completed", // WorkoutWithStats doesn't hold the name, typically it's derived or default.
+                style = MaterialTheme.typography.titleMedium,
+                color = WarmWhite,
+                fontWeight = FontWeight.Bold
+            )
+            val volume = String.format("%.0f", workout.volume)
+            Text(
+                text = "${workout.setCount} sets \u2022 ${volume}kg volume",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
         }
     }
 }

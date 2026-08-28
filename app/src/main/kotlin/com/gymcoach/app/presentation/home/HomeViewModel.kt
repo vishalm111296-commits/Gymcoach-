@@ -38,7 +38,8 @@ data class HomeUiState(
     val workoutsThisWeek: Int = 0,
     val targetWorkouts: Int = 0,
     val prCount: Int = 0,
-    val vtaperBars: List<VtaperMuscleData> = emptyList()
+    val vtaperBars: List<VtaperMuscleData> = emptyList(),
+    val latestCompletedWorkout: com.gymcoach.app.domain.model.WorkoutWithStats? = null
 )
 
 /** Evidence-based optimal band floor (14-17 weekly sets) used as the bar target. */
@@ -113,12 +114,15 @@ class HomeViewModel @Inject constructor(
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
         prCount: Int
     ): HomeUiState {
+        val latestCompleted = workouts.filter { it.completed }.maxByOrNull { it.endTime.toEpochMilli() }
+
         if (core == null) {
             return HomeUiState(
                 isLoading = false,
                 hasProgram = false,
                 coachInsight = "Your first session is ready once you set up your plan.",
-                prCount = prCount
+                prCount = prCount,
+                latestCompletedWorkout = latestCompleted
             )
         }
 

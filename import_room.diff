@@ -1,6 +1,0 @@
-<<<<<<< SEARCH
-import androidx.room.AutoMigrationSpec
-import androidx.room.MigrationTestHelper
-=======
-import androidx.room.testing.MigrationTestHelper
->>>>>>> REPLACE

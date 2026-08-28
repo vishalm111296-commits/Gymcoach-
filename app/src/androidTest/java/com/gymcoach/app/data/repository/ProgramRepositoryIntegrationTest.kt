@@ -17,6 +17,8 @@ import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -60,7 +62,7 @@ class ProgramRepositoryIntegrationTest {
     }
 
     @Test
-    fun `ProgramGenerator creates 4-day program with home equipment`() = runTest {
+    fun ProgramGenerator_creates_4_day_program_with_home_equipment() = runTest {
         // Insert test exercises matching home equipment
         val exercises = listOf(
             exercise(1, "DB Bench Press", "Chest", "dumbbell,bench", "Intermediate",
@@ -109,7 +111,7 @@ class ProgramRepositoryIntegrationTest {
     }
 
     @Test
-    fun `ProgramGenerator excludes barbell exercises for home equipment`() = runTest {
+    fun ProgramGenerator_excludes_barbell_exercises_for_home_equipment() = runTest {
         val exercises = listOf(
             exercise(1, "DB Bench Press", "Chest", "dumbbell,bench", "Intermediate"),
             exercise(2, "Barbell Bench Press", "Chest", "barbell", "Intermediate"),
@@ -128,7 +130,7 @@ class ProgramRepositoryIntegrationTest {
         )
         exercises.forEach { exerciseDao.insert(it) }
 
-        val program = programGenerator.generateProgram(4, "home", "intermediate", "hypertrophy")
+        val program = programGenerator.generateProgram(4, "home", "hypertrophy")
 
         program.days.flatMap { it.exercises }.forEach { ex ->
             val entity = exercises.find { it.id == ex.exerciseId }
@@ -139,7 +141,7 @@ class ProgramRepositoryIntegrationTest {
     }
 
     @Test
-    fun `ProgramRepository save and retrieve program`() = runTest {
+    fun ProgramRepository_save_and_retrieve_program() = runTest {
         val program = ProgramEntity(
             userId = 1,
             name = "Test Program",
@@ -149,18 +151,18 @@ class ProgramRepositoryIntegrationTest {
             daysPerWeek = 4,
             difficulty = "Intermediate",
             goal = "Hypertrophy",
-            isActive = 1,
+            isActive = true,
             createdAt = System.currentTimeMillis()
         )
-        val programId = programDao.insertProgram(program)
+        val programId = programDao.insert(program)
 
-        val day1 = ProgramDayEntity(programId, 1, "Upper A", "Chest,Back,Shoulders,Arms", 0)
-        val day2 = ProgramDayEntity(programId, 2, "Lower A", "Legs,Core", 0)
-        val d1Id = programDayDao.insertProgramDay(day1)
-        val d2Id = programDayDao.insertProgramDay(day2)
+        val day1 = ProgramDayEntity(programId = programId, dayNumber = 1, name = "Upper A", targetMuscles = "Chest,Back,Shoulders,Arms", isRestDay = false)
+        val day2 = ProgramDayEntity(programId = programId, dayNumber = 2, name = "Lower A", targetMuscles = "Legs,Core", isRestDay = false)
+        val d1Id = programDayDao.insert(day1)
+        val d2Id = programDayDao.insert(day2)
 
-        programExerciseDao.insertProgramExercise(ProgramExerciseEntity(d1Id, 1, 0, 3, "8-12", 0.0, 90, ""))
-        programExerciseDao.insertProgramExercise(ProgramExerciseEntity(d1Id, 2, 1, 3, "8-12", 0.0, 90, ""))
+        programExerciseDao.insert(ProgramExerciseEntity(programDayId = d1Id, exerciseId = 1, orderIndex = 0, sets = 3, targetReps = "8-12", targetWeightKg = 0.0, restSeconds = 90, notes = ""))
+        programExerciseDao.insert(ProgramExerciseEntity(programDayId = d1Id, exerciseId = 2, orderIndex = 1, sets = 3, targetReps = "8-12", targetWeightKg = 0.0, restSeconds = 90, notes = ""))
 
         val retrieved = programRepository.getActiveProgram().first()
         assertNotNull(retrieved)

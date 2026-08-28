@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import com.gymcoach.app.data.local.dao.WorkoutDao
+import com.gymcoach.app.data.repository.AnalyticsRepositoryImpl
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
@@ -16,6 +17,8 @@ import com.gymcoach.app.domain.model.SetType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -40,6 +43,8 @@ class WorkoutRepositoryIntegrationTest {
     private lateinit var db: GymCoachDatabase
     private lateinit var workoutDao: WorkoutDao
     private lateinit var repository: WorkoutRepositoryImpl
+    private lateinit var analyticsRepo: AnalyticsRepositoryImpl
+
 
     @Before
     fun setup() {
@@ -52,7 +57,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `create and get workout preserves status`() = runTest {
+    fun create_and_get_workout_preserves_status() = runTest {
         val workout = Workout(
             date = Instant.now(),
             startTime = Instant.now(),
@@ -70,7 +75,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getLatestIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun getLatestIncompleteWorkout_returns_only_ACTIVE_workouts() = runTest {
         // Create COMPLETED workout
         val completed = WorkoutEntity(
             date = Instant.now().toEpochMilli(),
@@ -114,7 +119,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun getIncompleteWorkout_returns_only_ACTIVE_workouts() = runTest {
         val active = WorkoutEntity(
             date = Instant.now().toEpochMilli(),
             startTime = Instant.now().toEpochMilli(),
@@ -132,7 +137,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getCompletedWorkouts filters by status COMPLETED`() = runTest {
+    fun getCompletedWorkouts_filters_by_status_COMPLETED() = runTest {
         // Insert workouts with different statuses
         val statuses = listOf("COMPLETED", "ACTIVE", "ABANDONED", "NOT_STARTED", "COMPLETED")
         statuses.forEach { status ->
@@ -148,13 +153,13 @@ class WorkoutRepositoryIntegrationTest {
             workoutDao.insertWorkout(workout)
         }
 
-        val completed = repository.getCompletedWorkouts().value
+        val completed = repository.getCompletedWorkouts().first()
         assertEquals("Should only return COMPLETED workouts", 2, completed.size)
         completed.forEach { assertEquals("COMPLETED", it.status) }
     }
 
     @Test
-    fun `getPersonalRecordMax only considers COMPLETED workouts`() = runTest {
+    fun getPersonalRecordMax_only_considers_COMPLETED_workouts() = runTest {
         val exerciseId = 1L
 
         // COMPLETED workout with heavy weight
@@ -187,12 +192,12 @@ class WorkoutRepositoryIntegrationTest {
         val activeExId = workoutDao.insertWorkoutExercise(activeExEntity)
         workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = activeExId, setNumber = 1, weight = 150.0, reps = 5, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
 
-        val pr = repository.getPersonalRecordMax(exerciseId)
+        val pr = analyticsRepo.getPersonalRecord(exerciseId)
         assertEquals("PR should be from COMPLETED only", 100.0, pr!!, 0.001)
     }
 
     @Test
-    fun `monthly volume groups by strftime`() = runTest {
+    fun monthly_volume_groups_by_strftime() = runTest {
         val now = Instant.now().toEpochMilli()
 
         // Create workouts in different months
@@ -218,12 +223,12 @@ class WorkoutRepositoryIntegrationTest {
             workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = exId, setNumber = 1, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
         }
 
-        val monthly = repository.getMonthlyVolumes().value
+        val monthly = analyticsRepo.getMonthlyVolumes()
         assertTrue("Should have at least 1 month of data", monthly.size >= 1)
     }
 
     @Test
-    fun `analytics queries filter by COMPLETED status`() = runTest {
+    fun analytics_queries_filter_by_COMPLETED_status() = runTest {
         // Insert mixed status workouts
         val workout1 = WorkoutEntity(
             date = Instant.now().toEpochMilli(),
@@ -250,13 +255,13 @@ class WorkoutRepositoryIntegrationTest {
         )
         val wId2 = workoutDao.insertWorkout(workout2)
 
-        val totalVolume = repository.getTotalVolumeSum()
+        val totalVolume = analyticsRepo.getTotalVolume()
         assertEquals("Only COMPLETED workout volume counted", 1000.0, totalVolume!!, 0.001)
 
-        val avgVolume = repository.getAverageWorkoutVolume()
+        val avgVolume = analyticsRepo.getAverageWorkoutVolume()
         assertEquals("Average from COMPLETED only", 1000.0, avgVolume, 0.001)
 
-        val totalWorkouts = repository.getTotalWorkoutsCount()
+        val totalWorkouts = analyticsRepo.getTotalWorkouts()
         assertEquals("Only COMPLETED workouts counted", 1, totalWorkouts)
     }
 }

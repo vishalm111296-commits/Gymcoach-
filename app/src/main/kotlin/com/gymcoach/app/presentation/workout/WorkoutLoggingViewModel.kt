@@ -405,6 +405,10 @@ class WorkoutLoggingViewModel @Inject constructor(
             val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
             if (normalSets.isNotEmpty()) {
                 val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
+                val equipmentType = if (exercise.equipment.lowercase().contains("barbell") ||
+                                       exercise.equipment.lowercase().contains("dumbbell") ||
+                                       exercise.equipment.lowercase().contains("machine") ||
+                                       exercise.equipment.lowercase().contains("cable")) "gym" else "home"
                 val recommendation = progressionEngine.calculateProgression(
                     exerciseId = exercise.id,
                     exerciseName = exercise.name,
@@ -414,7 +418,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     targetSets = 3,
                     previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
                     currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = "gym" // Temporarily hardcoded, should be mapped properly
+                    equipmentType = equipmentType
                 )
                 recommendations[exercise.id] = recommendation
             }

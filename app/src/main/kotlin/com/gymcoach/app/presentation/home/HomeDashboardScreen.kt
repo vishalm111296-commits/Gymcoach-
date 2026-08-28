@@ -53,21 +53,7 @@ fun HomeDashboardScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = DarkBackground,
-        bottomBar = {
-            GymCoachBottomNav(
-                currentRoute = "home",
-                onNavigate = { route ->
-                    when (route) {
-                        "workout" -> onStartWorkout()
-                        "program" -> onViewProgram()
-                        "progress" -> onNavigateToProgress()
-                        "profile" -> onNavigateToProfile()
-                        else -> Unit
-                    }
-                }
-            )
-        }
+        containerColor = DarkBackground
     ) { padding ->
         Column(
             modifier = Modifier

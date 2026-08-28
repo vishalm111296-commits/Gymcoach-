@@ -28,11 +28,11 @@ import com.gymcoach.app.ui.theme.TextTertiary
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
 
 private val BOTTOM_NAV_ITEMS = listOf(
-    BottomNavItem("home", "Home", Icons.Filled.Home),
-    BottomNavItem("workout", "Workout", Icons.Filled.FitnessCenter),
-    BottomNavItem("program", "Program", Icons.Filled.CalendarMonth),
-    BottomNavItem("progress", "Progress", Icons.AutoMirrored.Filled.TrendingUp),
-    BottomNavItem("profile", "Profile", Icons.Filled.Person)
+    BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
+    BottomNavItem(Routes.workoutSession(), "Workout", Icons.Filled.FitnessCenter),
+    BottomNavItem(Routes.EXERCISE_LIST, "Program", Icons.Filled.CalendarMonth),
+    BottomNavItem(Routes.PROGRESS, "Progress", Icons.AutoMirrored.Filled.TrendingUp),
+    BottomNavItem(Routes.PROFILE, "Profile", Icons.Filled.Person)
 )
 
 /**

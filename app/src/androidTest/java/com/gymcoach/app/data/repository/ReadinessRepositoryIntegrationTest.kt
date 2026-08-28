@@ -110,8 +110,8 @@ class ReadinessRepositoryIntegrationTest {
         assertEquals("Moderate session", moderate.trainingRecommendation)
 
         // Low readiness
-        val low = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
-        assertEquals("Light session", low.trainingRecommendation)
+        val lowDay = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
+        assertEquals("Light session", lowDay.trainingRecommendation)
 
         // Very low readiness
         val veryLow = ReadinessEntity(sleepQuality = 1, soreness = 1, energy = 1, motivation = 1)
@@ -120,8 +120,8 @@ class ReadinessRepositoryIntegrationTest {
 
     @Test
     fun isRestDayRecommended_when_score_below_2_5() = runTest {
-        val low = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
-        assertTrue(low.isRestDayRecommended)
+        val lowDay = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
+        assertTrue(lowDay.isRestDayRecommended)
 
         val ok = ReadinessEntity(sleepQuality = 3, soreness = 3, energy = 3, motivation = 3)
         assertTrue(!ok.isRestDayRecommended)

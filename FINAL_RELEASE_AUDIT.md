@@ -6,10 +6,10 @@
 - Original Intent: An offline-first, locally persisted Android fitness application focusing on progressive overload, v-taper program generation, and CameraX/MediaPipe assisted exercise form analysis.
 
 ## 2. Final Exact SHAs
-- Origin Main SHA: 760ebdf
+- Origin Main SHA: 760ebdfc177fcdf6458b339c18dbbfdb8c223a1b
 - Final Branch: jules-1926473750041368737-aa4c6f3b
-- Final Commit SHA: d4657df
-- PR Status: Awaiting CI execution mapping.
+- VERIFIED VALIDATION SHA: d4657df159555c5f39db06a2bec62b32b327ea4d
+- DOCUMENTATION COMMIT SHA: c3ed0f6152c79d8904d0c0755ac467c4b00fd917
 
 ## 3. What is Actually Implemented
 GymCoach V1 is a functionally rich and robust offline application. Users can complete onboarding to define their fitness parameters and generate a personalized 3-6 day progressive overload program. They can browse the offline exercise library, execute their workouts with full volume tracking and rest timers, and see their stats stored cleanly across Room via CTEs. A fully abstracted CameraX+MediaPipe integration provides real-time form feedback.

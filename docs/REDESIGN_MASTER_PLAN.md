@@ -1,42 +1,34 @@
-# GymCoach V1 REDESIGN MASTER PLAN
+# GymCoach V1 Redesign Master Plan
 
-## PHASE 0 — BASELINE FREEZE
-**OBJECTIVE**: Freeze current feature logic (`main` SHA strictly passes tests and constraints without large regressions).
-**STATUS**: Frozen. Repository has verified tests, secure integration maps, Room migrations (1->11) perfectly tested and safely integrated without destructive schemas.
+## REDESIGN PRINCIPLES
+- **Preserve Business Logic**: Never rewrite existing working algorithms (V-Taper calculation, Room Schema migrations, Rest Timer Doze compatibility) merely for visual reasons.
+- **Improve UX Structure**: Standardize empty states, unify Bottom Navigation, and optimize touch targets across the app.
+- **Accessibility & Contrast**: Enhance readability through typography scaling and cohesive Dark Theme implementation.
 
-## PHASE 1 — DESIGN SYSTEM
-**OBJECTIVE**: Formulate UX UI standards spanning animations, colors, shapes, bottom navigation bar aesthetics.
-**FILES/AREAS**: `Theme.kt`, `Color.kt`, `Type.kt`.
+## PREMIUM V1 REDESIGN SPECIFICATION
 
-## PHASE 2 — NAVIGATION / APP SHELL
-**OBJECTIVE**: Build out modern scaffolding to host Bottom Nav, App Bars, Modals securely tracking `NavHost` state dynamically.
+### Design System
+- **Colors**: Defined primary, secondary, and dynamic surface elements (elevated cards). Ensure semantic matching for success/warning states in the workout completion views.
+- **Typography**: Display headlines for major dashboard statistics, semantic numeric displays for PRs/Weights.
+- **Shapes & Spacing**: Standardize at 8dp base scaling grids with fully rounded sheet corners.
+- **Components**: Construct abstract composables such as `GymCoachButton`, `GymCoachCard`, `GymCoachLoadingState`, `GymCoachTopBar`.
 
-## PHASE 3 — ONBOARDING
-**OBJECTIVE**: Streamline the entry questionnaire focusing on fast equipment checks and rapid `UserProfileEntity` setup.
+## PHASE ROADMAP
+**PHASE 0 — BASELINE FREEZE** (Status: Complete. Main frozen and tests successfully validated securely).
+**PHASE 1 — DESIGN SYSTEM** (Files: Theme.kt, Color.kt, Type.kt)
+**PHASE 2 — APP SHELL / NAVIGATION**
+**PHASE 3 — ONBOARDING**
+**PHASE 4 — HOME / COACHING**
+**PHASE 5 — WORKOUT EXPERIENCE**
+**PHASE 6 — EXERCISE LIBRARY / DETAIL**
+**PHASE 7 — ANALYTICS / PROGRESS**
+**PHASE 8 — READINESS**
+**PHASE 9 — CAMERA / FORM COACH**
+**PHASE 10 — POLISH / ACCESSIBILITY**
+**PHASE 11 — MEDIA / CONTENT**
+**PHASE 12 — FINAL QA / RELEASE**
 
-## PHASE 4 — HOME / COACHING
-**OBJECTIVE**: Redesign the main dashboard focusing on clean card structures reporting 'Today's Workout' directly via real-time analytics.
-
-## PHASE 5 — WORKOUT EXPERIENCE
-**OBJECTIVE**: Complete overhaul of the Exercise/Set logging process. Quick add weights, automated Rest Timer popup handling, visual distinction between WARMUP/DROP/FAILURE sets.
-
-## PHASE 6 — EXERCISE LIBRARY & DETAIL
-**OBJECTIVE**: Display the exercises mapped perfectly by Equipment bounds with strong search filters. Improve media loading visuals (placeholders -> actual caching structure).
-
-## PHASE 7 — ANALYTICS / PROGRESS
-**OBJECTIVE**: Build comprehensive tracking dashboards mapping to the `WorkoutRepositoryImpl` outputs (`getMonthlyVolumes`, `getPersonalRecordMax`, `getTotalVolumeSum`).
-
-## PHASE 8 — READINESS
-**OBJECTIVE**: Display visual radar tracking Sleep/Energy/Soreness mapped out over the trailing 7 day `ReadinessEntity` cache.
-
-## PHASE 9 — CAMERA / FORM COACH
-**OBJECTIVE**: Improve physical CameraX preview overlays safely dropping unused ImageProxies (`STRATEGY_KEEP_ONLY_LATEST`). Polish landmark visualizations natively.
-
-## PHASE 10 — POLISH / ACCESSIBILITY
-**OBJECTIVE**: Validate tap zones, contrast rates across dark/light mode, string abstractions natively globally.
-
-## PHASE 11 — MEDIA / CONTENT
-**OBJECTIVE**: Replace placeholders dynamically fetched from the seeder JSON to proper offline/cached media where practical.
-
-## PHASE 12 — FINAL QA / RELEASE
-**OBJECTIVE**: Complete runtime executions, secure APK packaging, rigorous doze/process death survivability, formal `RELEASE` launch validation.
+## DATA SAFETY
+- No destructive migrations.
+- No dummy mocking replacements for genuine functional states (e.g. `0kg` to signify empty/null).
+- `RoomMigrationTest` remains untouched from `1-11`.

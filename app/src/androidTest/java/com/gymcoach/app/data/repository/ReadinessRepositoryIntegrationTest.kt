@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.flow.first
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -42,7 +43,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun `save and get latest readiness`() = runTest {
+    fun save_and_get_latest_readiness() = runTest {
         val readiness = ReadinessEntity(
             sleepQuality = 4,
             soreness = 3,
@@ -62,7 +63,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getRecentReadiness returns last 7 days`() = runTest {
+    fun getRecentReadiness_returns_last_7_days() = runTest {
         val now = System.currentTimeMillis()
         val dayMs = 24 * 60 * 60 * 1000L
 
@@ -74,7 +75,7 @@ class ReadinessRepositoryIntegrationTest {
                 energy = 3,
                 motivation = 3,
                 notes = "Day $i"
-            ).also { it.recordedAt = now - i * dayMs }
+            , recordedAt = now - i * dayMs)
             repository.saveReadiness(readiness)
         }
 
@@ -84,7 +85,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun `readiness score computed correctly`() = runTest {
+    fun readiness_score_computed_correctly() = runTest {
         val readiness = ReadinessEntity(
             sleepQuality = 4,
             soreness = 2,
@@ -97,7 +98,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun `training recommendation based on score`() = runTest {
+    fun training_recommendation_based_on_score() = runTest {
         // High readiness
         val high = ReadinessEntity(sleepQuality = 5, soreness = 5, energy = 5, motivation = 5)
         assertEquals("Full intensity", high.trainingRecommendation)
@@ -116,7 +117,7 @@ class ReadinessRepositoryIntegrationTest {
     }
 
     @Test
-    fun `isRestDayRecommended when score below 2.5`() = runTest {
+    fun isRestDayRecommended_when_score_below_2_5() = runTest {
         val low = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
         assertTrue(low.isRestDayRecommended)
 

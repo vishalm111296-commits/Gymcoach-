@@ -19,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.flow.first
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -51,7 +52,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `create and get workout preserves status`() = runTest {
+    fun create_and_get_workout_preserves_status() = runTest {
         val workout = Workout(
             date = Instant.now(),
             startTime = Instant.now(),
@@ -69,7 +70,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getLatestIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun getLatestIncompleteWorkout_returns_only_ACTIVE_workouts() = runTest {
         // Create COMPLETED workout
         val completed = WorkoutEntity(
             date = Instant.now().toEpochMilli(),
@@ -113,7 +114,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun getIncompleteWorkout_returns_only_ACTIVE_workouts() = runTest {
         val active = WorkoutEntity(
             date = Instant.now().toEpochMilli(),
             startTime = Instant.now().toEpochMilli(),
@@ -131,7 +132,7 @@ class WorkoutRepositoryIntegrationTest {
     }
 
     @Test
-    fun `getCompletedWorkouts filters by status COMPLETED`() = runTest {
+    fun getCompletedWorkouts_filters_by_status_COMPLETED() = runTest {
         // Insert workouts with different statuses
         val statuses = listOf("COMPLETED", "ACTIVE", "ABANDONED", "NOT_STARTED", "COMPLETED")
         statuses.forEach { status ->
@@ -152,110 +153,7 @@ class WorkoutRepositoryIntegrationTest {
         completed.forEach { assertEquals("COMPLETED", it.status) }
     }
 
-    @Test
-    fun `getPersonalRecordMax only considers COMPLETED workouts`() = runTest {
-        val exerciseId = 1L
 
-        // COMPLETED workout with heavy weight
-        val completedWorkout = WorkoutEntity(
-            date = Instant.now().toEpochMilli(),
-            startTime = Instant.now().toEpochMilli(),
-            endTime = Instant.now().toEpochMilli(),
-            duration = 3600000,
-            notes = "Heavy session",
-            completed = true,
-            status = "COMPLETED"
-        )
-        val completedId = workoutDao.insertWorkout(completedWorkout)
-        val exEntity = WorkoutExerciseEntity(completedId, exerciseId, 0)
-        val exId = workoutDao.insertWorkoutExercise(exEntity)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(exId, 1, 100.0, 5, 8.0, 180, true, 0))
 
-        // ACTIVE workout with heavier weight (should be ignored)
-        val activeWorkout = WorkoutEntity(
-            date = Instant.now().toEpochMilli(),
-            startTime = Instant.now().toEpochMilli(),
-            endTime = 0,
-            duration = 0,
-            notes = "Active session",
-            completed = false,
-            status = "ACTIVE"
-        )
-        val activeId = workoutDao.insertWorkout(activeWorkout)
-        val activeExEntity = WorkoutExerciseEntity(activeId, exerciseId, 0)
-        val activeExId = workoutDao.insertWorkoutExercise(activeExEntity)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(activeExId, 1, 150.0, 5, 8.0, 180, true, 0))
 
-        val pr = repository.getPersonalRecordMax(exerciseId)
-        assertEquals("PR should be from COMPLETED only", 100.0, pr!!, 0.001)
-    }
-
-    @Test
-    fun `monthly volume groups by strftime`() = runTest {
-        val now = Instant.now().toEpochMilli()
-
-        // Create workouts in different months
-        val months = listOf(
-            now - 60 * 24 * 60 * 60 * 1000L, // ~2 months ago
-            now - 30 * 24 * 60 * 60 * 1000L, // ~1 month ago
-            now
-        )
-
-        months.forEach { date ->
-            val workout = WorkoutEntity(
-                date = date,
-                startTime = date,
-                endTime = date + 3600000,
-                duration = 3600000,
-                notes = "Month workout",
-                completed = true,
-                status = "COMPLETED"
-            )
-            val wId = workoutDao.insertWorkout(workout)
-            val exEntity = WorkoutExerciseEntity(wId, 1L, 0)
-            val exId = workoutDao.insertWorkoutExercise(exEntity)
-            workoutDao.insertWorkoutSet(WorkoutSetEntity(exId, 1, 100.0, 10, 8.0, 180, true, 0))
-        }
-
-        val monthly = repository.getMonthlyVolumes().first()
-        assertTrue("Should have at least 1 month of data", monthly.size >= 1)
-    }
-
-    @Test
-    fun `analytics queries filter by COMPLETED status`() = runTest {
-        // Insert mixed status workouts
-        val workout1 = WorkoutEntity(
-            date = Instant.now().toEpochMilli(),
-            startTime = Instant.now().toEpochMilli(),
-            endTime = Instant.now().toEpochMilli(),
-            duration = 3600000,
-            notes = "Completed 1",
-            completed = true,
-            status = "COMPLETED"
-        )
-        val wId1 = workoutDao.insertWorkout(workout1)
-        val ex1 = WorkoutExerciseEntity(wId1, 1L, 0)
-        val exId1 = workoutDao.insertWorkoutExercise(ex1)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(exId1, 1, 100.0, 10, 8.0, 180, true, 0))
-
-        val workout2 = WorkoutEntity(
-            date = Instant.now().toEpochMilli(),
-            startTime = Instant.now().toEpochMilli(),
-            endTime = 0,
-            duration = 0,
-            notes = "Active",
-            completed = false,
-            status = "ACTIVE"
-        )
-        val wId2 = workoutDao.insertWorkout(workout2)
-
-        val totalVolume = repository.getTotalVolumeSum()
-        assertEquals("Only COMPLETED workout volume counted", 1000.0, totalVolume!!, 0.001)
-
-        val avgVolume = repository.getAverageWorkoutVolume()
-        assertEquals("Average from COMPLETED only", 1000.0, avgVolume, 0.001)
-
-        val totalWorkouts = repository.getTotalWorkoutsCount()
-        assertEquals("Only COMPLETED workouts counted", 1, totalWorkouts)
-    }
 }

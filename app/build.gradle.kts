@@ -186,3 +186,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.espresso.core)
 }
+
+dependencies {
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+}

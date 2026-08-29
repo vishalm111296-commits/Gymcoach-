@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
+import com.gymcoach.app.data.local.dao.LastSetData
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,55 +65,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@HiltViewModel
-class ExerciseDetailViewModel @Inject constructor(
-    private val repository: ExerciseRepository,
-    private val substitutionEngine: SubstitutionEngine
-) : ViewModel() {
-
-    private val _exercise = MutableStateFlow<Exercise?>(null)
-    val exercise: StateFlow<Exercise?> = _exercise.asStateFlow()
-
-    private val _substitutes = MutableStateFlow<List<SubstitutionEngine.SubstitutionResult>>(emptyList())
-    val substitutes: StateFlow<List<SubstitutionEngine.SubstitutionResult>> = _substitutes.asStateFlow()
-
-    private val _isFavorite = MutableStateFlow(false)
-    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
-
-    fun loadExercise(id: Long) {
-        viewModelScope.launch {
-            repository.getExerciseById(id).collect { ex ->
-                _exercise.value = ex
-                ex?.let {
-                    _isFavorite.value = it.isFavorite
-                    loadSubstitutes(it)
-                }
-            }
-        }
-    }
-
-    private suspend fun loadSubstitutes(exercise: Exercise) {
-        try {
-            val results = substitutionEngine.findSubstitutes(
-                exerciseId = exercise.id,
-                equipmentType = exercise.equipment,
-                maxResults = 5
-            )
-            _substitutes.value = results
-        } catch (e: Exception) {
-            _substitutes.value = emptyList()
-        }
-    }
-
-    fun toggleFavorite() {
-        viewModelScope.launch {
-            val ex = _exercise.value ?: return@launch
-            val updated = ex.copy(isFavorite = !ex.isFavorite)
-            repository.updateExercise(updated)
-            _isFavorite.value = updated.isFavorite
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,6 +77,7 @@ fun ExerciseDetailScreen(
     val exercise by viewModel.exercise.collectAsState()
     val substitutes by viewModel.substitutes.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState()
+    val previousSets by viewModel.previousSets.collectAsState()
 
     LaunchedEffect(exerciseId) {
         viewModel.loadExercise(exerciseId)
@@ -217,6 +171,11 @@ fun ExerciseDetailScreen(
                 // V-Taper Scores
                 Spacer(Modifier.height(24.dp))
                 VTaperScoresSection(exercise = ex)
+                // Previous Performance
+                if (previousSets.isNotEmpty()) {
+                    Spacer(Modifier.height(24.dp))
+                    PreviousPerformanceSection(previousSets)
+                }
 
                 // Substitution Suggestions
                 if (substitutes.isNotEmpty()) {
@@ -310,8 +269,63 @@ fun ExerciseDetailScreen(
     }
 }
 
-// --- V-Taper Scores Section ---
 
+
+// --- Previous Performance Section ---
+@Composable
+private fun PreviousPerformanceSection(previousSets: List<LastSetData>) {
+    if (previousSets.isEmpty()) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Previous Performance",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Previous Performance",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            previousSets.forEachIndexed { index, set ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Set ${index + 1}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = "${set.weight} kg × ${set.reps}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
+    }
+}
 @Composable
 private fun VTaperScoresSection(exercise: Exercise) {
     val scores = listOf(

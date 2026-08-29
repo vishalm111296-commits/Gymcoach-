@@ -76,6 +76,7 @@ fun ExerciseListScreen(
 ) {
     val exercises by viewModel.exercises.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
+    val filterFavorites by viewModel.filterFavorites.collectAsState()
     val filterEquipment by viewModel.filterEquipment.collectAsState()
 
     // We can infer search is active if the query is not blank.
@@ -131,7 +132,7 @@ fun ExerciseListScreen(
                     Icon(
                         Icons.Default.Tune,
                         contentDescription = "Filter",
-                        tint = if (filterDifficulty != "All" || filterEquipment != "All") AccentBlue else TextSecondary
+                        tint = if (filterDifficulty != "All" || filterEquipment != "All" || filterFavorites) AccentBlue else TextSecondary
                     )
                 }
             }
@@ -317,6 +318,14 @@ fun ExerciseListScreen(
                     TextButton(onClick = {
                         viewModel.onDifficultySelected("All")
                         viewModel.onEquipmentSelected("All")
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
+                        viewModel.onFavoritesToggled(false)
                         viewModel.onCategorySelected("All")
                         tabIndex = 0
                     }) {

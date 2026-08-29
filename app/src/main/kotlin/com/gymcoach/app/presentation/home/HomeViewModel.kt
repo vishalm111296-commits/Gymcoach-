@@ -164,7 +164,8 @@ class HomeViewModel @Inject constructor(
             workoutsThisWeek = completedThisWeek,
             targetWorkouts = core.program.daysPerWeek,
             prCount = prCount,
-            vtaperBars = bars
+            vtaperBars = bars,
+            latestCompletedWorkout = latestCompleted
         )
     }
 

@@ -125,9 +125,9 @@ fun HomeDashboardScreen(
             Spacer(Modifier.height(16.dp))
             CoachInsightCard(state.coachInsight)
 
-            if (state.latestCompletedWorkout != null) {
+            state.latestCompletedWorkout?.let { workout ->
                 Spacer(Modifier.height(16.dp))
-                LatestCompletedWorkoutCard(state.latestCompletedWorkout!!)
+                LatestCompletedWorkoutCard(workout)
             }
 
             Spacer(Modifier.height(16.dp))

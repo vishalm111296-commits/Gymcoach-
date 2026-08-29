@@ -28,7 +28,7 @@ The hierarchy was refined to map real domain flows prioritizing active training:
 ## Data-Flow Audit
 - **Today's Workout**: REAL. Pulled via `ProgramRepository` and `HomeViewModel` combining days/exercises.
 - **Readiness**: REAL. Links directly to `ReadinessScreen` where actual calculations occur.
-- **Completed Workout**: REAL. `HomeViewModel` correctly reads from `WorkoutRepository` to extract `latestCompletedWorkout`.
+- **Completed Workout**: REAL. `HomeViewModel` correctly reads from `WorkoutRepository` to extract `latestCompletedWorkout`. Safely mapped for users with an active program.
 - **Profile / Setup**: REAL. Uses `hasProgram` flag to transition between active state and setup CTA.
 - **Progress**: REAL. Displays valid `prCount` and week targets.
 
@@ -38,7 +38,7 @@ The hierarchy was refined to map real domain flows prioritizing active training:
 - Null `latestCompletedWorkout` handles gracefully by not inflating the card, avoiding fake data.
 
 ## Navigation
-Navigation components remain decoupled. Home elements only emit callbacks (`onStartWorkout`, `onNavigateToReadiness`), leveraging the Phase 2 `GymCoachAppShell` for routing.
+Navigation components remain decoupled. Home elements only emit callbacks (`onStartWorkout`, `onNavigateToReadiness`), leveraging the Phase 2 `GymCoachAppShell` for routing. Workout navigation routes via `workout_action` to prevent uninitialized template queries.
 
 ## Design System
 Uses existing `DarkSurface`, `AccentBlue`, `WarmWhite`, and Material3 typography for visual hierarchy. No new hardcoded shapes or spacing scales were introduced.
@@ -64,7 +64,8 @@ assembleDebug = PASS
 ## Adversarial Findings
 - No fake AI coaching text generated; uses existing deterministic logic from `HomeViewModel`.
 - Checked diff for `TODO`, `dummy`, `mock`, `placeholder`. None were added.
-- "Session Completed" label properly avoids fake data insertion for a name when `WorkoutWithStats` abstraction limits direct name derivation without further joins, ensuring accurate tracking of domain entities.
+- Defect Fixed: NavHost explicitly intercepts `workout_action` route string for the Workout tab, avoiding crash-causing template query.
+- Defect Fixed: Added correct UI state mapping for `latestCompletedWorkout` inside active-program block.
 
 ## P0/P1/P2/P3
 P0: 0

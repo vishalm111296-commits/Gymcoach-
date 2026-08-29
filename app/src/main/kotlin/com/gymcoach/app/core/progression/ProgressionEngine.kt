@@ -50,7 +50,7 @@ class ProgressionEngine @Inject constructor(
             )
         }
 
-        val currentWeight = normalSets.first().weight
+        val currentWeight = normalSets.firstOrNull()?.weight ?: 0.0
         val isBodyweight = currentWeight == 0.0
         val currentReps = normalSets.map { it.reps }
         val allHitTop = currentReps.all { it >= targetRepsMax }

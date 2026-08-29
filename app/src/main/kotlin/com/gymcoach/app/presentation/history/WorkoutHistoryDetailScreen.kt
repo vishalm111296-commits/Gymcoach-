@@ -190,7 +190,7 @@ fun WorkoutHistoryDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = state.error!!,
+                        text = state.error ?: "Unknown error",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )

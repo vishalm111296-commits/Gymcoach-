@@ -133,7 +133,7 @@ fun ExerciseDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = if (exercise == null) "Exercise" else exercise!!.name)
+                    Text(text = exercise?.name ?: "Exercise")
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {

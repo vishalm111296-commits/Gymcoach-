@@ -113,7 +113,7 @@ fun WorkoutSessionScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissError() },
             title = { Text("Error") },
-            text = { Text(error!!) },
+            text = { Text(error ?: "Unknown error") },
             confirmButton = { Button(onClick = { viewModel.dismissError() }) { Text("OK") } }
         )
     }

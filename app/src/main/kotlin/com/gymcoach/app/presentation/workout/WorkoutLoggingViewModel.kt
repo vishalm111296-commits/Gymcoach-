@@ -264,9 +264,9 @@ class WorkoutLoggingViewModel @Inject constructor(
         val prefilledReps: Int
         val prefilledRest: Int
 
-        if (lastSets != null && lastSets.isNotEmpty()) {
+        val lastSet = lastSets?.lastOrNull()
+        if (lastSet != null) {
             // Use the last set's data as default
-            val lastSet = lastSets.last()
             prefilledWeight = lastSet.weight
             prefilledReps = lastSet.reps
             prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds

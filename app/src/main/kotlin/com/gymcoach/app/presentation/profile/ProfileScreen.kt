@@ -128,7 +128,7 @@ fun ProfileScreen(
                 }
             }
             else -> {
-                val p = profile!!
+                profile?.let { p ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -216,6 +216,7 @@ fun ProfileScreen(
                     }
 
                     Spacer(Modifier.height(16.dp))
+                }
                 }
             }
         }

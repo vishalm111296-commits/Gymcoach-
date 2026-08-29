@@ -126,7 +126,7 @@ fun ProgressDashboardScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = state.error!!,
+                        text = state.error ?: "Unknown error",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -274,9 +274,9 @@ fun ProgressDashboardScreen(
                     // Strength Progression Chart
                     SectionHeader("Strength Progression")
                     Spacer(Modifier.height(8.dp))
-                    if (state.selectedExercise != null) {
+                    state.selectedExercise?.let { exercise ->
                         ExerciseSelector(
-                            selectedExercise = state.selectedExercise!!,
+                            selectedExercise = exercise,
                             onSelect = { viewModel.selectExercise(it) }
                         )
                         Spacer(Modifier.height(8.dp))

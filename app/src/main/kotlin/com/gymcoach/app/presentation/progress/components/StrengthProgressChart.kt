@@ -58,7 +58,7 @@ fun StrengthProgressChart(
             )
             if (dataPoints.isNotEmpty()) {
                 Text(
-                    text = "BEST %.0f kg".format(dataPoints.last().value),
+                    text = "BEST %.0f kg".format(dataPoints.lastOrNull()?.value ?: 0.0),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = VolumeChartLine
@@ -115,8 +115,12 @@ fun StrengthProgressChart(
                     coordinates.forEachIndexed { index, c ->
                         if (index == 0) fillPath.moveTo(c.x, c.y) else fillPath.lineTo(c.x, c.y)
                     }
-                    fillPath.lineTo(coordinates.last().x, size.height - PAD_BOTTOM)
-                    fillPath.lineTo(coordinates.first().x, size.height - PAD_BOTTOM)
+                    coordinates.lastOrNull()?.let { last ->
+                        fillPath.lineTo(last.x, size.height - PAD_BOTTOM)
+                    }
+                    coordinates.firstOrNull()?.let { first ->
+                        fillPath.lineTo(first.x, size.height - PAD_BOTTOM)
+                    }
                     fillPath.close()
                     drawPath(path = fillPath, color = VolumeChartFill)
 
@@ -135,10 +139,11 @@ fun StrengthProgressChart(
                     coordinates.forEachIndexed { _, c ->
                         drawCircle(color = VolumeChartLine, radius = 4f, center = c)
                     }
-                    val last = coordinates.last()
-                    drawCircle(color = VolumeChartLine.copy(alpha = 0.25f), radius = 9f, center = last)
-                    drawCircle(color = VolumeChartLine, radius = 5f, center = last)
-                    drawCircle(color = TextPrimary, radius = 2f, center = last)
+                    coordinates.lastOrNull()?.let { last ->
+                        drawCircle(color = VolumeChartLine.copy(alpha = 0.25f), radius = 9f, center = last)
+                        drawCircle(color = VolumeChartLine, radius = 5f, center = last)
+                        drawCircle(color = TextPrimary, radius = 2f, center = last)
+                    }
                 }
             }
         }

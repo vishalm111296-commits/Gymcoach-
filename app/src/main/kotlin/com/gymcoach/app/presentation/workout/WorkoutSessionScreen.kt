@@ -1,4 +1,5 @@
 package com.gymcoach.app.presentation.workout
+import com.gymcoach.app.domain.model.HistoricalSet
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,7 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.timer.RestPresets
-import com.gymcoach.app.data.local.dao.LastSetData
+
 import com.gymcoach.app.presentation.history.formatDuration
 import java.time.Instant
 import java.time.ZoneId
@@ -432,7 +433,7 @@ private fun ExerciseSetCard(
     exerciseName: String,
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
-    previousSets: List<LastSetData>?,
+    previousSets: List<HistoricalSet>?,
     lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,

@@ -54,18 +54,26 @@ fun TodayWorkoutCard(
                 color = WarmWhite,
                 fontWeight = FontWeight.Bold
             )
-            if (targetMuscles.isNotEmpty()) {
+
+            if (targetMuscles.isNotEmpty() || exerciseCount > 0) {
+                val details = mutableListOf<String>()
+                if (targetMuscles.isNotEmpty()) {
+                    details.add(targetMuscles.joinToString(" \u2022 "))
+                }
+                if (exerciseCount > 0) {
+                    details.add("$exerciseCount exercises")
+                }
+                if (estimatedDuration > 0) {
+                    details.add("~$estimatedDuration min")
+                }
+
                 Text(
-                    text = targetMuscles.joinToString(" \u2022 "),
+                    text = details.joinToString(" \u2022 "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
             }
-            Text(
-                text = "$exerciseCount exercises \u2022 ~$estimatedDuration min",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextTertiary
-            )
+
             Button(
                 onClick = onStartClick,
                 shape = RoundedCornerShape(14.dp),
@@ -75,7 +83,7 @@ fun TodayWorkoutCard(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = 16.dp)
                     .height(56.dp)
             ) {
                 Text(

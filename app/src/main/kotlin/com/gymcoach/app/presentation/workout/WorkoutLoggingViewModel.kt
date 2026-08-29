@@ -1,4 +1,5 @@
 package com.gymcoach.app.presentation.workout
+import com.gymcoach.app.domain.model.HistoricalSet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +9,7 @@ import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
 import com.gymcoach.app.data.local.dao.LastPerformance
-import com.gymcoach.app.data.local.dao.LastSetData
+
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.SetType
@@ -66,8 +67,8 @@ class WorkoutLoggingViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     // Previous performance: exerciseId -> last sets data
-    private val _previousPerformance = MutableStateFlow<Map<Long, List<LastSetData>>>(emptyMap())
-    val previousPerformance: StateFlow<Map<Long, List<LastSetData>>> = _previousPerformance.asStateFlow()
+    private val _previousPerformance = MutableStateFlow<Map<Long, List<HistoricalSet>>>(emptyMap())
+    val previousPerformance: StateFlow<Map<Long, List<HistoricalSet>>> = _previousPerformance.asStateFlow()
 
     // Previous performance: exerciseId -> last performance summary
     private val _lastPerformanceSummary = MutableStateFlow<Map<Long, LastPerformance>>(emptyMap())
@@ -128,7 +129,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         val perfMap = try {
             workoutRepository.getLastSetsForExercises(exerciseIds)
         } catch (_: Exception) {
-            emptyMap<Long, List<LastSetData>>()
+            emptyMap<Long, List<HistoricalSet>>()
         }
 
         val summaryMap = try {

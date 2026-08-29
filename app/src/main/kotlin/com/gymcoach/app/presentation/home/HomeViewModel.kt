@@ -4,11 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
-import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.domain.usecase.readiness.GetLatestReadinessUseCase
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 data class TodayWorkoutUiModel(
@@ -30,15 +32,22 @@ data class TodayWorkoutUiModel(
     val estimatedDurationMin: Int
 )
 
+data class ReadinessUiModel(
+    val isLoggedToday: Boolean,
+    val recommendation: String
+)
+
 data class HomeUiState(
     val isLoading: Boolean = true,
     val hasProgram: Boolean = false,
     val todayWorkout: TodayWorkoutUiModel? = null,
-    val coachInsight: String = "",
+    val trainingInsight: String = "",
+    val totalWorkouts: Int = 0,
     val workoutsThisWeek: Int = 0,
     val targetWorkouts: Int = 0,
     val prCount: Int = 0,
-    val vtaperBars: List<VtaperMuscleData> = emptyList()
+    val vtaperBars: List<VtaperMuscleData> = emptyList(),
+    val readiness: ReadinessUiModel = ReadinessUiModel(false, "No readiness logged today")
 )
 
 /** Evidence-based optimal band floor (14-17 weekly sets) used as the bar target. */
@@ -66,21 +75,27 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    private val getLatestReadinessUseCase: GetLatestReadinessUseCase,
+    analyticsRepository: AnalyticsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _prCount = MutableStateFlow(0)
+    private val _totalWorkouts = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
             runCatching { analyticsRepository.getAllPersonalRecords() }
                 .onSuccess { records -> _prCount.value = records.size }
+
+            runCatching { analyticsRepository.getTotalWorkouts() }
+                .onSuccess { total -> _totalWorkouts.value = total }
         }
+
         viewModelScope.launch {
-            programRepository.getActiveProgram()
+            val programFlow = programRepository.getActiveProgram()
                 .flatMapLatest { program ->
                     if (program == null) {
                         flowOf(null)
@@ -93,11 +108,18 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
-                }
-                .collect { state -> _uiState.value = state }
+
+            val readinessFlow = getLatestReadinessUseCase().catch { emit(null) }
+
+            combine(
+                programFlow,
+                workoutRepository.getCompletedWorkouts(),
+                readinessFlow,
+                _prCount,
+                _totalWorkouts
+            ) { core, workouts, readiness, prCount, totalWorkouts ->
+                buildUiState(core, workouts, readiness, prCount, totalWorkouts)
+            }.collect { state -> _uiState.value = state }
         }
     }
 
@@ -111,14 +133,24 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        prCount: Int
+        readinessEntity: com.gymcoach.app.data.local.entity.ReadinessEntity?,
+        prCount: Int,
+        totalWorkouts: Int
     ): HomeUiState {
+        val readinessUiModel = if (readinessEntity != null && isToday(readinessEntity.recordedAt)) {
+            ReadinessUiModel(isLoggedToday = true, recommendation = readinessEntity.trainingRecommendation)
+        } else {
+            ReadinessUiModel(isLoggedToday = false, recommendation = "No readiness logged today")
+        }
+
         if (core == null) {
             return HomeUiState(
                 isLoading = false,
                 hasProgram = false,
-                coachInsight = "Your first session is ready once you set up your plan.",
-                prCount = prCount
+                trainingInsight = "Your first session is ready once you set up your plan.",
+                prCount = prCount,
+                totalWorkouts = totalWorkouts,
+                readiness = readinessUiModel
             )
         }
 
@@ -126,8 +158,6 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
         val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
@@ -156,12 +186,21 @@ class HomeViewModel @Inject constructor(
                 exerciseCount = todayExercises.size,
                 estimatedDurationMin = estimatedDuration
             ),
-            coachInsight = insight,
+            trainingInsight = insight,
+            totalWorkouts = totalWorkouts,
             workoutsThisWeek = completedThisWeek,
             targetWorkouts = core.program.daysPerWeek,
             prCount = prCount,
-            vtaperBars = bars
+            vtaperBars = bars,
+            readiness = readinessUiModel
         )
+    }
+
+    private fun isToday(timestampMs: Long): Boolean {
+        val today = Calendar.getInstance()
+        val date = Calendar.getInstance().apply { timeInMillis = timestampMs }
+        return today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
+                today.get(Calendar.DAY_OF_YEAR) == date.get(Calendar.DAY_OF_YEAR)
     }
 
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =

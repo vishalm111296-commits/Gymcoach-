@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
+
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,56 +65,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@HiltViewModel
-class ExerciseDetailViewModel @Inject constructor(
-    private val repository: ExerciseRepository,
-    private val substitutionEngine: SubstitutionEngine
-) : ViewModel() {
 
-    private val _exercise = MutableStateFlow<Exercise?>(null)
-    val exercise: StateFlow<Exercise?> = _exercise.asStateFlow()
-
-    private val _substitutes = MutableStateFlow<List<SubstitutionEngine.SubstitutionResult>>(emptyList())
-    val substitutes: StateFlow<List<SubstitutionEngine.SubstitutionResult>> = _substitutes.asStateFlow()
-
-    private val _isFavorite = MutableStateFlow(false)
-    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
-
-    fun loadExercise(id: Long) {
-        viewModelScope.launch {
-            repository.getExerciseById(id).collect { ex ->
-                _exercise.value = ex
-                ex?.let {
-                    _isFavorite.value = it.isFavorite
-                    loadSubstitutes(it)
-                }
-            }
-        }
-    }
-
-    private suspend fun loadSubstitutes(exercise: Exercise) {
-        try {
-            val results = substitutionEngine.findSubstitutes(
-                exerciseId = exercise.id,
-                equipmentType = exercise.equipment,
-                maxResults = 5
-            )
-            _substitutes.value = results
-        } catch (e: Exception) {
-            _substitutes.value = emptyList()
-        }
-    }
-
-    fun toggleFavorite() {
-        viewModelScope.launch {
-            val ex = _exercise.value ?: return@launch
-            val updated = ex.copy(isFavorite = !ex.isFavorite)
-            repository.updateExercise(updated)
-            _isFavorite.value = updated.isFavorite
-        }
-    }
-}
-
+import com.gymcoach.app.domain.model.HistoricalSet
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseDetailScreen(
@@ -124,6 +78,7 @@ fun ExerciseDetailScreen(
     val exercise by viewModel.exercise.collectAsState()
     val substitutes by viewModel.substitutes.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState()
+    val previousSets by viewModel.previousSets.collectAsState()
 
     LaunchedEffect(exerciseId) {
         viewModel.loadExercise(exerciseId)
@@ -164,24 +119,7 @@ fun ExerciseDetailScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // Placeholder Hero Image via Typography
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            RoundedCornerShape(24.dp)
-                        )
-                        .padding(bottom = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                com.gymcoach.app.presentation.components.PremiumMediaUnavailablePlaceholder(modifier = Modifier.padding(bottom = 24.dp))
 
                 // Description section
                 Text(
@@ -227,13 +165,18 @@ fun ExerciseDetailScreen(
                     DetailRow(
                         icon = Icons.Default.FitnessCenter,
                         label = "Secondary Muscles",
-                        value = ex.secondaryMuscles
+                        value = ex.secondaryMuscles.split(",").map { it.trim().replaceFirstChar { c -> c.uppercase() } }.joinToString(", ")
                     )
                 }
 
                 // V-Taper Scores
                 Spacer(Modifier.height(24.dp))
                 VTaperScoresSection(exercise = ex)
+                // Previous Performance
+                if (previousSets.isNotEmpty()) {
+                    Spacer(Modifier.height(24.dp))
+                    PreviousPerformanceSection(previousSets)
+                }
 
                 // Substitution Suggestions
                 if (substitutes.isNotEmpty()) {
@@ -327,8 +270,63 @@ fun ExerciseDetailScreen(
     }
 }
 
-// --- V-Taper Scores Section ---
 
+
+// --- Previous Performance Section ---
+@Composable
+private fun PreviousPerformanceSection(previousSets: List<HistoricalSet>) {
+    if (previousSets.isEmpty()) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Previous Performance",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Previous Performance",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            previousSets.forEachIndexed { index, set ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Set ${index + 1}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = "${set.weight} kg × ${set.reps}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
+    }
+}
 @Composable
 private fun VTaperScoresSection(exercise: Exercise) {
     val scores = listOf(
@@ -469,6 +467,38 @@ private fun SubstitutionSection(
     }
 }
 
+// --- Shared Components ---
+
+@Composable
+private fun DetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(2.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
 @Composable
 private fun SubstitutionItem(
     substitute: com.gymcoach.app.data.local.entity.ExerciseEntity,
@@ -506,49 +536,11 @@ private fun SubstitutionItem(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$score%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
                     text = reason,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
-    }
-}
-
-// --- Shared Components ---
-
-@Composable
-private fun DetailRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(Modifier.height(2.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
     }
 }

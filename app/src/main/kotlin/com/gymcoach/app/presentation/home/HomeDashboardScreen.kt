@@ -32,6 +32,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
+import com.gymcoach.app.presentation.home.components.TrainingInsightCard
+import com.gymcoach.app.presentation.home.components.ReadinessCard
 import com.gymcoach.app.ui.GymCoachBottomNav
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
@@ -100,52 +102,25 @@ fun HomeDashboardScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
+            ReadinessCard(
+                isLoggedToday = state.readiness.isLoggedToday,
+                recommendation = state.readiness.recommendation,
+                onClick = onNavigateToReadiness
+            )
 
             Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
-
-            // Readiness quick link
-            Spacer(Modifier.height(16.dp))
-            Card(
-                onClick = onNavigateToReadiness,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "RECOVERY & READINESS",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AccentBlue,
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Log how you're feeling today",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Text(
-                        text = "→",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
-                    )
-                }
-            }
+            TrainingInsightCard(state.trainingInsight)
 
             if (state.vtaperBars.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
+            } else {
+                Spacer(Modifier.height(16.dp))
+                EmptyVtaperCard()
             }
+
+            Spacer(Modifier.height(24.dp))
+            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount, state.totalWorkouts)
 
             Spacer(Modifier.height(32.dp))
         }
@@ -176,7 +151,7 @@ private fun GreetingHeader() {
     }
 }
 
-/** Action-oriented empty state - never "No workouts yet". */
+/** Action-oriented empty state for workout. */
 @Composable
 private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
     Card(
@@ -186,7 +161,7 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "YOUR FIRST SESSION IS READY",
+                text = "NO WORKOUT SCHEDULED",
                 style = MaterialTheme.typography.labelSmall,
                 color = AccentBlue,
                 letterSpacing = 1.5.sp,
@@ -199,7 +174,7 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Two minutes of setup and your first V-taper program is generated around your goal, schedule, and equipment.",
+                text = "Generate a personalized V-taper program around your goal, schedule, and equipment.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -212,14 +187,14 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
                     .padding(top = 8.dp)
                     .height(56.dp)
             ) {
-                Text("SET UP MY PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("SET UP PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
         }
     }
 }
 
 @Composable
-private fun CoachInsightCard(insight: String) {
+private fun EmptyVtaperCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -227,52 +202,61 @@ private fun CoachInsightCard(insight: String) {
     ) {
         Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                text = "COACH",
+                text = "V-TAPER FOCUS",
                 style = MaterialTheme.typography.labelSmall,
                 color = AccentBlue,
                 letterSpacing = 1.5.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = insight.ifBlank { "Log sessions to unlock volume insights." },
+                text = "Set up a plan to see your V-taper progression targets.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = WarmWhite
+                color = TextSecondary
             )
         }
     }
 }
 
 @Composable
-private fun WeekSummaryRow(workoutsThisWeek: Int, targetWorkouts: Int, prCount: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(48.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "$workoutsThisWeek/$targetWorkouts",
-                style = MaterialTheme.typography.titleLarge,
-                color = AccentBlue,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "workouts this week",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "$prCount",
-                style = MaterialTheme.typography.titleLarge,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "personal records",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
-            )
+private fun WeekSummaryRow(workoutsThisWeek: Int, targetWorkouts: Int, prCount: Int, totalWorkouts: Int) {
+    if (totalWorkouts == 0) {
+        Text(
+            text = "No workout history yet. Complete your first session to see progress.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(48.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "$workoutsThisWeek/$targetWorkouts",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = AccentBlue,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "workouts this week",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = if (prCount == 0) "No PRs yet" else "$prCount",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = WarmWhite,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "personal records",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
         }
     }
 }

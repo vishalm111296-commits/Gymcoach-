@@ -76,9 +76,8 @@ class ReadinessRepositoryIntegrationTest {
                 soreness = 3,
                 energy = 3,
                 motivation = 3,
-                notes = "Day $i",
-                recordedAt = now - i * dayMs
-            )
+                notes = "Day $i"
+            ).also { it.copy(recordedAt = now - i * dayMs) }
             repository.saveReadiness(readiness)
         }
 

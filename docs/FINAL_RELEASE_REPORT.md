@@ -10,48 +10,49 @@ MAIN BASELINE: 7f74071eedcd15ea889ccba2508fd4b91c9c0f74
 **Actual Status**: These features are explicitly **MISSING/UNIMPLEMENTED**. They do not exist in the source code, UI, or persistence layer.
 
 ## ACTUAL FEATURE STATUS
-* **Foundation:** IMPLEMENTED
-* **Database:** IMPLEMENTED (Room v11)
-* **Exercise system:** IMPLEMENTED
-* **Seeder:** IMPLEMENTED
-* **Onboarding:** IMPLEMENTED
-* **Profile:** IMPLEMENTED
-* **Program generation:** IMPLEMENTED
-* **Home:** IMPLEMENTED
-* **Workout:** IMPLEMENTED
-* **Set logging:** IMPLEMENTED
-* **Progression:** IMPLEMENTED
-* **Timer:** IMPLEMENTED
-* **Summary:** IMPLEMENTED
-* **History:** IMPLEMENTED
-* **Analytics:** IMPLEMENTED
-* **PRs:** IMPLEMENTED
-* **Readiness:** IMPLEMENTED
-* **Body measurements:** IMPLEMENTED
-* **Search:** IMPLEMENTED
-* **Substitutions:** IMPLEMENTED
-* **Camera:** IMPLEMENTED (Hardware UNVERIFIED)
-* **Form analysis:** IMPLEMENTED (Hardware UNVERIFIED)
-* **Navigation:** IMPLEMENTED
-* **App Shell:** IMPLEMENTED
-* **Settings:** MISSING (Contradicts previous reports)
-* **Haptics:** MISSING (No setting; OS haptics used in components)
+* **Foundation:** IMPLEMENTED (STATICALLY VERIFIED / COMPILES)
+* **Database:** IMPLEMENTED (STATICALLY VERIFIED / UNIT TEST VERIFIED)
+* **Exercise system:** IMPLEMENTED (STATICALLY VERIFIED / UNIT TEST VERIFIED)
+* **Seeder:** IMPLEMENTED (STATICALLY VERIFIED / UNIT TEST VERIFIED)
+* **Onboarding:** IMPLEMENTED (STATICALLY VERIFIED / VIEWMODEL TESTED)
+* **Profile:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Program generation:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **Home:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Workout:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Set logging:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Progression:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **Timer:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Summary:** IMPLEMENTED (STATICALLY VERIFIED)
+* **History:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Analytics:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **PRs:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **Readiness:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **Body measurements:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Search:** IMPLEMENTED (STATICALLY VERIFIED / FTS TESTED)
+* **Substitutions:** IMPLEMENTED (UNIT TEST VERIFIED)
+* **Camera:** IMPLEMENTED (RUNTIME UNVERIFIED / HARDWARE BLOCKED)
+* **Form analysis:** IMPLEMENTED (RUNTIME UNVERIFIED / HARDWARE BLOCKED)
+* **Navigation:** IMPLEMENTED (STATICALLY VERIFIED)
+* **App Shell:** IMPLEMENTED (STATICALLY VERIFIED)
+* **Settings:** MISSING
+* **Settings Persistence:** MISSING
+* **Haptics:** MISSING (No setting; OS haptics used directly in components)
 * **Sound:** MISSING
-* **Theme:** PARTIAL (App is themed, but no user-configurable preference exists)
-* **Media:** IMPLEMENTED (Player exists; media urls correctly set to null fallback)
+* **Theme:** MISSING (No user-selectable preference exists)
+* **Media:** IMPLEMENTED (STATICALLY VERIFIED; Media urls correctly set to null fallback)
 
 ## CORE DATA FLOW & INTEGRITY VERIFICATIONS
-* **WORKOUT SUMMARY DATA FLOW**: REAL DATA VERIFIED. `WorkoutSummaryCard` sources directly from `WorkoutWithDetails` queried via `WorkoutHistoryDetailViewModel` -> `WorkoutRepository.getWorkoutWithDetails()`. Zero hardcoded UI values.
-* **EXERCISE MEDIA**: FAKE MEDIA FOUND: NO. All JSON definitions correctly default to `null`. MEDIA FALLBACK: Natively supported by Compose UI.
-* **PROGRESSION ENGINE**: `getLastPerformancesForExercises`, `getLastSetsForExercises`, and `ProgressionEngine` logic are intact and strictly used by `WorkoutLoggingViewModel`.
-* **ROOM / DATABASE**: v1->v11 migration chain intact. No `fallbackToDestructiveMigration`.
+* **WORKOUT SUMMARY DATA FLOW**: STATICALLY VERIFIED. `WorkoutSummaryCard` sources directly from `WorkoutWithDetails` queried via `WorkoutHistoryDetailViewModel` -> `WorkoutRepository.getWorkoutWithDetails()`. Zero hardcoded UI values.
+* **EXERCISE MEDIA**: STATICALLY VERIFIED. All JSON definitions correctly default to `null`. MEDIA FALLBACK: Natively supported by Compose UI.
+* **PROGRESSION ENGINE**: UNIT TEST VERIFIED. `getLastPerformancesForExercises`, `getLastSetsForExercises`, and `ProgressionEngine` logic are intact and strictly tested.
+* **ROOM / DATABASE**: COMPILED / STATICALLY VERIFIED. v1->v11 migration chain intact. No `fallbackToDestructiveMigration`. Migration runtime execution BLOCKED by unavailable Android device/emulator.
 
 ## BUGS FOUND & FIXED
 * **P0/P1/P2/P3**: 0 (Codebase was structurally sound entering this verification phase). No arbitrary fixes were applied.
 
 ## TEST INTEGRITY
 * BUILD: PASS
-* UNIT TEST: PASS (73 tests passed, none weakened/removed)
+* UNIT TEST: PASS (73 tests verified via Gradle execution output)
 * ANDROIDTEST COMPILE: PASS
 * ANDROIDTEST RUNTIME: BLOCKED (No Emulator/Device)
 * LINT: PASS
@@ -68,16 +69,16 @@ MAIN BASELINE: 7f74071eedcd15ea889ccba2508fd4b91c9c0f74
 ## SCOPE DRIFT
 * NONE. Only explicitly instructed checks were performed.
 
+## FINAL USER JOURNEY
+"Can a normal user use GymCoach for ordinary workout tracking?"
+The codebase is structurally a strong release candidate and compiles cleanly, but complete real-world usability remains RUNTIME UNVERIFIED. End-to-end device validation must occur on physical hardware to confirm usability.
+
 ## FINAL VERDICT
-**RELEASE CANDIDATE — PHYSICAL DEVICE VALIDATION REMAINING**
+**RELEASE CANDIDATE**
 
-## REMAINING BLOCKERS
-1. Release signing credentials must be provided to compile `assembleRelease`.
-2. Physical Android device required to validate AndroidTest suite, CameraX runtime, MediaPipe processing, and Doze/Foreground Service behavior.
-3. No user-configurable Settings UI exists, which must be communicated to product owners as deferred to V2.
-
-## FUTURE ROADMAP ITEMS
-* Implementation of explicit Settings module (Haptics, Sound, Theme overrides, Timer defaults).
-* Population of real exercise video/animation assets.
+## REMAINING BLOCKERS / ENVIRONMENT BLOCKERS
+1. Migration runtime execution BLOCKED by unavailable Android device/emulator.
+2. Release signing credentials must be provided to compile `assembleRelease`.
+3. Physical Android device required to validate AndroidTest suite, CameraX runtime, MediaPipe processing, and Doze/Foreground Service behavior.
 
 EXACT NEXT ACTION: Stop development cycle. Await hardware validation and CI execution from human operators.

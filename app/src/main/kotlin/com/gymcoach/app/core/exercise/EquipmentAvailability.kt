@@ -38,11 +38,26 @@ class EquipmentAvailability @Inject constructor() {
     private val CUSTOM_EQUIPMENT = setOf("bodyweight")
 
     fun getAvailableEquipment(equipmentType: String): Set<String> {
-        return when (equipmentType.lowercase()) {
+        val typeLower = equipmentType.lowercase().trim()
+        return when (typeLower) {
             "gym" -> GYM_EQUIPMENT
             "home" -> HOME_EQUIPMENT
             "custom" -> CUSTOM_EQUIPMENT
-            else -> CUSTOM_EQUIPMENT
+            "" -> CUSTOM_EQUIPMENT
+            else -> {
+                val customSet = typeLower.split(",")
+                    .map { it.trim() }
+                    .map { token ->
+                        when (token) {
+                            "flat bench" -> "bench"
+                            "adjustable dumbbell" -> "dumbbell"
+                            else -> token
+                        }
+                    }
+                    .filter { it.isNotBlank() }
+                    .toSet()
+                customSet + "bodyweight"
+            }
         }
     }
 

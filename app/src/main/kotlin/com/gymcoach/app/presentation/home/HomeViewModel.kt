@@ -9,6 +9,8 @@ import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.domain.repository.ReadinessRepository
+import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
@@ -66,7 +68,8 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    analyticsRepository: AnalyticsRepository,
+    readinessRepository: ReadinessRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -94,8 +97,9 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
+                .combine(_prCount.asStateFlow()) { pair, prCount -> Triple(pair.first, pair.second, prCount) }
+                .combine(readinessRepository.getLatestReadiness()) { triple, readiness ->
+                    buildUiState(triple.first, triple.second, triple.third, readiness)
                 }
                 .collect { state -> _uiState.value = state }
         }
@@ -111,7 +115,8 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        prCount: Int
+        prCount: Int,
+        latestReadiness: ReadinessEntity? = null
     ): HomeUiState {
         if (core == null) {
             return HomeUiState(
@@ -136,9 +141,19 @@ class HomeViewModel @Inject constructor(
                 target = TARGET_WEEKLY_SETS
             )
         }
-        val insight = volumeCalculator
+        val baseInsight = volumeCalculator
             .calculateVtaperBalance(buildTrainingBalance(plannedSets))
             .overallBalance
+
+        val avgReadiness = latestReadiness?.let {
+            (it.sleepQuality + it.soreness + it.energy + it.motivation) / 4.0
+        } ?: 5.0
+
+        val insight = if (avgReadiness < 3.0) {
+            "Low readiness detected (Score: %.1f/5). Consider reducing volume/RPE by 1-2 points today to prioritize recovery.".format(avgReadiness)
+        } else {
+            baseInsight
+        }
 
         val todayExercises = core.todayDay?.let { core.exercisesByDay[it.id] }.orEmpty()
         val estimatedDuration = if (todayExercises.isEmpty()) {

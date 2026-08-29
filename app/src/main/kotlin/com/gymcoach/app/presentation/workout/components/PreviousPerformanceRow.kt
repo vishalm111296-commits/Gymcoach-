@@ -1,4 +1,5 @@
 package com.gymcoach.app.presentation.workout.components
+import com.gymcoach.app.domain.model.HistoricalSet
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

@@ -28,7 +28,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
-import com.gymcoach.app.data.local.dao.LastSetData
+
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
+import com.gymcoach.app.domain.model.HistoricalSet
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseDetailScreen(
@@ -273,7 +274,7 @@ fun ExerciseDetailScreen(
 
 // --- Previous Performance Section ---
 @Composable
-private fun PreviousPerformanceSection(previousSets: List<LastSetData>) {
+private fun PreviousPerformanceSection(previousSets: List<HistoricalSet>) {
     if (previousSets.isEmpty()) return
 
     Card(

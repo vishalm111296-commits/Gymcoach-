@@ -1,9 +1,10 @@
 package com.gymcoach.app.presentation.detail
+import com.gymcoach.app.domain.model.HistoricalSet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.exercise.SubstitutionEngine
-import com.gymcoach.app.data.local.dao.LastSetData
+
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
+
 class ExerciseDetailViewModel @Inject constructor(
     private val repository: ExerciseRepository,
     private val workoutRepository: WorkoutRepository,
@@ -30,8 +32,8 @@ class ExerciseDetailViewModel @Inject constructor(
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
 
-    private val _previousSets = MutableStateFlow<List<LastSetData>>(emptyList())
-    val previousSets: StateFlow<List<LastSetData>> = _previousSets.asStateFlow()
+    private val _previousSets = MutableStateFlow<List<HistoricalSet>>(emptyList())
+    val previousSets: StateFlow<List<HistoricalSet>> = _previousSets.asStateFlow()
 
     fun loadExercise(id: Long) {
         viewModelScope.launch {

@@ -118,4 +118,20 @@ class ProgramGeneratorTest {
         assertFalse("Lateral Raise requires dumbbell", "Lateral Raise" in allNames)
         assertFalse("Dumbbell Row requires dumbbell", "Dumbbell Row" in allNames)
     }
+
+
+    @Test
+    fun generateProgram_adjusts_target_sets_based_on_low_readiness() = runTest {
+        coEvery { dao.getAll() } returns flowOf(all())
+
+        // Normal readiness -> 3 sets
+        val normalProgram = generator.generateProgram(3, "gym", "vtaper", readinessScore = 4.0)
+        val normalSetCount = normalProgram.days.first().exercises.first().targetSets
+        assertEquals("Normal readiness should generate 3 target sets", 3, normalSetCount)
+
+        // Low readiness -> 2 sets
+        val lowProgram = generator.generateProgram(3, "gym", "vtaper", readinessScore = 2.0)
+        val lowSetCount = lowProgram.days.first().exercises.first().targetSets
+        assertEquals("Low readiness should reduce target sets to 2", 2, lowSetCount)
+    }
 }

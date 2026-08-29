@@ -188,7 +188,7 @@ private fun WelcomeStep() {
         Spacer(Modifier.height(64.dp))
         Text(
             text = "BUILD YOUR\nV-TAPER",
-            style = MaterialTheme.typography.displaySmall,
+            style = MaterialTheme.typography.headlineLarge,
             color = WarmWhite,
             fontWeight = FontWeight.Black,
             lineHeight = 40.sp

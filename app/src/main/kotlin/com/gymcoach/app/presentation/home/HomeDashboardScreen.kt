@@ -1,26 +1,11 @@
 package com.gymcoach.app.presentation.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,15 +15,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gymcoach.app.presentation.components.PrimaryActionButton
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
 import com.gymcoach.app.ui.GymCoachBottomNav
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.*
 import java.time.LocalTime
 
 @Composable
@@ -77,9 +58,9 @@ fun HomeDashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
         ) {
+            Spacer(Modifier.height(32.dp))
+            PremiumGreetingHeader()
             Spacer(Modifier.height(24.dp))
-            GreetingHeader()
-            Spacer(Modifier.height(20.dp))
 
             when {
                 state.isLoading -> {
@@ -87,10 +68,8 @@ fun HomeDashboardScreen(
                         CircularProgressIndicator(color = AccentBlue, modifier = Modifier.align(Alignment.Center))
                     }
                 }
-
-                state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
-
-                else -> TodayWorkoutCard(
+                state.todayWorkout == null -> PremiumEmptyProgramCard(onViewProgram)
+                else -> PremiumTodayWorkoutCard(
                     workoutName = state.todayWorkout?.name ?: "",
                     targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
                     exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
@@ -99,61 +78,41 @@ fun HomeDashboardScreen(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
+            Spacer(Modifier.height(24.dp))
 
-            Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
-
-            // Readiness quick link
-            Spacer(Modifier.height(16.dp))
-            Card(
-                onClick = onNavigateToReadiness,
+            // Context & Recovery Row
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "RECOVERY & READINESS",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AccentBlue,
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Log how you're feeling today",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Text(
-                        text = "→",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
-                    )
-                }
+                PremiumSummaryMetric(
+                    title = "WEEKLY SETS",
+                    value = "${state.workoutsThisWeek}/${state.targetWorkouts}",
+                    modifier = Modifier.weight(1f)
+                )
+                PremiumSummaryMetric(
+                    title = "PRs HIT",
+                    value = "${state.prCount}",
+                    modifier = Modifier.weight(1f)
+                )
             }
+
+            Spacer(Modifier.height(24.dp))
+
+            PremiumReadinessCard(onClick = onNavigateToReadiness)
+
+            Spacer(Modifier.height(24.dp))
 
             if (state.vtaperBars.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
+                Spacer(Modifier.height(32.dp))
             }
-
-            Spacer(Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-private fun GreetingHeader() {
+private fun PremiumGreetingHeader() {
     val hour = LocalTime.now().hour
     val greeting = when {
         hour < 12 -> "GOOD MORNING"
@@ -165,113 +124,211 @@ private fun GreetingHeader() {
             text = greeting,
             style = MaterialTheme.typography.labelMedium,
             color = TextTertiary,
-            letterSpacing = 2.sp
+            letterSpacing = 2.sp,
+            fontWeight = FontWeight.Bold
         )
+        Spacer(Modifier.height(4.dp))
         Text(
             text = "Ready to train?",
-            style = MaterialTheme.typography.headlineMedium,
-            color = WarmWhite,
+            style = MaterialTheme.typography.headlineLarge,
+            color = TextPrimary,
+            fontWeight = FontWeight.Black
+        )
+    }
+}
+
+@Composable
+private fun PremiumEmptyProgramCard(onSetUpPlan: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "NO ACTIVE PROGRAM",
+                style = MaterialTheme.typography.labelSmall,
+                color = AccentNeonGreen,
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Build your first V-Taper plan.",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Generate a personalized routine based on your goals, equipment, and schedule.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+            Spacer(Modifier.height(24.dp))
+            PrimaryActionButton(
+                text = "Generate Program",
+                onClick = onSetUpPlan
+            )
+        }
+    }
+}
+
+@Composable
+private fun PremiumTodayWorkoutCard(
+    workoutName: String,
+    targetMuscles: List<String>,
+    exerciseCount: Int,
+    estimatedDuration: Int,
+    onStartClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = AccentBlueDark)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "UP NEXT TODAY",
+                style = MaterialTheme.typography.labelSmall,
+                color = AccentBlueLight,
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = workoutName.uppercase(),
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(Modifier.height(16.dp))
+
+            // Metrics Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                MetricItem("EXERCISES", exerciseCount.toString())
+                MetricItem("DURATION", "~${estimatedDuration}m")
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Muscle Tags
+            if (targetMuscles.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    targetMuscles.take(3).forEach { muscle ->
+                        Surface(
+                            color = AccentBlue,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = muscle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            PrimaryActionButton(
+                text = "Start Workout",
+                onClick = onStartClick,
+                isSuccess = true
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricItem(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = AccentBlueLight,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
-/** Action-oriented empty state - never "No workouts yet". */
 @Composable
-private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
+private fun PremiumSummaryMetric(title: String, value: String, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "YOUR FIRST SESSION IS READY",
+                text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+                color = TextTertiary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
+            Spacer(Modifier.height(4.dp))
             Text(
-                text = "Let's build your plan",
-                style = MaterialTheme.typography.headlineSmall,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Black
             )
-            Text(
-                text = "Two minutes of setup and your first V-taper program is generated around your goal, schedule, and equipment.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-            Button(
-                onClick = onSetUpPlan,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
-            ) {
-                Text("SET UP MY PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PremiumReadinessCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "RECOVERY & READINESS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextTertiary,
+                    letterSpacing = 1.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Log today's readiness",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Medium
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun CoachInsightCard(insight: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                text = "COACH",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = insight.ifBlank { "Log sessions to unlock volume insights." },
-                style = MaterialTheme.typography.bodyMedium,
-                color = WarmWhite
-            )
-        }
-    }
-}
-
-@Composable
-private fun WeekSummaryRow(workoutsThisWeek: Int, targetWorkouts: Int, prCount: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(48.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "$workoutsThisWeek/$targetWorkouts",
-                style = MaterialTheme.typography.titleLarge,
+                text = "->",
+                style = MaterialTheme.typography.titleMedium,
                 color = AccentBlue,
                 fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "workouts this week",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "$prCount",
-                style = MaterialTheme.typography.titleLarge,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "personal records",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
             )
         }
     }

@@ -1,39 +1,14 @@
 package com.gymcoach.app.presentation.profile
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Height
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MonitorWeight
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.SelfImprovement
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,11 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.UserProfileRepository
+import com.gymcoach.app.presentation.components.PremiumEmptyState
+import com.gymcoach.app.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,41 +68,28 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text("PROFILE & SETTINGS", fontWeight = FontWeight.Black, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         }
     ) { padding ->
         when {
             isLoading -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AccentBlue)
                 }
             }
             profile == null -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "No profile found",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    PremiumEmptyState("NO PROFILE FOUND", "Please complete onboarding first.")
                 }
             }
             else -> {
@@ -133,89 +98,99 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(horizontal = 16.dp)
                         .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp)
                 ) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    // Profile header
                     Text(
-                        text = "Your Profile",
-                        style = MaterialTheme.typography.headlineSmall,
+                        text = "PERSONAL DATA",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextTertiary,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Collected during onboarding",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        letterSpacing = 1.5.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
 
-                    Spacer(Modifier.height(24.dp))
-
-                    // Personal Info
-                    SectionHeader("Personal")
-                    Spacer(Modifier.height(8.dp))
-                    ProfileInfoRow(icon = Icons.Default.Cake, label = "Age", value = "${p.age} years")
-                    ProfileInfoRow(icon = Icons.Default.SelfImprovement, label = "Sex", value = p.sex.ifBlank { "Not specified" })
-                    ProfileInfoRow(icon = Icons.Default.Height, label = "Height", value = if (p.heightCm > 0) "%.0f cm".format(p.heightCm) else "Not specified")
-                    ProfileInfoRow(icon = Icons.Default.MonitorWeight, label = "Weight", value = if (p.weightKg > 0) "%.1f kg".format(p.weightKg) else "Not specified")
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Training Info
-                    SectionHeader("Training")
-                    Spacer(Modifier.height(8.dp))
-                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Experience", value = p.experience.ifBlank { "Not specified" })
-                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Training Days/Week", value = "${p.trainingDaysPerWeek}")
-                    ProfileInfoRow(icon = Icons.Default.Timer, label = "Session Length", value = "${p.sessionLengthMinutes} minutes")
-                    ProfileInfoRow(icon = Icons.AutoMirrored.Filled.DirectionsRun, label = "Goal", value = p.goal.ifBlank { "Not specified" })
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // Equipment
-                    SectionHeader("Equipment")
-                    Spacer(Modifier.height(8.dp))
-                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Equipment", value = p.equipmentType.ifBlank { "Not specified" })
-
-                    if (p.preferredExercises.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Preferred Exercises", value = p.preferredExercises)
-                    }
-
-                    if (p.exercisesToAvoid.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Exercises to Avoid", value = p.exercisesToAvoid)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard)
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            ProfileRow(icon = Icons.Default.Cake, label = "Age", value = p.age.toString())
+                            Divider()
+                            ProfileRow(icon = Icons.Default.MonitorWeight, label = "Weight", value = "${p.weightKg} kg")
+                            Divider()
+                            ProfileRow(icon = Icons.Default.Height, label = "Height", value = "${p.heightCm} cm")
+                            Divider()
+                            ProfileRow(icon = Icons.Default.SelfImprovement, label = "Sex", value = p.sex)
+                        }
                     }
 
                     Spacer(Modifier.height(32.dp))
 
-                    // About
-                    SectionHeader("About GymCoach")
-                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "TRAINING PREFERENCES",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextTertiary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard)
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            ProfileRow(icon = Icons.Default.FitnessCenter, label = "Goal", value = p.goal)
+                            Divider()
+                            ProfileRow(icon = Icons.Default.School, label = "Experience", value = p.experience)
+                            Divider()
+                            ProfileRow(icon = Icons.Default.DirectionsRun, label = "Days/Week", value = p.trainingDaysPerWeek.toString())
+                            Divider()
+                            ProfileRow(icon = Icons.Default.Timer, label = "Schedule", value = p.preferredSchedule)
+                            Divider()
+                            ProfileRow(icon = Icons.Default.Info, label = "Limitations", value = p.limitationsPreferences)
+                        }
+                    }
+
+                    Spacer(Modifier.height(32.dp))
+
+                    Text(
+                        text = "ABOUT GYMCOACH",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextTertiary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "GymCoach v1.0",
+                                text = "OFFLINE-FIRST ARCHITECTURE",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Black,
+                                color = TextPrimary
                             )
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(
-                                text = "Rule-based fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Exercise substitutions use deterministic matching, not AI.",
+                                text = "Rule-based fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Local database ensures 100% offline functionality. No artificial intelligence is used to fake recommendations.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = TextSecondary,
+                                lineHeight = 20.sp
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(48.dp))
                 }
             }
         }
@@ -223,55 +198,19 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
-    )
+private fun ProfileRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.weight(1f))
+        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+    }
 }
 
 @Composable
-private fun ProfileInfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
+private fun Divider() {
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = DarkSurfaceVariant)
 }

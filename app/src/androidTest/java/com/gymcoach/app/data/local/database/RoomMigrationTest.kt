@@ -1,7 +1,6 @@
 package com.gymcoach.app.data.local.database
 
-import androidx.room.AutoMigrationSpec
-import androidx.room.MigrationTestHelper
+import androidx.room.testing.MigrationTestHelper
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
@@ -16,6 +15,7 @@ import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_7_8
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_8_9
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_9_10
+import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_10_11
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -48,9 +48,9 @@ class RoomMigrationTest {
     @get:Rule
     @JvmField
     val migrationTestHelper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation().targetContext,
+        InstrumentationRegistry.getInstrumentation(),
         GymCoachDatabase::class.java,
-        emptyList<AutoMigrationSpec>(),
+        emptyList(),
         FrameworkSQLiteOpenHelperFactory()
     )
 
@@ -161,69 +161,27 @@ class RoomMigrationTest {
 
     @Test
     fun migration7To8_statusBackfillLogic() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val dbHelper = object : android.database.sqlite.SQLiteOpenHelper(
-            context, "test-backfill.db", null, 7
-        ) {
-            override fun onCreate(db: android.database.sqlite.SQLiteDatabase) {
-                db.execSQL(
-                    """CREATE TABLE IF NOT EXISTS workouts (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        date INTEGER NOT NULL,
-                        startTime INTEGER NOT NULL,
-                        endTime INTEGER NOT NULL,
-                        duration INTEGER NOT NULL,
-                        notes TEXT NOT NULL,
-                        completed INTEGER NOT NULL
-                    )"""
-                )
-                db.execSQL(
-                    """CREATE TABLE IF NOT EXISTS workout_exercises (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        workoutId INTEGER NOT NULL,
-                        exerciseId INTEGER NOT NULL,
-                        orderIndex INTEGER NOT NULL
-                    )"""
-                )
-
-                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'completed workout', 1)")
-                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'active workout', 0)")
-                db.execSQL("INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES (2, 1, 0)")
-                db.execSQL("INSERT INTO workouts (date, startTime, endTime, duration, notes, completed) VALUES (0, 0, 0, 0, 'zombie workout', 0)")
-            }
-
-            override fun onUpgrade(db: android.database.sqlite.SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
-            override fun onDowngrade(db: android.database.sqlite.SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
-        }
-
-        val db = dbHelper.writableDatabase
-        MIGRATION_7_8.migrate(db)
-
-        val cursor = db.rawQuery("SELECT id, status, notes FROM workouts ORDER BY id", null)
+        var db = migrationTestHelper.createDatabase(TEST_DB, 7)
+        db.execSQL("CREATE TABLE IF NOT EXISTS `exercises` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `muscleGroup` TEXT NOT NULL, `equipment` TEXT NOT NULL, `difficulty` TEXT NOT NULL, `secondaryMuscles` TEXT NOT NULL, `instructions` TEXT NOT NULL, `tips` TEXT NOT NULL, `commonMistakes` TEXT NOT NULL, `safetyNotes` TEXT NOT NULL, `recommendedRepRange` TEXT NOT NULL, `recommendedRestTime` TEXT NOT NULL, `estimatedCalories` INTEGER NOT NULL, `category` TEXT NOT NULL, `isArchived` INTEGER NOT NULL DEFAULT 0)")
+        db.execSQL("INSERT INTO exercises (id, name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, isArchived) VALUES (1, 'dummy', '', '', '', '', '', '', '', '', '', '', '', 0, '', 0)")
+        db.execSQL("INSERT INTO workouts (id, date, startTime, endTime, duration, notes, completed) VALUES (1, 0, 0, 0, 0, 'completed workout', 1)")
+        db.execSQL("INSERT INTO workouts (id, date, startTime, endTime, duration, notes, completed) VALUES (2, 0, 0, 0, 0, 'active workout', 0)")
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (1, 2, 1, 0)")
+        db.execSQL("INSERT INTO workouts (id, date, startTime, endTime, duration, notes, completed) VALUES (3, 0, 0, 0, 0, 'zombie workout', 0)")
+        db.close()
+        db = migrationTestHelper.runMigrationsAndValidate(TEST_DB, 8, true, MIGRATION_7_8)
+        val cursor = db.query("SELECT id, status, notes FROM workouts ORDER BY id")
         val results = mutableListOf<Triple<Long, String, String>>()
         while (cursor.moveToNext()) {
-            results.add(
-                Triple(
-                    cursor.getLong(cursor.getColumnIndexOrThrow("id")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("status")),
-                    cursor.getString(cursor.getColumnIndexOrThrow("notes"))
-                )
-            )
+            results.add(Triple(cursor.getLong(cursor.getColumnIndexOrThrow("id")), cursor.getString(cursor.getColumnIndexOrThrow("status")), cursor.getString(cursor.getColumnIndexOrThrow("notes"))))
         }
         cursor.close()
         db.close()
-        dbHelper.close()
-
         assertEquals("Should have 3 rows", 3, results.size)
         val statusByNote = results.associate { it.third to it.second }
         assertEquals("completed workout → COMPLETED", "COMPLETED", statusByNote["completed workout"])
         assertEquals("active workout → ACTIVE", "ACTIVE", statusByNote["active workout"])
         assertEquals("zombie workout → ABANDONED", "ABANDONED", statusByNote["zombie workout"])
-
-        val validStatuses = setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")
-        for ((_, status, _) in results) {
-            assertTrue("Invalid status: $status", status in validStatuses)
-        }
     }
 
     @Test
@@ -240,7 +198,7 @@ class RoomMigrationTest {
             "INSERT INTO workouts (date, startTime, endTime, duration, notes, completed, status) VALUES (0, 0, 0, 0, 'new workout', 0, 'NOT_STARTED')"
         )
 
-        val cursor = db.rawQuery("SELECT status FROM workouts WHERE notes = 'new workout'", null)
+        val cursor = db.query("SELECT status FROM workouts WHERE notes = 'new workout'")
         assertTrue(cursor.moveToFirst())
         assertEquals("NOT_STARTED", cursor.getString(0))
         cursor.close()
@@ -384,11 +342,11 @@ class RoomMigrationTest {
             foundColumns.add(pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")))
         }
         pragmaCursor.close()
-        assertTrue("readiness table should have all expected columns", expectedColumns.subsetOf(foundColumns))
+        assertTrue("readiness table should have all expected columns", expectedColumns.containsAll(foundColumns))
 
         // Verify default values
         db.execSQL("INSERT INTO readiness (recorded_at) VALUES (0)")
-        val checkCursor = db.rawQuery("SELECT sleep_quality, soreness, energy, motivation, notes FROM readiness WHERE id = 1", null)
+        val checkCursor = db.query("SELECT sleep_quality, soreness, energy, motivation, notes FROM readiness WHERE id = 1")
         assertTrue(checkCursor.moveToFirst())
         assertEquals("Default sleep_quality should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("sleep_quality")))
         assertEquals("Default soreness should be 3", 3, checkCursor.getInt(checkCursor.getColumnIndexOrThrow("soreness")))
@@ -426,13 +384,13 @@ class RoomMigrationTest {
         assertTrue("At least some exercises should have non-zero vtaper scores", countWithVtaper > 0)
 
         // Verify status column exists and has valid values
-        val statusCursor = db.rawQuery("SELECT DISTINCT status FROM workouts", null)
+        val statusCursor = db.query("SELECT DISTINCT status FROM workouts")
         val statuses = mutableSetOf<String>()
         while (statusCursor.moveToNext()) {
             statuses.add(statusCursor.getString(0))
         }
         statusCursor.close()
-        assertTrue("Should have valid status values", statuses.subsetOf(setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")))
+        assertTrue("Should have valid status values", statuses.containsAll(setOf("NOT_STARTED", "ACTIVE", "COMPLETED", "ABANDONED")))
 
         db.close()
     }

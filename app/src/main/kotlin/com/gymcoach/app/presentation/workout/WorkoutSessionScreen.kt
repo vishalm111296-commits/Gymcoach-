@@ -1,79 +1,38 @@
 package com.gymcoach.app.presentation.workout
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.data.local.dao.LastSetData
-import com.gymcoach.app.presentation.history.formatDuration
+import com.gymcoach.app.presentation.components.FrictionlessNumericInput
+import com.gymcoach.app.presentation.components.PrimaryActionButton
+import com.gymcoach.app.presentation.workout.components.LastSessionData
+import com.gymcoach.app.presentation.workout.components.PreviousPerformanceRow
+import com.gymcoach.app.presentation.workout.components.SetData
+import com.gymcoach.app.ui.theme.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import com.gymcoach.app.presentation.history.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,25 +47,20 @@ fun WorkoutSessionScreen(
     val completed by viewModel.completed.collectAsState()
     val error by viewModel.error.collectAsState()
     val restTimerState by viewModel.restTimerState.collectAsState()
-    val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val previousPerformance by viewModel.previousPerformance.collectAsState()
     val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
     val sessionVolume by viewModel.sessionVolume.collectAsState()
-    var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
 
-    val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(restTimerState.isRunning) {
-        rememberRestTimer.value = restTimerState.isRunning
-    }
+    var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(workoutId) {
         viewModel.loadOrStartWorkout(workoutId)
     }
 
     DisposableEffect(Unit) {
-        onDispose {
-            viewModel.dismissError()
-        }
+        onDispose { viewModel.dismissError() }
     }
 
     if (error != null) {
@@ -118,151 +72,109 @@ fun WorkoutSessionScreen(
         )
     }
 
+    val workout = currentWorkout
     if (completed) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Workout Complete!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = onBackClick) {
-                    Text("Go Back")
-                }
-            }
-        }
+        WorkoutCompletionScreen(
+            onDone = onBackClick,
+            volume = sessionVolume,
+            durationSeconds = elapsedSeconds,
+            exerciseCount = workout?.exercises?.size ?: 0
+        )
         return
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
-                    Column {
-                        Text("Workout Session")
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                text = formatDuration(elapsedSeconds),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            if (sessionVolume > 0) {
-                                Text(
-                                    text = "${String.format("%.0f", sessionVolume)} kg·reps",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        }
-                    }
-                },
+                title = { Text("Workout Session", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                }
+                },
+                actions = {
+                    TextButton(onClick = { showFinishDialog = true }) {
+                        Text("FINISH", fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DarkBackground,
+                    titleContentColor = TextPrimary
+                )
             )
+        },
+        containerColor = DarkBackground,
+        bottomBar = {
+            if (restTimerState.isRunning) {
+                PremiumRestTimerBar(
+                    timeRemaining = restTimerState.timeRemaining,
+                    totalDuration = restTimerState.totalDuration,
+                    isPaused = restTimerState.isPaused,
+                    onPauseResume = { if (restTimerState.isPaused) viewModel.resumeRestTimer() else viewModel.pauseRestTimer() },
+                    onSkip = { viewModel.stopRestTimer() }
+                )
+            }
         }
     ) { padding ->
-        Column(
+        if (workout == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AccentBlue)
+            }
+            return@Scaffold
+        }
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
+            contentPadding = PaddingValues(bottom = 120.dp) // Space for timer/FABs
         ) {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                currentWorkout?.let { workout ->
-                    // Rest timer card with preset buttons
-                    if (restTimerState.isRunning) {
-                        item {
-                            RestTimerCard(
-                                timeRemaining = restTimerState.timeRemaining,
-                                totalDuration = restTimerState.totalDuration,
-                                isPaused = restTimerState.isPaused,
-                                onPauseResume = {
-                                    if (restTimerState.isPaused) viewModel.resumeRestTimer()
-                                    else viewModel.pauseRestTimer()
-                                },
-                                onSkip = { viewModel.stopRestTimer() },
-                                onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
-                            )
-                        }
+            itemsIndexed(workout.exercises) { exIdx, we ->
+                val lastPerf = lastPerformanceSummary[we.exercise.id]
+                val lastSets = previousPerformance[we.exercise.id]
+
+                PremiumExerciseCard(
+                    exerciseName = we.exercise.name,
+                    muscleGroup = we.exercise.muscleGroup,
+                    sets = we.sets,
+                    previousSets = lastSets,
+                    lastPerformance = lastPerf,
+                    onAddSet = { viewModel.addSet(exIdx) },
+                    onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
+                    onRemoveExercise = { viewModel.removeExercise(exIdx) },
+                    onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
+                    onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
+                    onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
+                    onToggleComplete = { setIdx ->
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.toggleSetCompletion(exIdx, setIdx)
                     }
-
-                    item { Spacer(Modifier.height(16.dp)) }
-
-                    workout.exercises.let { exercises ->
-                        itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
-                            val lastSets = previousPerformance[we.exercise.id]
-                            val lastPerf = lastPerformanceSummary[we.exercise.id]
-
-                            ExerciseSetCard(
-                                exerciseName = we.exercise.name,
-                                muscleGroup = we.exercise.muscleGroup,
-                                sets = we.sets,
-                                previousSets = lastSets,
-                                lastPerformance = lastPerf,
-                                onAddSet = { viewModel.addSet(exIdx) },
-                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
-                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
-                                onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
-                                onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
-                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
-                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
-                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
-                            )
-                        }
-
-                        item {
-                            OutlinedTextField(
-                                value = workout.workout.notes,
-                                onValueChange = { newText: String -> viewModel.updateNotes(newText) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                                label = { Text("Workout Notes") },
-                                maxLines = 4
-                            )
-                        }
-                    }
-                }
+                )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                PrimaryActionButton(
+                    text = "+ Add Exercise",
                     onClick = { viewModel.showExercisePicker() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Exercise")
-                }
-
-                Button(
-                    onClick = { showFinishDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = workout.workout.notes,
+                    onValueChange = { viewModel.updateNotes(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    label = { Text("Workout Notes", color = TextSecondary) },
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = DarkSurface,
+                        focusedContainerColor = DarkSurface,
+                        unfocusedTextColor = TextPrimary,
+                        focusedTextColor = TextPrimary
                     ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Complete Workout")
-                }
+                    maxLines = 3
+                )
             }
         }
     }
@@ -272,47 +184,47 @@ fun WorkoutSessionScreen(
             onDismissRequest = { showFinishDialog = false },
             title = { Text("Finish Workout") },
             text = { Text("Are you sure you are done? All completed sets will be saved.") },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
             confirmButton = {
-                Button(onClick = {
-                    showFinishDialog = false
-                    viewModel.completeWorkout()
-                }) {
+                Button(
+                    onClick = {
+                        showFinishDialog = false
+                        viewModel.completeWorkout()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                ) {
                     Text("Finish")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = TextSecondary)
                 }
             }
         )
     }
 
     if (showPicker) {
+        // Exercise picker logic
         AlertDialog(
             onDismissRequest = { viewModel.hideExercisePicker() },
             title = { Text("Add Exercise") },
+            containerColor = DarkSurface,
+            titleContentColor = TextPrimary,
             text = {
-                LazyColumn {
-                    items(allExercises, key = { it.id }) { exercise ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { viewModel.addExerciseToWorkout(exercise) },
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                            )
+                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                    itemsIndexed(allExercises) { _, exercise ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.addExerciseToWorkout(exercise) }
+                                .padding(vertical = 12.dp)
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = exercise.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = exercise.muscleGroup,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            Column {
+                                Text(exercise.name, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                Text(exercise.muscleGroup, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             }
                         }
                     }
@@ -320,115 +232,14 @@ fun WorkoutSessionScreen(
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { viewModel.hideExercisePicker() }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { viewModel.hideExercisePicker() }) { Text("Cancel", color = TextSecondary) }
             }
         )
     }
 }
 
-/**
- * Rest timer card with progress bar and quick-select preset buttons.
- */
 @Composable
-private fun RestTimerCard(
-    timeRemaining: Int,
-    totalDuration: Int,
-    isPaused: Boolean,
-    onPauseResume: () -> Unit,
-    onSkip: () -> Unit,
-    onPresetTap: (Int) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Rest")
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Rest: ${timeRemaining}s",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                Row {
-                    IconButton(onClick = onPauseResume) {
-                        Icon(
-                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = "Pause/Resume"
-                        )
-                    }
-                    IconButton(onClick = onSkip) {
-                        Icon(Icons.Default.SkipNext, contentDescription = "Skip")
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = {
-                    if (totalDuration > 0) timeRemaining.toFloat() / totalDuration else 0f
-                },
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            )
-
-            // Quick-select rest duration presets
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Adjust rest:",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-            )
-            Spacer(Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val presets = listOf(
-                    "30s" to RestPresets.SHORT,
-                    "60s" to RestPresets.MEDIUM,
-                    "90s" to RestPresets.STANDARD,
-                    "120s" to RestPresets.LONG,
-                    "180s" to RestPresets.VERY_LONG
-                )
-                presets.forEach { (label, seconds) ->
-                    FilterChip(
-                        selected = totalDuration == seconds,
-                        onClick = { onPresetTap(seconds) },
-                        label = {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExerciseSetCard(
+private fun PremiumExerciseCard(
     exerciseName: String,
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
@@ -440,20 +251,17 @@ private fun ExerciseSetCard(
     onRepsChange: (Int, Int) -> Unit,
     onWeightChange: (Int, Double) -> Unit,
     onRpeChange: (Int, Double) -> Unit,
-    onRestSecondsChange: (Int, Int) -> Unit,
-    onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -461,264 +269,288 @@ private fun ExerciseSetCard(
             ) {
                 Column {
                     Text(
-                        text = exerciseName,
+                        text = exerciseName.uppercase(),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black,
+                        color = TextPrimary
                     )
                     Text(
                         text = muscleGroup,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AccentBlueLight,
+                        fontWeight = FontWeight.Bold
                     )
                 }
                 IconButton(onClick = onRemoveExercise) {
-                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise", tint = TextSecondary)
                 }
             }
 
-            // Previous performance indicator
-            if (lastPerformance != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Previous Performance Context
+            val lastSessionData = if (lastPerformance != null && previousSets != null) {
                 val lastDate = Instant.ofEpochMilli(lastPerformance.date)
                     .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("MMM d"))
-                val bestWeight = lastPerformance.maxWeight
-                val lastSetSummary = previousSets?.joinToString(", ") { 
-                    "${it.weight}kg x ${it.reps}" 
-                } ?: ""
+                val setData = previousSets.map { SetData(it.weight, it.reps) }
+                LastSessionData(lastDate, setData)
+            } else null
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "Last time ($lastDate)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                        if (lastSetSummary.isNotEmpty()) {
-                            Text(
-                                text = lastSetSummary,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        }
-                        Text(
-                            text = "Best: ${bestWeight}kg",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
-                }
-            }
+            PreviousPerformanceRow(lastSession = lastSessionData)
 
-            // Set labels
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Set Headers
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Spacer(modifier = Modifier.width(40.dp)) // Checkbox + Delete
+                Text("SET", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(0.15f))
+                Text("KG", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(0.25f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text("REPS", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(0.25f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text("RPE", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(0.2f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(modifier = Modifier.weight(0.15f)) // Checkbox space
             }
 
+            // Sets
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
-                val dismissState = rememberSwipeToDismissBoxState(
-                    confirmValueChange = {
-                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                            onRemoveSet(index)
-                            true
-                        } else false
-                    }
+                SetLoggingRow(
+                    index = index,
+                    weight = set.weight,
+                    reps = set.reps,
+                    rpe = set.rpe,
+                    completed = set.completed,
+                    onRepsChange = { onRepsChange(index, it) },
+                    onWeightChange = { onWeightChange(index, it) },
+                    onRpeChange = { onRpeChange(index, it) },
+                    onToggleComplete = { onToggleComplete(index) }
                 )
-
-                SwipeToDismissBox(
-                    state = dismissState,
-                    backgroundContent = {
-                        val color = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(color)
-                                .padding(horizontal = 16.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onErrorContainer)
-                            }
-                        }
-                    }
-                ) {
-                    SetRow(
-                        index = index,
-                        weight = set.weight,
-                        reps = set.reps,
-                        rpe = set.rpe,
-                        restSeconds = set.restSeconds,
-                        completed = set.completed,
-                        setType = set.setType,
-                        onRepsChange = { reps -> onRepsChange(index, reps) },
-                        onWeightChange = { weight -> onWeightChange(index, weight) },
-                        onRpeChange = { rpe -> onRpeChange(index, rpe) },
-                        onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
-                        onSetTypeChange = { type -> onSetTypeChange(index, type) },
-                        onToggleComplete = { onToggleComplete(index) }
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            TextButton(onClick = onAddSet) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Add Set")
+            TextButton(onClick = onAddSet, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text("+ Add Set", color = TextSecondary, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun SetRow(
+private fun SetLoggingRow(
     index: Int,
     weight: Double,
     reps: Int,
     rpe: Double,
-    restSeconds: Int,
     completed: Boolean,
-    setType: com.gymcoach.app.domain.model.SetType,
     onRepsChange: (Int) -> Unit,
     onWeightChange: (Double) -> Unit,
     onRpeChange: (Double) -> Unit,
-    onRestSecondsChange: (Int) -> Unit,
-    onSetTypeChange: (com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: () -> Unit
 ) {
-    var weightText by rememberSaveable { mutableStateOf(if (weight > 0) weight.toString() else "") }
-    var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }
-    var rpeText by rememberSaveable { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
-    var restText by rememberSaveable { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
+    val weightText = if (weight > 0) weight.toString() else ""
+    val repsText = if (reps > 0) reps.toString() else ""
+    val rpeText = if (rpe > 0) rpe.toString() else ""
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (completed) SuccessGreen.copy(alpha = 0.1f) else DarkBackground)
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Set Number & Type Indicator
-        val setTypeColor = when (setType) {
-            com.gymcoach.app.domain.model.SetType.WARMUP -> MaterialTheme.colorScheme.tertiary
-            com.gymcoach.app.domain.model.SetType.DROP -> MaterialTheme.colorScheme.secondary
-            com.gymcoach.app.domain.model.SetType.FAILURE -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.onSurface
+        // Set Number
+        Box(modifier = Modifier.weight(0.15f), contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = "${index + 1}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (completed) SuccessGreen else TextSecondary
+            )
         }
-        val setTypeText = when (setType) {
-            com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
-            com.gymcoach.app.domain.model.SetType.DROP -> "D"
-            com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
-            else -> "${index + 1}"
-        }
+
+        // Inputs
+        FrictionlessNumericInput(
+            value = weightText,
+            onValueChange = { it.toDoubleOrNull()?.let(onWeightChange) },
+            modifier = Modifier.weight(0.25f),
+            isHighlight = !completed
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        FrictionlessNumericInput(
+            value = repsText,
+            onValueChange = { it.toIntOrNull()?.let(onRepsChange) },
+            modifier = Modifier.weight(0.25f),
+            isHighlight = !completed
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        FrictionlessNumericInput(
+            value = rpeText,
+            onValueChange = { it.toDoubleOrNull()?.let(onRpeChange) },
+            modifier = Modifier.weight(0.2f),
+            placeholder = "RPE",
+            isHighlight = false
+        )
+
+        // Checkbox Action
         Box(
-            modifier = Modifier.width(24.dp),
+            modifier = Modifier
+                .weight(0.15f)
+                .padding(start = 8.dp)
+                .clickable { onToggleComplete() },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = setTypeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = setTypeColor,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        OutlinedTextField(
-            value = weightText,
-            onValueChange = { v ->
-                weightText = v
-                v.toDoubleOrNull()?.let { onWeightChange(it) }
-            },
-            modifier = Modifier.weight(0.18f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-
-        OutlinedTextField(
-            value = repsText,
-            onValueChange = { v ->
-                repsText = v
-                v.toIntOrNull()?.let { onRepsChange(it) }
-            },
-            modifier = Modifier.weight(0.18f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-
-        OutlinedTextField(
-            value = rpeText,
-            onValueChange = { v ->
-                rpeText = v
-                v.toDoubleOrNull()?.let { onRpeChange(it) }
-            },
-            modifier = Modifier.weight(0.13f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-
-        OutlinedTextField(
-            value = restText,
-            onValueChange = { v ->
-                restText = v
-                v.toIntOrNull()?.let { onRestSecondsChange(it) }
-            },
-            modifier = Modifier.weight(0.13f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-
-        Row(
-            modifier = Modifier.width(56.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val haptic = LocalHapticFeedback.current
-            Checkbox(
-                checked = completed,
-                onCheckedChange = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleComplete()
-                },
-                modifier = Modifier.size(24.dp)
-            )
-            IconButton(
-                onClick = { 
-                    val nextType = when (setType) {
-                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
-                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
-                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
-                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
-                    }
-                    onSetTypeChange(nextType)
-                },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "Cycle Set Type",
-                    modifier = Modifier.size(16.dp),
-                    tint = setTypeColor
+            if (completed) {
+                Icon(Icons.Default.Check, contentDescription = "Completed", tint = SuccessGreen)
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(DarkSurfaceVariant)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PremiumRestTimerBar(
+    timeRemaining: Int,
+    totalDuration: Int,
+    isPaused: Boolean,
+    onPauseResume: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Surface(
+        color = RestTimerBg,
+        shadowElevation = 8.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            LinearProgressIndicator(
+                progress = { if (totalDuration > 0) timeRemaining.toFloat() / totalDuration else 0f },
+                modifier = Modifier.fillMaxWidth().height(4.dp),
+                color = AccentBlue,
+                trackColor = DarkSurface
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = "Rest", tint = AccentBlueLight, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "${timeRemaining}s REST",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = TextPrimary
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    IconButton(
+                        onClick = onPauseResume,
+                        modifier = Modifier.background(DarkSurfaceVariant, RoundedCornerShape(12.dp))
+                    ) {
+                        Icon(
+                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = "Pause/Resume",
+                            tint = TextPrimary
+                        )
+                    }
+                    IconButton(
+                        onClick = onSkip,
+                        modifier = Modifier.background(DarkSurfaceVariant, RoundedCornerShape(12.dp))
+                    ) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Skip", tint = TextPrimary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkoutCompletionScreen(
+    onDone: () -> Unit,
+    volume: Double,
+    durationSeconds: Long,
+    exerciseCount: Int
+) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(DarkBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp).fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier.size(80.dp).background(SuccessGreen.copy(alpha = 0.2f), RoundedCornerShape(40.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    tint = SuccessGreen,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "WORKOUT COMPLETE",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Great job! Your performance has been logged.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Summary Stats
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryStatNode("VOLUME", "${volume.toInt()} kg")
+                SummaryStatNode("TIME", formatDuration(durationSeconds * 1000))
+                SummaryStatNode("EXERCISES", "$exerciseCount")
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+            PrimaryActionButton(
+                text = "View Dashboard",
+                onClick = onDone,
+                isSuccess = true
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryStatNode(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Black,
+            color = TextPrimary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextTertiary,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

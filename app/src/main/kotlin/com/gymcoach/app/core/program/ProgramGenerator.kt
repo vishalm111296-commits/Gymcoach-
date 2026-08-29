@@ -40,17 +40,22 @@ class ProgramGenerator @Inject constructor(
     suspend fun generateProgram(
         frequency: Int,
         equipmentType: String,
-        goal: String
+        goal: String,
+        readinessScore: Double? = null
     ): GeneratedProgram {
         val availableEquipment = equipmentAvailability.getAvailableEquipment(equipmentType)
         val allExercises = exerciseDao.getAll().first()
         val filteredExercises = filterByEquipment(allExercises, availableEquipment)
+
+        // Determine fatigue adjustment: if readiness < 2.5, reduce volume.
+        val targetSetsPerExercise = if (readinessScore != null && readinessScore < 2.5) 2 else 3
+
         val days = when (frequency) {
-            3 -> generateFullBody(filteredExercises)
-            4 -> generateUpperLower(filteredExercises)
-            5 -> generatePPLUpperLower(filteredExercises)
-            6 -> generatePPLDouble(filteredExercises)
-            else -> generateUpperLower(filteredExercises)
+            3 -> generateFullBody(filteredExercises, targetSetsPerExercise)
+            4 -> generateUpperLower(filteredExercises, targetSetsPerExercise)
+            5 -> generatePPLUpperLower(filteredExercises, targetSetsPerExercise)
+            6 -> generatePPLDouble(filteredExercises, targetSetsPerExercise)
+            else -> generateUpperLower(filteredExercises, targetSetsPerExercise)
         }
         return GeneratedProgram(
             name = "V-Taper $frequency-Day Program",
@@ -87,45 +92,45 @@ class ProgramGenerator @Inject constructor(
         }
     }
 
-    private fun generateUpperLower(exercises: List<ExerciseEntity>): List<ProgramDay> {
+    private fun generateUpperLower(exercises: List<ExerciseEntity>, targetSets: Int): List<ProgramDay> {
         val upperA = listOf("Back", "Chest", "Lateral Deltoid", "Rear Deltoid", "Biceps", "Triceps")
         val lowerA = listOf("Quadriceps", "Hamstrings", "Glutes", "Calves")
         val upperB = listOf("Back", "Chest", "Lateral Deltoid", "Rear Deltoid", "Biceps", "Triceps")
         val lowerB = listOf("Hamstrings", "Quadriceps", "Glutes", "Core", "Calves")
         return listOf(
-            buildDay(1, "Upper A", upperA, exercises),
-            buildDay(2, "Lower A", lowerA, exercises),
-            buildDay(3, "Upper B", upperB, exercises),
-            buildDay(4, "Lower B", lowerB, exercises)
+            buildDay(1, "Upper A", upperA, exercises, targetSets),
+            buildDay(2, "Lower A", lowerA, exercises, targetSets),
+            buildDay(3, "Upper B", upperB, exercises, targetSets),
+            buildDay(4, "Lower B", lowerB, exercises, targetSets)
         )
     }
 
-    private fun generateFullBody(exercises: List<ExerciseEntity>): List<ProgramDay> {
+    private fun generateFullBody(exercises: List<ExerciseEntity>, targetSets: Int): List<ProgramDay> {
         return listOf(
-            buildDay(1, "Full Body A", listOf("Back", "Chest", "Quadriceps", "Lateral Deltoid", "Core"), exercises),
-            buildDay(2, "Full Body B", listOf("Back", "Chest", "Hamstrings", "Rear Deltoid", "Biceps"), exercises),
-            buildDay(3, "Full Body C", listOf("Back", "Chest", "Glutes", "Lateral Deltoid", "Triceps"), exercises)
+            buildDay(1, "Full Body A", listOf("Back", "Chest", "Quadriceps", "Lateral Deltoid", "Core"), exercises, targetSets),
+            buildDay(2, "Full Body B", listOf("Back", "Chest", "Hamstrings", "Rear Deltoid", "Biceps"), exercises, targetSets),
+            buildDay(3, "Full Body C", listOf("Back", "Chest", "Glutes", "Lateral Deltoid", "Triceps"), exercises, targetSets)
         )
     }
 
-    private fun generatePPLUpperLower(exercises: List<ExerciseEntity>): List<ProgramDay> {
+    private fun generatePPLUpperLower(exercises: List<ExerciseEntity>, targetSets: Int): List<ProgramDay> {
         return listOf(
-            buildDay(1, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises),
-            buildDay(2, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises),
-            buildDay(3, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises),
-            buildDay(4, "Upper", listOf("Back", "Chest", "Lateral Deltoid", "Rear Deltoid", "Biceps", "Triceps"), exercises),
-            buildDay(5, "Lower", listOf("Quadriceps", "Hamstrings", "Glutes", "Core", "Calves"), exercises)
+            buildDay(1, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises, targetSets),
+            buildDay(2, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises, targetSets),
+            buildDay(3, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises, targetSets),
+            buildDay(4, "Upper", listOf("Back", "Chest", "Lateral Deltoid", "Rear Deltoid", "Biceps", "Triceps"), exercises, targetSets),
+            buildDay(5, "Lower", listOf("Quadriceps", "Hamstrings", "Glutes", "Core", "Calves"), exercises, targetSets)
         )
     }
 
-    private fun generatePPLDouble(exercises: List<ExerciseEntity>): List<ProgramDay> {
+    private fun generatePPLDouble(exercises: List<ExerciseEntity>, targetSets: Int): List<ProgramDay> {
         return listOf(
-            buildDay(1, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises),
-            buildDay(2, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises),
-            buildDay(3, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises),
-            buildDay(4, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises),
-            buildDay(5, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises),
-            buildDay(6, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises)
+            buildDay(1, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises, targetSets),
+            buildDay(2, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises, targetSets),
+            buildDay(3, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises, targetSets),
+            buildDay(4, "Push", listOf("Chest", "Lateral Deltoid", "Triceps"), exercises, targetSets),
+            buildDay(5, "Pull", listOf("Back", "Rear Deltoid", "Biceps"), exercises, targetSets),
+            buildDay(6, "Legs", listOf("Quadriceps", "Hamstrings", "Glutes", "Calves"), exercises, targetSets)
         )
     }
 
@@ -133,7 +138,8 @@ class ProgramGenerator @Inject constructor(
         dayNum: Int,
         name: String,
         muscles: List<String>,
-        allExercises: List<ExerciseEntity>
+        allExercises: List<ExerciseEntity>,
+        targetSets: Int
     ): ProgramDay {
         val selected = mutableListOf<ProgramExercise>()
         val usedExerciseIds = mutableSetOf<Long>()
@@ -154,7 +160,7 @@ class ProgramGenerator @Inject constructor(
                     selected.add(ProgramExercise(
                         exerciseId = ex.id,
                         exerciseName = ex.name,
-                        targetSets = 3,
+                        targetSets = targetSets,
                         targetRepsMin = 8,
                         targetRepsMax = 12,
                         targetRpe = 7.5,
@@ -182,11 +188,10 @@ class ProgramGenerator @Inject constructor(
         else -> 0
     }
 
-    /** Sort difficulty: Beginner < Intermediate < Advanced */
-    private fun difficultyOrder(difficulty: String): Int = when {
-        difficulty.contains("Beginner", ignoreCase = true) -> 0
-        difficulty.contains("Intermediate", ignoreCase = true) -> 1
-        difficulty.contains("Advanced", ignoreCase = true) -> 2
-        else -> 1
+    private fun difficultyOrder(difficulty: String): Int = when (difficulty.lowercase()) {
+        "beginner" -> 1
+        "intermediate" -> 2
+        "advanced" -> 3
+        else -> 4
     }
 }

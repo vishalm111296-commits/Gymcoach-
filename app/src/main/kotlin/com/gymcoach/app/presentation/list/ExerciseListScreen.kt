@@ -1,56 +1,27 @@
 package com.gymcoach.app.presentation.list
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.presentation.ExerciseViewModel
-import com.gymcoach.app.presentation.components.ExerciseItemCard
-
-/** Human-readable label, e.g. BENT_OVER_ROW -> "Bent Over Row". */
-private fun ExerciseType.displayLabel(): String =
-    name.lowercase()
-        .split('_')
-        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
+import com.gymcoach.app.presentation.components.PremiumExerciseCard
+import com.gymcoach.app.presentation.components.PremiumEmptyState
+import com.gymcoach.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,176 +39,163 @@ fun ExerciseListScreen(
     var textFieldValue by rememberSaveable { mutableStateOf("") }
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
-    var showCameraPicker by rememberSaveable { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = textFieldValue,
-            onValueChange = { newValue ->
-                textFieldValue = newValue
-                viewModel.onSearchQueryChange(newValue)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
-                )
-            },
-            placeholder = { Text("Search exercises...") },
-            singleLine = true,
-            trailingIcon = {
-                IconButton(onClick = { showFilterSheet = true }) {
-                    Icon(Icons.Default.Tune, contentDescription = "Filter")
-                }
-            }
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ScrollableTabRow(
-                selectedTabIndex = tabIndex,
-                modifier = Modifier.weight(1f),
-                edgePadding = 0.dp
+    Scaffold(
+        containerColor = DarkBackground,
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DarkBackground)
+                    .padding(top = 16.dp, bottom = 8.dp)
             ) {
-                viewModel.categories.forEachIndexed { index, category ->
-                    Tab(
-                        selected = tabIndex == index,
-                        onClick = {
-                            tabIndex = index
-                            viewModel.onCategorySelected(category)
-                        },
-                        text = { Text(category) }
+                Text(
+                    text = "EXERCISE LIBRARY",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = TextPrimary,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = textFieldValue,
+                    onValueChange = { newValue ->
+                        textFieldValue = newValue
+                        viewModel.onSearchQueryChange(newValue)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    leadingIcon = { Icon(Icons.Default.Search, "Search", tint = TextSecondary) },
+                    trailingIcon = {
+                        IconButton(onClick = { showFilterSheet = true }) {
+                            Icon(Icons.Default.Tune, "Filter", tint = if (filterDifficulty != "All" || filterEquipment != "All") AccentBlue else TextSecondary)
+                        }
+                    },
+                    placeholder = { Text("Search exercises...", color = TextTertiary) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = DarkSurface,
+                        unfocusedContainerColor = DarkSurface,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
                     )
+                )
+
+                ScrollableTabRow(
+                    selectedTabIndex = tabIndex,
+                    containerColor = Color.Transparent,
+                    contentColor = AccentBlue,
+                    edgePadding = 16.dp,
+                    divider = {},
+                    indicator = {}
+                ) {
+                    viewModel.categories.forEachIndexed { index, category ->
+                        val selected = tabIndex == index
+                        Tab(
+                            selected = selected,
+                            onClick = {
+                                tabIndex = index
+                                viewModel.onCategorySelected(category)
+                            },
+                            text = {
+                                Text(
+                                    text = category.uppercase(),
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (selected) AccentBlue else TextTertiary
+                                )
+                            }
+                        )
+                    }
                 }
-            }
-
-            IconButton(onClick = { showCameraPicker = true }) {
-                Icon(Icons.Filled.CameraAlt, contentDescription = "Form Analysis")
-            }
-
-            IconButton(onClick = onHistoryClick) {
-                Icon(Icons.Filled.History, contentDescription = "Workout History")
-            }
-
-            IconButton(onClick = onProgressClick) {
-                Icon(Icons.Filled.Insights, contentDescription = "Progress")
             }
         }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(exercises, key = { it.id }) { exercise ->
-                ExerciseItemCard(
-                    name = exercise.name,
-                    muscleGroup = exercise.muscleGroup,
-                    difficulty = exercise.difficulty,
-                    onClick = { onExerciseClick(exercise.id) }
-                )
+    ) { padding ->
+        if (exercises.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                if (textFieldValue.isNotEmpty()) {
+                    PremiumEmptyState("NO RESULTS", "No exercises match your search criteria.")
+                } else {
+                    CircularProgressIndicator(color = AccentBlue)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(exercises, key = { it.id }) { exercise ->
+                    PremiumExerciseCard(
+                        name = exercise.name,
+                        primaryMuscle = exercise.muscleGroup,
+                        equipment = exercise.equipment,
+                        difficulty = exercise.difficulty,
+                        onClick = { onExerciseClick(exercise.id) }
+                    )
+                }
             }
         }
     }
 
     if (showFilterSheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
-            sheetState = sheetState
+            containerColor = DarkCard
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text("Difficulty", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    viewModel.difficulties.forEach { diff ->
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("FILTERS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = TextPrimary)
+                Spacer(Modifier.height(16.dp))
+
+                Text("Difficulty", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)) {
+                    listOf("Beginner", "Intermediate", "Advanced").forEach { diff ->
                         FilterChip(
-                            selected = diff == filterDifficulty,
-                            onClick = { viewModel.onDifficultySelected(diff) },
-                            label = { Text(diff) }
+                            selected = filterDifficulty == diff,
+                            onClick = { viewModel.onDifficultySelected(if (filterDifficulty == diff) "All" else diff) },
+                            label = { Text(diff) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AccentBlue,
+                                selectedLabelColor = TextPrimary,
+                                containerColor = DarkSurface,
+                                labelColor = TextSecondary
+                            )
                         )
                     }
                 }
-                Spacer(Modifier.height(16.dp))
-                Text("Equipment", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                // Equipment options can be long, so use a horizontal scroll or wrap. 
-                // Since this is just a sheet, a ScrollableTabRow style or wrapping layout is best.
-                // We'll use a simple horizontal scroll for equipment.
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    viewModel.equipments.forEach { eq ->
+
+                Text("Equipment", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)) {
+                    listOf("barbell", "dumbbell", "machine", "bodyweight").forEach { eq ->
                         FilterChip(
-                            selected = eq == filterEquipment,
-                            onClick = { viewModel.onEquipmentSelected(eq) },
-                            label = { Text(eq) }
+                            selected = filterEquipment == eq,
+                            onClick = { viewModel.onEquipmentSelected(if (filterEquipment == eq) "All" else eq) },
+                            label = { Text(eq.replaceFirstChar { it.uppercase() }) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AccentBlue,
+                                selectedLabelColor = TextPrimary,
+                                containerColor = DarkSurface,
+                                labelColor = TextSecondary
+                            )
                         )
                     }
                 }
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = {
+
+                Button(
+                    onClick = {
                         viewModel.onDifficultySelected("All")
                         viewModel.onEquipmentSelected("All")
-                        viewModel.onCategorySelected("All")
-                    }) {
-                        Text("Clear Filters")
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceVariant, contentColor = TextPrimary)
+                ) {
+                    Text("Clear Filters")
                 }
                 Spacer(Modifier.height(32.dp))
-            }
-        }
-    }
-
-    if (showCameraPicker) {
-        val pickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { showCameraPicker = false },
-            sheetState = pickerSheetState
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Which exercise are you doing?",
-                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(12.dp))
-                ExerciseType.entries.forEach { type ->
-                    FilterChip(
-                        selected = false,
-                        onClick = {
-                            showCameraPicker = false
-                            onCameraClick(type)
-                        },
-                        label = { Text(type.displayLabel()) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    )
-                }
-                Spacer(Modifier.height(24.dp))
             }
         }
     }

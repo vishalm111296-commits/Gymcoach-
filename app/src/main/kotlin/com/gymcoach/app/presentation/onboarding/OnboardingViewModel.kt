@@ -62,7 +62,8 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    fun selectGoal(goal: String) = _uiState.update { it.copy(goal = goal) }
+    fun selectGoal(goal: String) = _uiState.update { it.copy(goal = goal
+                    ) }
 
     fun selectExperience(experience: String) = _uiState.update { it.copy(experience = experience) }
 
@@ -112,7 +113,8 @@ class OnboardingViewModel @Inject constructor(
                 val equipmentType = mapEquipmentType(state.selectedEquipment)
                 userProfileRepository.saveProfile(
                     UserProfileEntity(
-                        goal = goal,
+                        goal = goal
+                    ,
                         experience = experience,
                         sex = state.sex ?: "Male",
                         age = state.age.toInt(),
@@ -131,6 +133,7 @@ class OnboardingViewModel @Inject constructor(
                     frequency = state.daysPerWeek,
                     equipmentType = equipmentType,
                     goal = goal
+
                 )
                 programRepository.saveGeneratedProgram(generated)
                 // Mark onboarding as complete so returning users skip it

@@ -36,7 +36,9 @@ class SubstitutionEngine @Inject constructor(
             val substitute = exerciseDao.getById(sub.substituteExerciseId).first() ?: continue
             if (equipmentAvailability.isAvailable(substitute.equipment, equipmentType)) {
                 val score = calculatePreservationScore(original, substitute)
-                substitutes.add(SubstitutionResult(substitute, score, "Recommended substitute"))
+                // Use a deterministic reason instead of fake score
+                val reason = buildDeterministicReason(original, substitute)
+                substitutes.add(SubstitutionResult(substitute, score, reason))
             }
         }
 
@@ -51,7 +53,8 @@ class SubstitutionEngine @Inject constructor(
 
             for (ex in sameGroup) {
                 val score = calculatePreservationScore(original, ex)
-                substitutes.add(SubstitutionResult(ex, score, "Same muscle group"))
+                val reason = buildDeterministicReason(original, ex)
+                substitutes.add(SubstitutionResult(ex, score, reason))
             }
         }
 
@@ -69,5 +72,18 @@ class SubstitutionEngine @Inject constructor(
         if (origPattern.contains("compound") && subPattern.contains("compound")) score += 10
         if (origPattern.contains("isolation") && subPattern.contains("isolation")) score += 10
         return score.coerceAtMost(100)
+    }
+
+    private fun buildDeterministicReason(original: ExerciseEntity, substitute: ExerciseEntity): String {
+        val reasons = mutableListOf<String>()
+        if (original.muscleGroup.equals(substitute.muscleGroup, ignoreCase = true)) {
+            reasons.add("Same primary muscle")
+        }
+        if (original.equipment.equals(substitute.equipment, ignoreCase = true)) {
+            reasons.add("Same equipment")
+        } else {
+            reasons.add("Uses ${substitute.equipment.lowercase().takeIf { it.isNotBlank() } ?: "bodyweight"}")
+        }
+        return reasons.joinToString(" • ")
     }
 }

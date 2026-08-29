@@ -50,6 +50,8 @@ class VolumeCalculator @Inject constructor() {
         val primaryScore: Double,
         val secondaryScore: Double,
         val overallBalance: String
+        ,
+        val recommendation: String = ""
     )
 
     enum class MuscleRole(val credit: Double) {
@@ -153,7 +155,15 @@ class VolumeCalculator @Inject constructor() {
             primary >= 2.0 -> "Moderate V-taper focus"
             else -> "Low V-taper volume"
         }
-        return VtaperBalance(primary, secondary, text)
+
+        val recommendation = when {
+            balance.latVolume.status.ordinal < 2 -> "Increase back volume to support your V-Taper goal."
+            balance.lateralDeltVolume.status.ordinal < 2 -> "Your lateral delts need more volume for width."
+            balance.upperChestVolume.status.ordinal < 2 -> "Add incline chest work to build upper mass."
+            primary >= 3.0 -> "Maintain current volume. You are in the optimal V-Taper band."
+            else -> "Keep logging workouts to establish a trend."
+        }
+        return VtaperBalance(primary, secondary, text, recommendation)
     }
 
     private fun classify(sets: Int): VolumeStatus {

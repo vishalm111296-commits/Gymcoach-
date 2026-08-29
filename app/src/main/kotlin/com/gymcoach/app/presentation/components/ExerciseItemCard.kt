@@ -21,11 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.WarmWhite
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.TextSecondary
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun ExerciseItemCard(
@@ -36,11 +31,10 @@ fun ExerciseItemCard(
     onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.fillMaxWidth().padding(8.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(
-            containerColor = DarkSurface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -50,9 +44,9 @@ fun ExerciseItemCard(
         ) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = WarmWhite
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Row(
@@ -67,13 +61,13 @@ fun ExerciseItemCard(
                     Icon(
                         imageVector = Icons.Default.FitnessCenter,
                         contentDescription = "Muscle group icon",
-                        tint = AccentBlue,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = muscleGroup,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -84,13 +78,13 @@ fun ExerciseItemCard(
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = "Difficulty icon",
-                        tint = AccentBlue,
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = difficulty,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

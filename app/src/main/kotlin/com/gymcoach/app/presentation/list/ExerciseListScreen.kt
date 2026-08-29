@@ -106,23 +106,13 @@ fun ExerciseListScreen(
                 edgePadding = 0.dp
             ) {
                 viewModel.categories.forEachIndexed { index, category ->
-                    val displayName = when (category) {
-                        "Chest" -> "Chest"
-                        "Back" -> "Back"
-                        "Legs" -> "Legs"
-                        "Shoulders" -> "Shoulders"
-                        "Arms" -> "Arms"
-                        "Core" -> "Core"
-                        "Full Body" -> "Full Body"
-                        else -> category.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
-                    }
                     Tab(
                         selected = tabIndex == index,
                         onClick = {
                             tabIndex = index
                             viewModel.onCategorySelected(category)
                         },
-                        text = { Text(displayName) }
+                        text = { Text(category) }
                     )
                 }
             }

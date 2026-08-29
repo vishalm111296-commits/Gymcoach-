@@ -32,8 +32,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
-import com.gymcoach.app.presentation.home.components.DashboardReadinessCard
-import com.gymcoach.app.presentation.home.components.CompletedWorkoutCard
 import com.gymcoach.app.ui.GymCoachBottomNav
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
@@ -90,11 +88,7 @@ fun HomeDashboardScreen(
                     }
                 }
 
-                !state.hasProfile -> EmptyProfileCard(onNavigateToProfile)
-
-                !state.hasProgram -> EmptyProgramCard(onViewProgram)
-
-                state.isWorkoutCompletedToday -> CompletedWorkoutCard()
+                state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
 
                 else -> TodayWorkoutCard(
                     workoutName = state.todayWorkout?.name ?: "",
@@ -106,21 +100,52 @@ fun HomeDashboardScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            DashboardReadinessCard(
-                latestReadiness = state.latestReadiness,
-                onClick = onNavigateToReadiness
-            )
+            CoachInsightCard(state.coachInsight)
 
             Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
+            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
+
+            // Readiness quick link
+            Spacer(Modifier.height(16.dp))
+            Card(
+                onClick = onNavigateToReadiness,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "RECOVERY & READINESS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Log how you're feeling today",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                    Text(
+                        text = "→",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = AccentBlue
+                    )
+                }
+            }
 
             if (state.vtaperBars.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
             }
-
-            Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
 
             Spacer(Modifier.height(32.dp))
         }
@@ -188,41 +213,6 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
                     .height(56.dp)
             ) {
                 Text("SET UP MY PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyProfileCard(onSetUpProfile: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "PROFILE SETUP REQUIRED",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Complete your fitness profile to generate a personalized program.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-            Button(
-                onClick = onSetUpProfile,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
-            ) {
-                Text("COMPLETE PROFILE", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
         }
     }

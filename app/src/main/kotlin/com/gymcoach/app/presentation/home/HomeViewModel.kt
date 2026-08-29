@@ -8,11 +8,7 @@ import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
-import com.gymcoach.app.domain.repository.ReadinessRepository
-import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
-import com.gymcoach.app.data.local.entity.ReadinessEntity
-import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
@@ -37,10 +33,6 @@ data class TodayWorkoutUiModel(
 data class HomeUiState(
     val isLoading: Boolean = true,
     val hasProgram: Boolean = false,
-    val hasProfile: Boolean = false,
-    val isWorkoutCompletedToday: Boolean = false,
-    val latestReadiness: ReadinessEntity? = null,
-    val hasMeasurements: Boolean = false,
     val todayWorkout: TodayWorkoutUiModel? = null,
     val coachInsight: String = "",
     val workoutsThisWeek: Int = 0,
@@ -74,8 +66,6 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    readinessRepository: ReadinessRepository,
-    userProfileRepository: UserProfileRepository,
     analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
 ) : ViewModel() {
 
@@ -90,28 +80,24 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            val programCoreFlow = programRepository.getActiveProgram().flatMapLatest { program ->
-                if (program == null) {
-                    flowOf(null)
-                } else {
-                    programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
-                        val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
-                        programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
-                            ProgramCore(program, pickToday(nonRest), days, byDay)
+            programRepository.getActiveProgram()
+                .flatMapLatest { program ->
+                    if (program == null) {
+                        flowOf(null)
+                    } else {
+                        programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
+                            val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
+                            programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
+                                ProgramCore(program, pickToday(nonRest), days, byDay)
+                            }
                         }
                     }
                 }
-            }
-
-            combine(
-                programCoreFlow,
-                workoutRepository.getCompletedWorkouts(),
-                _prCount.asStateFlow(),
-                readinessRepository.getLatestReadiness(),
-                userProfileRepository.getLatestProfile()
-            ) { core, workouts, prCount, latestReadiness, latestProfile ->
-                buildUiState(core, workouts, prCount, latestReadiness, latestProfile)
-            }.collect { state -> _uiState.value = state }
+                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
+                .combine(_prCount.asStateFlow()) { pair, prCount ->
+                    buildUiState(pair.first, pair.second, prCount)
+                }
+                .collect { state -> _uiState.value = state }
         }
     }
 
@@ -125,33 +111,19 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        prCount: Int,
-        latestReadiness: ReadinessEntity?,
-        latestProfile: UserProfileEntity?
+        prCount: Int
     ): HomeUiState {
-        val completedThisWeek = workouts.count {
-            it.completed && it.date.toEpochMilli() >= weekStartMillis()
-        }
-
-        val todayMidnight = todayMidnightMillis()
-        val isWorkoutCompletedToday = workouts.any {
-            it.completed && it.date.toEpochMilli() >= todayMidnight
-        }
-
-        val hasProfile = latestProfile != null
-        val hasMeasurements = latestProfile?.weightKg != null && latestProfile.weightKg > 0.0
         if (core == null) {
             return HomeUiState(
                 isLoading = false,
                 hasProgram = false,
-                hasProfile = hasProfile,
-                isWorkoutCompletedToday = isWorkoutCompletedToday,
-                latestReadiness = latestReadiness,
-                hasMeasurements = hasMeasurements,
                 coachInsight = "Your first session is ready once you set up your plan.",
-                workoutsThisWeek = completedThisWeek,
                 prCount = prCount
             )
+        }
+
+        val completedThisWeek = workouts.count {
+            it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
         // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
@@ -178,10 +150,6 @@ class HomeViewModel @Inject constructor(
         return HomeUiState(
             isLoading = false,
             hasProgram = true,
-            hasProfile = hasProfile,
-            isWorkoutCompletedToday = isWorkoutCompletedToday,
-            latestReadiness = latestReadiness,
-            hasMeasurements = hasMeasurements,
             todayWorkout = TodayWorkoutUiModel(
                 name = core.todayDay?.name?.takeIf { it.isNotBlank() } ?: "Training Session",
                 targetMuscles = targetMusclesMuscles(core.todayDay),
@@ -255,15 +223,6 @@ class HomeViewModel @Inject constructor(
     private fun weekStartMillis(): Long {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
-
-    private fun todayMidnightMillis(): Long {
-        val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 0)
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)

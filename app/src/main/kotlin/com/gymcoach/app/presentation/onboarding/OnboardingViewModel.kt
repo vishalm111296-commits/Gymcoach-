@@ -156,9 +156,18 @@ class OnboardingViewModel @Inject constructor(
      *
      * Equipment names now match ExerciseEntity.equipment values exactly.
      */
-    private fun mapEquipmentType(equipment: Set<String>): String = when {
-        equipment.any { it == "Barbell" || it == "Cable" } -> "gym"
-        equipment.isNotEmpty() -> "home"
-        else -> "custom"
+    private fun mapEquipmentType(equipment: Set<String>): String {
+        if (equipment.isEmpty()) return "custom"
+        return equipment.joinToString(",") { item ->
+            when (item.lowercase().trim()) {
+                "flat bench" -> "bench"
+                "pull-up bar" -> "pull-up bar"
+                "resistance band" -> "resistance band"
+                "dumbbell" -> "dumbbell"
+                "barbell" -> "barbell"
+                "cable" -> "cable"
+                else -> item.lowercase().trim()
+            }
+        }
     }
 }

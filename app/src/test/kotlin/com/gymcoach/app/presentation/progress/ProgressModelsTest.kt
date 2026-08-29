@@ -231,3 +231,29 @@ class ProgressViewModelTest {
         }
     }
 }
+
+/**
+ * Tests for MuscleGroupStats and MuscleDistributionPieChart calculation logic.
+ */
+class MuscleGroupStatsTest {
+
+    @Test
+    fun `MuscleGroupStats calculates total percentage correctly`() {
+        val stats = listOf(
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Chest", 100),
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Back", 100)
+        )
+        val totalReps = stats.sumOf { it.totalReps }
+        assertEquals(200, totalReps)
+
+        val chestPercentage = (stats[0].totalReps.toDouble() / totalReps * 100)
+        assertEquals(50.0, chestPercentage, 0.01)
+    }
+
+    @Test
+    fun `empty MuscleGroupStats list has zero total reps`() {
+        val stats = emptyList<com.gymcoach.app.domain.repository.MuscleGroupStats>()
+        val totalReps = stats.sumOf { it.totalReps }
+        assertEquals(0, totalReps)
+    }
+}

@@ -67,8 +67,6 @@ private data class ProgramCore(
     val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>
 )
 
-private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -91,7 +89,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            programRepository.getActiveProgram()
+            val programCoreFlow = programRepository.getActiveProgram()
                 .flatMapLatest { program ->
                     if (program == null) {
                         flowOf(null)
@@ -104,15 +102,16 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount -> Triple(pair.first, pair.second, prCount) }
-                .combine(readinessRepository.getLatestReadiness()) { triple, readiness ->
-                    Quad(triple.first, triple.second, triple.third, readiness)
-                }
-                .combine(userProfileRepository.getLatestProfile()) { quad, profile ->
-                    buildUiState(quad.a, quad.b, quad.c, quad.d, profile)
-                }
-                .collect { state -> _uiState.value = state }
+
+            combine(
+                programCoreFlow,
+                workoutRepository.getCompletedWorkouts(),
+                _prCount.asStateFlow(),
+                readinessRepository.getLatestReadiness(),
+                userProfileRepository.getLatestProfile()
+            ) { core, workouts, prCount, readiness, profile ->
+                buildUiState(core, workouts, prCount, readiness, profile)
+            }.collect { state -> _uiState.value = state }
         }
     }
 

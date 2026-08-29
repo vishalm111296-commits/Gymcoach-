@@ -68,16 +68,12 @@ fun GymCoachAppShell(
                 GymCoachBottomNav(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        if (route == "workout_action") {
-                            navController.navigate(Routes.workoutSession())
-                        } else {
-                            navController.navigate(route) {
-                                popUpTo(Routes.HOME) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                        navController.navigate(route) {
+                            popUpTo(Routes.HOME) {
+                                saveState = true
                             }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 )

@@ -164,24 +164,7 @@ fun ExerciseDetailScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // Placeholder Hero Image via Typography
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            RoundedCornerShape(24.dp)
-                        )
-                        .padding(bottom = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                com.gymcoach.app.presentation.components.PremiumMediaUnavailablePlaceholder(modifier = Modifier.padding(bottom = 24.dp))
 
                 // Description section
                 Text(
@@ -227,7 +210,7 @@ fun ExerciseDetailScreen(
                     DetailRow(
                         icon = Icons.Default.FitnessCenter,
                         label = "Secondary Muscles",
-                        value = ex.secondaryMuscles
+                        value = ex.secondaryMuscles.split(",").map { it.trim().replaceFirstChar { c -> c.uppercase() } }.joinToString(", ")
                     )
                 }
 
@@ -469,6 +452,38 @@ private fun SubstitutionSection(
     }
 }
 
+// --- Shared Components ---
+
+@Composable
+private fun DetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(2.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
 @Composable
 private fun SubstitutionItem(
     substitute: com.gymcoach.app.data.local.entity.ExerciseEntity,
@@ -506,49 +521,11 @@ private fun SubstitutionItem(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$score%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
                     text = reason,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
-    }
-}
-
-// --- Shared Components ---
-
-@Composable
-private fun DetailRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(Modifier.height(2.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
     }
 }

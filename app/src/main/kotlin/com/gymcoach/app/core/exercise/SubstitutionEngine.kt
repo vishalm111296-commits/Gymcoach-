@@ -18,8 +18,7 @@ class SubstitutionEngine @Inject constructor(
 
     data class SubstitutionResult(
         val substitute: ExerciseEntity,
-        val preservationScore: Int,
-        val reason: String
+        val reasons: List<String>
     )
 
     suspend fun findSubstitutes(
@@ -35,8 +34,9 @@ class SubstitutionEngine @Inject constructor(
         for (sub in existingSubs) {
             val substitute = exerciseDao.getById(sub.substituteExerciseId).first() ?: continue
             if (equipmentAvailability.isAvailable(substitute.equipment, equipmentType)) {
-                val score = calculatePreservationScore(original, substitute)
-                substitutes.add(SubstitutionResult(substitute, score, "Recommended substitute"))
+                val reasons = mutableListOf("Recommended substitute")
+                appendCommonReasons(original, substitute, reasons)
+                substitutes.add(SubstitutionResult(substitute, reasons))
             }
         }
 
@@ -50,24 +50,27 @@ class SubstitutionEngine @Inject constructor(
                 .take(maxResults - substitutes.size)
 
             for (ex in sameGroup) {
-                val score = calculatePreservationScore(original, ex)
-                substitutes.add(SubstitutionResult(ex, score, "Same muscle group"))
+                val reasons = mutableListOf<String>()
+                appendCommonReasons(original, ex, reasons)
+                substitutes.add(SubstitutionResult(ex, reasons))
             }
         }
 
-        return substitutes.sortedByDescending { it.preservationScore }.take(maxResults)
+        // Sort by the number of matching reasons
+        return substitutes.sortedByDescending { it.reasons.size }.take(maxResults)
     }
 
-    private fun calculatePreservationScore(original: ExerciseEntity, substitute: ExerciseEntity): Int {
-        var score = 0
-        if (original.muscleGroup.equals(substitute.muscleGroup, ignoreCase = true)) score += 40
-        if (original.category == substitute.category) score += 20
-        if (original.equipment == substitute.equipment) score += 15
-        if (original.difficulty == substitute.difficulty) score += 10
-        val origPattern = original.tags.lowercase()
-        val subPattern = substitute.tags.lowercase()
-        if (origPattern.contains("compound") && subPattern.contains("compound")) score += 10
-        if (origPattern.contains("isolation") && subPattern.contains("isolation")) score += 10
-        return score.coerceAtMost(100)
+    private fun appendCommonReasons(original: ExerciseEntity, substitute: ExerciseEntity, reasons: MutableList<String>) {
+        if (original.muscleGroup.equals(substitute.muscleGroup, ignoreCase = true)) {
+            reasons.add("Same primary muscle")
+        }
+        if (original.equipment == substitute.equipment) {
+            reasons.add("Same equipment")
+        }
+        val origPattern = original.movementPattern.lowercase()
+        val subPattern = substitute.movementPattern.lowercase()
+        if (origPattern.isNotBlank() && origPattern == subPattern) {
+            reasons.add("Similar movement pattern")
+        }
     }
 }

@@ -7,7 +7,11 @@ import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.data.local.entity.ReadinessEntity
+import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.ProgramRepository
+import com.gymcoach.app.domain.repository.ReadinessRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,7 +42,10 @@ data class HomeUiState(
     val workoutsThisWeek: Int = 0,
     val targetWorkouts: Int = 0,
     val prCount: Int = 0,
-    val vtaperBars: List<VtaperMuscleData> = emptyList()
+    val vtaperBars: List<VtaperMuscleData> = emptyList(),
+    val readiness: ReadinessEntity? = null,
+    val profile: UserProfileEntity? = null,
+    val latestCompletedWorkout: com.gymcoach.app.domain.model.WorkoutWithStats? = null
 )
 
 /** Evidence-based optimal band floor (14-17 weekly sets) used as the bar target. */
@@ -60,13 +67,17 @@ private data class ProgramCore(
     val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>
 )
 
+private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    analyticsRepository: AnalyticsRepository,
+    private val readinessRepository: ReadinessRepository,
+    private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -94,8 +105,12 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
+                .combine(_prCount.asStateFlow()) { pair, prCount -> Triple(pair.first, pair.second, prCount) }
+                .combine(readinessRepository.getLatestReadiness()) { triple, readiness ->
+                    Quad(triple.first, triple.second, triple.third, readiness)
+                }
+                .combine(userProfileRepository.getLatestProfile()) { quad, profile ->
+                    buildUiState(quad.a, quad.b, quad.c, quad.d, profile)
                 }
                 .collect { state -> _uiState.value = state }
         }
@@ -111,14 +126,19 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        prCount: Int
+        prCount: Int,
+        readiness: ReadinessEntity?,
+        profile: UserProfileEntity?
     ): HomeUiState {
         if (core == null) {
             return HomeUiState(
                 isLoading = false,
                 hasProgram = false,
                 coachInsight = "Your first session is ready once you set up your plan.",
-                prCount = prCount
+                prCount = prCount,
+                readiness = readiness,
+                profile = profile,
+                latestCompletedWorkout = workouts.firstOrNull()
             )
         }
 
@@ -160,7 +180,10 @@ class HomeViewModel @Inject constructor(
             workoutsThisWeek = completedThisWeek,
             targetWorkouts = core.program.daysPerWeek,
             prCount = prCount,
-            vtaperBars = bars
+            vtaperBars = bars,
+            readiness = readiness,
+            profile = profile,
+            latestCompletedWorkout = workouts.firstOrNull()
         )
     }
 

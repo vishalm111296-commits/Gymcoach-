@@ -31,7 +31,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
-import com.gymcoach.app.ui.GymCoachBottomNav
+import com.gymcoach.app.ui.components.GymCoachCard
+import com.gymcoach.app.ui.components.GymCoachButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.ui.theme.DarkSurface
@@ -46,10 +51,13 @@ fun HomeDashboardScreen(
     onViewProgram: () -> Unit,
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {},
     onNavigateToReadiness: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+
 
     Column(
         modifier = Modifier
@@ -58,20 +66,87 @@ fun HomeDashboardScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
     ) {
-            Spacer(Modifier.height(24.dp))
-            GreetingHeader()
-            Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
+        GreetingHeader()
+        Spacer(Modifier.height(20.dp))
 
-            when {
-                state.isLoading -> {
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp)) {
-                        CircularProgressIndicator(color = AccentBlue, modifier = Modifier.align(Alignment.Center))
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp)) {
+                CircularProgressIndicator(color = AccentBlue, modifier = Modifier.align(Alignment.Center))
+            }
+        } else {
+            // Profile & Setup State
+            if (state.profile == null) {
+                GymCoachCard(onClick = onNavigateToProfile) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "PROFILE INCOMPLETE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Complete your profile to generate a tailored program.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        GymCoachButton(
+                            text = "COMPLETE SETUP",
+                            onClick = onNavigateToProfile,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+            }
 
-                state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
+            // Readiness State
+            GymCoachCard(onClick = onNavigateToReadiness) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "RECOVERY & READINESS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    if (state.readiness != null) {
+                        val readinessScore = (state.readiness!!.sleepQuality + state.readiness!!.energy + state.readiness!!.motivation - state.readiness!!.soreness)
+                        Text(
+                            text = if (readinessScore > 0) "Ready to Train" else "Needs Recovery",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = WarmWhite,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Score: $readinessScore",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    } else {
+                        Text(
+                            text = "Log how you're feeling today to track recovery.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        GymCoachButton(
+                            text = "LOG READINESS",
+                            onClick = onNavigateToReadiness,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
 
-                else -> TodayWorkoutCard(
+            // Today's Workout
+            if (!state.hasProgram || state.todayWorkout == null) {
+                EmptyProgramCard(onViewProgram)
+            } else {
+                TodayWorkoutCard(
                     workoutName = state.todayWorkout?.name ?: "",
                     targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
                     exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
@@ -79,47 +154,68 @@ fun HomeDashboardScreen(
                     onStartClick = onStartWorkout
                 )
             }
-
             Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
 
-            Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
-
-            // Readiness quick link
-            Spacer(Modifier.height(16.dp))
-            Card(
-                onClick = onNavigateToReadiness,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
+            // Completed Workout
+            if (state.latestCompletedWorkout != null) {
+                GymCoachCard(onClick = onNavigateToHistory) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "RECOVERY & READINESS",
+                            text = "RECENT ACTIVITY",
                             style = MaterialTheme.typography.labelSmall,
                             color = AccentBlue,
-                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = if (state.latestCompletedWorkout!!.notes.isNotBlank()) state.latestCompletedWorkout!!.notes else "Completed Workout",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = WarmWhite,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Log how you're feeling today",
+                            text = "Volume: ${state.latestCompletedWorkout!!.volume} kg",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
                     }
+                }
+                Spacer(Modifier.height(16.dp))
+            } else {
+                GymCoachCard(onClick = onNavigateToHistory) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "RECENT ACTIVITY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "No completed workouts yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            // Coach Insights (only real data)
+            CoachInsightCard(state.coachInsight)
+            Spacer(Modifier.height(16.dp))
+
+            // Progress Summary
+            GymCoachCard(onClick = onNavigateToProgress) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "→",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
+                        text = "TRAINING PROGRESS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Bold
                     )
+                    Spacer(Modifier.height(16.dp))
+                    WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
                 }
             }
 
@@ -127,9 +223,11 @@ fun HomeDashboardScreen(
                 Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
             }
-
-            Spacer(Modifier.height(32.dp))
+        }
+        Spacer(Modifier.height(32.dp))
     }
+
+
 }
 
 @Composable

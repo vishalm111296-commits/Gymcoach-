@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -37,14 +36,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -84,39 +79,45 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<WorkoutHistoryDetailUiState>(WorkoutHistoryDetailUiState())
     val uiState: StateFlow<WorkoutHistoryDetailUiState> = _uiState.asStateFlow()
 
-    fun loadWorkout(id: Long) {
+    private val _showDeleteConfirmation = MutableStateFlow(false)
+    val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation
+
+    private val _deleteTarget = MutableStateFlow<Long?>(null)
+    val deleteTarget: StateFlow<Long?> = _deleteTarget
+
+    fun loadWorkout(workoutId: Long) {
         viewModelScope.launch {
+            _uiState.value = WorkoutHistoryDetailUiState(isLoading = true)
             try {
-                workoutRepository.getWorkoutWithDetails(id).collect { workout ->
-                    if (workout != null) {
-                        _uiState.value = WorkoutHistoryDetailUiState(
-                            isLoading = false,
-                            workout = workout
-                        )
-                    } else {
-                        _uiState.value = WorkoutHistoryDetailUiState(
-                            isLoading = false,
-                            error = "Workout not found"
-                        )
-                    }
-                }
+                val workout = workoutRepository.getWorkoutWithDetails(workoutId).first()
+                _uiState.value = WorkoutHistoryDetailUiState(
+                    isLoading = false,
+                    workout = workout,
+                    error = null
+                )
             } catch (e: Exception) {
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
-                    error = e.message ?: "Unknown error"
+                    error = e.message ?: "Failed to load workout"
                 )
             }
         }
     }
 
-    fun deleteWorkout(id: Long) {
-        viewModelScope.launch {
-            try {
-                workoutRepository.deleteWorkout(id)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message)
+    fun onDeleteClick(workoutId: Long) {
+        _deleteTarget.value = workoutId
+    }
+
+    fun confirmDelete() {
+        _deleteTarget.value?.let { workoutId ->
+            viewModelScope.launch {
+                workoutRepository.deleteWorkout(workoutId)
             }
         }
+    }
+
+    fun cancelDelete() {
+        _deleteTarget.value = null
     }
 }
 
@@ -132,12 +133,11 @@ fun WorkoutHistoryDetailScreen(
     workoutId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit = {},
-    onPerformAgain: (Long) -> Unit = {},
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val context = LocalContext.current
-    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
@@ -153,96 +153,124 @@ fun WorkoutHistoryDetailScreen(
                     }
                 },
                 actions = {
-                    if (state.workout != null) {
-                        IconButton(onClick = {
-                            shareWorkout(context, state.workout!!)
-                        }) {
-                            Icon(Icons.Filled.Share, contentDescription = "Share")
+                    // Share button
+                    IconButton(onClick = {
+                        state.workout?.let { workout ->
+                            shareWorkoutSummary(context, workout)
                         }
-                        IconButton(onClick = { onEditClick(workoutId) }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit")
-                        }
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Delete")
-                        }
+                    }) {
+                        Icon(Icons.Filled.Share, contentDescription = "Share")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (state.error != null || state.workout == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = state.error ?: "Workout not found", color = MaterialTheme.colorScheme.error)
-            }
-        } else {
-            val workout = state.workout!!
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
-                    onClick = { onPerformAgain(workoutId) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = com.gymcoach.app.ui.theme.AccentBlue,
-                        contentColor = com.gymcoach.app.ui.theme.WarmWhite
-                    )
-                ) {
-                    Text("Perform Again", fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { onEditClick(workoutId) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(onClick = {
+                        viewModel.onDeleteClick(workoutId)
+                    }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete")
+                    }
                 }
+            )
+        }
+    ) { padding ->
+        when {
+            state.isLoading -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            state.error != null -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = state.error!!,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            else -> {
+                state.workout?.let { workout ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Spacer(Modifier.height(8.dp))
 
-                WorkoutSummaryCard(workout)
+                        // Workout header
+                        WorkoutHeaderCard(workout = workout.workout)
 
-                Text(
-                    text = "Exercises",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                        Spacer(Modifier.height(16.dp))
 
-                workout.exercises.forEach { exerciseWithSets ->
-                    ExerciseDetailCard(exerciseWithSets)
+                        // Workout Summary Card
+                        WorkoutSummaryCard(workout = workout)
+
+                        Spacer(Modifier.height(16.dp))
+
+                        // Muscle Group Breakdown
+                        SectionHeader("Muscle Groups")
+                        Spacer(Modifier.height(8.dp))
+                        val muscleBreakdown = calculateMuscleBreakdown(workout)
+                        if (muscleBreakdown.isNotEmpty()) {
+                            muscleBreakdown.forEach { (muscle, data) ->
+                                MuscleGroupRow(
+                                    muscleName = muscle,
+                                    sets = data.sets,
+                                    totalVolume = data.volume,
+                                    totalReps = data.reps
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "No muscle data available",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        // Exercises
+                        SectionHeader("Exercises")
+                        Spacer(Modifier.height(8.dp))
+                        workout.exercises.forEach { exerciseWithSets ->
+                            ExerciseDetailCard(exerciseWithSets = exerciseWithSets)
+                            Spacer(Modifier.height(12.dp))
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                    }
                 }
             }
         }
     }
 
-    if (showDeleteDialog) {
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { viewModel.cancelDelete() },
             title = { Text("Delete Workout") },
-            text = { Text("Are you sure you want to delete this workout? This action cannot be undone.") },
+            text = { Text("Are you sure you want to delete this workout?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.deleteWorkout(workoutId)
-                        onBackClick()
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                Button(onClick = {
+                    viewModel.confirmDelete()
+                    onBackClick()
+                }) {
+                    Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { viewModel.cancelDelete() }) {
                     Text("Cancel")
                 }
             }
@@ -250,36 +278,246 @@ fun WorkoutHistoryDetailScreen(
     }
 }
 
-@Composable
-private fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
-    val formatter = SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.getDefault())
-    val dateStr = formatter.format(Date(workout.workout.date.toEpochMilli()))
-    val durationStr = formatDuration(workout.workout.duration)
+// --- Share ---
 
-    val totalVolume = workout.exercises.sumOf { ex ->
-        ex.sets.filter { it.completed }.sumOf { it.weight * it.reps }
+private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
+    val w = workout.workout
+    val date = formatDate(w.date)
+    val duration = formatDuration(w.duration)
+
+    // Calculate totals
+    var totalSets = 0
+    var totalReps = 0
+    var totalVolume = 0.0
+    val muscleGroups = linkedMapOf<String, Int>()
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        totalSets += doneSets.size
+        totalReps += doneSets.sumOf { it.reps }
+        totalVolume += doneSets.sumOf { it.weight * it.reps }
+        val muscle = entry.exercise.muscleGroup
+        muscleGroups[muscle] = (muscleGroups[muscle] ?: 0) + doneSets.size
     }
-    val totalSets = workout.exercises.sumOf { ex ->
-        ex.sets.count { it.completed }
+
+    val sb = StringBuilder()
+    sb.appendLine("\uD83C\uDFCB\uFE0F Workout Summary")
+    sb.appendLine("Date: $date")
+    sb.appendLine("Duration: $duration")
+    sb.appendLine("Total Volume: %.1f kg".format(totalVolume))
+    sb.appendLine("Sets: $totalSets | Reps: $totalReps")
+    sb.appendLine()
+
+    // Muscle groups
+    if (muscleGroups.isNotEmpty()) {
+        sb.appendLine("\uD83C\uDFAF Muscles Hit:")
+        muscleGroups.entries.sortedByDescending { it.value }.forEach { (muscle, sets) ->
+            sb.appendLine("  $muscle: $sets sets")
+        }
+        sb.appendLine()
+    }
+
+    // Exercises
+    sb.appendLine("\uD83D\uDCAA Exercises:")
+    workout.exercises.forEach { entry ->
+        sb.appendLine("  ${entry.exercise.name}")
+        entry.sets.sortedBy { it.setNumber }.forEach { set ->
+            if (set.completed) {
+                sb.appendLine("    Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps (RPE ${set.rpe})")
+            }
+        }
+    }
+
+    if (w.notes.isNotBlank()) {
+        sb.appendLine()
+        sb.appendLine("\uD83D\uDCDD Notes: ${w.notes}")
+    }
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, sb.toString())
+        putExtra(Intent.EXTRA_SUBJECT, "My Workout - $date")
+    }
+    context.startActivity(Intent.createChooser(intent, "Share Workout"))
+}
+
+// --- Muscle Breakdown ---
+
+private data class MuscleData(var sets: Int = 0, var reps: Int = 0, var volume: Double = 0.0)
+
+private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, MuscleData> {
+    val breakdown = linkedMapOf<String, MuscleData>()
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        if (doneSets.isEmpty()) return@forEach
+
+        val muscle = entry.exercise.muscleGroup.uppercase()
+        val data = breakdown.getOrPut(muscle) { MuscleData() }
+        data.sets += doneSets.size
+        data.reps += doneSets.sumOf { it.reps }
+        data.volume += doneSets.sumOf { it.weight * it.reps }
+    }
+
+    return breakdown.entries
+        .sortedByDescending { it.value.sets }
+        .associate { it.key to it.value }
+}
+
+// --- UI Components ---
+
+@Composable
+fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
+    val w = workout.workout
+    var totalSets = 0
+    var totalReps = 0
+    var totalVolume = 0.0
+    val exerciseCount = workout.exercises.size
+
+    workout.exercises.forEach { entry ->
+        val doneSets = entry.sets.filter { it.completed }
+        totalSets += doneSets.size
+        totalReps += doneSets.sumOf { it.reps }
+        totalVolume += doneSets.sumOf { it.weight * it.reps }
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Workout Summary",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryStatItem(label = "Duration", value = formatDuration(w.duration))
+                SummaryStatItem(label = "Exercises", value = "$exerciseCount")
+                SummaryStatItem(label = "Sets", value = "$totalSets")
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryStatItem(label = "Reps", value = "$totalReps")
+                SummaryStatItem(label = "Volume", value = "%.1f kg".format(totalVolume))
+                SummaryStatItem(label = "Est. Calories", value = "%.0f".format(totalVolume * 0.05))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryStatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
+private fun MuscleGroupRow(
+    muscleName: String,
+    sets: Int,
+    totalVolume: Double,
+    totalReps: Int
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = muscleName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(0.4f)
+            )
+            Text(
+                text = "$sets sets",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(0.2f)
+            )
+            Text(
+                text = "$totalReps reps",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(0.2f)
+            )
+            Text(
+                text = "%.0f kg".format(totalVolume),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(0.2f)
+            )
+        }
+    }
+}
+
+@Composable
+fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = dateStr, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (workout.workout.duration > 0) {
-                Text(text = "Duration: $durationStr", style = MaterialTheme.typography.bodyMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = workout.notes.ifBlank { "Workout" },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = formatDate(workout.date),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("Total Volume", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${totalVolume} kg", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Total Sets", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("$totalSets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatItem(label = "Duration", value = formatDuration(workout.duration))
+                StatItem(label = "Completed", value = if (workout.completed) "Yes" else "No")
+                if (workout.notes.isNotBlank()) {
+                    StatItem(label = "Notes", value = workout.notes)
                 }
             }
         }
@@ -287,76 +525,135 @@ private fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
 }
 
 @Composable
-private fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
+fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = exerciseWithSets.exercise.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(8.dp))
-
-            // Table header
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Set", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                Text("Weight", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(2f))
-                Text("Reps", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(2f))
-                Text("RPE", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = exerciseWithSets.exercise.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = exerciseWithSets.exercise.muscleGroup,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Spacer(Modifier.height(4.dp))
 
-            // Sets
-            exerciseWithSets.sets.forEach { set ->
-                val color = if (set.completed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("${set.setNumber}", style = MaterialTheme.typography.bodyMedium, color = color, modifier = Modifier.weight(1f))
-                    Text("${set.weight} kg", style = MaterialTheme.typography.bodyMedium, color = color, modifier = Modifier.weight(2f))
-                    Text("${set.reps}", style = MaterialTheme.typography.bodyMedium, color = color, modifier = Modifier.weight(2f))
-                    Text(if (set.rpe > 0) "${set.rpe}" else "-", style = MaterialTheme.typography.bodyMedium, color = color, modifier = Modifier.weight(1f))
-                }
+            // Set headers
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
+                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Spacer(modifier = Modifier.width(24.dp))
+            }
+
+            exerciseWithSets.sets.sortedBy { it.setNumber }.forEach { set ->
+                SetRow(
+                    setNumber = set.setNumber,
+                    weight = set.weight,
+                    reps = set.reps,
+                    rpe = set.rpe,
+                    restSeconds = set.restSeconds,
+                    completed = set.completed
+                )
             }
         }
     }
+}
+
+@Composable
+fun SetRow(
+    setNumber: Int,
+    weight: Double,
+    reps: Int,
+    rpe: Double,
+    restSeconds: Int,
+    completed: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = setNumber.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.15f),
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = "%.1f kg".format(weight),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.2f)
+        )
+        Text(
+            text = reps.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.2f)
+        )
+        Text(
+            text = "RPE ${"%.1f".format(rpe)}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.15f)
+        )
+        Text(
+            text = "${restSeconds}s",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(0.15f)
+        )
+        if (completed) {
+            Text(
+                text = "✓",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(24.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.width(24.dp))
+        }
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+fun formatDate(instant: java.time.Instant): String {
+    val fmt = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    return fmt.format(Date.from(instant))
 }
 
 fun formatDuration(seconds: Long): String {
-    val d = Duration.ofSeconds(seconds)
-    val h = d.toHours()
-    val m = d.toMinutes() % 60
-    return if (h > 0) "${h}h ${m}m" else "${m}m"
-}
-
-private fun shareWorkout(context: Context, workoutWithDetails: WorkoutWithDetails) {
-    val formatter = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    val dateStr = formatter.format(Date(workoutWithDetails.workout.date.toEpochMilli()))
-
-    val totalVolume = workoutWithDetails.exercises.sumOf { ex ->
-        ex.sets.filter { it.completed }.sumOf { it.weight * it.reps }
-    }
-
-    val shareText = buildString {
-        appendLine("Workout on $dateStr")
-        appendLine("Total Volume: $totalVolume kg")
-        appendLine()
-        workoutWithDetails.exercises.forEach { ex ->
-            appendLine(ex.exercise.name)
-            val completedSets = ex.sets.filter { it.completed }
-            if (completedSets.isNotEmpty()) {
-                val bestSet = completedSets.maxByOrNull { it.weight }
-                appendLine("Best: ${bestSet?.weight}kg x ${bestSet?.reps}")
-            }
-        }
-    }
-
-    val sendIntent: Intent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_TEXT, shareText)
-        type = "text/plain"
-    }
-    val shareIntent = Intent.createChooser(sendIntent, null)
-    context.startActivity(shareIntent)
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }

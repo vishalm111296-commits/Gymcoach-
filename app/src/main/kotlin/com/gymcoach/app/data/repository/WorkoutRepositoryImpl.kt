@@ -185,6 +185,46 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
     }
+
+    override suspend fun createWorkoutFromHistory(workoutId: Long): Long? {
+        val sourceDetails = getWorkoutWithDetails(workoutId).first() ?: return null
+        val now = System.currentTimeMillis()
+        val newWorkoutEntity = WorkoutEntity(
+            id = 0,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            notes = sourceDetails.workout.notes,
+            completed = false,
+            status = "ACTIVE"
+        )
+        val newWorkoutId = workoutDao.insertWorkout(newWorkoutEntity)
+        sourceDetails.exercises.forEach { exerciseWithSets ->
+            val newExerciseEntity = WorkoutExerciseEntity(
+                id = 0,
+                workoutId = newWorkoutId,
+                exerciseId = exerciseWithSets.exercise.id,
+                orderIndex = exerciseWithSets.workoutExercise.orderIndex
+            )
+            val newWorkoutExerciseId = workoutDao.insertWorkoutExercise(newExerciseEntity)
+            exerciseWithSets.sets.sortedBy { it.setNumber }.forEach { set ->
+                val newSetEntity = WorkoutSetEntity(
+                    id = 0,
+                    workoutExerciseId = newWorkoutExerciseId,
+                    setNumber = set.setNumber,
+                    weight = set.weight,
+                    reps = set.reps,
+                    rpe = set.rpe,
+                    restSeconds = set.restSeconds,
+                    completed = false,
+                    setType = set.setType.ordinal
+                )
+                workoutDao.insertWorkoutSet(newSetEntity)
+            }
+        }
+        return newWorkoutId
+    }
 }
 
 // Entity -> Domain mappers

@@ -37,4 +37,5 @@ interface WorkoutRepository {
     fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
     suspend fun getIncompleteWorkout(): Workout?
+    suspend fun createWorkoutFromHistory(workoutId: Long): Long?
 }

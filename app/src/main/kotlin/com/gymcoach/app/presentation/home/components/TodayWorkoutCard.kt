@@ -18,7 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.AccentBlue
+import com.gymcoach.app.ui.theme.AccentBlueLight
+import com.gymcoach.app.ui.theme.DarkCard
 import com.gymcoach.app.ui.theme.DarkSurface
+import com.gymcoach.app.ui.theme.TextPrimary
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 import com.gymcoach.app.ui.theme.WarmWhite
@@ -37,51 +40,54 @@ fun TodayWorkoutCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = "TODAY'S WORKOUT",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelMedium,
+                color = AccentBlueLight,
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
                 text = workoutName,
-                style = MaterialTheme.typography.headlineSmall,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.ExtraBold
             )
             if (targetMuscles.isNotEmpty()) {
                 Text(
                     text = targetMuscles.joinToString(" \u2022 "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Medium
                 )
             }
             Text(
-                text = "$exerciseCount exercises \u2022 ~$estimatedDuration min",
+                text = "$exerciseCount exercises  \u2022  ~$estimatedDuration min",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextTertiary
+                color = TextTertiary,
+                fontWeight = FontWeight.Medium
             )
             Button(
                 onClick = onStartClick,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentBlue,
                     contentColor = WarmWhite
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
+                    .padding(top = 12.dp)
+                    .height(60.dp)
             ) {
                 Text(
                     text = "START WORKOUT",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 1.sp
                 )
             }

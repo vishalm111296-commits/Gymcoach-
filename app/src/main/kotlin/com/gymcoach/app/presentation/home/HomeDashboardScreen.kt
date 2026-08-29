@@ -35,6 +35,7 @@ import com.gymcoach.app.presentation.home.components.VtaperFocusCard
 import com.gymcoach.app.ui.GymCoachBottomNav
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
+import com.gymcoach.app.ui.theme.DarkCard
 import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
@@ -110,34 +111,37 @@ fun HomeDashboardScreen(
             Card(
                 onClick = onNavigateToReadiness,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkCard),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(24.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = "RECOVERY & READINESS",
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelMedium,
                             color = AccentBlue,
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.Bold
+                            letterSpacing = 2.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         Text(
                             text = "Log how you're feeling today",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                     Text(
                         text = "→",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -181,38 +185,45 @@ private fun GreetingHeader() {
 private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = "YOUR FIRST SESSION IS READY",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
                 text = "Let's build your plan",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 color = WarmWhite,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
                 text = "Two minutes of setup and your first V-taper program is generated around your goal, schedule, and equipment.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                fontWeight = FontWeight.Medium
             )
             Button(
                 onClick = onSetUpPlan,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
+                    .padding(top = 12.dp)
+                    .height(60.dp)
             ) {
-                Text("SET UP MY PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text(
+                    text = "SET UP MY PLAN",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
             }
         }
     }
@@ -222,21 +233,23 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
 private fun CoachInsightCard(insight: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = "COACH",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
                 text = insight.ifBlank { "Log sessions to unlock volume insights." },
-                style = MaterialTheme.typography.bodyMedium,
-                color = WarmWhite
+                style = MaterialTheme.typography.bodyLarge,
+                color = WarmWhite,
+                fontWeight = FontWeight.Medium
             )
         }
     }

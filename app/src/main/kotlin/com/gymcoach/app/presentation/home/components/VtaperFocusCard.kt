@@ -26,6 +26,7 @@ import com.gymcoach.app.ui.theme.MuscleActive
 import com.gymcoach.app.ui.theme.MuscleRest
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
+import com.gymcoach.app.ui.theme.DarkCard
 import com.gymcoach.app.ui.theme.WarmWhite
 
 /** Transparent volume metric - no composite "score". */
@@ -46,36 +47,38 @@ fun VtaperFocusCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
                 text = "V-TAPER FOCUS",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             Text(
                 text = "Planned weekly sets vs optimal band ($TARGET_SETS_LABEL)",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = TextTertiary,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                modifier = Modifier.padding(top = 6.dp, bottom = 20.dp)
             )
             muscleData.forEach { data ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = data.label,
                         style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = TextSecondary,
-                        modifier = Modifier.width(110.dp)
+                        modifier = Modifier.width(100.dp)
                     )
                     LinearProgressIndicator(
                         progress = {
@@ -87,14 +90,15 @@ fun VtaperFocusCard(
                         trackColor = MuscleRest,
                         modifier = Modifier
                             .weight(1f)
-                            .size(height = 8.dp, width = 0.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .size(height = 10.dp, width = 0.dp)
+                            .clip(RoundedCornerShape(5.dp))
                     )
                     Text(
-                        text = "${data.current}/${data.target}",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "${data.current} / ${data.target}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
                         color = WarmWhite,
-                        modifier = Modifier.width(44.dp)
+                        modifier = Modifier.width(50.dp)
                     )
                 }
             }

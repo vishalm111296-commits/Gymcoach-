@@ -168,7 +168,7 @@ fun ProgressDashboardScreen(
                     ) {
                         BodyMeasurementTrend(
                             label = "Bodyweight",
-                            currentValue = state.latestWeight ?: 0.0,
+                            currentValue = state.latestWeight,
                             unit = "kg",
                             trend = state.bodyweightDirection,
                             dataPoints = state.bodyweightTrend,
@@ -177,7 +177,7 @@ fun ProgressDashboardScreen(
                         )
                         BodyMeasurementTrend(
                             label = "Waist",
-                            currentValue = state.latestWaist ?: 0.0,
+                            currentValue = state.latestWaist,
                             unit = "cm",
                             trend = state.waistDirection,
                             dataPoints = state.waistTrend,
@@ -260,7 +260,7 @@ fun ProgressDashboardScreen(
                         val trendSymbol = when {
                             state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
                             state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
-                            else -> "\u2022 0.0%%"
+                            else -> "--"
                         }
                         StatCard(
                             label = "Weekly Trend",

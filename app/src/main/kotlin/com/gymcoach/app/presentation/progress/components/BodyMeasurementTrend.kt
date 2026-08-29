@@ -52,22 +52,25 @@ import com.gymcoach.app.ui.theme.VolumeChartGrid
 @Composable
 fun BodyMeasurementTrend(
     label: String,
-    currentValue: Double,
+    currentValue: Double?,
     unit: String,
     trend: TrendDirection,
     dataPoints: List<TrendPoint>,
     modifier: Modifier = Modifier,
     goodWhenDown: Boolean = false
 ) {
+    val isDataEmpty = currentValue == null || currentValue == 0.0
+
     val trendColor = when {
-        trend == TrendDirection.STABLE -> TextSecondary
+        isDataEmpty || trend == TrendDirection.STABLE -> TextSecondary
         (trend == TrendDirection.DOWN) == goodWhenDown -> SuccessGreen
         else -> WarningAmber
     }
-    val trendIcon: ImageVector = when (trend) {
-        TrendDirection.UP -> Icons.AutoMirrored.Filled.TrendingUp
-        TrendDirection.DOWN -> Icons.AutoMirrored.Filled.TrendingDown
-        TrendDirection.STABLE -> Icons.AutoMirrored.Filled.TrendingFlat
+    val trendIcon: ImageVector = when {
+        isDataEmpty -> Icons.AutoMirrored.Filled.TrendingFlat
+        trend == TrendDirection.UP -> Icons.AutoMirrored.Filled.TrendingUp
+        trend == TrendDirection.DOWN -> Icons.AutoMirrored.Filled.TrendingDown
+        else -> Icons.AutoMirrored.Filled.TrendingFlat
     }
 
     Card(
@@ -90,7 +93,7 @@ fun BodyMeasurementTrend(
                 )
                 Icon(
                     imageVector = trendIcon,
-                    contentDescription = trend.name.lowercase(),
+                    contentDescription = if (isDataEmpty) "no trend" else trend.name.lowercase(),
                     tint = trendColor,
                     modifier = Modifier.size(18.dp)
                 )
@@ -100,10 +103,10 @@ fun BodyMeasurementTrend(
 
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = "%.1f".format(currentValue),
+                    text = if (isDataEmpty) "--" else "%.1f".format(currentValue),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = if (isDataEmpty) TextSecondary else TextPrimary
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(

@@ -171,17 +171,18 @@ fun ExerciseDetailScreen(
                         .background(
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                             RoundedCornerShape(24.dp)
-                        )
-                        .padding(bottom = 24.dp),
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
+                    Icon(
+                        imageVector = Icons.Default.FitnessCenter,
+                        contentDescription = "Exercise Icon",
+                        modifier = Modifier.size(100.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Description section
                 Text(

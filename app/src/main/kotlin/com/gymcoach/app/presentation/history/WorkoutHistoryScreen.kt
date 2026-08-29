@@ -319,3 +319,25 @@ private fun HistoryWorkoutCard(
     }
 }
 
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+fun formatDate(date: java.time.Instant): String {
+    val formatter = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+    return formatter.format(Date(date.toEpochMilli()))
+}

@@ -5,7 +5,7 @@ import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
-import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.domain.model.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
 import kotlinx.coroutines.flow.Flow
 

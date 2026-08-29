@@ -63,7 +63,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.domain.model.LastPerformance
 
 @HiltViewModel
 class ExerciseDetailViewModel @Inject constructor(

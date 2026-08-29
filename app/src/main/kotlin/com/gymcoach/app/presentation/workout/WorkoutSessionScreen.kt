@@ -433,7 +433,7 @@ private fun ExerciseSetCard(
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
     previousSets: List<LastSetData>?,
-    lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
+    lastPerformance: com.gymcoach.app.domain.model.LastPerformance?,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,

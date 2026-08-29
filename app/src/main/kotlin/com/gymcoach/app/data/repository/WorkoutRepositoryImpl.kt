@@ -182,6 +182,54 @@ class WorkoutRepositoryImpl @Inject constructor(
         return workoutDao.searchWorkouts(query).map { it.toDomain() }
     }
 
+
+    override suspend fun createSessionFromHistory(historicalWorkoutId: Long): Long {
+        val historicalWorkout = workoutDao.getWorkoutById(historicalWorkoutId).first()
+            ?: throw IllegalArgumentException("Historical workout not found")
+
+        val newWorkoutId = workoutDao.insertWorkout(
+            WorkoutEntity(
+                id = 0,
+                date = Instant.now().toEpochMilli(),
+                startTime = Instant.now().toEpochMilli(),
+                endTime = Instant.now().toEpochMilli(),
+                duration = 0,
+                notes = "",
+                completed = false,
+                status = "ACTIVE"
+            )
+        )
+
+        val historicalExercises = workoutDao.getExercisesForWorkout(historicalWorkoutId).first()
+        for (exercise in historicalExercises) {
+            val newExerciseId = workoutDao.insertWorkoutExercise(
+                WorkoutExerciseEntity(
+                    id = 0,
+                    workoutId = newWorkoutId,
+                    exerciseId = exercise.exerciseId,
+                    orderIndex = exercise.orderIndex
+                )
+            )
+            val historicalSets = workoutDao.getSetsForExercise(exercise.id).first()
+            for (set in historicalSets) {
+                workoutDao.insertWorkoutSet(
+                    WorkoutSetEntity(
+                        id = 0,
+                        workoutExerciseId = newExerciseId,
+                        setNumber = set.setNumber,
+                        weight = 0.0,
+                        reps = 0,
+                        rpe = 0.0,
+                        restSeconds = set.restSeconds,
+                        completed = false,
+                        setType = set.setType
+                    )
+                )
+            }
+        }
+        return newWorkoutId
+    }
+
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
     }

@@ -61,6 +61,8 @@ import com.gymcoach.app.domain.repository.PersonalRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -116,6 +118,23 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
         }
     }
 
+    private val _performAgainEvent = kotlinx.coroutines.flow.MutableSharedFlow<Long>()
+    val performAgainEvent = _performAgainEvent.asSharedFlow()
+
+    fun performAgain() {
+        val currentWorkout = _uiState.value.workout
+        if (currentWorkout != null) {
+            viewModelScope.launch {
+                try {
+                    val newWorkoutId = workoutRepository.createSessionFromHistory(currentWorkout.workout.id)
+                    _performAgainEvent.emit(newWorkoutId)
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(error = e.message ?: "Failed to perform again") }
+                }
+            }
+        }
+    }
+
     fun cancelDelete() {
         _deleteTarget.value = null
     }
@@ -133,11 +152,18 @@ fun WorkoutHistoryDetailScreen(
     workoutId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit = {},
+    onPerformAgainClick: (Long) -> Unit = {},
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(viewModel.performAgainEvent) {
+        viewModel.performAgainEvent.collect { newWorkoutId ->
+            onPerformAgainClick(newWorkoutId)
+        }
+    }
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
@@ -153,6 +179,9 @@ fun WorkoutHistoryDetailScreen(
                     }
                 },
                 actions = {
+                    androidx.compose.material3.TextButton(onClick = { viewModel.performAgain() }) {
+                        androidx.compose.material3.Text("PERFORM AGAIN", color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                    }
                     // Share button
                     IconButton(onClick = {
                         state.workout?.let { workout ->

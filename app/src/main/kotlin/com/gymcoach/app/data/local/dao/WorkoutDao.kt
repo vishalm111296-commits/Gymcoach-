@@ -7,57 +7,90 @@ import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface WorkoutDao {
+abstract class WorkoutDao {
+    @Transaction
+    open suspend fun createWorkoutFromHistoryTransaction(
+        sourceWorkout: WorkoutEntity,
+        sourceExercisesWithSets: List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>
+    ): Long {
+        val now = System.currentTimeMillis()
+        val newWorkoutEntity = sourceWorkout.copy(
+            id = 0,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            completed = false,
+            status = "ACTIVE"
+        )
+        val newWorkoutId = insertWorkout(newWorkoutEntity)
+        sourceExercisesWithSets.forEach { (exerciseEntity, sets) ->
+            val newExerciseEntity = exerciseEntity.copy(
+                id = 0,
+                workoutId = newWorkoutId
+            )
+            val newWorkoutExerciseId = insertWorkoutExercise(newExerciseEntity)
+            sets.sortedBy { it.setNumber }.forEach { set ->
+                val newSetEntity = set.copy(
+                    id = 0,
+                    workoutExerciseId = newWorkoutExerciseId,
+                    completed = false
+                )
+                insertWorkoutSet(newSetEntity)
+            }
+        }
+        return newWorkoutId
+    }
     // Workouts
     @Query("SELECT * FROM workouts ORDER BY date DESC")
-    fun getAllWorkouts(): Flow<List<WorkoutEntity>>
+    abstract fun getAllWorkouts(): Flow<List<WorkoutEntity>>
 
     @Query("SELECT * FROM workouts WHERE id = :id")
-    fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
+    abstract fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
 
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
-    suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
+    abstract suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWorkout(workout: WorkoutEntity): Long
+    abstract suspend fun insertWorkout(workout: WorkoutEntity): Long
 
     @Update
-    suspend fun updateWorkout(workout: WorkoutEntity)
+    abstract suspend fun updateWorkout(workout: WorkoutEntity)
 
     @Delete
-    suspend fun deleteWorkout(workout: WorkoutEntity)
+    abstract suspend fun deleteWorkout(workout: WorkoutEntity)
 
     // WorkoutExercises
     @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex ASC")
-    fun getExercisesForWorkout(workoutId: Long): Flow<List<WorkoutExerciseEntity>>
+    abstract fun getExercisesForWorkout(workoutId: Long): Flow<List<WorkoutExerciseEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWorkoutExercise(exercise: WorkoutExerciseEntity): Long
+    abstract suspend fun insertWorkoutExercise(exercise: WorkoutExerciseEntity): Long
 
     @Update
-    suspend fun updateWorkoutExercise(exercise: WorkoutExerciseEntity)
+    abstract suspend fun updateWorkoutExercise(exercise: WorkoutExerciseEntity)
 
     @Delete
-    suspend fun deleteWorkoutExercise(exercise: WorkoutExerciseEntity)
+    abstract suspend fun deleteWorkoutExercise(exercise: WorkoutExerciseEntity)
 
     @Query("SELECT * FROM workout_exercises WHERE id = :id")
-    suspend fun getWorkoutExerciseById(id: Long): WorkoutExerciseEntity?
+    abstract suspend fun getWorkoutExerciseById(id: Long): WorkoutExerciseEntity?
 
     // WorkoutSets
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId ORDER BY setNumber ASC")
-    fun getSetsForExercise(workoutExerciseId: Long): Flow<List<WorkoutSetEntity>>
+    abstract fun getSetsForExercise(workoutExerciseId: Long): Flow<List<WorkoutSetEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWorkoutSet(set: WorkoutSetEntity): Long
+    abstract suspend fun insertWorkoutSet(set: WorkoutSetEntity): Long
 
     @Update
-    suspend fun updateWorkoutSet(set: WorkoutSetEntity)
+    abstract suspend fun updateWorkoutSet(set: WorkoutSetEntity)
 
     @Delete
-    suspend fun deleteWorkoutSet(set: WorkoutSetEntity)
+    abstract suspend fun deleteWorkoutSet(set: WorkoutSetEntity)
 
     @Query("SELECT * FROM workout_sets WHERE id = :id")
-    suspend fun getWorkoutSetById(id: Long): WorkoutSetEntity?
+    abstract suspend fun getWorkoutSetById(id: Long): WorkoutSetEntity?
 
     // ─── Previous Performance Queries ───────────────────────────────────
 
@@ -74,7 +107,7 @@ interface WorkoutDao {
         ORDER BY w.date DESC
         LIMIT 1
     """)
-    suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
+    abstract suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
 
     /**
      * Get the last completed workout's sets for a given exercise.
@@ -89,7 +122,7 @@ interface WorkoutDao {
         ORDER BY w.date DESC, ws.setNumber ASC
         LIMIT 10
     """)
-    suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
+    abstract suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
 
 
     /**
@@ -111,7 +144,7 @@ interface WorkoutDao {
         WHERE w.status = 'COMPLETED'
         GROUP BY we.exerciseId
     """)
-    suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): List<LastPerformanceWithExercise>
+    abstract suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): List<LastPerformanceWithExercise>
 
     /**
      * Batched version of getLastSetsForExercise
@@ -130,7 +163,7 @@ interface WorkoutDao {
         )
         ORDER BY we.exerciseId, ws.setNumber ASC
     """)
-    suspend fun getLastSetsForExercises(exerciseIds: List<Long>): List<LastSetDataWithExercise>
+    abstract suspend fun getLastSetsForExercises(exerciseIds: List<Long>): List<LastSetDataWithExercise>
 
     // ─── Analytics Queries ──────────────────────────────────────────────
 
@@ -141,7 +174,7 @@ interface WorkoutDao {
         INNER JOIN workouts w ON w.id = we.workoutId
         WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
     """)
-    suspend fun getPersonalRecordMax(exerciseId: Long): Double?
+    abstract suspend fun getPersonalRecordMax(exerciseId: Long): Double?
 
     @Query("""
         SELECT e.name, MAX(ws.weight) as maxWeight
@@ -153,7 +186,7 @@ interface WorkoutDao {
         GROUP BY we.exerciseId
         ORDER BY maxWeight DESC
     """)
-    suspend fun getAllPersonalRecords(): List<ExerciseMaxWeight>
+    abstract suspend fun getAllPersonalRecords(): List<ExerciseMaxWeight>
 
     @Query("""
         SELECT w.date, SUM(ws.reps * ws.weight) as volume
@@ -164,22 +197,22 @@ interface WorkoutDao {
         GROUP BY w.date
         ORDER BY w.date ASC
     """)
-    suspend fun getAllWorkoutVolumes(): List<DateVolume>
+    abstract suspend fun getAllWorkoutVolumes(): List<DateVolume>
 
     @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED'")
-    suspend fun getTotalWorkoutsCount(): Int
+    abstract suspend fun getTotalWorkoutsCount(): Int
 
     @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :todayStart")
-    suspend fun getWorkoutsTodayCount(todayStart: Long): Int
+    abstract suspend fun getWorkoutsTodayCount(todayStart: Long): Int
 
     @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :weekStart")
-    suspend fun getWorkoutsThisWeekCount(weekStart: Long): Int
+    abstract suspend fun getWorkoutsThisWeekCount(weekStart: Long): Int
 
     @Query("SELECT COUNT(*) FROM workouts WHERE status = 'COMPLETED' AND date >= :monthStart")
-    suspend fun getWorkoutsThisMonthCount(monthStart: Long): Int
+    abstract suspend fun getWorkoutsThisMonthCount(monthStart: Long): Int
 
     @Query("SELECT COUNT(*) FROM workout_exercises WHERE workoutId IN (SELECT id FROM workouts WHERE status = 'COMPLETED')")
-    suspend fun getTotalExercisesCount(): Int
+    abstract suspend fun getTotalExercisesCount(): Int
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -191,7 +224,7 @@ interface WorkoutDao {
         ORDER BY w.duration DESC
         LIMIT 1
     """)
-    suspend fun getLongestWorkout(): WorkoutWithStats?
+    abstract suspend fun getLongestWorkout(): WorkoutWithStats?
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -203,19 +236,19 @@ interface WorkoutDao {
         ORDER BY w.duration ASC
         LIMIT 1
     """)
-    suspend fun getShortestWorkout(): WorkoutWithStats?
+    abstract suspend fun getShortestWorkout(): WorkoutWithStats?
 
     @Query("SELECT SUM(duration) FROM workouts WHERE status = 'COMPLETED'")
-    suspend fun getTotalTrainingTimeSeconds(): Long?
+    abstract suspend fun getTotalTrainingTimeSeconds(): Long?
 
     @Query("SELECT COUNT(*) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
-    suspend fun getTotalSetsCount(): Int
+    abstract suspend fun getTotalSetsCount(): Int
 
     @Query("SELECT SUM(reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
-    suspend fun getTotalRepsCount(): Int?
+    abstract suspend fun getTotalRepsCount(): Int?
 
     @Query("SELECT SUM(weight * reps) FROM workout_sets INNER JOIN workouts ON workout_sets.workoutExerciseId IN (SELECT id FROM workout_exercises WHERE workoutId = workouts.id) WHERE workouts.status = 'COMPLETED'")
-    suspend fun getTotalVolumeSum(): Double?
+    abstract suspend fun getTotalVolumeSum(): Double?
 
     @Query("""
         SELECT w.date, SUM(ws.reps * ws.weight) as volume
@@ -226,7 +259,7 @@ interface WorkoutDao {
         GROUP BY strftime('%Y-%m', datetime(w.date / 1000, 'unixepoch'))
         ORDER BY w.date ASC
     """)
-    suspend fun getMonthlyVolumes(): List<DateVolume>
+    abstract suspend fun getMonthlyVolumes(): List<DateVolume>
 
     @Query("""
         SELECT e.name, SUM(ws.reps) as totalReps
@@ -239,20 +272,20 @@ interface WorkoutDao {
         ORDER BY totalReps DESC
         LIMIT 5
     """)
-    suspend fun getTopMuscleGroups(): List<MuscleGroupStats>
+    abstract suspend fun getTopMuscleGroups(): List<MuscleGroupStats>
 
     @Query("SELECT COALESCE(AVG(weight * reps), 0.0) FROM workout_sets ws INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId INNER JOIN workouts w ON w.id = we.workoutId WHERE w.status = 'COMPLETED'")
-    suspend fun getAverageWorkoutVolume(): Double
+    abstract suspend fun getAverageWorkoutVolume(): Double
 
     @Query("SELECT COALESCE(AVG(duration), 0.0) FROM workouts WHERE status = 'COMPLETED'")
-    suspend fun getAverageWorkoutDurationSeconds(): Long
+    abstract suspend fun getAverageWorkoutDurationSeconds(): Long
 
     // Workout History queries
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date DESC")
-    fun getCompletedWorkouts(): Flow<List<WorkoutEntity>>
+    abstract fun getCompletedWorkouts(): Flow<List<WorkoutEntity>>
 
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' AND date >= :startDate AND date <= :endDate ORDER BY date DESC")
-    fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
+    abstract fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -263,10 +296,10 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.date DESC
     """)
-    fun getWorkoutsInDateRangeWithStats(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>>
+    abstract fun getWorkoutsInDateRangeWithStats(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>>
 
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date ASC")
-    fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
+    abstract fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -277,7 +310,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.duration DESC
     """)
-    fun getCompletedWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -288,7 +321,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.duration ASC
     """)
-    fun getCompletedWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -299,7 +332,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.date DESC
     """)
-    fun getCompletedWorkoutsWithStats(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsWithStats(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -310,7 +343,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY volume DESC
     """)
-    fun getCompletedWorkoutsWithStatsByVolumeDesc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsWithStatsByVolumeDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -321,7 +354,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY volume ASC
     """)
-    fun getCompletedWorkoutsWithStatsByVolumeAsc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsWithStatsByVolumeAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -332,7 +365,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.duration DESC
     """)
-    fun getCompletedWorkoutsWithStatsByDurationDesc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsWithStatsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -343,7 +376,7 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.duration ASC
     """)
-    fun getCompletedWorkoutsWithStatsByDurationAsc(): Flow<List<WorkoutWithStats>>
+    abstract fun getCompletedWorkoutsWithStatsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
@@ -358,10 +391,10 @@ interface WorkoutDao {
         GROUP BY w.id
         ORDER BY w.date DESC
     """)
-    suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
+    abstract suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
 
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
-    suspend fun getIncompleteWorkout(): WorkoutEntity?
+    abstract suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
 
 data class LastPerformance(

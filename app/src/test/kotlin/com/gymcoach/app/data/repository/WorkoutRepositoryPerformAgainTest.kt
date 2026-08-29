@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -94,46 +95,37 @@ class WorkoutRepositoryPerformAgainTest {
         every { exerciseDao.getById(1L) } returns flowOf(exerciseEntity)
         every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet1, sourceSet2))
 
-        val insertedWorkoutSlot = slot<WorkoutEntity>()
-        coEvery { workoutDao.insertWorkout(capture(insertedWorkoutSlot)) } returns newWorkoutId
+        val capturedSourceWorkout = slot<WorkoutEntity>()
+        val capturedSourceExercisesWithSets = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()
 
-        val insertedExerciseSlot = slot<WorkoutExerciseEntity>()
-        coEvery { workoutDao.insertWorkoutExercise(capture(insertedExerciseSlot)) } returns newWorkoutExerciseId
-
-        val insertedSets = mutableListOf<WorkoutSetEntity>()
-        coEvery { workoutDao.insertWorkoutSet(capture(insertedSets)) } returns 999L
+        coEvery {
+            workoutDao.createWorkoutFromHistoryTransaction(
+                capture(capturedSourceWorkout),
+                capture(capturedSourceExercisesWithSets)
+            )
+        } returns newWorkoutId
 
         val resultId = repository.createWorkoutFromHistory(sourceWorkoutId)
 
         assertEquals(newWorkoutId, resultId)
+        assertNotEquals(sourceWorkoutId, resultId)
 
-        // Verify inserted Workout entity
-        assertEquals(0L, insertedWorkoutSlot.captured.id) // Room auto-generates
-        assertEquals("Leg Day Heavy", insertedWorkoutSlot.captured.notes)
-        assertFalse(insertedWorkoutSlot.captured.completed)
-        assertEquals("ACTIVE", insertedWorkoutSlot.captured.status)
-        assertEquals(0L, insertedWorkoutSlot.captured.duration)
+        // Verify transaction was invoked with correct source entity
+        assertEquals(sourceWorkoutId, capturedSourceWorkout.captured.id)
+        assertEquals("COMPLETED", capturedSourceWorkout.captured.status)
+        assertEquals(1, capturedSourceExercisesWithSets.captured.size)
 
-        // Verify inserted Exercise entity
-        assertEquals(newWorkoutId, insertedExerciseSlot.captured.workoutId)
-        assertEquals(1L, insertedExerciseSlot.captured.exerciseId)
-        assertEquals(0, insertedExerciseSlot.captured.orderIndex)
-
-        // Verify inserted Sets
-        assertEquals(2, insertedSets.size)
-        assertEquals(newWorkoutExerciseId, insertedSets[0].workoutExerciseId)
-        assertEquals(100.0, insertedSets[0].weight, 0.01)
-        assertEquals(5, insertedSets[0].reps)
-        assertFalse(insertedSets[0].completed) // Fresh execution state
-
-        assertEquals(newWorkoutExerciseId, insertedSets[1].workoutExerciseId)
-        assertEquals(105.0, insertedSets[1].weight, 0.01)
-        assertEquals(5, insertedSets[1].reps)
-        assertFalse(insertedSets[1].completed) // Fresh execution state
+        val exercisePair = capturedSourceExercisesWithSets.captured[0]
+        assertEquals(10L, exercisePair.first.id)
+        assertEquals(2, exercisePair.second.size)
+        assertEquals(101L, exercisePair.second[0].id)
+        assertEquals(102L, exercisePair.second[1].id)
 
         // Verify source historical data remained untouched
         coVerify(exactly = 0) { workoutDao.updateWorkout(any()) }
         coVerify(exactly = 0) { workoutDao.deleteWorkout(any()) }
+        coVerify(exactly = 0) { workoutDao.updateWorkoutExercise(any()) }
+        coVerify(exactly = 0) { workoutDao.updateWorkoutSet(any()) }
     }
 
     @Test
@@ -143,6 +135,24 @@ class WorkoutRepositoryPerformAgainTest {
         val resultId = repository.createWorkoutFromHistory(999L)
 
         assertNull(resultId)
-        coVerify(exactly = 0) { workoutDao.insertWorkout(any()) }
+        coVerify(exactly = 0) { workoutDao.createWorkoutFromHistoryTransaction(any(), any()) }
+    }
+
+    @Test
+    fun `repeated createWorkoutFromHistory calls create independent sessions`() = runTest {
+        every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
+        every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(sourceWorkoutExerciseEntity))
+        every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet1))
+
+        coEvery { workoutDao.createWorkoutFromHistoryTransaction(any(), any()) } returnsMany listOf(201L, 202L)
+
+        val firstNewId = repository.createWorkoutFromHistory(sourceWorkoutId)
+        val secondNewId = repository.createWorkoutFromHistory(sourceWorkoutId)
+
+        assertEquals(201L, firstNewId)
+        assertEquals(202L, secondNewId)
+        assertNotEquals(firstNewId, secondNewId)
+        assertNotEquals(sourceWorkoutId, firstNewId)
+        assertNotEquals(sourceWorkoutId, secondNewId)
     }
 }

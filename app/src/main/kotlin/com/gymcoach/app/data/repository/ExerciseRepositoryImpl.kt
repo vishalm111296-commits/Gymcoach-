@@ -18,8 +18,8 @@ class ExerciseRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<Exercise>> {
-        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).map { entities ->
+    override fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?, isFavorite: Boolean?): Flow<List<Exercise>> {
+        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment, isFavorite).map { entities ->
             entities.map { it.toDomain() }
         }
     }

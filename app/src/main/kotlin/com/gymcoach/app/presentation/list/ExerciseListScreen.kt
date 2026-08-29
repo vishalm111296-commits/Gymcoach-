@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.CameraAlt
@@ -64,6 +65,7 @@ fun ExerciseListScreen(
     val exercises by viewModel.exercises.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
     val filterEquipment by viewModel.filterEquipment.collectAsState()
+    val filterFavorites by viewModel.filterFavorites.collectAsState()
 
     var textFieldValue by rememberSaveable { mutableStateOf("") }
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -130,18 +132,47 @@ fun ExerciseListScreen(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(exercises, key = { it.id }) { exercise ->
-                ExerciseItemCard(
-                    name = exercise.name,
-                    muscleGroup = exercise.muscleGroup,
-                    difficulty = exercise.difficulty,
-                    onClick = { onExerciseClick(exercise.id) }
+        if (exercises.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "No exercises found.",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Try adjusting your filters or search query.",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(exercises, key = { it.id }) { exercise ->
+                    ExerciseItemCard(
+                        name = exercise.name,
+                        muscleGroup = exercise.muscleGroup,
+                        difficulty = exercise.difficulty,
+                        equipment = exercise.equipment,
+                        onClick = { onExerciseClick(exercise.id) }
+                    )
+                }
             }
         }
     }
@@ -190,6 +221,14 @@ fun ExerciseListScreen(
                     }
                 }
                 Spacer(Modifier.height(16.dp))
+                Text("Favorites", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                FilterChip(
+                    selected = filterFavorites,
+                    onClick = { viewModel.onFavoritesToggled(!filterFavorites) },
+                    label = { Text("Show only Favorites") }
+                )
+                Spacer(Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -198,6 +237,7 @@ fun ExerciseListScreen(
                         viewModel.onDifficultySelected("All")
                         viewModel.onEquipmentSelected("All")
                         viewModel.onCategorySelected("All")
+                        viewModel.onFavoritesToggled(false)
                     }) {
                         Text("Clear Filters")
                     }

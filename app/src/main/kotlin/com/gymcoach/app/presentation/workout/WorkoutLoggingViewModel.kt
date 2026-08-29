@@ -7,7 +7,7 @@ import com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommenda
 import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
-import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.domain.model.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Exercise

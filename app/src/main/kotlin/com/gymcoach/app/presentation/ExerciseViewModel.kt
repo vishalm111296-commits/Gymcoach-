@@ -25,6 +25,7 @@ class ExerciseViewModel @Inject constructor(
     val filterCategory = MutableStateFlow("All")
     val filterDifficulty = MutableStateFlow("All")
     val filterEquipment = MutableStateFlow("All")
+    val filterFavorites = MutableStateFlow(false)
 
     val categories = listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body")
     val difficulties = listOf("All", "Beginner", "Intermediate", "Advanced")
@@ -35,9 +36,10 @@ class ExerciseViewModel @Inject constructor(
         searchQuery.debounce(300),
         filterCategory,
         filterDifficulty,
-        filterEquipment
-    ) { q, cat, diff, equip ->
-        FilterState(q, cat, diff, equip)
+        filterEquipment,
+        filterFavorites
+    ) { q, cat, diff, equip, fav ->
+        FilterState(q, cat, diff, equip, fav)
     }.flatMapLatest { filters ->
         // Use FTS4 full-text search for text queries, fall back to filtered list for empty queries
         val baseFlow = if (filters.query.isNotBlank()) {
@@ -46,7 +48,8 @@ class ExerciseViewModel @Inject constructor(
             val catFilter = if (filters.category == "All") null else filters.category
             val diffFilter = if (filters.difficulty == "All") null else filters.difficulty
             val equipFilter = if (filters.equipment == "All") null else filters.equipment
-            repository.getFilteredExercises(catFilter, diffFilter, equipFilter)
+            val favFilter = if (filters.favorites) true else null
+            repository.getFilteredExercises(catFilter, diffFilter, equipFilter, favFilter)
         }
         
         // Apply additional filters on top of FTS results when search is active
@@ -55,12 +58,13 @@ class ExerciseViewModel @Inject constructor(
                 val matchesCategory = filters.category == "All" || exercise.muscleGroup.equals(filters.category, ignoreCase = true)
                 val matchesDifficulty = filters.difficulty == "All" || exercise.difficulty.equals(filters.difficulty, ignoreCase = true)
                 val matchesEquipment = filters.equipment == "All" || exercise.equipment.contains(filters.equipment, ignoreCase = true)
-                matchesCategory && matchesDifficulty && matchesEquipment
+                val matchesFavorites = !filters.favorites || exercise.isFavorite
+                matchesCategory && matchesDifficulty && matchesEquipment && matchesFavorites
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private data class FilterState(val query: String, val category: String, val difficulty: String, val equipment: String)
+    private data class FilterState(val query: String, val category: String, val difficulty: String, val equipment: String, val favorites: Boolean)
 
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
@@ -76,6 +80,10 @@ class ExerciseViewModel @Inject constructor(
 
     fun onEquipmentSelected(equipment: String) {
         filterEquipment.value = equipment
+    }
+
+    fun onFavoritesToggled(showFavorites: Boolean) {
+        filterFavorites.value = showFavorites
     }
 
     fun addExercise(exercise: Exercise) {

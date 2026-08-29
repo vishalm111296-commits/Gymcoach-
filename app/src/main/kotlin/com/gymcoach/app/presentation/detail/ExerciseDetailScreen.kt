@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.HideImage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,11 +63,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.gymcoach.app.domain.model.LastPerformance
 
 @HiltViewModel
 class ExerciseDetailViewModel @Inject constructor(
     private val repository: ExerciseRepository,
-    private val substitutionEngine: SubstitutionEngine
+    private val substitutionEngine: SubstitutionEngine,
+    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository
 ) : ViewModel() {
 
     private val _exercise = MutableStateFlow<Exercise?>(null)
@@ -78,8 +81,12 @@ class ExerciseDetailViewModel @Inject constructor(
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
 
+    private val _lastPerformance = MutableStateFlow<LastPerformance?>(null)
+    val lastPerformance: StateFlow<LastPerformance?> = _lastPerformance.asStateFlow()
+
     fun loadExercise(id: Long) {
         viewModelScope.launch {
+            _lastPerformance.value = workoutRepository.getLastPerformanceForExercise(id)
             repository.getExerciseById(id).collect { ex ->
                 _exercise.value = ex
                 ex?.let {
@@ -124,6 +131,7 @@ fun ExerciseDetailScreen(
     val exercise by viewModel.exercise.collectAsState()
     val substitutes by viewModel.substitutes.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState()
+    val lastPerformance by viewModel.lastPerformance.collectAsState()
 
     LaunchedEffect(exerciseId) {
         viewModel.loadExercise(exerciseId)
@@ -163,25 +171,34 @@ fun ExerciseDetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Placeholder Hero Image via Typography
-                Box(
+                // Honest Media Unavailable State
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            RoundedCornerShape(24.dp)
+                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                            RoundedCornerShape(16.dp)
                         )
-                        .padding(bottom = 24.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.HideImage,
+                        contentDescription = "No media available",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(8.dp))
                     Text(
-                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
+                        text = "Media unavailable",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                Spacer(Modifier.height(24.dp))
 
                 // Description section
                 Text(
@@ -229,6 +246,55 @@ fun ExerciseDetailScreen(
                         label = "Secondary Muscles",
                         value = ex.secondaryMuscles
                     )
+                }
+
+                // Previous Performance
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = "Previous Performance",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(8.dp))
+                if (lastPerformance == null) {
+                    Text(
+                        text = "No previous performance",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                    val dateString = sdf.format(java.util.Date(lastPerformance!!.date))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Max Weight",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${lastPerformance!!.maxWeight} kg",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = dateString,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 // V-Taper Scores
@@ -459,8 +525,7 @@ private fun SubstitutionSection(
             substitutes.forEach { result ->
                 SubstitutionItem(
                     substitute = result.substitute,
-                    score = result.preservationScore,
-                    reason = result.reason,
+                    reasons = result.reasons,
                     onClick = { onExerciseClick(result.substitute.id) }
                 )
                 Spacer(Modifier.height(8.dp))
@@ -472,8 +537,7 @@ private fun SubstitutionSection(
 @Composable
 private fun SubstitutionItem(
     substitute: com.gymcoach.app.data.local.entity.ExerciseEntity,
-    score: Int,
-    reason: String,
+    reasons: List<String>,
     onClick: () -> Unit
 ) {
     Card(
@@ -504,17 +568,15 @@ private fun SubstitutionItem(
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.End
+            ) {
                 Text(
-                    text = "$score%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = reason,
+                    text = reasons.joinToString("\n"),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
                 )
             }
         }

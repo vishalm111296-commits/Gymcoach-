@@ -1,7 +1,7 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
-import com.gymcoach.app.data.local.dao.LastPerformance
+import com.gymcoach.app.domain.model.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
@@ -116,7 +116,8 @@ class WorkoutRepositoryImpl @Inject constructor(
     // ─── Previous Performance ──────────────────────────────────────────
 
     override suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance? {
-        return workoutDao.getLastPerformanceForExercise(exerciseId)
+        val daoResult = workoutDao.getLastPerformanceForExercise(exerciseId)
+        return daoResult?.let { LastPerformance(date = it.date, maxWeight = it.maxWeight) }
     }
 
     override suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData> {

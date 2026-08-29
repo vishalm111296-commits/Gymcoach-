@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -163,24 +164,33 @@ fun ExerciseDetailScreen(
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Placeholder Hero Image via Typography
+                // Honest No Media Fallback
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            com.gymcoach.app.ui.theme.DarkSurface,
                             RoundedCornerShape(24.dp)
                         )
-                        .padding(bottom = 24.dp),
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.ImageNotSupported,
+                            contentDescription = "No Media Available",
+                            tint = com.gymcoach.app.ui.theme.TextSecondary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "NO MEDIA AVAILABLE",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = com.gymcoach.app.ui.theme.TextSecondary,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
                 }
 
                 // Description section
@@ -459,7 +469,6 @@ private fun SubstitutionSection(
             substitutes.forEach { result ->
                 SubstitutionItem(
                     substitute = result.substitute,
-                    score = result.preservationScore,
                     reason = result.reason,
                     onClick = { onExerciseClick(result.substitute.id) }
                 )
@@ -472,7 +481,6 @@ private fun SubstitutionSection(
 @Composable
 private fun SubstitutionItem(
     substitute: com.gymcoach.app.data.local.entity.ExerciseEntity,
-    score: Int,
     reason: String,
     onClick: () -> Unit
 ) {
@@ -506,15 +514,10 @@ private fun SubstitutionItem(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$score%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = reason,
+                    text = reason.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = com.gymcoach.app.ui.theme.AccentBlue
                 )
             }
         }

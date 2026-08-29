@@ -2,11 +2,11 @@
 
 ## 1. Repository Identity
 - **CURRENT BRANCH:** jules-8697599317840399683-f4a7bc68
-- **CURRENT HEAD:** `427d60d`
+- **CURRENT HEAD:** `42a4cc0`
 - **WORKTREE STATE:** Clean
 
 ## 2. Phase 3 Repair Verification
-- **LastPerformance DAO Leak:** Repaired in commit `427d60d`. `WorkoutRepository` now returns the domain model `HistoricalSet`. No DAO types leak into `ExerciseDetailViewModel` or `WorkoutLoggingViewModel`.
+- **LastPerformance DAO Leak:** Repaired in commit `42a4cc0`. `WorkoutRepository` now returns the domain model `HistoricalSet`. No DAO types leak into `ExerciseDetailViewModel` or `WorkoutLoggingViewModel`.
 - **Previous Performance Data Integrity:** `ExerciseDetailScreen` explicitly queries `getLastSetsForExercise(exerciseId)`. The data strictly correlates to the provided exercise identity. Empty state is respected (returns early if empty).
 - **Favorites Persistence & Filtering:** `ExerciseListScreen` includes a "Favorites Only" toggle wired to `filterFavorites` flow in `ExerciseViewModel`.
 - **Regressions:** Faked "A" and "85%" data have been completely purged from the repository.

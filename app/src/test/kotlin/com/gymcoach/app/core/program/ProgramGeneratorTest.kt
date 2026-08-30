@@ -118,4 +118,11 @@ class ProgramGeneratorTest {
         assertFalse("Lateral Raise requires dumbbell", "Lateral Raise" in allNames)
         assertFalse("Dumbbell Row requires dumbbell", "Dumbbell Row" in allNames)
     }
+
+    @Test
+    fun `muscle slot normalization correctly matches lateral deltoid rear deltoid and quadriceps`() = runTest {
+        assertEquals("lateral deltoid", generator.normalizeMuscleToken("Lateral Deltoid"))
+        assertEquals("rear deltoid", generator.normalizeMuscleToken("Rear_Deltoid"))
+        assertEquals("quadriceps", generator.normalizeMuscleToken("Quadriceps"))
+    }
 }

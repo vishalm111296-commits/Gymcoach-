@@ -139,8 +139,9 @@ class ProgramGenerator @Inject constructor(
         val usedExerciseIds = mutableSetOf<Long>()
 
         for (muscle in muscles) {
+            val normalizedSlot = normalizeMuscleToken(muscle)
             val candidates = allExercises
-                .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
+                .filter { matchesMuscleSlot(it, normalizedSlot) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
                     compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
@@ -165,6 +166,42 @@ class ProgramGenerator @Inject constructor(
         }
 
         return ProgramDay(dayNum, name, muscles, selected)
+    }
+
+    /** Helper to normalize muscle strings: lowercase, replace underscores/hyphens with spaces, trim. */
+    fun normalizeMuscleToken(token: String): String =
+        token.lowercase().replace("_", " ").replace("-", " ").trim()
+
+    /** Check if exercise targets the normalized muscle slot. */
+    private fun matchesMuscleSlot(exercise: ExerciseEntity, normalizedSlot: String): Boolean {
+        val categoryNorm = normalizeMuscleToken(exercise.category)
+        val muscleGroupNorm = normalizeMuscleToken(exercise.muscleGroup)
+        val secondaryNorms = exercise.secondaryMuscles
+            .split(",")
+            .map { normalizeMuscleToken(it) }
+            .filter { it.isNotEmpty() }
+
+        // Exact match against category or muscleGroup
+        if (categoryNorm == normalizedSlot || muscleGroupNorm == normalizedSlot) return true
+
+        // Match secondary muscles exactly
+        if (secondaryNorms.contains(normalizedSlot)) return true
+
+        // Slot-specific taxonomy mappings
+        return when (normalizedSlot) {
+            "lateral deltoid" -> (categoryNorm == "shoulders" && muscleGroupNorm.contains("lateral")) ||
+                    (categoryNorm == "shoulders" && exercise.vtaperLateralDelt > 0)
+            "rear deltoid" -> (categoryNorm == "shoulders" && muscleGroupNorm.contains("rear")) ||
+                    (categoryNorm == "shoulders" && exercise.vtaperRearDelt > 0)
+            "upper chest" -> (categoryNorm == "chest" && muscleGroupNorm.contains("upper")) ||
+                    (categoryNorm == "chest" && exercise.vtaperUpperChest > 0)
+            "back" -> categoryNorm == "back" || muscleGroupNorm == "back" || categoryNorm == "lats" || muscleGroupNorm == "lats"
+            "quadriceps" -> categoryNorm == "legs" && muscleGroupNorm == "quadriceps"
+            "hamstrings" -> categoryNorm == "legs" && muscleGroupNorm == "hamstrings"
+            "glutes" -> categoryNorm == "legs" && muscleGroupNorm == "glutes"
+            "calves" -> categoryNorm == "legs" && (muscleGroupNorm == "calves" || muscleGroupNorm == "calf")
+            else -> false
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ package com.gymcoach.app.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.VolumeCalculator
+import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
@@ -57,13 +58,15 @@ private data class ProgramCore(
     val program: ProgramEntity,
     val todayDay: ProgramDayEntity?,
     val allDays: List<ProgramDayEntity>,
-    val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>
+    val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
+    val muscleGroupByExerciseId: Map<Long, String>
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
+    private val exerciseDao: ExerciseDao,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
     analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
@@ -80,24 +83,26 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            programRepository.getActiveProgram()
-                .flatMapLatest { program ->
+            exerciseDao.getAll().flatMapLatest { allExercises ->
+                val exerciseMap = allExercises.associate { it.id to it.muscleGroup }
+                programRepository.getActiveProgram().flatMapLatest { program ->
                     if (program == null) {
                         flowOf(null)
                     } else {
                         programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
                             val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
                             programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
-                                ProgramCore(program, pickToday(nonRest), days, byDay)
+                                ProgramCore(program, pickToday(nonRest), days, byDay, exerciseMap)
                             }
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
-                }
-                .collect { state -> _uiState.value = state }
+            }
+            .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
+            .combine(_prCount.asStateFlow()) { pair, prCount ->
+                buildUiState(pair.first, pair.second, prCount)
+            }
+            .collect { state -> _uiState.value = state }
         }
     }
 
@@ -126,9 +131,7 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
+        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.muscleGroupByExerciseId)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
                 label = label,
@@ -167,17 +170,16 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
+    /** Planned weekly sets per muscle mapped directly from exercise target muscle groups. */
     private fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
-        days: List<ProgramDayEntity>
+        muscleGroupMap: Map<Long, String>
     ): Map<String, Int> {
         val result = mutableMapOf<String, Int>()
-        for (day in days) {
-            val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
-            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
-                result[muscle] = (result[muscle] ?: 0) + daySets
+        for ((_, exercises) in exercisesByDay) {
+            for (exercise in exercises) {
+                val muscle = muscleGroupMap[exercise.exerciseId] ?: continue
+                result[muscle] = (result[muscle] ?: 0) + exercise.sets
             }
         }
         return result

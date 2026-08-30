@@ -140,7 +140,7 @@ class ProgramGenerator @Inject constructor(
 
         for (muscle in muscles) {
             val candidates = allExercises
-                .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
+                .filter { matchesMuscleSlot(it, muscle) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
                     compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
@@ -165,6 +165,76 @@ class ProgramGenerator @Inject constructor(
         }
 
         return ProgramDay(dayNum, name, muscles, selected)
+    }
+
+    /**
+     * Robust muscle slot matching to resolve naming discrepancies between slot names
+     * (e.g. "Lateral Deltoid", "Rear Deltoid", "Quadriceps") and database entity fields
+     * (e.g. "lateral_deltoid", "shoulders", "legs", "quadriceps").
+     */
+    companion object {
+        fun normalizeMuscleToken(token: String): String {
+            return token.lowercase().replace(" ", "_").replace("-", "_").trim()
+        }
+
+        fun matchesMuscleSlot(exercise: ExerciseEntity, slot: String): Boolean {
+            val normSlot = normalizeMuscleToken(slot)
+            val group = normalizeMuscleToken(exercise.muscleGroup)
+            val category = normalizeMuscleToken(exercise.category)
+            val sec = exercise.secondaryMuscles.split(",")
+                .map { normalizeMuscleToken(it) }
+                .filter { it.isNotEmpty() }
+            val nameLower = exercise.name.lowercase()
+
+            if (group == normSlot || category == normSlot) return true
+            if (sec.contains(normSlot)) return true
+
+            return when (normSlot) {
+                "back" -> {
+                    group == "back" || category == "back" || "latissimus_dorsi" in sec || "upper_back" in sec
+                }
+                "lateral_deltoid" -> {
+                    exercise.vtaperLateralDelt > 0 || "lateral_deltoid" in sec || "side_deltoid" in sec
+                }
+                "rear_deltoid" -> {
+                    exercise.vtaperRearDelt > 0 || "rear_deltoid" in sec
+                }
+                "upper_chest" -> {
+                    exercise.vtaperUpperChest > 0 || "upper_chest" in sec
+                }
+                "chest" -> {
+                    group == "chest" || category == "chest" || "mid_chest" in sec || "upper_chest" in sec
+                }
+                "quadriceps" -> {
+                    group == "quadriceps" || category == "quadriceps" || "quadriceps" in sec || "quads" in sec ||
+                            ((group == "legs" || category == "legs") && (nameLower.contains("squat") || nameLower.contains("lunge") || nameLower.contains("extension") || nameLower.contains("press")))
+                }
+                "hamstrings" -> {
+                    group == "hamstrings" || category == "hamstrings" || "hamstrings" in sec ||
+                            ((group == "legs" || category == "legs") && (nameLower.contains("rdl") || nameLower.contains("deadlift") || nameLower.contains("curl") || nameLower.contains("good_morning")))
+                }
+                "glutes" -> {
+                    group == "glutes" || category == "glutes" || "glutes" in sec ||
+                            ((group == "legs" || category == "legs") && (nameLower.contains("thrust") || nameLower.contains("bridge") || nameLower.contains("kickback") || nameLower.contains("step")))
+                }
+                "calves" -> {
+                    group == "calves" || category == "calves" || "calves" in sec ||
+                            ((group == "legs" || category == "legs") && nameLower.contains("calf"))
+                }
+                "biceps" -> {
+                    group == "biceps" || category == "biceps" || "biceps" in sec ||
+                            (group == "arms" && (nameLower.contains("curl") || nameLower.contains("chin")))
+                }
+                "triceps" -> {
+                    group == "triceps" || category == "triceps" || "triceps" in sec ||
+                            (group == "arms" && (nameLower.contains("extension") || nameLower.contains("dip") || nameLower.contains("skull") || nameLower.contains("kickback") || nameLower.contains("press") || nameLower.contains("push_up")))
+                }
+                "core" -> {
+                    group == "core" || category == "core" || "abs" in sec || "obliques" in sec || "deep_core" in sec
+                }
+                else -> false
+            }
+        }
     }
 
     /**

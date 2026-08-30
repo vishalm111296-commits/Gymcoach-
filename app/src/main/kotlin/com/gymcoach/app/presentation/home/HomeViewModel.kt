@@ -6,7 +6,9 @@ import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
@@ -57,13 +59,15 @@ private data class ProgramCore(
     val program: ProgramEntity,
     val todayDay: ProgramDayEntity?,
     val allDays: List<ProgramDayEntity>,
-    val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>
+    val exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
+    val exercisesById: Map<Long, Exercise>
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
+    private val exerciseRepository: ExerciseRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
     analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
@@ -87,8 +91,12 @@ class HomeViewModel @Inject constructor(
                     } else {
                         programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
                             val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
-                            programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
-                                ProgramCore(program, pickToday(nonRest), days, byDay)
+                            val dayExercisesFlow = programRepository.getExercisesForDays(days.map { it.id })
+                            val allExercisesFlow = exerciseRepository.getAllExercises()
+
+                            combine(dayExercisesFlow, allExercisesFlow) { byDay, allExercises ->
+                                val exercisesById = allExercises.associateBy { it.id }
+                                ProgramCore(program, pickToday(nonRest), days, byDay, exercisesById)
                             }
                         }
                     }
@@ -126,9 +134,7 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
+        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.exercisesById)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
                 label = label,
@@ -167,20 +173,46 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
+    /** Planned weekly sets per muscle attributed at exercise level using exercise metadata. */
     private fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
-        days: List<ProgramDayEntity>
+        exercisesById: Map<Long, Exercise>
     ): Map<String, Int> {
         val result = mutableMapOf<String, Int>()
-        for (day in days) {
-            val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
-            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
-                result[muscle] = (result[muscle] ?: 0) + daySets
+        for ((_, programExercises) in exercisesByDay) {
+            for (pExercise in programExercises) {
+                val exercise = exercisesById[pExercise.exerciseId]
+                val muscleCategory = getPrimaryMuscleCategory(exercise)
+                if (muscleCategory.isNotEmpty()) {
+                    result[muscleCategory] = (result[muscleCategory] ?: 0) + pExercise.sets
+                }
             }
         }
         return result
+    }
+
+    /** Map exercise to canonical muscle category name. */
+    private fun getPrimaryMuscleCategory(exercise: Exercise?): String {
+        if (exercise == null) return ""
+        val category = exercise.category.lowercase().replace("_", " ").trim()
+        val muscleGroup = exercise.muscleGroup.lowercase().replace("_", " ").trim()
+
+        return when {
+            category.contains("lat") || muscleGroup.contains("lat") || exercise.vtaperLat > 0 -> "Back"
+            category.contains("back") || muscleGroup.contains("back") -> "Back"
+            category.contains("lateral delt") || muscleGroup.contains("lateral delt") || exercise.vtaperLateralDelt > 0 -> "Lateral Deltoid"
+            category.contains("rear delt") || muscleGroup.contains("rear delt") || exercise.vtaperRearDelt > 0 -> "Rear Deltoid"
+            category.contains("chest") || muscleGroup.contains("chest") -> if (exercise.vtaperUpperChest > 0) "Upper Chest" else "Chest"
+            category.contains("shoulder") || muscleGroup.contains("shoulder") -> "Lateral Deltoid"
+            category.contains("quad") || muscleGroup.contains("quad") -> "Quadriceps"
+            category.contains("hamstring") || muscleGroup.contains("hamstring") -> "Hamstrings"
+            category.contains("glute") || muscleGroup.contains("glute") -> "Glutes"
+            category.contains("calf") || category.contains("calves") || muscleGroup.contains("calf") || muscleGroup.contains("calves") -> "Calves"
+            category.contains("bicep") || muscleGroup.contains("bicep") -> "Biceps"
+            category.contains("tricep") || muscleGroup.contains("tricep") -> "Triceps"
+            category.contains("core") || category.contains("abs") || muscleGroup.contains("core") || muscleGroup.contains("abs") -> "Core"
+            else -> exercise.category.ifBlank { exercise.muscleGroup }
+        }
     }
 
     /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */

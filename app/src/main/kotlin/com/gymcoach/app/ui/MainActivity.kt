@@ -27,13 +27,10 @@ class MainActivity : ComponentActivity() {
                     val onboardingComplete = prefs.getBoolean("onboarding_complete", false)
                     val startDest = if (onboardingComplete) Routes.HOME else Routes.ONBOARDING
 
-                    GymCoachAppShell(navController = navController) { modifier ->
-                        GymCoachNavHost(
-                            navController = navController,
-                            startDestination = startDest,
-                            modifier = modifier
-                        )
-                    }
+                    GymCoachNavHost(
+                        navController = navController,
+                        startDestination = startDest
+                    )
                 }
             }
         }

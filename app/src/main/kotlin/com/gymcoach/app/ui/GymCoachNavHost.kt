@@ -5,14 +5,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import androidx.compose.material3.Scaffold
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import com.gymcoach.app.core.ml.ExerciseType
-import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.presentation.camera.CameraPreviewScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
@@ -45,55 +39,13 @@ object Routes {
 }
 
 @Composable
-fun GymCoachAppShell(
-    navController: NavHostController,
-    content: @Composable (Modifier) -> Unit
-) {
-    val navBackStackEntry = navController.currentBackStackEntryAsState().value
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    val topLevelRoutes = listOf(
-        Routes.HOME,
-        Routes.EXERCISE_LIST,
-        Routes.PROGRESS,
-        Routes.PROFILE
-    )
-
-    val showBottomNav = currentRoute in topLevelRoutes
-
-    Scaffold(
-        containerColor = DarkBackground,
-        bottomBar = {
-            if (showBottomNav) {
-                GymCoachBottomNav(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(Routes.HOME) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        }
-    ) { innerPadding ->
-        content(Modifier.padding(innerPadding).fillMaxSize())
-    }
-}
-
-@Composable
 fun GymCoachNavHost(
     navController: NavHostController,
-    startDestination: String = Routes.HOME,
-    modifier: Modifier = Modifier
+    startDestination: String = Routes.HOME
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination,
-        modifier = modifier
+        startDestination = startDestination
     ) {
         composable(Routes.ONBOARDING) {
             OnboardingScreen(

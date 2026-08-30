@@ -194,7 +194,9 @@ class FormAnalyzerTest {
         assertEquals("Extend arms forward", bentOverRowAnalyzer.analyze(createArmPose(120.0))?.formFeedback)
         assertEquals("Start bent-over row", bentOverRowAnalyzer.analyze(createArmPose(160.0))?.formFeedback)
 
-        val plankAnalyzer = FormAnalyzer(ExerciseType.PLANK, FormAnalyzer.defaultFor(ExerciseType.PLANK))
+        // Non-time-based Plank configuration to test angle feedback string generation
+        val plankNonTimeConfig = FormAnalyzer.defaultFor(ExerciseType.PLANK).copy(isTimeBased = false)
+        val plankAnalyzer = FormAnalyzer(ExerciseType.PLANK, plankNonTimeConfig)
         assertEquals("Good plank position", plankAnalyzer.analyze(createPlankPose(178.0))?.formFeedback)
         assertEquals("Squeeze core, keep straight", plankAnalyzer.analyze(createPlankPose(165.0))?.formFeedback)
         assertEquals("Lower hips or raise up", plankAnalyzer.analyze(createPlankPose(150.0))?.formFeedback)

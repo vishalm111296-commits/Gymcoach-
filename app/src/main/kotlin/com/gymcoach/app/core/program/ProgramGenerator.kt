@@ -146,7 +146,7 @@ class ProgramGenerator @Inject constructor(
                     compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
                         .thenBy { difficultyOrder(it.difficulty) }
                 )
-                .take(2)
+                .take(1)
 
             for (ex in candidates) {
                 if (ex.id !in usedExerciseIds) {

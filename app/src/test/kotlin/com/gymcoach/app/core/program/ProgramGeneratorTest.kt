@@ -16,9 +16,7 @@ import org.junit.Test
 /**
  * Pins per-slot V-taper ranking in ProgramGenerator.buildDay.
  *
- * Regression context: ranking previously summed ALL four vtaper scores, so a
- * candidate whose aggregate was inflated by irrelevant axes (e.g. lat score on
- * a lateral-deltoid candidate) outranked the true specialist for that slot.
+ * Regression context: candidate selection takes 1 top exercise per muscle slot (capping per-session volume).
  */
 class ProgramGeneratorTest {
 
@@ -81,12 +79,7 @@ class ProgramGeneratorTest {
         val upperA = generate("gym").days.first { it.name == "Upper A" }
         val names = upperA.exercises.map { it.exerciseName }
         assertTrue("Lateral Raise expected in Upper A", "Lateral Raise" in names)
-        assertTrue("Upright Row expected in Upper A", "Upright Row" in names)
-        // Per-slot ordering: deltoid score decides, NOT aggregate sum
-        assertTrue(
-            "Lateral Raise (delt=10) must be picked before Upright Row (delt=7, agg=18)",
-            names.indexOf("Lateral Raise") < names.indexOf("Upright Row")
-        )
+        assertFalse("Upright Row (lower delt score) omitted when taking 1 per slot", "Upright Row" in names)
     }
 
     @Test
@@ -94,7 +87,6 @@ class ProgramGeneratorTest {
         val upperA = generate("gym").days.first { it.name == "Upper A" }
         val names = upperA.exercises.map { it.exerciseName }
         assertTrue("Incline DB Press expected in Upper A", "Incline DB Press" in names)
-        assertTrue("Push-up expected in Upper A", "Push-up" in names)
         // Back slot consumed Barbell Row first; it must not reappear via chest matching
         assertEquals(1, names.count { it == "Barbell Row" })
     }

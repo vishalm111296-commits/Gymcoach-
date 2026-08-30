@@ -118,4 +118,21 @@ class ProgramGeneratorTest {
         assertFalse("Lateral Raise requires dumbbell", "Lateral Raise" in allNames)
         assertFalse("Dumbbell Row requires dumbbell", "Dumbbell Row" in allNames)
     }
+
+    @Test
+    fun `quadriceps slot matches squat and leg extension exercises`() {
+        val squat = ExerciseEntity(id = 10, name = "Barbell Back Squat", description = "", muscleGroup = "Legs", equipment = "barbell", difficulty = "Intermediate")
+        val quadSlotMatch = ProgramGenerator.matchesMuscleSlot(squat, "Quadriceps")
+        assertTrue("Back Squat must match Quadriceps slot", quadSlotMatch)
+
+        val hamSlotMatch = ProgramGenerator.matchesMuscleSlot(squat, "Hamstrings")
+        assertFalse("Back Squat must not match Hamstrings slot", hamSlotMatch)
+    }
+
+    @Test
+    fun `exact matching prevents false positives for back`() {
+        val exercise = ExerciseEntity(id = 11, name = "Background Music", description = "", muscleGroup = "Core", equipment = "bodyweight", difficulty = "Beginner")
+        val backMatch = ProgramGenerator.matchesMuscleSlot(exercise, "Back")
+        assertFalse("Unrelated exercise with 'back' in name or non-back group must not match Back slot", backMatch)
+    }
 }

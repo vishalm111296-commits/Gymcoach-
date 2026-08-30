@@ -140,7 +140,7 @@ class ProgramGenerator @Inject constructor(
 
         for (muscle in muscles) {
             val candidates = allExercises
-                .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
+                .filter { matchesMuscleSlot(it, muscle) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
                     compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
@@ -188,5 +188,111 @@ class ProgramGenerator @Inject constructor(
         difficulty.contains("Intermediate", ignoreCase = true) -> 1
         difficulty.contains("Advanced", ignoreCase = true) -> 2
         else -> 1
+    }
+
+    companion object {
+        fun normalizeToken(s: String): String =
+            s.lowercase().replace("_", " ").replace("-", " ").trim()
+
+        fun matchesMuscleSlot(exercise: ExerciseEntity, requestedSlot: String): Boolean {
+            val normSlot = normalizeToken(requestedSlot)
+            val normCategory = normalizeToken(exercise.muscleGroup)
+            val secTokens = exercise.secondaryMuscles.split(",")
+                .map { normalizeToken(it) }
+                .filter { it.isNotEmpty() }
+            val normName = normalizeToken(exercise.name)
+
+            return when (normSlot) {
+                "back", "lats", "latissimus dorsi" -> {
+                    normCategory == "back" ||
+                    secTokens.any { it in setOf("back", "latissimus dorsi", "lats", "lat") }
+                }
+                "chest", "upper chest", "mid chest", "lower chest" -> {
+                    normCategory == "chest" ||
+                    secTokens.any { it in setOf("chest", "upper chest", "mid chest", "lower chest") }
+                }
+                "lateral deltoid", "lateral delt", "side deltoid", "side delt" -> {
+                    normCategory == "lateral deltoid" ||
+                    secTokens.any { it in setOf("lateral deltoid", "lateral delt", "side deltoid", "side delt") } ||
+                    (normCategory == "shoulders" && (
+                        exercise.vtaperLateralDelt > 0 ||
+                        normName.contains("lateral raise") ||
+                        normName.contains("side delt")
+                    ))
+                }
+                "rear deltoid", "rear delt" -> {
+                    normCategory == "rear deltoid" ||
+                    secTokens.any { it in setOf("rear deltoid", "rear delt") } ||
+                    (normCategory in setOf("shoulders", "back") && (
+                        exercise.vtaperRearDelt > 0 ||
+                        normName.contains("face pull") ||
+                        normName.contains("rear delt")
+                    ))
+                }
+                "biceps" -> {
+                    normCategory == "biceps" ||
+                    secTokens.any { it in setOf("biceps", "brachialis") } ||
+                    (normCategory == "arms" && (
+                        secTokens.any { it in setOf("biceps", "brachialis") } ||
+                        normName.contains("curl")
+                    ))
+                }
+                "triceps" -> {
+                    normCategory == "triceps" ||
+                    secTokens.any { it in setOf("triceps") } ||
+                    (normCategory == "arms" && (
+                        secTokens.any { it in setOf("triceps") } ||
+                        normName.contains("tricep") ||
+                        normName.contains("dip") ||
+                        normName.contains("skull crusher") ||
+                        normName.contains("pushdown")
+                    ))
+                }
+                "quadriceps", "quads" -> {
+                    normCategory == "quadriceps" ||
+                    secTokens.any { it in setOf("quadriceps", "quads") } ||
+                    (normCategory == "legs" && (
+                        secTokens.any { it in setOf("quadriceps", "quads") } ||
+                        normName.contains("squat") || normName.contains("lunge") ||
+                        normName.contains("leg press") || normName.contains("step up") ||
+                        normName.contains("extension")
+                    ))
+                }
+                "hamstrings" -> {
+                    normCategory == "hamstrings" ||
+                    secTokens.any { it in setOf("hamstrings") } ||
+                    (normCategory == "legs" && (
+                        secTokens.any { it in setOf("hamstrings") } ||
+                        normName.contains("rdl") || normName.contains("deadlift") ||
+                        normName.contains("leg curl") || normName.contains("good morning")
+                    ))
+                }
+                "glutes" -> {
+                    normCategory == "glutes" ||
+                    secTokens.any { it in setOf("glutes") } ||
+                    (normCategory == "legs" && (
+                        secTokens.any { it in setOf("glutes") } ||
+                        normName.contains("hip thrust") || normName.contains("glute")
+                    ))
+                }
+                "calves" -> {
+                    normCategory == "calves" ||
+                    secTokens.any { it in setOf("calves") } ||
+                    (normCategory == "legs" && (
+                        secTokens.any { it in setOf("calves") } ||
+                        normName.contains("calf")
+                    ))
+                }
+                "core" -> {
+                    normCategory == "core" ||
+                    secTokens.any { it in setOf("core", "abs", "obliques") } ||
+                    normName.contains("crunch") || normName.contains("plank") ||
+                    normName.contains("leg raise") || normName.contains("ab")
+                }
+                else -> {
+                    normCategory == normSlot || secTokens.contains(normSlot)
+                }
+            }
+        }
     }
 }

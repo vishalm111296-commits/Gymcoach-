@@ -6,7 +6,9 @@ import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
@@ -66,7 +68,8 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    analyticsRepository: AnalyticsRepository,
+    private val exerciseRepository: ExerciseRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -93,9 +96,12 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
+                .combine(exerciseRepository.getAllExercises()) { core, exercises -> core to exercises }
+                .combine(workoutRepository.getCompletedWorkouts()) { (core, exercises), workouts ->
+                    Triple(core, exercises, workouts)
+                }
+                .combine(_prCount.asStateFlow()) { (core, exercises, workouts), prCount ->
+                    buildUiState(core, exercises, workouts, prCount)
                 }
                 .collect { state -> _uiState.value = state }
         }
@@ -110,6 +116,7 @@ class HomeViewModel @Inject constructor(
 
     private fun buildUiState(
         core: ProgramCore?,
+        exercises: List<Exercise>,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
         prCount: Int
     ): HomeUiState {
@@ -126,9 +133,8 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
+        val exerciseMap = exercises.associateBy { it.id }
+        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays, exerciseMap)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
                 label = label,
@@ -167,20 +173,98 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
-    private fun plannedWeeklySets(
+    /** Planned weekly sets per muscle from individual program exercise set counts. */
+    fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
-        days: List<ProgramDayEntity>
+        days: List<ProgramDayEntity>,
+        exerciseMap: Map<Long, Exercise> = emptyMap()
     ): Map<String, Int> {
         val result = mutableMapOf<String, Int>()
         for (day in days) {
-            val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
-            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
-                result[muscle] = (result[muscle] ?: 0) + daySets
+            val programExercises = exercisesByDay[day.id].orEmpty()
+            if (programExercises.isEmpty()) continue
+
+            val dayTargetMuscles = targetMusclesMuscles(day)
+
+            for (progEx in programExercises) {
+                val sets = progEx.sets
+                if (sets <= 0) continue
+
+                val ex = exerciseMap[progEx.exerciseId]
+                val slot = ex?.let { primaryMuscleSlot(it) }
+
+                if (slot != null) {
+                    result[slot] = (result[slot] ?: 0) + sets
+                } else if (dayTargetMuscles.isNotEmpty()) {
+                    val target = dayTargetMuscles.first()
+                    result[target] = (result[target] ?: 0) + sets
+                }
             }
         }
         return result
+    }
+
+    companion object {
+        fun primaryMuscleSlot(ex: Exercise): String {
+            val cat = ex.muscleGroup.lowercase().trim()
+            val secTokens = ex.secondaryMuscles.split(",")
+                .map { it.lowercase().replace("_", " ").replace("-", " ").trim() }
+                .filter { it.isNotEmpty() }
+            val name = ex.name.lowercase().trim()
+
+            return when {
+                ex.vtaperLateralDelt > 0 ||
+                secTokens.any { it in setOf("lateral deltoid", "lateral delt", "side deltoid", "side delt") } ||
+                cat == "lateral deltoid" ||
+                name.contains("lateral raise") || name.contains("side delt") -> "Lateral Deltoid"
+
+                ex.vtaperRearDelt > 0 ||
+                secTokens.any { it in setOf("rear deltoid", "rear delt") } ||
+                cat == "rear deltoid" ||
+                name.contains("face pull") || name.contains("rear delt") -> "Rear Deltoid"
+
+                ex.vtaperLat > 0 || cat == "back" ||
+                secTokens.any { it in setOf("back", "latissimus dorsi", "lats", "lat") } -> "Back"
+
+                ex.vtaperUpperChest > 0 || cat == "chest" ||
+                secTokens.any { it in setOf("chest", "upper chest", "mid chest", "lower chest") } -> "Chest"
+
+                cat == "biceps" || secTokens.any { it in setOf("biceps", "brachialis") } ||
+                (cat == "arms" && name.contains("curl")) -> "Biceps"
+
+                cat == "triceps" || secTokens.any { it in setOf("triceps") } ||
+                cat == "arms" -> "Triceps"
+
+                cat == "quadriceps" || secTokens.any { it in setOf("quadriceps", "quads") } ||
+                (cat == "legs" && (
+                    secTokens.any { it in setOf("quadriceps", "quads") } ||
+                    name.contains("squat") || name.contains("lunge") ||
+                    name.contains("step-up") || name.contains("press") ||
+                    name.contains("extension")
+                )) -> "Quadriceps"
+
+                cat == "hamstrings" || secTokens.any { it in setOf("hamstrings") } ||
+                (cat == "legs" && (
+                    secTokens.any { it in setOf("hamstrings") } ||
+                    name.contains("rdl") || name.contains("deadlift") ||
+                    name.contains("leg curl") || name.contains("good morning")
+                )) -> "Hamstrings"
+
+                cat == "glutes" || secTokens.any { it in setOf("glutes") } ||
+                (cat == "legs" && (
+                    secTokens.any { it in setOf("glutes") } ||
+                    name.contains("hip thrust") || name.contains("glute")
+                )) -> "Glutes"
+
+                cat == "calves" || secTokens.any { it in setOf("calves") } ||
+                (cat == "legs" && name.contains("calf")) -> "Calves"
+
+                cat == "core" || secTokens.any { it in setOf("core", "abs", "obliques") } -> "Core"
+
+                cat.isNotBlank() -> cat.replaceFirstChar { it.uppercase() }
+                else -> "Other"
+            }
+        }
     }
 
     /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */

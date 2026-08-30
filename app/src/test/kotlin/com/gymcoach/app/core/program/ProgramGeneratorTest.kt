@@ -14,11 +14,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Pins per-slot V-taper ranking in ProgramGenerator.buildDay.
- *
- * Regression context: ranking previously summed ALL four vtaper scores, so a
- * candidate whose aggregate was inflated by irrelevant axes (e.g. lat score on
- * a lateral-deltoid candidate) outranked the true specialist for that slot.
+ * Pins per-slot V-taper ranking and muscle matching in ProgramGenerator.buildDay.
  */
 class ProgramGeneratorTest {
 
@@ -117,5 +113,85 @@ class ProgramGeneratorTest {
         assertFalse("Incline DB Press requires gear", "Incline DB Press" in allNames)
         assertFalse("Lateral Raise requires dumbbell", "Lateral Raise" in allNames)
         assertFalse("Dumbbell Row requires dumbbell", "Dumbbell Row" in allNames)
+    }
+
+    @Test
+    fun `TEST 3 - Muscle Slot Normalization verifies underscore, space, and case normalization`() {
+        val latDeltEx = ExerciseEntity(
+            id = 10, name = "Cable Lateral Raise", description = "", muscleGroup = "shoulders",
+            equipment = "cable", difficulty = "Beginner", secondaryMuscles = "lateral_deltoid"
+        )
+        val rearDeltEx = ExerciseEntity(
+            id = 11, name = "Face Pull", description = "", muscleGroup = "shoulders",
+            equipment = "cable", difficulty = "Beginner", secondaryMuscles = "rear_deltoid"
+        )
+        val quadEx = ExerciseEntity(
+            id = 12, name = "Leg Extension", description = "", muscleGroup = "legs",
+            equipment = "machine", difficulty = "Beginner", secondaryMuscles = "quadriceps"
+        )
+
+        assertTrue(
+            "Lateral Deltoid slot matches secondaryMuscles lateral_deltoid",
+            ProgramGenerator.matchesMuscleSlot(latDeltEx, "Lateral Deltoid")
+        )
+        assertTrue(
+            "Rear Deltoid slot matches secondaryMuscles rear_deltoid",
+            ProgramGenerator.matchesMuscleSlot(rearDeltEx, "Rear Deltoid")
+        )
+        assertTrue(
+            "Quadriceps slot matches secondaryMuscles quadriceps",
+            ProgramGenerator.matchesMuscleSlot(quadEx, "Quadriceps")
+        )
+    }
+
+    @Test
+    fun `TEST 4 - Exact Matching prevents false positive substring and intra-category matches`() {
+        val chestEx = ExerciseEntity(
+            id = 20, name = "Bench Press", description = "", muscleGroup = "chest",
+            equipment = "barbell", difficulty = "Beginner", secondaryMuscles = "front_deltoid, triceps"
+        )
+        val hamsLegEx = ExerciseEntity(
+            id = 21, name = "Lying Leg Curl", description = "", muscleGroup = "legs",
+            equipment = "machine", difficulty = "Beginner", secondaryMuscles = "hamstrings"
+        )
+
+        assertFalse(
+            "Chest exercise must not accidentally match Back slot",
+            ProgramGenerator.matchesMuscleSlot(chestEx, "Back")
+        )
+        assertFalse(
+            "Chest exercise must not accidentally match Lateral Deltoid slot",
+            ProgramGenerator.matchesMuscleSlot(chestEx, "Lateral Deltoid")
+        )
+        assertFalse(
+            "Hamstring exercise in 'legs' category must not match Quadriceps slot",
+            ProgramGenerator.matchesMuscleSlot(hamsLegEx, "Quadriceps")
+        )
+    }
+
+    @Test
+    fun `TEST 7 - Equipment Regression verifies matching fix does not bypass equipment constraints`() = runTest {
+        val barbellLatDelt = ExerciseEntity(
+            id = 30, name = "Barbell Upright Row", description = "", muscleGroup = "shoulders",
+            equipment = "barbell", difficulty = "Intermediate", secondaryMuscles = "lateral_deltoid"
+        )
+        val bodyweightPushUp = ExerciseEntity(
+            id = 31, name = "Push-up", description = "", muscleGroup = "Chest",
+            equipment = "bodyweight", difficulty = "Beginner", vtaperUpperChest = 5
+        )
+
+        coEvery { dao.getAll() } returns flowOf(listOf(barbellLatDelt, bodyweightPushUp))
+
+        val bodyweightProgram = generator.generateProgram(4, "custom", "vtaper")
+        val selectedNames = bodyweightProgram.days.flatMap { it.exercises }.map { it.exerciseName }
+
+        assertFalse(
+            "Barbell equipment must be excluded in bodyweight/custom mode despite muscle match",
+            "Barbell Upright Row" in selectedNames
+        )
+        assertTrue(
+            "Bodyweight exercise must be included in bodyweight/custom mode",
+            "Push-up" in selectedNames
+        )
     }
 }

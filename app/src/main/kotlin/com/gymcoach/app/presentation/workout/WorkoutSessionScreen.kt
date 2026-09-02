@@ -212,6 +212,7 @@ fun WorkoutSessionScreen(
                                 sets = we.sets,
                                 previousSets = lastSets,
                                 lastPerformance = lastPerf,
+                                instructions = we.exercise.instructions,
                                 onAddSet = { viewModel.addSet(exIdx) },
                                 onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
                                 onRemoveExercise = { viewModel.removeExercise(exIdx) },
@@ -220,6 +221,7 @@ fun WorkoutSessionScreen(
                                 onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
                                 onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                 onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
+                                onInstructionsClick = {},
                                 onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
@@ -434,6 +436,7 @@ private fun ExerciseSetCard(
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
     previousSets: List<LastSetData>?,
     lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
+    instructions: String,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,
@@ -442,8 +445,10 @@ private fun ExerciseSetCard(
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
+    onInstructionsClick: () -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
+    var showInstructions by rememberSaveable { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -475,6 +480,27 @@ private fun ExerciseSetCard(
                     Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
                 }
             }
+
+            // Instructions
+                        if (instructions.isNotEmpty()) {
+                            TextButton(onClick = { showInstructions = !showInstructions }) {
+                                Text(if (showInstructions) "Hide Instructions" else "View Instructions")
+                            }
+                
+                            if (showInstructions) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text("Instructions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                        Text(instructions, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                        }
 
             // Previous performance indicator
             if (lastPerformance != null) {

@@ -92,6 +92,7 @@ fun WorkoutSessionScreen(
     val previousPerformance by viewModel.previousPerformance.collectAsState()
     val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
     val sessionVolume by viewModel.sessionVolume.collectAsState()
+    val progressionRecommendations by viewModel.progressionRecommendations.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -207,22 +208,23 @@ fun WorkoutSessionScreen(
                             val lastPerf = lastPerformanceSummary[we.exercise.id]
 
                             ExerciseSetCard(
-                                exerciseName = we.exercise.name,
-                                muscleGroup = we.exercise.muscleGroup,
-                                sets = we.sets,
-                                previousSets = lastSets,
-                                lastPerformance = lastPerf,
-                                instructions = we.exercise.instructions,
-                                onAddSet = { viewModel.addSet(exIdx) },
-                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
-                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
-                                onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
-                                onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
-                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
-                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
-                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                                onInstructionsClick = {},
-                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
+                               exerciseName = we.exercise.name,
+                               muscleGroup = we.exercise.muscleGroup,
+                               sets = we.sets,
+                               previousSets = lastSets,
+                               lastPerformance = lastPerf,
+                               instructions = we.exercise.instructions,
+                               recommendation = progressionRecommendations[we.exercise.id],
+                               onAddSet = { viewModel.addSet(exIdx) },
+                               onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
+                               onRemoveExercise = { viewModel.removeExercise(exIdx) },
+                               onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
+                               onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
+                               onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
+                               onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
+                               onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
+                               onInstructionsClick = {},
+                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
 
@@ -437,6 +439,7 @@ private fun ExerciseSetCard(
     previousSets: List<LastSetData>?,
     lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
     instructions: String,
+    recommendation: com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommendation? = null,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,
@@ -478,6 +481,36 @@ private fun ExerciseSetCard(
                 }
                 IconButton(onClick = onRemoveExercise) {
                     Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                }
+            }
+
+            // Progression recommendation banner
+            if (recommendation != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Next session target",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "${recommendation.recommendedWeight}kg × ${recommendation.recommendedReps} reps",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = recommendation.reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
             }
 

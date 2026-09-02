@@ -180,7 +180,11 @@ class ProgramGenerator @Inject constructor(
         muscle.equals("Lateral Deltoid", ignoreCase = true) -> exercise.vtaperLateralDelt
         muscle.equals("Chest", ignoreCase = true) -> exercise.vtaperUpperChest
         muscle.equals("Rear Deltoid", ignoreCase = true) -> exercise.vtaperRearDelt
-        else -> 0
+        // ponytail: For non-V-taper-critical muscles (e.g., Biceps, Triceps, Quads),
+        // fall back to the exercise's aggregate V-taper relevance across all dimensions.
+        // This surfaces exercises that contribute broadly to the V-taper aesthetic
+        // even when the primary muscle slot isn't one of the four critical slots.
+        else -> exercise.vtaperLat + exercise.vtaperLateralDelt + exercise.vtaperUpperChest + exercise.vtaperRearDelt
     }
 
     private fun difficultyOrder(difficulty: String): Int = when {

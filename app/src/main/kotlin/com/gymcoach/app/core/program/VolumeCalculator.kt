@@ -93,47 +93,40 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
-            }
-        }
-        if (weekBuckets.isNotEmpty()) {
-            for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
-            }
-        }
+        val weeksCount = weekBuckets.size.coerceAtLeast(1)
 
         val directSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
             }
             .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+            .mapValues { (_, muscles) -> muscles.size / weeksCount }
 
         val indirectSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }
             }
             .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+            .mapValues { (_, muscles) -> muscles.size / weeksCount }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
+        fun vol(muscle: String): MuscleVolume {
+            val direct = directSetsByMuscle[muscle] ?: 0
+            val indirect = indirectSetsByMuscle[muscle] ?: 0
+            val total = direct + indirect
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklySets = total,
+                directSets = direct,
+                indirectSets = indirect,
+                status = classify(total)
+            )
+        }
 
         return TrainingBalance(
             latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),

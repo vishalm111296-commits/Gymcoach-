@@ -105,35 +105,40 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
+        val weeksCount = weekBuckets.size.coerceAtLeast(1)
+
         val directSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
             }
             .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+            .mapValues { (_, v) -> v.size / weeksCount }
 
         val indirectSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }
             }
             .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+            .mapValues { (_, v) -> v.size / weeksCount }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
+        fun vol(muscle: String): MuscleVolume {
+            val dSets = directSetsByMuscle[muscle] ?: 0
+            val iSets = indirectSetsByMuscle[muscle] ?: 0
+            val totalSets = dSets + iSets
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklySets = totalSets,
+                directSets = dSets,
+                indirectSets = iSets,
+                status = classify(totalSets)
+            )
+        }
 
         return TrainingBalance(
             latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),

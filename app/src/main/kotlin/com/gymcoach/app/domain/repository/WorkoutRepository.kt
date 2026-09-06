@@ -5,10 +5,11 @@ import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
-import com.gymcoach.app.data.local.dao.LastPerformance
-import com.gymcoach.app.data.local.dao.LastSetData
+
+
 import kotlinx.coroutines.flow.Flow
 
+import com.gymcoach.app.domain.model.HistoricalSet
 interface WorkoutRepository {
     fun getAllWorkouts(): Flow<List<Workout>>
     fun getWorkoutWithDetails(workoutId: Long): Flow<WorkoutWithDetails?>
@@ -23,10 +24,10 @@ interface WorkoutRepository {
     suspend fun deleteSet(setId: Long)
 
     // Previous performance
-    suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
-    suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
-    suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, LastPerformance>
-    suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<LastSetData>>
+    suspend fun getLastPerformanceForExercise(exerciseId: Long): com.gymcoach.app.data.local.dao.LastPerformance?
+    suspend fun getLastSetsForExercise(exerciseId: Long): List<HistoricalSet>
+    suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, com.gymcoach.app.data.local.dao.LastPerformance>
+    suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<HistoricalSet>>
 
     // History
     fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>>

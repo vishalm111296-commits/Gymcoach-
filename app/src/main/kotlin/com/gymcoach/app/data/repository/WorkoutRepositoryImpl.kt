@@ -1,8 +1,9 @@
 package com.gymcoach.app.data.repository
+import com.gymcoach.app.domain.model.HistoricalSet
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.LastPerformance
-import com.gymcoach.app.data.local.dao.LastSetData
+
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
@@ -27,6 +28,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
+
 class WorkoutRepositoryImpl @Inject constructor(
     private val workoutDao: WorkoutDao,
     private val exerciseDao: ExerciseDao
@@ -119,8 +121,8 @@ class WorkoutRepositoryImpl @Inject constructor(
         return workoutDao.getLastPerformanceForExercise(exerciseId)
     }
 
-    override suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData> {
-        return workoutDao.getLastSetsForExercise(exerciseId)
+    override suspend fun getLastSetsForExercise(exerciseId: Long): List<HistoricalSet> {
+        return workoutDao.getLastSetsForExercise(exerciseId).map { HistoricalSet(it.weight, it.reps, it.rpe, it.restSeconds, it.setType, it.date) }
     }
 
     override suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, LastPerformance> {
@@ -131,12 +133,12 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<LastSetData>> {
+    override suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<HistoricalSet>> {
         if (exerciseIds.isEmpty()) return emptyMap()
         val results = workoutDao.getLastSetsForExercises(exerciseIds)
         return results.groupBy(
             keySelector = { it.exerciseId },
-            valueTransform = { LastSetData(weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, setType = it.setType, date = it.date) }
+            valueTransform = { HistoricalSet(weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, setType = it.setType, date = it.date) }
         )
     }
 

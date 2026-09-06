@@ -18,11 +18,11 @@ class VolumeCalculator @Inject constructor() {
     )
 
     enum class VolumeStatus(val label: String, val level: Int) {
-        INSUFFICIENT("Too low", 0),
-        MODERATE("Moderate", 1),
-        HIGH("High", 2),
-        OPTIMAL("Optimal", 3),
-        EXCESSIVE("Very high", 4)
+        INSUFFICIENT("Maintenance band (<10 sets)", 0),
+        MODERATE("Moderate band (10-13 sets)", 1),
+        OPTIMAL("Target band (14-17 sets)", 2),
+        HIGH("High band (18-21 sets)", 3),
+        EXCESSIVE("Upper threshold (>21 sets)", 4)
     }
 
     data class TrainingBalance(

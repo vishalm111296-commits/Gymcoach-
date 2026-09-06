@@ -73,11 +73,11 @@ class VolumeCalculatorTest {
     @Test
     fun calculateVtaperBalance_evaluates_status_properly() {
         val balance = VolumeCalculator.TrainingBalance(
-            latVolume = VolumeCalculator.MuscleVolume("Lats", 15, 15, 0, VolumeCalculator.VolumeStatus.OPTIMAL),
-            lateralDeltVolume = VolumeCalculator.MuscleVolume("Lateral Deltoid", 15, 15, 0, VolumeCalculator.VolumeStatus.OPTIMAL),
-            rearDeltVolume = VolumeCalculator.MuscleVolume("Rear Deltoid", 18, 18, 0, VolumeCalculator.VolumeStatus.HIGH),
-            upperChestVolume = VolumeCalculator.MuscleVolume("Upper Chest", 18, 18, 0, VolumeCalculator.VolumeStatus.HIGH),
-            upperBackVolume = VolumeCalculator.MuscleVolume("Upper Back", 18, 18, 0, VolumeCalculator.VolumeStatus.HIGH),
+            latVolume = VolumeCalculator.MuscleVolume("Lats", 20, 20, 0, VolumeCalculator.VolumeStatus.HIGH),
+            lateralDeltVolume = VolumeCalculator.MuscleVolume("Lateral Deltoid", 20, 20, 0, VolumeCalculator.VolumeStatus.HIGH),
+            rearDeltVolume = VolumeCalculator.MuscleVolume("Rear Deltoid", 15, 15, 0, VolumeCalculator.VolumeStatus.OPTIMAL),
+            upperChestVolume = VolumeCalculator.MuscleVolume("Upper Chest", 15, 15, 0, VolumeCalculator.VolumeStatus.OPTIMAL),
+            upperBackVolume = VolumeCalculator.MuscleVolume("Upper Back", 15, 15, 0, VolumeCalculator.VolumeStatus.OPTIMAL),
             bicepsVolume = VolumeCalculator.MuscleVolume("Biceps", 10, 10, 0, VolumeCalculator.VolumeStatus.MODERATE),
             tricepsVolume = VolumeCalculator.MuscleVolume("Triceps", 10, 10, 0, VolumeCalculator.VolumeStatus.MODERATE),
             quadricepsVolume = VolumeCalculator.MuscleVolume("Quadriceps", 10, 10, 0, VolumeCalculator.VolumeStatus.MODERATE),

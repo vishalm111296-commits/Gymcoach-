@@ -52,22 +52,25 @@ import com.gymcoach.app.ui.theme.VolumeChartGrid
 @Composable
 fun BodyMeasurementTrend(
     label: String,
-    currentValue: Double,
+    currentValue: Double?,
     unit: String,
     trend: TrendDirection,
     dataPoints: List<TrendPoint>,
     modifier: Modifier = Modifier,
     goodWhenDown: Boolean = false
 ) {
+    val isMeasured = currentValue != null && currentValue > 0.0
     val trendColor = when {
+        !isMeasured -> TextSecondary
         trend == TrendDirection.STABLE -> TextSecondary
         (trend == TrendDirection.DOWN) == goodWhenDown -> SuccessGreen
         else -> WarningAmber
     }
-    val trendIcon: ImageVector = when (trend) {
-        TrendDirection.UP -> Icons.AutoMirrored.Filled.TrendingUp
-        TrendDirection.DOWN -> Icons.AutoMirrored.Filled.TrendingDown
-        TrendDirection.STABLE -> Icons.AutoMirrored.Filled.TrendingFlat
+    val trendIcon: ImageVector = when {
+        !isMeasured -> Icons.AutoMirrored.Filled.TrendingFlat
+        trend == TrendDirection.UP -> Icons.AutoMirrored.Filled.TrendingUp
+        trend == TrendDirection.DOWN -> Icons.AutoMirrored.Filled.TrendingDown
+        else -> Icons.AutoMirrored.Filled.TrendingFlat
     }
 
     Card(
@@ -98,17 +101,26 @@ fun BodyMeasurementTrend(
 
             Spacer(Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.Bottom) {
+            if (isMeasured) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "%.1f".format(currentValue),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = unit,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary
+                    )
+                }
+            } else {
                 Text(
-                    text = "%.1f".format(currentValue),
+                    text = "Not measured",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = unit,
-                    style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
             }

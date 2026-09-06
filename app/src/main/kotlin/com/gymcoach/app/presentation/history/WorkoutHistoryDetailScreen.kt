@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -218,6 +219,23 @@ fun WorkoutHistoryDetailScreen(
 
                         // Workout Summary Card
                         WorkoutSummaryCard(workout = workout)
+
+                        // Perform Again button for completed workouts
+                        if (workout.workout.completed) {
+                            Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = { onEditClick(workoutId) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Filled.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Perform Again")
+                            }
+                        }
 
                         Spacer(Modifier.height(16.dp))
 

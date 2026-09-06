@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -93,6 +91,7 @@ fun WorkoutSessionScreen(
     val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
     val sessionVolume by viewModel.sessionVolume.collectAsState()
     val progressionRecommendations by viewModel.progressionRecommendations.collectAsState()
+    val completionStats by viewModel.completionStats.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -124,13 +123,72 @@ fun WorkoutSessionScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(32.dp)
+            ) {
                 Text(
                     text = "Workout Complete!",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(24.dp))
+
+                // Completion statistics
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Session Summary",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            CompletionStatItem(
+                                label = "Duration",
+                                value = formatDuration(completionStats.durationSeconds)
+                            )
+                            CompletionStatItem(
+                                label = "Exercises",
+                                value = "${completionStats.exerciseCount}"
+                            )
+                            CompletionStatItem(
+                                label = "Sets",
+                                value = "${completionStats.totalSets}"
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            CompletionStatItem(
+                                label = "Reps",
+                                value = "${completionStats.totalReps}"
+                            )
+                            CompletionStatItem(
+                                label = "Volume",
+                                value = "%.1f kg".format(completionStats.totalVolume)
+                            )
+                            CompletionStatItem(
+                                label = "Est. Calories",
+                                value = "%.0f".format(completionStats.totalVolume * 0.05)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
                 Button(onClick = onBackClick) {
                     Text("Go Back")
                 }
@@ -779,5 +837,22 @@ private fun SetRow(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CompletionStatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
     }
 }

@@ -162,111 +162,131 @@ fun ProgressDashboardScreen(
                     // Body Measurements
                     SectionHeader("Body Measurements")
                     Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        BodyMeasurementTrend(
-                            label = "Bodyweight",
-                            currentValue = state.latestWeight ?: 0.0,
-                            unit = "kg",
-                            trend = state.bodyweightDirection,
-                            dataPoints = state.bodyweightTrend,
-                            modifier = Modifier.weight(1f),
-                            goodWhenDown = false
-                        )
-                        BodyMeasurementTrend(
-                            label = "Waist",
-                            currentValue = state.latestWaist ?: 0.0,
-                            unit = "cm",
-                            trend = state.waistDirection,
-                            dataPoints = state.waistTrend,
-                            modifier = Modifier.weight(1f),
-                            goodWhenDown = true
-                        )
+                    if (state.latestWeight != null || state.latestWaist != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            BodyMeasurementTrend(
+                                label = "Bodyweight",
+                                currentValue = state.latestWeight,
+                                unit = "kg",
+                                trend = state.bodyweightDirection,
+                                dataPoints = state.bodyweightTrend,
+                                modifier = Modifier.weight(1f),
+                                goodWhenDown = false
+                            )
+                            BodyMeasurementTrend(
+                                label = "Waist",
+                                currentValue = state.latestWaist,
+                                unit = "cm",
+                                trend = state.waistDirection,
+                                dataPoints = state.waistTrend,
+                                modifier = Modifier.weight(1f),
+                                goodWhenDown = true
+                            )
+                        }
+                    } else {
+                        EmptyPlaceholder("Log your first measurement to see trends")
                     }
 
                     Spacer(Modifier.height(16.dp))
 
                     // Stats Overview
-                    StatsOverview(
-                        totalWorkouts = state.workoutCounts.total,
-                        todayWorkouts = state.workoutCounts.today,
-                        weekWorkouts = state.workoutCounts.week,
-                        monthWorkouts = state.workoutCounts.month,
-                        totalExercises = state.totalExercises,
-                        totalSets = state.totalSets,
-                        totalReps = state.totalReps,
-                        totalVolume = state.totalVolume,
-                        totalTrainingTimeMinutes = state.totalTrainingTimeMinutes
-                    )
+                    if (state.workoutCounts.total > 0) {
+                        StatsOverview(
+                            totalWorkouts = state.workoutCounts.total,
+                            todayWorkouts = state.workoutCounts.today,
+                            weekWorkouts = state.workoutCounts.week,
+                            monthWorkouts = state.workoutCounts.month,
+                            totalExercises = state.totalExercises,
+                            totalSets = state.totalSets,
+                            totalReps = state.totalReps,
+                            totalVolume = state.totalVolume,
+                            totalTrainingTimeMinutes = state.totalTrainingTimeMinutes
+                        )
+                    } else {
+                        EmptyPlaceholder("No workouts completed yet")
+                    }
 
                     Spacer(Modifier.height(16.dp))
 
                     // Workout Extremes
                     SectionHeader("Workout Extremes")
                     Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        state.longestWorkout?.let {
-                            StatCard(
-                                label = "Longest Workout",
-                                value = formatDuration(it.duration),
-                                modifier = Modifier.weight(1f)
-                            )
+                    if (state.longestWorkout != null || state.shortestWorkout != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            state.longestWorkout?.let {
+                                StatCard(
+                                    label = "Longest Workout",
+                                    value = formatDuration(it.duration),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            state.shortestWorkout?.let {
+                                StatCard(
+                                    label = "Shortest Workout",
+                                    value = formatDuration(it.duration),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
-                        state.shortestWorkout?.let {
-                            StatCard(
-                                label = "Shortest Workout",
-                                value = formatDuration(it.duration),
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                    } else {
+                        EmptyPlaceholder("Complete workouts to see your extremes")
                     }
 
                     Spacer(Modifier.height(16.dp))
 
                     // Training Time & Averages
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatCard(
-                            label = "Avg Duration",
-                            value = "${state.averageWorkoutDurationMinutes}m",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            label = "Avg Volume",
-                            value = "%.1f kg".format(state.averageWorkoutVolume),
-                            modifier = Modifier.weight(1f)
-                        )
+                    if (state.averageWorkoutDurationMinutes > 0 || state.averageWorkoutVolume > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatCard(
+                                label = "Avg Duration",
+                                value = "${state.averageWorkoutDurationMinutes}m",
+                                modifier = Modifier.weight(1f)
+                            )
+                            StatCard(
+                                label = "Avg Volume",
+                                value = "%.1f kg".format(state.averageWorkoutVolume),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        EmptyPlaceholder("Start logging workouts to see averages")
                     }
 
                     Spacer(Modifier.height(16.dp))
 
                     // Workout Frequency & Weekly Trend
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatCard(
-                            label = "Weekly Workouts",
-                            value = "${state.workoutFrequency}",
-                            modifier = Modifier.weight(1f)
-                        )
-                        val trendSymbol = when {
-                            state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
-                            state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
-                            else -> "\u2022 0.0%%"
+                    if (state.workoutFrequency > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatCard(
+                                label = "Weekly Workouts",
+                                value = "${state.workoutFrequency}",
+                                modifier = Modifier.weight(1f)
+                            )
+                            val trendSymbol = when {
+                                state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
+                                state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
+                                else -> "\u2022 0.0%%"
+                            }
+                            StatCard(
+                                label = "Weekly Trend",
+                                value = trendSymbol,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
-                        StatCard(
-                            label = "Weekly Trend",
-                            value = trendSymbol,
-                            modifier = Modifier.weight(1f)
-                        )
+                    } else {
+                        EmptyPlaceholder("No weekly data available")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -289,7 +309,7 @@ fun ProgressDashboardScreen(
                                 .height(200.dp)
                         )
                     } else {
-                        EmptyPlaceholder("No strength data yet")
+                        EmptyPlaceholder("Start logging workouts to track strength progression")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -307,7 +327,7 @@ fun ProgressDashboardScreen(
                             )
                         }
                     } else {
-                        EmptyPlaceholder("No muscle volume data yet")
+                        EmptyPlaceholder("Complete workouts to see muscle breakdown")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -323,7 +343,7 @@ fun ProgressDashboardScreen(
                                 .height(200.dp)
                         )
                     } else {
-                        EmptyPlaceholder("No volume data yet")
+                        EmptyPlaceholder("Start logging workouts to track volume history")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -340,7 +360,7 @@ fun ProgressDashboardScreen(
                             )
                         }
                     } else {
-                        EmptyPlaceholder("No PRs recorded yet")
+                        EmptyPlaceholder("Complete workouts to set personal records")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -356,7 +376,7 @@ fun ProgressDashboardScreen(
                             )
                         }
                     } else {
-                        EmptyPlaceholder("No weekly data yet")
+                        EmptyPlaceholder("No weekly data available")
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -372,7 +392,7 @@ fun ProgressDashboardScreen(
                             )
                         }
                     } else {
-                        EmptyPlaceholder("No monthly data yet")
+                        EmptyPlaceholder("No monthly data available")
                     }
 
                     Spacer(Modifier.height(16.dp))

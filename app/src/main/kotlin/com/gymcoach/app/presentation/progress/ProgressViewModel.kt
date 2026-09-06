@@ -110,9 +110,9 @@ class ProgressViewModel @Inject constructor(
             bodyMeasurementDao.insert(
                 BodyMeasurementEntity(
                     weightKg = weightKg,
-                    waistCm = waistCm ?: 0.0,
-                    chestCm = chestCm ?: 0.0,
-                    bodyFatPct = bodyFatPct ?: 0.0,
+                    waistCm = waistCm,
+                    chestCm = chestCm,
+                    bodyFatPct = bodyFatPct,
                     notes = notes
                 )
             )
@@ -187,16 +187,23 @@ class ProgressViewModel @Inject constructor(
                     }
 
                 val waistTrend = measurements
-                    .filter { it.waistCm > 0 }
+                    .filter { it.waistCm != null && it.waistCm > 0 }
                     .sortedBy { it.recordedAt }
                     .map { measurement ->
                         TrendPoint(
                             date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
-                            value = measurement.waistCm
+                            value = measurement.waistCm!!
                         )
                     }
 
                 val latest = measurements.firstOrNull()
+
+                // Use null instead of 0.0 for "not measured" fields so UI can
+                // distinguish between "user entered 0" and "user didn't measure".
+                val latestWeight = latest?.weightKg?.takeIf { it > 0 }
+                val latestWaist = latest?.waistCm?.takeIf { it > 0 }
+                val latestChest = latest?.chestCm?.takeIf { it > 0 }
+                val latestBodyFat = latest?.bodyFatPct?.takeIf { it > 0 }
 
                 val volumeHistory = analyticsRepository.getVolumeHistory()
                 val weekly = analyticsRepository.getWeeklySummary()
@@ -245,10 +252,10 @@ class ProgressViewModel @Inject constructor(
                     workoutCounts = analyticsRepository.getWorkoutCounts(),
                     longestWorkout = analyticsRepository.getLongestWorkout(),
                     shortestWorkout = analyticsRepository.getShortestWorkout(),
-                    latestWeight = latest?.weightKg,
-                    latestWaist = latest?.waistCm,
-                    latestChest = latest?.chestCm,
-                    latestBodyFat = latest?.bodyFatPct
+                    latestWeight = latestWeight,
+                    latestWaist = latestWaist,
+                    latestChest = latestChest,
+                    latestBodyFat = latestBodyFat
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),

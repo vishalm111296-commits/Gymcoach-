@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -84,6 +85,18 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
 
+    // Stats shown on the completion screen
+    data class CompletionStats(
+        val durationSeconds: Long = 0,
+        val totalVolume: Double = 0.0,
+        val totalSets: Int = 0,
+        val totalReps: Int = 0,
+        val exerciseCount: Int = 0
+    )
+
+    private val _completionStats = MutableStateFlow(CompletionStats())
+    val completionStats: StateFlow<CompletionStats> = _completionStats.asStateFlow()
+
     fun dismissError() {
         _error.value = null
     }
@@ -92,11 +105,19 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (workoutId != null) {
-                    workoutRepository.getWorkoutWithDetails(workoutId).collect {
-                        _currentWorkout.value = it
-                        loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
-                        calculateSessionVolume(it)
-                        startWorkoutTimer()
+                    // Load the workout once to check its status
+                    val snapshot = workoutRepository.getWorkoutWithDetails(workoutId).first()
+                    if (snapshot != null && (snapshot.workout.completed || snapshot.workout.status == "COMPLETED")) {
+                        // Workout is already completed — create a fresh copy with same exercises
+                        performAgainInternal(snapshot)
+                    } else {
+                        // Workout is incomplete — resume it
+                        workoutRepository.getWorkoutWithDetails(workoutId).collect {
+                            _currentWorkout.value = it
+                            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                            calculateSessionVolume(it)
+                            startWorkoutTimer()
+                        }
                     }
                 } else {
                     val existing = workoutRepository.getLatestIncompleteWorkout()
@@ -202,6 +223,42 @@ class WorkoutLoggingViewModel @Inject constructor(
         workoutRepository.getWorkoutWithDetails(id).collect {
             _currentWorkout.value = it
         }
+        startWorkoutTimer()
+    }
+
+    /**
+     * Create a fresh workout copying exercises from a completed workout.
+     * Does NOT copy set data — the user starts from scratch.
+     */
+    private suspend fun performAgainInternal(originalWorkout: WorkoutWithDetails) {
+        val now = Instant.now()
+        val workout = Workout(
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            notes = "",
+            completed = false,
+            status = "ACTIVE"
+        )
+        val newWorkoutId = workoutRepository.createWorkout(workout)
+
+        // Copy exercises from original workout (but not sets)
+        for (exercise in originalWorkout.exercises) {
+            workoutRepository.addExerciseToWorkout(
+                newWorkoutId,
+                exercise.exercise.id,
+                exercise.workoutExercise.orderIndex
+            )
+        }
+
+        // Load the new workout
+        workoutRepository.getWorkoutWithDetails(newWorkoutId).collect {
+            _currentWorkout.value = it
+            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+            calculateSessionVolume(it)
+        }
+        startWorkoutTimer()
     }
 
     fun updateNotes(notes: String) {
@@ -377,12 +434,35 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     fun completeWorkout() {
-        val workout = _currentWorkout.value?.workout ?: return
+        val workoutData = _currentWorkout.value ?: return
+        val workout = workoutData.workout
         // Terminal-state guard: refuse to complete an already-completed,
         // abandoned, or otherwise terminal workout.
         if (workout.completed || workout.status == "COMPLETED" || workout.status == "ABANDONED") return
         workoutTimerJob?.cancel()
         restTimer.stop()
+
+        // Capture completion statistics before finalizing
+        var totalSets = 0
+        var totalReps = 0
+        var totalVolume = 0.0
+        for (we in workoutData.exercises) {
+            for (set in we.sets) {
+                if (set.completed) {
+                    totalSets++
+                    totalReps += set.reps
+                    totalVolume += set.weight * set.reps
+                }
+            }
+        }
+        _completionStats.value = CompletionStats(
+            durationSeconds = _elapsedSeconds.value,
+            totalVolume = totalVolume,
+            totalSets = totalSets,
+            totalReps = totalReps,
+            exerciseCount = workoutData.exercises.size
+        )
+
         val now = Instant.now()
         val duration = now.epochSecond - workout.startTime.epochSecond
         val updated = workout.copy(

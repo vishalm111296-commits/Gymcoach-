@@ -180,6 +180,7 @@ class WorkoutHistoryViewModel @Inject constructor(
                 workoutRepository.deleteWorkout(workoutId)
             }
         }
+        _deleteTarget.value = null
     }
 
     fun cancelDelete() {

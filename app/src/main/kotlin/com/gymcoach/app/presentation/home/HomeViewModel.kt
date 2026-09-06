@@ -41,11 +41,9 @@ data class HomeUiState(
     val vtaperBars: List<VtaperMuscleData> = emptyList()
 )
 
-/** Evidence-based optimal band floor (14-17 weekly sets) used as the bar target. */
-private const val TARGET_WEEKLY_SETS = 14
+private const val TARGET_WEEKLY_SETS = 10
 private const val ESTIMATED_WORK_SECONDS_PER_SET = 40
 
-/** Dashboard bars mapped from the generator's muscle vocabulary to user-facing groups. */
 private val VTAPER_BAR_SOURCES = listOf(
     "Lats" to listOf("Back"),
     "Lateral Delts" to listOf("Lateral Deltoid"),
@@ -66,12 +64,10 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    analyticsRepository: AnalyticsRepository
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-
     private val _prCount = MutableStateFlow(0)
 
     init {
@@ -82,26 +78,20 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             programRepository.getActiveProgram()
                 .flatMapLatest { program ->
-                    if (program == null) {
-                        flowOf(null)
-                    } else {
-                        programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
-                            val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
-                            programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
-                                ProgramCore(program, pickToday(nonRest), days, byDay)
-                            }
+                    if (program == null) flowOf(null)
+                    else programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
+                        val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
+                        programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
+                            ProgramCore(program, pickToday(nonRest), days, byDay)
                         }
                     }
                 }
                 .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
-                }
-                .collect { state -> _uiState.value = state }
+                .combine(_prCount.asStateFlow()) { pair, prCount -> buildUiState(pair.first, pair.second, prCount) }
+                .collect { _uiState.value = it }
         }
     }
 
-    /** Deterministic daily rotation through the program's training days. */
     private fun pickToday(nonRestDays: List<ProgramDayEntity>): ProgramDayEntity? {
         if (nonRestDays.isEmpty()) return null
         val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
@@ -122,12 +112,7 @@ class HomeViewModel @Inject constructor(
             )
         }
 
-        val completedThisWeek = workouts.count {
-            it.completed && it.date.toEpochMilli() >= weekStartMillis()
-        }
-
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
+        val completedThisWeek = workouts.count { it.completed && it.date.toEpochMilli() >= weekStartMillis() }
         val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
@@ -136,23 +121,18 @@ class HomeViewModel @Inject constructor(
                 target = TARGET_WEEKLY_SETS
             )
         }
-        val insight = volumeCalculator
-            .calculateVtaperBalance(buildTrainingBalance(plannedSets))
-            .overallBalance
 
+        val insight = volumeCalculator.calculateVtaperBalance(buildTrainingBalance(plannedSets)).overallBalance
         val todayExercises = core.todayDay?.let { core.exercisesByDay[it.id] }.orEmpty()
-        val estimatedDuration = if (todayExercises.isEmpty()) {
-            0
-        } else {
-            todayExercises.sumOf { it.sets * (it.restSeconds + ESTIMATED_WORK_SECONDS_PER_SET) } / 60
-        }
+        val estimatedDuration = if (todayExercises.isEmpty()) 0
+        else todayExercises.sumOf { it.sets * (it.restSeconds + ESTIMATED_WORK_SECONDS_PER_SET) } / 60
 
         return HomeUiState(
             isLoading = false,
             hasProgram = true,
             todayWorkout = TodayWorkoutUiModel(
                 name = core.todayDay?.name?.takeIf { it.isNotBlank() } ?: "Training Session",
-                targetMuscles = targetMusclesMuscles(core.todayDay),
+                targetMuscles = core.todayDay?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
                 exerciseCount = todayExercises.size,
                 estimatedDurationMin = estimatedDuration
             ),
@@ -164,10 +144,6 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
-        day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
-
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
     private fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
         days: List<ProgramDayEntity>
@@ -175,7 +151,7 @@ class HomeViewModel @Inject constructor(
         val result = mutableMapOf<String, Int>()
         for (day in days) {
             val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
+            if (daySets <= 0) continue
             day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
                 result[muscle] = (result[muscle] ?: 0) + daySets
             }
@@ -183,28 +159,18 @@ class HomeViewModel @Inject constructor(
         return result
     }
 
-    /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */
-    private fun statusFor(weeklySets: Int): VolumeCalculator.VolumeStatus = when {
-        weeklySets < 10 -> VolumeCalculator.VolumeStatus.INSUFFICIENT
-        weeklySets < 14 -> VolumeCalculator.VolumeStatus.MODERATE
-        weeklySets < 18 -> VolumeCalculator.VolumeStatus.OPTIMAL
-        weeklySets < 22 -> VolumeCalculator.VolumeStatus.HIGH
-        else -> VolumeCalculator.VolumeStatus.EXCESSIVE
-    }
-
     private fun volume(name: String, planned: Map<String, Int>): VolumeCalculator.MuscleVolume {
         val sets = planned[name] ?: 0
-        return VolumeCalculator.MuscleVolume(
-            muscleName = name,
-            weeklySets = sets,
-            directSets = sets,
-            indirectSets = 0,
-            status = statusFor(sets)
-        )
+        val status = when {
+            sets < 6 -> VolumeCalculator.VolumeStatus.LOW
+            sets < 10 -> VolumeCalculator.VolumeStatus.MODERATE
+            else -> VolumeCalculator.VolumeStatus.HIGH
+        }
+        return VolumeCalculator.MuscleVolume(name, sets, sets, 0, status)
     }
 
-    private fun buildTrainingBalance(planned: Map<String, Int>): VolumeCalculator.TrainingBalance {
-        return VolumeCalculator.TrainingBalance(
+    private fun buildTrainingBalance(planned: Map<String, Int>): VolumeCalculator.TrainingBalance =
+        VolumeCalculator.TrainingBalance(
             latVolume = volume("Back", planned),
             lateralDeltVolume = volume("Lateral Deltoid", planned),
             rearDeltVolume = volume("Rear Deltoid", planned),
@@ -218,7 +184,6 @@ class HomeViewModel @Inject constructor(
             calvesVolume = volume("Calves", planned),
             coreVolume = volume("Core", planned)
         )
-    }
 
     private fun weekStartMillis(): Long {
         val calendar = Calendar.getInstance()

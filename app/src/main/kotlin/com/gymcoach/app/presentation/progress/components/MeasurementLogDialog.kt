@@ -40,6 +40,9 @@ fun MeasurementLogDialog(
     var bodyFat by remember { mutableStateOf(latestBodyFat?.let { "%.1f".format(it) } ?: "") }
     var notes by remember { mutableStateOf("") }
 
+    val parsedWeight = weight.toDoubleOrNull()
+    val isWeightValid = parsedWeight != null && parsedWeight > 0
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Log Measurement") },
@@ -88,13 +91,13 @@ fun MeasurementLogDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val w = weight.toDoubleOrNull() ?: 0.0
+                    val w = parsedWeight ?: 0.0
                     val waistVal = waist.toDoubleOrNull()
                     val chestVal = chest.toDoubleOrNull()
                     val bf = bodyFat.toDoubleOrNull()
                     onSave(w, waistVal, chestVal, bf, notes)
                 },
-                enabled = weight.toDoubleOrNull() != null && (weight.toDoubleOrNull() ?: 0.0) > 0
+                enabled = isWeightValid
             ) {
                 Text("Save")
             }

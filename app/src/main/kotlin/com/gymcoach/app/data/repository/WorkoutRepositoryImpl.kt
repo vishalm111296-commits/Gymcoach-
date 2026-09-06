@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
 
+internal inline fun <T, R> Flow<List<T>>.mapList(crossinline transform: (T) -> R): Flow<List<R>> =
+    map { list -> list.map { transform(it) } }
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutRepositoryImpl @Inject constructor(
     private val workoutDao: WorkoutDao,
@@ -33,9 +36,7 @@ class WorkoutRepositoryImpl @Inject constructor(
 ) : WorkoutRepository {
 
     override fun getAllWorkouts(): Flow<List<Workout>> {
-        return workoutDao.getAllWorkouts().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getAllWorkouts().mapList { it.toDomain() }
     }
 
     override fun getWorkoutWithDetails(workoutId: Long): Flow<WorkoutWithDetails?> {
@@ -143,39 +144,27 @@ class WorkoutRepositoryImpl @Inject constructor(
     // ─── History ───────────────────────────────────────────────────────
 
     override fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsWithStats().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getCompletedWorkoutsWithStats().mapList { it.toDomain() }
     }
 
     override fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getWorkoutsInDateRangeWithStats(startDate, endDate).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getWorkoutsInDateRangeWithStats(startDate, endDate).mapList { it.toDomain() }
     }
 
     override fun getWorkoutsByVolumeDesc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsWithStatsByVolumeDesc().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getCompletedWorkoutsWithStatsByVolumeDesc().mapList { it.toDomain() }
     }
 
     override fun getWorkoutsByVolumeAsc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsWithStatsByVolumeAsc().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getCompletedWorkoutsWithStatsByVolumeAsc().mapList { it.toDomain() }
     }
 
     override fun getWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsWithStatsByDurationDesc().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getCompletedWorkoutsWithStatsByDurationDesc().mapList { it.toDomain() }
     }
 
     override fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>> {
-        return workoutDao.getCompletedWorkoutsWithStatsByDurationAsc().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return workoutDao.getCompletedWorkoutsWithStatsByDurationAsc().mapList { it.toDomain() }
     }
 
     override suspend fun searchWorkouts(query: String): List<WorkoutWithStats> {

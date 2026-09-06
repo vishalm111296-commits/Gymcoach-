@@ -1,5 +1,6 @@
 package com.gymcoach.app.data.repository
 
+import com.gymcoach.app.core.program.VolumeCalculator.MuscleAssignment
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
@@ -44,6 +45,20 @@ class ExerciseRepositoryImpl @Inject constructor(
 
     override suspend fun deleteExercise(exercise: Exercise) {
         exerciseDao.delete(exercise.toEntity())
+    }
+
+    override suspend fun getMuscleAssignmentsWithRoles(): Map<Long, List<MuscleAssignment>> {
+        val rows = exerciseDao.getAllMuscleAssignments()
+        return rows
+            .groupBy { it.exerciseId }
+            .mapValues { (_, assignments) ->
+                assignments.map { row ->
+                    MuscleAssignment(
+                        muscleName = row.muscleName,
+                        role = VolumeCalculator.MuscleRole.valueOf(row.role.uppercase())
+                    )
+                }
+            }
     }
 
     private fun ExerciseEntity.toDomain() = Exercise(

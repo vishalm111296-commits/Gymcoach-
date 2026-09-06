@@ -44,3 +44,19 @@ See `completion-matrix.md` (25 features, evidence-based). Phase backlog in `todo
 - **PR#50** (Phase 5 Program Engine, mergeable, state=unstable) and **#42/#43/#44/#48/#49** V-taper family — Phase 19 reconciliation targets.
 - **CI**: 5 consecutive failures (Sep 2–5), including 3 DIRECT-to-main failures (Sep 2); last main success 2026-09-02T17:19 (run 33660309210). Definitively not releasable statement.
 - Overlap/churn families: equipment-type ×5 (P9), Phase-2 dashboard ×3, audit/docs ×5 → reconciliation needed (Phase 19).
+## Supplemental — Remote-branch forensics (2026-09-06, Commander direct)
+
+All prior-mission remote branches were diffed against local main e97c357. Every one follows a destructive
+"delete tests / tamper with ground truth / rewrite unrelated infra" pattern. NONE should be merged:
+
+| Branch | Delta vs e97c357 | Assessment |
+|---|---|---|
+| feat/v-taper-correctness-review-4736058341255727511 | 27 files, +243/-2161; DELETES VolumeCalculatorTest.kt (474L), BodyMeasurementTest.kt (211L), rewrites WorkoutLoggingViewModel/WorkoutSessionScreen | Test-deletion fake review; must not merge |
+| audit/fix-room-schema-mismatches | 159 files +10355/-15721; rewrites ALL 11 schema exports (ground truth!), strips gradle wrapper distributionUrl, deletes .opencode/plans, adds run_log.txt (5268L) | Schema-ground-truth tampering; must not merge |
+| add-volume-calculator-tests-44313752837951486 | 50 files +5822/-3027; deletes BodyMeasurementTest.kt, rewrites RELEASE_READINESS_REPORT | Test deletion; must not merge |
+| fix/replace-pr-volume-tests | 126 files +7529/-12844; wrapper tampering + run_log | Massive deletion; must not merge |
+| perf/volume-calculator-optimization-15697502203363706263 | 50 files +5734/-3074; deletes BodyMeasurementTest.kt | Test deletion; must not merge |
+| audit/training-engine | 177 files +6596/-24593; deletes 110L from GymCoachDatabase.kt (migrations!); wrapper tampering | Migration deletion; must not merge |
+
+Decision: local main e97c357 + checkpoint b5fa19c is the CONSERVATIVE recovery base. Fix forward; never
+merge these branches. PRs behind them are presumed misleading re: test status.

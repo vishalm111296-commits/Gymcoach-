@@ -1,8 +1,9 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.temporal.WeekFields
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,8 +12,19 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleVolume(
         val muscleName: String,
-        val weeklySets: Int,
+        /**
+         * Average weighted credits per ISO week across the observed weeks.
+         *
+         * Credit model: PRIMARY=1.0, SECONDARY=0.5, STABILIZER=0.25. The raw
+         * direct+indirect set total alone is not evidence-meaningful because the
+         * ACSM bands (10/14/18/22 sets/week) are per-week thresholds; this field
+         * normalizes multi-week history back to a single average week so that
+         * classification compares like with like.
+         */
+        val weeklyVolume: Double,
+        /** Raw completed normal sets in which this muscle was PRIMARY. */
         val directSets: Int,
+        /** Raw completed normal sets in which this muscle was SECONDARY or STABILIZER. */
         val indirectSets: Int,
         val status: VolumeStatus
     )
@@ -73,6 +85,10 @@ class VolumeCalculator @Inject constructor() {
      * Calculate weekly volume per muscle group with ISO-week bucketing.
      * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
      *
+     * Sets are bucketed into ISO weeks ([isoWeekKey]); each muscle's weighted
+     * credits are averaged across the observed ISO weeks into MuscleVolume.weeklyVolume,
+     * and classification is applied to that per-week average.
+     *
      * @param completedSets sets enriched with exercise ID and workout date context
      * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
      */
@@ -93,6 +109,8 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
+        // Weighted credits summed over the observed weeks, then normalized to an
+        // average week: this is the source of MuscleVolume.weeklyVolume.
         val avgWeekly = mutableMapOf<String, Double>()
         for ((_, weekMap) in weekBuckets) {
             for ((muscle, credits) in weekMap) {
@@ -121,10 +139,10 @@ class VolumeCalculator @Inject constructor() {
 
         fun vol(muscle: String) = MuscleVolume(
             muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
+            weeklyVolume = avgWeekly[muscle] ?: 0.0,
             directSets = directSetsByMuscle[muscle] ?: 0,
             indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
+            status = classify(avgWeekly[muscle] ?: 0.0)
         )
 
         return TrainingBalance(
@@ -148,21 +166,29 @@ class VolumeCalculator @Inject constructor() {
         return VtaperBalance(primary, secondary, text)
     }
 
-    private fun classify(sets: Int): VolumeStatus {
+    /** Evidence bands are per-week; thresholds applied to the averaged weeklyVolume. */
+    private fun classify(weeklyVolume: Double): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
-            sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
-            sets < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
-            sets < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
-            else -> VolumeStatus.EXCESSIVE          // > 21 = excessive per evidence
+            weeklyVolume < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
+            weeklyVolume < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
+            weeklyVolume < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
+            weeklyVolume < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
+            else -> VolumeStatus.EXCESSIVE                  // > 21 = excessive per evidence
         }
     }
 
+    /**
+     * ISO-8601 week key: weekBasedYear * 100 + weekOfWeekBasedYear, computed in UTC.
+     *
+     * The UTC decision: epoch millis describe an absolute instant, and bucketing at
+     * UTC keeps the week independent of the device's local time zone — a workout
+     * logged late at night locally must not shift into the previous/next ISO week
+     * just because the local calendar flipped. WeekFields.ISO gives the true ISO
+     * Monday-start, 4-day-minimum week (Calendar.WEEK_OF_YEAR is locale-dependent).
+     */
     private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+        val weekFields = WeekFields.ISO
+        val zoned = Instant.ofEpochMilli(dateMs).atZone(ZoneOffset.UTC)
+        return zoned.get(weekFields.weekBasedYear()) * 100 + zoned.get(weekFields.weekOfWeekBasedYear())
     }
 }

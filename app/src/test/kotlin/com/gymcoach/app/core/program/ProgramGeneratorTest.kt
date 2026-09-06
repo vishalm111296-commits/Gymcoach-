@@ -2,6 +2,7 @@ package com.gymcoach.app.core.program
 
 import com.gymcoach.app.core.exercise.EquipmentAvailability
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.PrimaryMuscleRow
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.domain.repository.ReadinessRepository
@@ -22,6 +23,12 @@ import org.junit.Test
  * Regression context: ranking previously summed ALL four vtaper scores, so a
  * candidate whose aggregate was inflated by irrelevant axes (e.g. lat score on
  * a lateral-deltoid candidate) outranked the true specialist for that slot.
+ *
+ * Slot matching regression: slots are display names ("Lateral Deltoid",
+ * "Hamstrings", ...) while ExerciseEntity.secondaryMuscles holds comma-joined
+ * TAXONOMY ids ("lateral_deltoid", ...). The underscore-vs-space gap meant
+ * PrimaryMuscle-consulting exercises (a curl is a biceps exercise, a leg curl
+ * a hamstrings exercise) were never attributed to their real slot.
  */
 class ProgramGeneratorTest {
 
@@ -74,12 +81,22 @@ class ProgramGeneratorTest {
         dao = mockk()
         readinessRepository = mockk()
         generator = ProgramGenerator(dao, EquipmentAvailability(), readinessRepository)
+        // By default no authoritative primary-muscle data: slot matching then relies on
+        // category + secondary taxonomy tokens + V-taper scores alone.
+        coEvery { dao.getPrimaryMusclesByExercise() } returns emptyList()
     }
 
-    private suspend fun generate(equipmentType: String, readinessEntity: ReadinessEntity? = null): ProgramGenerator.GeneratedProgram {
-        coEvery { dao.getAll() } returns flowOf(all())
+    private suspend fun generate(
+        equipmentType: String,
+        readinessEntity: ReadinessEntity? = null,
+        frequency: Int = 4,
+        exercises: List<ExerciseEntity> = all(),
+        primaryRows: List<PrimaryMuscleRow> = emptyList()
+    ): ProgramGenerator.GeneratedProgram {
+        coEvery { dao.getAll() } returns flowOf(exercises)
+        coEvery { dao.getPrimaryMusclesByExercise() } returns primaryRows
         coEvery { readinessRepository.getLatestReadiness() } returns flowOf(readinessEntity)
-        return generator.generateProgram(4, equipmentType, "vtaper")
+        return generator.generateProgram(frequency, equipmentType, "vtaper")
     }
 
     @Test
@@ -162,5 +179,91 @@ class ProgramGeneratorTest {
         assertTrue("All sets should be 3 (fallback)", sets.all { it == 3 })
         assertTrue("All RPE should be 7.5 (fallback)", rpe.all { it == 7.5 })
         assertTrue("Description should mention fallback", program.description.contains("3.0"))
+    }
+
+    @Test
+    fun `curl with primary biceps lands in Biceps slot and never in Hamstrings`() = runTest {
+        val curl = ExerciseEntity(
+            id = 10, name = "Dumbbell Curl", description = "", muscleGroup = "Arms",
+            equipment = "dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "forearms"
+        )
+        val program = generate(
+            "gym",
+            exercises = listOf(curl),
+            primaryRows = listOf(PrimaryMuscleRow(10, "biceps"))
+        )
+        val upperA = program.days.first { it.name == "Upper A" }
+        val lowerDays = program.days.filter { it.name.startsWith("Lower") }
+
+        assertTrue(
+            "Curl (primary biceps) must match the Biceps slot",
+            upperA.exercises.any { it.exerciseName == "Dumbbell Curl" }
+        )
+        lowerDays.forEach { day ->
+            assertFalse(
+                "Curl must not leak into ${day.name} (no hamstrings involvement)",
+                day.exercises.any { it.exerciseName == "Dumbbell Curl" }
+            )
+        }
+    }
+
+    @Test
+    fun `primary hamstrings leg curl outranks secondary-only squat in Hamstrings slot`() = runTest {
+        val legCurl = ExerciseEntity(
+            id = 20, name = "Dumbbell Leg Curl", description = "", muscleGroup = "Legs",
+            equipment = "dumbbell", difficulty = "Beginner",
+            secondaryMuscles = ""
+        )
+        val squat = ExerciseEntity(
+            id = 21, name = "Goblet Squat", description = "", muscleGroup = "Legs",
+            equipment = "dumbbell", difficulty = "Beginner",
+            secondaryMuscles = "hamstrings",
+            vtaperLat = 5
+        )
+        val program = generate(
+            "gym",
+            exercises = listOf(legCurl, squat),
+            primaryRows = listOf(
+                PrimaryMuscleRow(20, "hamstrings"),
+                PrimaryMuscleRow(21, "quadriceps")
+            )
+        )
+        // Lower B slots start with Hamstrings, so both candidates compete for it:
+        // leg curl (primary +10) must outrank squat (secondary-only +4).
+        val lowerB = program.days.first { it.name == "Lower B" }
+        val names = lowerB.exercises.map { it.exerciseName }
+        assertTrue("Leg Curl expected in Lower B", "Dumbbell Leg Curl" in names)
+        assertTrue("Squat expected in Lower B (secondary hamstrings)", "Goblet Squat" in names)
+        assertTrue(
+            "Primary-hamstrings Leg Curl must rank ahead of secondary-only Squat",
+            names.indexOf("Dumbbell Leg Curl") < names.indexOf("Goblet Squat")
+        )
+    }
+
+    @Test
+    fun `lower back exercise never matches Chest slot`() = runTest {
+        val backExt = ExerciseEntity(
+            id = 30, name = "Back Extension", description = "", muscleGroup = "Core",
+            equipment = "bodyweight", difficulty = "Beginner",
+            secondaryMuscles = "lower_back"
+        )
+        val program = generate(
+            "gym",
+            frequency = 5,
+            exercises = listOf(backExt),
+            primaryRows = listOf(PrimaryMuscleRow(30, "lower_back"))
+        )
+        val pushDay = program.days.first { it.name == "Push" }
+        val pullDay = program.days.first { it.name == "Pull" }
+
+        assertFalse(
+            "lower_back-only exercise must not match the Chest slot",
+            pushDay.exercises.any { it.exerciseName == "Back Extension" }
+        )
+        assertTrue(
+            "lower_back-only exercise must still match the Back slot",
+            pullDay.exercises.any { it.exerciseName == "Back Extension" }
+        )
     }
 }

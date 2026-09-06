@@ -2,10 +2,12 @@ package com.gymcoach.app.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.home.VtaperAttribution
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
@@ -46,12 +48,17 @@ data class HomeUiState(
 private const val TARGET_WEEKLY_SETS = 14
 private const val ESTIMATED_WORK_SECONDS_PER_SET = 40
 
-/** Dashboard bars mapped from the generator's muscle vocabulary to user-facing groups. */
+/**
+ * Dashboard bars: user-facing label to the attribution/balance muscle key.
+ * Keys must match VtaperAttribution contributor names (labeled "Lats",
+ * "Lateral Deltoid", "Rear Deltoid", "Upper Chest") plus the "Legs" bar pseudo-muscle.
+ */
 private val VTAPER_BAR_SOURCES = listOf(
-    "Lats" to listOf("Back"),
-    "Lateral Delts" to listOf("Lateral Deltoid"),
-    "Chest" to listOf("Chest", "Upper Chest"),
-    "Legs" to listOf("Quadriceps", "Hamstrings", "Glutes", "Calves")
+    "Lats" to "Lats",
+    "Lateral Delts" to "Lateral Deltoid",
+    "Rear Delts" to "Rear Deltoid",
+    "Chest" to "Upper Chest",
+    "Legs" to "Legs"
 )
 
 private data class ProgramCore(
@@ -75,7 +82,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _prCount = MutableStateFlow(0)
-    private val _exerciseMuscleMap = MutableStateFlow<Map<Long, String>>(emptyMap())
+    private val _exercises = MutableStateFlow<Map<Long, Exercise>>(emptyMap())
 
     init {
         viewModelScope.launch {
@@ -84,7 +91,7 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch {
             exerciseRepository.getAllExercises().collect { exercises ->
-                _exerciseMuscleMap.value = exercises.associate { it.id to it.muscleGroup }
+                _exercises.value = exercises.associateBy { it.id }
             }
         }
         viewModelScope.launch {
@@ -102,8 +109,8 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow().combine(_exerciseMuscleMap.asStateFlow()) { pr, mm -> pr to mm }) { pair, prAndMm ->
-                    buildUiState(pair.first, pair.second, prAndMm.first, prAndMm.second)
+                .combine(_prCount.asStateFlow().combine(_exercises.asStateFlow()) { pr, exercises -> pr to exercises }) { pair, prAndExercises ->
+                    buildUiState(pair.first, pair.second, prAndExercises.first, prAndExercises.second)
                 }
                 .collect { state -> _uiState.value = state }
         }
@@ -120,7 +127,7 @@ class HomeViewModel @Inject constructor(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
         prCount: Int,
-        exerciseMuscleMap: Map<Long, String> = emptyMap()
+        exercises: Map<Long, Exercise> = emptyMap()
     ): HomeUiState {
         if (core == null) {
             return HomeUiState(
@@ -135,18 +142,19 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays, exerciseMuscleMap)
-        val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
+        // ponytail: bars/insight use planned volume because workout_sets lacks
+        // exerciseId+date columns; once added, swap to
+        // volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
+        val plannedVolume = plannedMuscleVolume(core.exercisesByDay, core.allDays, exercises)
+        val bars = VTAPER_BAR_SOURCES.map { (label, muscleKey) ->
             VtaperMuscleData(
                 label = label,
-                current = sources.sumOf { plannedSets[it] ?: 0 },
+                current = plannedVolume[muscleKey] ?: 0,
                 target = TARGET_WEEKLY_SETS
             )
         }
         val insight = volumeCalculator
-            .calculateVtaperBalance(buildTrainingBalance(plannedSets))
+            .calculateVtaperBalance(buildTrainingBalance(plannedVolume))
             .overallBalance
 
         val todayExercises = core.todayDay?.let { core.exercisesByDay[it.id] }.orEmpty()
@@ -176,46 +184,52 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle, attributed per-exercise via exerciseId→muscleGroup mapping. */
-    private fun plannedWeeklySets(
+    /**
+     * Planned weekly sets per balance/dashboard muscle, attributed per-exercise via
+     * [VtaperAttribution] (no day-level broadcast). Unknown exercise ids are skipped.
+     */
+    private fun plannedMuscleVolume(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
         days: List<ProgramDayEntity>,
-        exerciseMuscleMap: Map<Long, String>
+        exercises: Map<Long, Exercise>
     ): Map<String, Int> {
         val result = mutableMapOf<String, Int>()
         for (day in days) {
             val dayExercises = exercisesByDay[day.id] ?: continue
             for (exercise in dayExercises) {
-                val muscleGroup = exerciseMuscleMap[exercise.exerciseId] ?: continue
-                result[muscleGroup] = (result[muscleGroup] ?: 0) + exercise.sets
+                val exerciseMeta = exercises[exercise.exerciseId] ?: continue
+                for (muscle in VtaperAttribution.contributors(exerciseMeta)) {
+                    result[muscle] = (result[muscle] ?: 0) + exercise.sets
+                }
             }
         }
         return result
     }
 
     /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */
-    private fun statusFor(weeklySets: Int): VolumeCalculator.VolumeStatus = when {
-        weeklySets < 10 -> VolumeCalculator.VolumeStatus.INSUFFICIENT
-        weeklySets < 14 -> VolumeCalculator.VolumeStatus.MODERATE
-        weeklySets < 18 -> VolumeCalculator.VolumeStatus.OPTIMAL
-        weeklySets < 22 -> VolumeCalculator.VolumeStatus.HIGH
+    private fun statusFor(weeklyVolume: Double): VolumeCalculator.VolumeStatus = when {
+        weeklyVolume < 10 -> VolumeCalculator.VolumeStatus.INSUFFICIENT
+        weeklyVolume < 14 -> VolumeCalculator.VolumeStatus.MODERATE
+        weeklyVolume < 18 -> VolumeCalculator.VolumeStatus.OPTIMAL
+        weeklyVolume < 22 -> VolumeCalculator.VolumeStatus.HIGH
         else -> VolumeCalculator.VolumeStatus.EXCESSIVE
     }
 
+    /** Planned volume projection: per-week credits on the balance's muscle keys. */
     private fun volume(name: String, planned: Map<String, Int>): VolumeCalculator.MuscleVolume {
         val sets = planned[name] ?: 0
         return VolumeCalculator.MuscleVolume(
             muscleName = name,
-            weeklySets = sets,
+            weeklyVolume = sets.toDouble(),
             directSets = sets,
             indirectSets = 0,
-            status = statusFor(sets)
+            status = statusFor(sets.toDouble())
         )
     }
 
     private fun buildTrainingBalance(planned: Map<String, Int>): VolumeCalculator.TrainingBalance {
         return VolumeCalculator.TrainingBalance(
-            latVolume = volume("Back", planned),
+            latVolume = volume("Lats", planned),
             lateralDeltVolume = volume("Lateral Deltoid", planned),
             rearDeltVolume = volume("Rear Deltoid", planned),
             upperChestVolume = volume("Upper Chest", planned),

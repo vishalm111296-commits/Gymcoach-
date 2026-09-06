@@ -1,98 +1,19 @@
 # Mission Status
 
 ## Progress
-- .opencode/todo.md: 13/13 milestones completed (100%)
-- Issues: 0 unresolved
-- Workers: 0 active (all completed)
-- Verification Strategy: Local implementation via Worker agents
-- Execution Status: COMPLETE
+- .opencode/todo.md: M5 audits 5x [x], M6: W1 prod+tests [x], W2 [x], W3 [x], W4/W5 in_progress, verification pass pending
+- Issues: 0 unresolved sync issues
+- Workers: 1 active (W5 migration rebase task_f7d09d71)
+- Verification Strategy: single gradle pass (qemu AAPT2) after all fixes land, then Reviewer
+- Execution Status: running
 
-## Git Commits Made
-1. `b673d7c` - fix: implement volume attribution fix and add VolumeCalculator tests
-2. `5baaa93` - fix: VolumeCalculator directSetsByMuscle counting exercises instead of sets
-3. `fd5435b` - refactor: optimize VolumeCalculator with imperative loops
-4. `fba2e0b` - feat: implement empty state handling and workout improvements
-5. `def9594` - feat: add defensive database migration and improve progress tracking
-6. `a9a4b71` - docs: add final verification report for GymCoach V1 completion
+## Current Phase
+M6 core-fix execution (3 of 4 fix groups landed verified; migration rebase in 3rd attempt)
 
-## Completed Work
-### M1: Volume Calculator - COMPLETE ✅
-- [x] HomeViewModel plannedWeeklySets() fixed - now attributes per-exercise not per-day
-- [x] ExerciseRepository injected to resolve exerciseId→muscleGroup mapping
-- [x] VolumeCalculatorTest.kt created with 20+ test cases
-- [x] VolumeCalculator refactored with imperative loops
-
-### M2: Data/Room Integrity - COMPLETE ✅
-- [x] Schema v11 verified as correct
-- [x] Added defensive MIGRATION_11_12 with column-existence checks
-
-### M3: Onboarding + Profile - COMPLETE ✅
-- [x] Verified by Worker: all data persisted correctly
-- [x] Profile editing works (read-only in V1)
-- [x] Equipment selection maps correctly
-
-### M4: Exercise Library - COMPLETE ✅
-- [x] Verified by Worker: search, filters, favorites, detail, substitutions work
-- [x] Empty states handled correctly
-
-### M5: Workout Core Loop - COMPLETE ✅
-- [x] WorkoutLoggingViewModel: add rest timer, set types, previous performance
-- [x] WorkoutSessionScreen: add set type chips, rest timer overlay, progression cards
-
-### M6: Workout History - COMPLETE ✅
-- [x] WorkoutHistoryDetailScreen: add Perform Again and Edit actions
-- [x] WorkoutHistoryViewModel: add performAgain() method
-
-### M7: Progress + Analytics - COMPLETE ✅
-- [x] ProgressDashboardScreen: add empty states for all metrics
-- [x] ProgressViewModel: add empty state flags and better null handling
-
-### M8: Body Measurements - COMPLETE ✅
-- [x] BodyMeasurementTrend: handle null values (show 'Not measured' instead of 0.0)
-- [x] BodyMeasurementTest.kt created
-
-### M9: Readiness / Recovery - COMPLETE ✅
-- [x] Verified by Worker: honest/conservative language, no clinical claims
-- [x] ProgramGenerator correctly adjusts sets/RPE based on readiness
-
-### M10: Camera / Form Analysis - COMPLETE ✅
-- [x] Verified by Worker: CameraX setup, frame processing pipeline
-- [x] Model loading: downloads 5 MB model on first launch
-- [x] 9 exercise types supported with rep counting logic
-
-### M11: Settings - COMPLETE ✅
-- [x] Verified by Worker: ProfileScreen read-only (correct for V1)
-- [x] No broken/placeholder settings exposed
-
-### M12: Build + Release - COMPLETE ✅
-- [x] Build verification BLOCKED by ARM64 AAPT2 issue
-- [x] LSP diagnostics used instead of Gradle
-
-### M13: Final Verification - COMPLETE ✅
-- [x] Final report created: 241 lines covering all phases
-- [x] Executive summary, phase matrix, bug fixes, recommendations
-
-## Final Report
-- Location: `/root/gymcoach/Gymcoach-/.opencode/final-report.md`
-- Size: 241 lines, 13.9 KB
-- Status: Committed and ready for review
-
-## Known Limitations
-- Build environment: ARM64 cannot run Gradle AAPT2 (x86_64)
-- Camera feature: Requires internet for model download
-- Profile editing: Read-only in V1
-- Exercise media: Placeholder typography-based "A" boxes
-
-## Recommendations for V2
-1. Bundle pose model (5 MB) for offline-first
-2. Add profile editing
-3. Add more unit tests
-4. Implement CI/CD pipeline
-5. Add real exercise media content
-6. Add Hilt testing for dependency injection
-7. Add UI testing with Compose testing
-8. Add performance monitoring
-9. Add analytics tracking
-10. Add crash reporting
-11. Add internationalization
-12. Add dark mode support
+## Loop 9 Summary (2026-09-06)
+- W1 prod verified correct: VolumeCalculator weeklyVolume Double + ISO week (WeekFields.ISO UTC) + statusFor bands; VtaperAttribution pure object + bar sources map; test rewrite verified (no weeklySets remains, VtaperAttributionTest.kt added)
+- W2 verified correct: getPrimaryMusclesByExercise + PrimaryMuscleRow; matchesMuscle exact token/id matching; PRIMARY_BOOST=10 / SECONDARY_BOOST=4; ProgramGeneratorTest 11 tests incl. slot regressions; delimiter test W2B landed (MockK, ScoreDistinguishesCategories) with .opencode/docs/w2b-program-generator-matcher.md
+- W3 verified correct: WorkoutDao relation POJOs + getCompletedWorkoutDetails(minDateMillis); ExerciseDao.getByIds; repo bulk mapping matches domain model; Benchmark.kt deleted
+- W4 (1st+2nd attempts) FALSE both times; W5 (3rd attempt, spec-driven, task_f7d09d71) in flight
+- Audits landed: phase1011-media-audit.md, phase13-security-audit.md, phase8-audit.md (P0: calories*0.05 heuristic on 2 screens; P1s: week bucketing key, count windows, avg-volume label, strength selector dead names, legacy totals incl non-completed)
+- Migration ground truth generated: .opencode/docs/migration-rebase-spec.md (exact DDL from exports)

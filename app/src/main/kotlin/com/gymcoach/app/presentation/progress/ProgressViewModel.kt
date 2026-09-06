@@ -140,6 +140,9 @@ class ProgressViewModel @Inject constructor(
                 val adherence = (workoutsThisWeek.toFloat() / TARGET_SESSIONS_PER_WEEK).coerceIn(0f, 1f)
 
                 val windowStart = today.minusWeeks(HEATMAP_WEEKS.toLong())
+                val minDateMillis = windowStart.atStartOfDay(zone).toInstant().toEpochMilli()
+                val detailsById = workoutRepository.getCompletedWorkoutsWithDetails(minDateMillis)
+                    .associateBy { it.id }
                 val muscleSets = linkedMapOf<String, Int>()
                 val workoutDays = sortedSetOf<LocalDate>()
                 val bestByExerciseDate = mutableMapOf<String, MutableMap<LocalDate, Double>>()
@@ -149,7 +152,7 @@ class ProgressViewModel @Inject constructor(
                     val day = workout.date.toLocalDate(zone)
                     if (day.isBefore(windowStart)) continue
                     workoutDays += day
-                    val details = workoutRepository.getWorkoutWithDetails(workout.id).first() ?: continue
+                    val details = detailsById[workout.id] ?: continue
                     for (entry in details.exercises) {
                         val doneSets = entry.sets.filter { it.completed }
                         if (doneSets.isEmpty()) continue

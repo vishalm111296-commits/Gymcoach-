@@ -35,6 +35,14 @@ interface WorkoutRepository {
     fun getWorkoutsByVolumeAsc(): Flow<List<WorkoutWithStats>>
     fun getWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
     fun getWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
+
+    /**
+     * Bulk-loads all completed workouts (with nested exercises+sets) whose date
+     * is at or after [minDateMillis], in a single batched relation query.
+     * Results are ordered by workout date ascending.
+     */
+    suspend fun getCompletedWorkoutsWithDetails(minDateMillis: Long): List<WorkoutWithDetails>
+
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
     suspend fun getIncompleteWorkout(): Workout?
 }

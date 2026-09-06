@@ -112,21 +112,21 @@ class WorkoutLoggingViewModel @Inject constructor(
                         performAgainInternal(snapshot)
                     } else {
                         // Workout is incomplete — resume it
+                        startWorkoutTimer()
                         workoutRepository.getWorkoutWithDetails(workoutId).collect {
                             _currentWorkout.value = it
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             calculateSessionVolume(it)
-                            startWorkoutTimer()
                         }
                     }
                 } else {
                     val existing = workoutRepository.getLatestIncompleteWorkout()
                     if (existing != null) {
+                        startWorkoutTimer()
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             calculateSessionVolume(it)
-                            startWorkoutTimer()
                         }
                     } else {
                         startNewWorkoutInternal()
@@ -226,6 +226,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         startWorkoutTimer()
         workoutRepository.getWorkoutWithDetails(id).collect {
             _currentWorkout.value = it
+            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+            calculateSessionVolume(it)
         }
     }
 

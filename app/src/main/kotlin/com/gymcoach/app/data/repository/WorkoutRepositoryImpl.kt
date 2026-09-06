@@ -178,6 +178,38 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCompletedWorkoutsWithDetails(minDateMillis: Long): List<WorkoutWithDetails> {
+        val completedWorkouts = workoutDao.getCompletedWorkoutsAsc()
+            .first()
+            .filter { it.date >= minDateMillis }
+        if (completedWorkouts.isEmpty()) return emptyList()
+
+        val results = mutableListOf<WorkoutWithDetails>()
+        for (workoutEntity in completedWorkouts) {
+            val details = workoutDao.getWorkoutById(workoutEntity.id).first()
+            if (details != null) {
+                val workout = details.toDomain()
+                val exercisesFlow = workoutDao.getExercisesForWorkout(workoutEntity.id)
+                val exerciseEntities = exercisesFlow.first()
+                val exercisesWithSets = mutableListOf<WorkoutExerciseWithSets>()
+                for (we in exerciseEntities) {
+                    val exerciseEntity = exerciseDao.getById(we.exerciseId).first()
+                    val setsFlow = workoutDao.getSetsForExercise(we.id)
+                    val setEntities = setsFlow.first()
+                    if (exerciseEntity != null) {
+                        exercisesWithSets.add(WorkoutExerciseWithSets(
+                            workoutExercise = we.toDomain(),
+                            exercise = exerciseEntity.toDomain(),
+                            sets = setEntities.map { it.toDomain() }
+                        ))
+                    }
+                }
+                results.add(WorkoutWithDetails(workout, exercisesWithSets))
+            }
+        }
+        return results
+    }
+
     override suspend fun searchWorkouts(query: String): List<WorkoutWithStats> {
         return workoutDao.searchWorkouts(query).map { it.toDomain() }
     }

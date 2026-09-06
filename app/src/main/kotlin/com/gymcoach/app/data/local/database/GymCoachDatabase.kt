@@ -62,36 +62,67 @@ abstract class GymCoachDatabase : RoomDatabase() {
 
         val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lat` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_lateral_delt` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_upper_chest` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `vtaper_rear_delt` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `movement_pattern` TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `image_url` TEXT")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `video_url` TEXT")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `animation_url` TEXT")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `setup_instructions` TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `execution_instructions` TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `breathing_instructions` TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `tempo_guidance` TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `beginner_variant_id` INTEGER")
-                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `advanced_variant_id` INTEGER")
+                db.execSQL("ALTER TABLE `workout_sets` ADD COLUMN `setType` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v3->v4: Create all tables matching v4 export exactly (14 tables)
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `exercises` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `muscleGroup` TEXT NOT NULL,
+                        `equipment` TEXT NOT NULL,
+                        `difficulty` TEXT NOT NULL,
+                        `secondaryMuscles` TEXT NOT NULL,
+                        `instructions` TEXT NOT NULL,
+                        `tips` TEXT NOT NULL,
+                        `commonMistakes` TEXT NOT NULL,
+                        `safetyNotes` TEXT NOT NULL,
+                        `recommendedRepRange` TEXT NOT NULL,
+                        `recommendedRestTime` TEXT NOT NULL,
+                        `estimatedCalories` INTEGER NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `tags` TEXT NOT NULL,
+                        `isFavorite` INTEGER NOT NULL,
+                        `lastViewed` INTEGER NOT NULL,
+                        `vtaper_lat` INTEGER NOT NULL DEFAULT 0,
+                        `vtaper_lateral_delt` INTEGER NOT NULL DEFAULT 0,
+                        `vtaper_upper_chest` INTEGER NOT NULL DEFAULT 0,
+                        `vtaper_rear_delt` INTEGER NOT NULL DEFAULT 0,
+                        `movement_pattern` TEXT NOT NULL DEFAULT '',
+                        `image_url` TEXT,
+                        `video_url` TEXT,
+                        `animation_url` TEXT,
+                        `setup_instructions` TEXT NOT NULL DEFAULT '',
+                        `execution_instructions` TEXT NOT NULL DEFAULT '',
+                        `breathing_instructions` TEXT NOT NULL DEFAULT '',
+                        `tempo_guidance` TEXT NOT NULL DEFAULT '',
+                        `beginner_variant_id` INTEGER,
+                        `advanced_variant_id` INTEGER
+                    )
+                """)
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `user_profiles` (
+                    CREATE TABLE IF NOT EXISTS `muscles` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `goal` TEXT NOT NULL DEFAULT '',
-                        `experience` TEXT NOT NULL DEFAULT '',
-                        `age` INTEGER NOT NULL DEFAULT 0,
-                        `sex` TEXT NOT NULL DEFAULT '',
-                        `height_cm` REAL NOT NULL DEFAULT 0.0,
-                        `weight_kg` REAL NOT NULL DEFAULT 0.0,
-                        `training_days_per_week` INTEGER NOT NULL DEFAULT 4,
-                        `session_length_minutes` INTEGER NOT NULL DEFAULT 60,
-                        `equipment_type` TEXT NOT NULL DEFAULT 'gym',
-                        `preferred_exercises` TEXT NOT NULL DEFAULT '',
-                        `exercises_to_avoid` TEXT NOT NULL DEFAULT '',
-                        `created_at` INTEGER NOT NULL DEFAULT 0
+                        `name` TEXT NOT NULL,
+                        `display_name` TEXT NOT NULL,
+                        `parent_muscle_id` INTEGER,
+                        `body_region` TEXT NOT NULL DEFAULT ''
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_muscles_parent_muscle_id` ON `muscles`(`parent_muscle_id`)")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `equipment` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `display_name` TEXT NOT NULL,
+                        `category` TEXT NOT NULL DEFAULT ''
                     )
                 """)
 
@@ -99,7 +130,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                     CREATE TABLE IF NOT EXISTS `programs` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `user_id` INTEGER NOT NULL DEFAULT 1,
-                        `name` TEXT NOT NULL,
+                        `name` TEXT NOT NULL DEFAULT '',
                         `description` TEXT NOT NULL DEFAULT '',
                         `split_type` TEXT NOT NULL DEFAULT '',
                         `duration_weeks` INTEGER NOT NULL DEFAULT 0,
@@ -143,19 +174,22 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_program_exercises_exercise_id` ON `program_exercises`(`exercise_id`)")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `personal_records` (
+                    CREATE TABLE IF NOT EXISTS `user_profiles` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `exercise_id` INTEGER NOT NULL,
-                        `user_id` INTEGER NOT NULL DEFAULT 1,
+                        `goal` TEXT NOT NULL DEFAULT '',
+                        `experience` TEXT NOT NULL DEFAULT '',
+                        `age` INTEGER NOT NULL DEFAULT 0,
+                        `sex` TEXT NOT NULL DEFAULT '',
+                        `height_cm` REAL NOT NULL DEFAULT 0.0,
                         `weight_kg` REAL NOT NULL DEFAULT 0.0,
-                        `reps` INTEGER NOT NULL DEFAULT 0,
-                        `one_rep_max_kg` REAL NOT NULL DEFAULT 0.0,
-                        `achieved_at` INTEGER NOT NULL,
-                        `notes` TEXT NOT NULL DEFAULT '',
-                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
+                        `training_days_per_week` INTEGER NOT NULL DEFAULT 4,
+                        `session_length_minutes` INTEGER NOT NULL DEFAULT 60,
+                        `equipment_type` TEXT NOT NULL DEFAULT 'gym',
+                        `preferred_exercises` TEXT NOT NULL DEFAULT '',
+                        `exercises_to_avoid` TEXT NOT NULL DEFAULT '',
+                        `created_at` INTEGER NOT NULL DEFAULT 0
                     )
                 """)
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_personal_records_exercise_id` ON `personal_records`(`exercise_id`)")
 
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `body_measurements` (
@@ -166,6 +200,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                         `body_fat_pct` REAL,
                         `chest_cm` REAL,
                         `waist_cm` REAL,
+                        `hips_cm` REAL,
                         `shoulders_cm` REAL,
                         `left_arm_cm` REAL,
                         `right_arm_cm` REAL,
@@ -182,57 +217,37 @@ abstract class GymCoachDatabase : RoomDatabase() {
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `exercise_id` INTEGER NOT NULL,
                         `user_id` INTEGER NOT NULL DEFAULT 1,
-                        `added_at` INTEGER NOT NULL,
+                        `added_at` INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
                     )
                 """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_favorite_exercises_exercise_id` ON `favorite_exercises`(`exercise_id`)")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `exercise_substitutions` (
+                    CREATE TABLE IF NOT EXISTS `personal_records` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `original_exercise_id` INTEGER NOT NULL,
-                        `substitute_exercise_id` INTEGER NOT NULL,
-                        `reason` TEXT NOT NULL DEFAULT '',
-                        FOREIGN KEY(`original_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE,
-                        FOREIGN KEY(`substitute_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
-                    )
-                """)
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_original_exercise_id` ON `exercise_substitutions`(`original_exercise_id`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_substitute_exercise_id` ON `exercise_substitutions`(`substitute_exercise_id`)")
-
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `muscles` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `name` TEXT NOT NULL,
-                        `display_name` TEXT NOT NULL,
-                        `parent_muscle_id` INTEGER,
-                        `body_region` TEXT NOT NULL DEFAULT ''
-                    )
-                """)
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_muscles_parent_muscle_id` ON `muscles`(`parent_muscle_id`)")
-
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `equipment` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `name` TEXT NOT NULL,
-                        `display_name` TEXT NOT NULL,
-                        `category` TEXT NOT NULL DEFAULT ''
-                    )
-                """)
-
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `exercise_muscles` (
                         `exercise_id` INTEGER NOT NULL,
-                        `muscle_id` INTEGER NOT NULL,
-                        `role` TEXT NOT NULL,
-                        PRIMARY KEY(`exercise_id`, `muscle_id`),
-                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE,
-                        FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE
+                        `user_id` INTEGER NOT NULL DEFAULT 1,
+                        `weight_kg` REAL NOT NULL DEFAULT 0.0,
+                        `reps` INTEGER NOT NULL DEFAULT 0,
+                        `one_rep_max_kg` REAL NOT NULL DEFAULT 0.0,
+                        `achieved_at` INTEGER NOT NULL,
+                        `notes` TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
                     )
                 """)
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_exercise_id` ON `exercise_muscles`(`exercise_id`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_muscle_id` ON `exercise_muscles`(`muscle_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_personal_records_exercise_id` ON `personal_records`(`exercise_id`)")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `exercise_aliases` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `exercise_id` INTEGER NOT NULL,
+                        `alias` TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_aliases_exercise_id` ON `exercise_aliases`(`exercise_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_aliases_alias` ON `exercise_aliases`(`alias`)")
 
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `exercise_equipment` (
@@ -248,21 +263,30 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_equipment_equipment_id` ON `exercise_equipment`(`equipment_id`)")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `exercise_aliases` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS `exercise_muscles` (
                         `exercise_id` INTEGER NOT NULL,
-                        `alias` TEXT NOT NULL DEFAULT '',
-                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
+                        `muscle_id` INTEGER NOT NULL,
+                        `role` TEXT NOT NULL DEFAULT 'primary',
+                        PRIMARY KEY(`exercise_id`, `muscle_id`),
+                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE,
+                        FOREIGN KEY(`muscle_id`) REFERENCES `muscles`(`id`) ON DELETE CASCADE
                     )
                 """)
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_aliases_exercise_id` ON `exercise_aliases`(`exercise_id`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_aliases_alias` ON `exercise_aliases`(`alias`)")
-            }
-        }
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_exercise_id` ON `exercise_muscles`(`exercise_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_muscles_muscle_id` ON `exercise_muscles`(`muscle_id`)")
 
-        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `workout_sets` ADD COLUMN `setType` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `exercise_substitutions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `original_exercise_id` INTEGER NOT NULL,
+                        `substitute_exercise_id` INTEGER NOT NULL,
+                        `reason` TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(`original_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE,
+                        FOREIGN KEY(`substitute_exercise_id`) REFERENCES `exercises`(`id`) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_original_exercise_id` ON `exercise_substitutions`(`original_exercise_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_substitutions_substitute_exercise_id` ON `exercise_substitutions`(`substitute_exercise_id`)")
             }
         }
 
@@ -274,13 +298,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
 
         val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // v6: UserProfileEntity registered at v5 creation; no structural delta.
-            }
-        }
-
-        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // v7 added external-content FTS4 index over exercises for search
+                // v5->v6: Create exercise_fts virtual table (FTS4 external content)
                 db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `exercise_fts` USING FTS4(`name` TEXT NOT NULL, `description` TEXT NOT NULL, `muscleGroup` TEXT NOT NULL, `equipment` TEXT NOT NULL, `difficulty` TEXT NOT NULL, `category` TEXT NOT NULL, content=`exercises`)")
                 db.execSQL("INSERT INTO exercise_fts(exercise_fts) VALUES('rebuild')")
 
@@ -311,8 +329,9 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v6->v7: Add workouts.status column + backfill
                 db.execSQL("ALTER TABLE `workouts` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'NOT_STARTED'")
                 db.execSQL("UPDATE workouts SET status = 'COMPLETED' WHERE completed = 1")
                 db.execSQL(
@@ -325,8 +344,18 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // No-op: schema exports 7 and 8 are identical.
+            }
+        }
+
         val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // v8->v9: Add target_muscles column to program_days (copy from focus)
+                db.execSQL("ALTER TABLE `program_days` ADD COLUMN `target_muscles` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE program_days SET target_muscles = focus")
+
                 // Bench Press: moderate upper chest, moderate triceps
                 db.execSQL("UPDATE exercises SET vtaper_lat=0, vtaper_lateral_delt=2, vtaper_upper_chest=7, vtaper_rear_delt=1 WHERE name='Bench Press'")
                 // Squat: lower body, minimal V-taper
@@ -392,11 +421,32 @@ abstract class GymCoachDatabase : RoomDatabase() {
 
         /**
          * 10 -> 11: Add preferred_schedule and limitations_preferences to user_profiles table.
+         * Also rebuild program_days per v11 export: focus column removed, target_muscles retained.
          */
         val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
                 db.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `limitations_preferences` TEXT NOT NULL DEFAULT ''")
+
+                // program_days rebuild per v11 export: focus column removed, target_muscles retained.
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `program_days_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `program_id` INTEGER NOT NULL,
+                        `day_number` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `target_muscles` TEXT NOT NULL,
+                        `is_rest_day` INTEGER NOT NULL,
+                        FOREIGN KEY(`program_id`) REFERENCES `programs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO `program_days_new` (id, program_id, day_number, name, target_muscles, is_rest_day)
+                    SELECT id, program_id, day_number, name, target_muscles, is_rest_day FROM `program_days`
+                """)
+                db.execSQL("DROP TABLE `program_days`")
+                db.execSQL("ALTER TABLE `program_days_new` RENAME TO `program_days`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_program_days_program_id` ON `program_days`(`program_id`)")
             }
         }
 

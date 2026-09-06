@@ -1,11 +1,13 @@
 package com.gymcoach.app.presentation.workout.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 /** One recorded set from a previous session. */
 data class SetData(val weightKg: Double, val reps: Int)
@@ -32,5 +34,6 @@ fun PreviousPerformanceRow(
     )
 }
 
-private fun formatWeight(weightKg: Double): String =
-    if (weightKg == weightKg.toLong().toDouble()) weightKg.toLong().toString() else weightKg.toString()
+private val weightFormatter = DecimalFormat("0.#", DecimalFormatSymbols(Locale.US))
+
+internal fun formatWeight(weightKg: Double): String = weightFormatter.format(weightKg)

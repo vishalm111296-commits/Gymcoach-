@@ -128,7 +128,7 @@ class ProgramGeneratorTest {
         val exercises = program.days.flatMap { it.exercises }
         assertTrue(exercises.all { it.targetSets in 1..4 })
         assertTrue(exercises.all { it.targetRpe == 8.0 })
-        assertTrue("program must retain session cap", exercises.groupBy { program.days.indexOfFirst { day -> day.exercises.contains(it) } }.values.all { it.size <= 7 })
+        assertTrue("program must retain session cap", program.days.all { it.exercises.size <= 7 })
     }
 
     @Test

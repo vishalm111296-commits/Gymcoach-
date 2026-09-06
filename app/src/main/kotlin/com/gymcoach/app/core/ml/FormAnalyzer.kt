@@ -120,11 +120,13 @@ class FormAnalyzer(
     // ── Core math ────────────────────────────────────────
 
     private fun angle(a: NormalizedLandmark, b: NormalizedLandmark, c: NormalizedLandmark): Double {
-        val ab = doubleArrayOf((a.x - b.x).toDouble(), (a.y - b.y).toDouble())
-        val cb = doubleArrayOf((c.x - b.x).toDouble(), (c.y - b.y).toDouble())
-        val dot = ab[0] * cb[0] + ab[1] * cb[1]
-        val magAB = sqrt(ab[0] * ab[0] + ab[1] * ab[1])
-        val magCB = sqrt(cb[0] * cb[0] + cb[1] * cb[1])
+        val abX = (a.x - b.x).toDouble()
+        val abY = (a.y - b.y).toDouble()
+        val cbX = (c.x - b.x).toDouble()
+        val cbY = (c.y - b.y).toDouble()
+        val dot = abX * cbX + abY * cbY
+        val magAB = sqrt(abX * abX + abY * abY)
+        val magCB = sqrt(cbX * cbX + cbY * cbY)
         if (magAB < 1e-6 || magCB < 1e-6) return -1.0
         return Math.toDegrees(acos((dot / (magAB * magCB)).coerceIn(-1.0, 1.0)))
     }

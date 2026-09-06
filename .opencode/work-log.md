@@ -47,6 +47,11 @@
 | app/src/main/kotlin/.../WorkoutSessionScreen.kt | MODIFY | done | ses_5 | - | 2026-09-06T08:51 | M5 |
 | app/src/main/kotlin/.../WorkoutHistoryViewModel.kt | FIX | done | ses_5 | - | 2026-09-06T08:51 | M6 |
 | app/src/main/kotlin/.../WorkoutHistoryDetailScreen.kt | MODIFY | done | ses_5 | - | 2026-09-06T08:51 | M6 |
+| app/src/main/kotlin/.../CameraPreviewScreen.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
+| app/src/main/kotlin/.../PoseDetector.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
+| app/src/main/kotlin/.../FormAnalyzer.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
+| app/src/main/kotlin/.../CameraOverlay.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
+| app/src/main/kotlin/.../ExerciseSeeder.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
 
 ## Pending Integration
 - Ground-truth build: testDebugUnitTest (expect duplicate ProgramGeneratorTest FQCN failure)

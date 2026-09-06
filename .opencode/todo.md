@@ -51,19 +51,19 @@
 - [x] S8.1.1: "Not measured" must not become "0" | verified | evidence: ProgressViewModel.kt lines 205-208 use `takeIf { it > 0 }` for all measurement fields; BodyMeasurementTrend.kt line 62 checks `isMeasured = currentValue != null && currentValue > 0.0` and shows "Not measured" text at line 121; MeasurementLogDialog.kt lines 92-94 use `toDoubleOrNull()` so empty fields → null → stored as 0.0 in DB → loaded back as null; BodyMeasurementTest.kt lines 26-52 verify the convention; LSP diagnostics clean
 - [x] S8.1.2: Verify persistence and trend calculations | verified | evidence: ProgressViewModel.kt lines 181-199 filter measurements with `it.weightKg > 0` and `it.waistCm > 0` for trends; trendDirection() handles empty/single-point lists; BodyMeasurementTest.kt lines 88-132 test trend calculations with partial data; LSP diagnostics clean
 
-### M9: Readiness / Recovery | status: pending
+### M9: Readiness / Recovery | status: completed
 #### T9.1: Verify readiness system
-- [ ] S9.1.1: Ensure honest, conservative language
-- [ ] S9.1.2: Verify readiness influences programming
+- [x] S9.1.1: Ensure honest, conservative language | verified | evidence: ReadinessEntity.kt lines 55-58 explicitly state "Does NOT claim physiological measurement" and "Does NOT claim hormone/testosterone detection". Training recommendations use conservative language ("Light session or active recovery recommended", "Listen to your body")
+- [x] S9.1.2: Verify readiness influences programming | verified | evidence: ProgramGenerator.kt lines 152-161 adjust sets (2-4) and RPE (7.0-8.0) based on readiness score thresholds (2.5, 4.0)
 
 ### M10: Camera / Form Analysis | status: completed
 #### T10.1: Verify camera pipeline statically | status: completed
 - [x] S10.1.1: CameraX → ImageAnalysis → PoseDetector → FormAnalyzer → CameraOverlay | verified | evidence: lsp_diagnostics=clean (all 5 files), pipeline: CameraX RGBA_8888/KEEP_ONLY_LATEST → FrameConverter (rotation-corrected bitmap) → PoseDetector (MediaPipe PoseLandmarker) → FormAnalyzer (9 exercise types, synchronized, phase detection) → CameraOverlay (color-coded feedback). Navigation wired correctly via NavHost route "camera/{exerciseType}". FormAnalyzerTest exists (2 tests, BICEP_CURL only).
 - [x] S10.1.2: Document model download vs bundled decision | verified | evidence: Model is DOWNLOAD-ON-FIRST-LAUNCH (not bundled). pose_landmarker_lite.task (~5MB float16) fetched via HTTPS from storage.googleapis.com/mediapipe-models. Atomic rename (tmp→final) with MIN_VALID_MODEL_BYTES=1MB sanity check. Cached in app's private filesDir. No bundled fallback. Trade-off: APK stays lean (~5MB lighter) but first camera launch requires network. Subsequent launches use cached copy.
 
-### M11: Settings | status: pending
+### M11: Settings | status: completed
 #### T11.1: Verify settings
-- [ ] S11.1.1: Only expose settings that really work
+- [x] S11.1.1: Only expose settings that really work | verified | evidence: No Settings screen exists in app (GymCoachNavHost.kt has no Settings route). Profile screen handles user data. No broken settings to expose.
 
 ### M12: Build + Release | status: pending
 #### T12.1: Build verification via Jules

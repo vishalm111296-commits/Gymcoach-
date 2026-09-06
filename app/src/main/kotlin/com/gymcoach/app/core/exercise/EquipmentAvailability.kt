@@ -21,11 +21,11 @@ class EquipmentAvailability @Inject constructor() {
         "bulgarian bag", "battle rope", "sled", "bodyweight"
     )
 
-    // Deliberately excludes a bench: this matches the core dumbbell + bodyweight
-    // use case unless the user explicitly chooses a different equipment profile.
+    // Core profile: dumbbells + bodyweight, with no bench unless the user
+    // explicitly selects a profile that includes one.
     private val homeEquipment = setOf(
         "dumbbell", "kettlebell", "resistance band", "bodyweight", "pull-up bar",
-        "dip station", "bench", "floor", "adjustable dumbbell", "doorway pull-up bar",
+        "dip station", "floor", "adjustable dumbbell", "doorway pull-up bar",
         "suspension trainer", "foam roller"
     )
 

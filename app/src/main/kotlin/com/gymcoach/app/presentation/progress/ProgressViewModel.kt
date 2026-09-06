@@ -110,9 +110,11 @@ class ProgressViewModel @Inject constructor(
             bodyMeasurementDao.insert(
                 BodyMeasurementEntity(
                     weightKg = weightKg,
-                    waistCm = waistCm,
-                    chestCm = chestCm,
-                    bodyFatPct = bodyFatPct,
+                    // Convert null to 0.0 for non-nullable entity fields.
+                    // Convention: 0.0 in DB = "not measured", ViewModel maps to null for UI.
+                    waistCm = waistCm ?: 0.0,
+                    chestCm = chestCm ?: 0.0,
+                    bodyFatPct = bodyFatPct ?: 0.0,
                     notes = notes
                 )
             )
@@ -187,12 +189,12 @@ class ProgressViewModel @Inject constructor(
                     }
 
                 val waistTrend = measurements
-                    .filter { it.waistCm != null && it.waistCm > 0 }
+                    .filter { it.waistCm > 0 }
                     .sortedBy { it.recordedAt }
                     .map { measurement ->
                         TrendPoint(
                             date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
-                            value = measurement.waistCm!!
+                            value = measurement.waistCm
                         )
                     }
 

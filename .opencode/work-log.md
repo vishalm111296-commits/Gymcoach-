@@ -10,6 +10,9 @@
 - [x] ses_2 (Worker): `VolumeCalculator.kt` - done
 - [x] ses_3 (Worker): Onboarding (M3) + Exercise Library (M4) Verification - done
 - [x] ses_4 (Worker): Body measurement null handling (M8) - done
+- [x] ses_5 (Worker): Workout Core Loop (M5) + History (M6) Verification - done
+- [x] ses_5 (Worker): Readiness (M9) + Settings (M11) Verification - done
+- [x] ses_6 (Worker): Camera Pipeline (M10) Verification - done
 
 ## File Status
 | File | Action | Status | Session | Unit Test | Timestamp | Issue |
@@ -28,6 +31,22 @@
 | app/src/main/kotlin/.../ProgressViewModel.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | - |
 | app/src/main/kotlin/.../ProgressDashboardScreen.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | - |
 | app/src/test/.../BodyMeasurementTest.kt | CREATE | done | ses_4 | pass | 2026-09-06T08:49 | M8 |
+| app/src/main/kotlin/.../ReadinessEntity.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ReadinessDao.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ReadinessRepositoryImpl.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ReadinessRepository.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ReadinessViewModel.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ReadinessScreen.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ProgramGenerator.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
+| app/src/main/kotlin/.../ProfileScreen.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:54 | M11 |
+| app/src/main/kotlin/.../UserProfileEntity.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:54 | M11 |
+| app/src/main/kotlin/.../UserProfileDao.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:54 | M11 |
+| app/src/main/kotlin/.../UserProfileRepositoryImpl.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:54 | M11 |
+| app/src/main/kotlin/.../UserProfileRepository.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:54 | M11 |
+| app/src/main/kotlin/.../WorkoutLoggingViewModel.kt | MODIFY | done | ses_5 | - | 2026-09-06T08:51 | M5 |
+| app/src/main/kotlin/.../WorkoutSessionScreen.kt | MODIFY | done | ses_5 | - | 2026-09-06T08:51 | M5 |
+| app/src/main/kotlin/.../WorkoutHistoryViewModel.kt | FIX | done | ses_5 | - | 2026-09-06T08:51 | M6 |
+| app/src/main/kotlin/.../WorkoutHistoryDetailScreen.kt | MODIFY | done | ses_5 | - | 2026-09-06T08:51 | M6 |
 
 ## Pending Integration
 - Ground-truth build: testDebugUnitTest (expect duplicate ProgramGeneratorTest FQCN failure)

@@ -400,6 +400,45 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 11 -> 12: Fix schema mismatches between entity definitions and migration SQL.
+         *
+         * BUG: MIGRATION_2_3 created program_days.focus but ProgramDayEntity expects
+         * target_muscles column. Adding target_muscles and copying any focus data.
+         *
+         * BUG: MIGRATION_2_3 body_measurements table is missing hips_cm column
+         * that BodyMeasurementEntity defines.
+         *
+         * Uses column-existence check to avoid crashing on fresh installs where
+         * Room already created the correct schema from entity definitions.
+         */
+        val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Helper: check if a column exists in a table
+                fun columnExists(table: String, column: String): Boolean {
+                    val cursor = db.query("PRAGMA table_info(`$table`)")
+                    cursor.use {
+                        while (it.moveToNext()) {
+                            if (it.getString(it.getColumnIndexOrThrow("name")) == column) return true
+                        }
+                    }
+                    return false
+                }
+
+                // Fix: Add target_muscles to program_days (migration 2->3 created 'focus' instead)
+                if (!columnExists("program_days", "target_muscles")) {
+                    db.execSQL("ALTER TABLE `program_days` ADD COLUMN `target_muscles` TEXT NOT NULL DEFAULT ''")
+                    // Copy any data from focus column to target_muscles for existing rows
+                    db.execSQL("UPDATE `program_days` SET `target_muscles` = `focus` WHERE `focus` != ''")
+                }
+
+                // Fix: Add hips_cm to body_measurements (missing from original migration)
+                if (!columnExists("body_measurements", "hips_cm")) {
+                    db.execSQL("ALTER TABLE `body_measurements` ADD COLUMN `hips_cm` REAL")
+                }
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
@@ -409,7 +448,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                    MIGRATION_9_10, MIGRATION_10_11
+                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
                 )
                 .build()
         }

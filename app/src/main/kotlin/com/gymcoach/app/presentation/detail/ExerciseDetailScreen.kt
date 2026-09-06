@@ -1,10 +1,12 @@
 package com.gymcoach.app.presentation.detail
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +28,6 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
@@ -45,15 +46,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.compose.AsyncImage
 import com.gymcoach.app.core.exercise.SubstitutionEngine
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.presentation.components.ExerciseVideoPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,7 +107,7 @@ class ExerciseDetailViewModel @Inject constructor(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseDetailScreen(
     exerciseId: Long,
@@ -188,11 +190,7 @@ fun ExerciseDetailScreen(
 
                 if (ex.commonMistakes.isNotBlank()) {
                     Spacer(Modifier.height(20.dp))
-                    ContentCard(
-                        title = "Common mistakes",
-                        icon = Icons.Filled.Info,
-                        body = ex.commonMistakes
-                    )
+                    ContentCard(title = "Common mistakes", icon = Icons.Filled.Info, body = ex.commonMistakes)
                 }
 
                 if (ex.safetyNotes.isNotBlank()) {
@@ -213,38 +211,46 @@ fun ExerciseDetailScreen(
 
 @Composable
 private fun MediaHero(exercise: Exercise) {
-    val media = exercise.videoUrl ?: exercise.animationUrl ?: exercise.imageUrl
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().height(230.dp),
-            contentAlignment = Alignment.Center
+    val video = exercise.videoUrl?.takeIf { it.isNotBlank() }
+    val image = exercise.imageUrl?.takeIf { it.isNotBlank() }
+
+    if (video != null) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                ExerciseVideoPlayer(videoUri = Uri.parse(video), modifier = Modifier.fillMaxWidth())
+            }
+            Text(
+                "Watch the movement, then use the cues below for your working sets.",
+                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-            if (media.isNullOrBlank()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
-                    Icon(Icons.Filled.FitnessCenter, null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(10.dp))
-                    Text("Technique guide", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Follow the setup, execution and breathing cues below.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            Box(modifier = Modifier.fillMaxWidth().height(230.dp), contentAlignment = Alignment.Center) {
+                if (image != null) {
+                    AsyncImage(
+                        model = image,
+                        contentDescription = "${exercise.name} exercise demonstration",
+                        modifier = Modifier.fillMaxSize()
                     )
-                }
-            } else {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Media available", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Playback is available from the exercise session when the media source is supported.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                        Icon(Icons.Filled.FitnessCenter, null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(10.dp))
+                        Text("Technique guide", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "No verified exercise media is attached yet. Follow the setup, execution and breathing cues below.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -287,10 +293,7 @@ private fun TrainingTargetCard(ex: Exercise) {
             Text("Why this exercise is here", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             if (targets.isNotEmpty()) {
-                Text(
-                    "Primary physique targets: ${targets.joinToString(", ") }.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("Primary physique targets: ${targets.joinToString(", ") }.", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
             }
             Text(
@@ -369,11 +372,7 @@ private fun SubstitutionSection(
                 Text("Good alternatives", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(4.dp))
-            Text(
-                "Use these when the required setup is unavailable.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("Use these when the required setup is unavailable.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             substitutes.forEach { result ->
                 Card(

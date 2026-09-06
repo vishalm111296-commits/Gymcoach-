@@ -1,0 +1,12 @@
+Plan for Testing Improvement on PRDetector:
+
+1. Repair existing test build failures in ProgramGeneratorTest:
+   - Remove outdated duplicate file app/src/test/java/com/gymcoach/app/core/program/ProgramGeneratorTest.kt.
+   - Fix app/src/test/kotlin/com/gymcoach/app/core/program/ProgramGeneratorTest.kt by adding missing readinessRepository declaration and fixing JVM test method names containing illegal characters (<, >, .).
+2. Create unit tests for PRDetector in app/src/test/kotlin/com/gymcoach/app/core/progression/PRDetectorTest.kt:
+   - Test calculateEstimated1RM with boundary conditions (zero/negative weight, zero/negative reps, reps <= 12, reps > 12 cap, decimal weights).
+   - Test calculateVolume with empty and multi-set lists.
+   - Test detectPRs for WEIGHT, REP, ESTIMATED_1RM, VOLUME, bodyweight exercises, and non-working/uncompleted sets.
+3. Verify test execution via `./gradlew test`.
+4. Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+5. Submit the changes.

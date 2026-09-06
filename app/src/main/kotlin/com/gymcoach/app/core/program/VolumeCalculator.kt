@@ -14,6 +14,7 @@ class VolumeCalculator @Inject constructor() {
         val weeklySets: Int,
         val directSets: Int,
         val indirectSets: Int,
+        val effectiveWeeklyVolume: Double = 0.0,
         val status: VolumeStatus
     )
 
@@ -132,6 +133,7 @@ class VolumeCalculator @Inject constructor() {
             weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
             directSets = directSetsByMuscle[muscle] ?: 0,
             indirectSets = indirectSetsByMuscle[muscle] ?: 0,
+            effectiveWeeklyVolume = avgWeekly[muscle] ?: 0.0,
             status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
         )
 
@@ -167,10 +169,11 @@ class VolumeCalculator @Inject constructor() {
     }
 
     private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+        val dateTime = java.time.Instant.ofEpochMilli(dateMs)
+            .atZone(java.time.ZoneId.systemDefault())
+        val isoFields = java.time.temporal.WeekFields.ISO
+        val week = dateTime.get(isoFields.weekOfWeekBasedYear())
+        val year = dateTime.get(isoFields.weekBasedYear())
+        return year * 100 + week
     }
 }

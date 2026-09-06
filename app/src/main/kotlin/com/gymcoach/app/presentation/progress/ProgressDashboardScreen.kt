@@ -842,9 +842,10 @@ private fun StatsOverview(
                 value = "${totalTrainingTimeMinutes}m",
                 modifier = Modifier.weight(1f)
             )
+            val avgVolPerSet = if (totalSets > 0) totalVolume / totalSets else 0.0
             StatCard(
-                label = "Est. Calories",
-                value = "%.0f".format(totalVolume * 0.05),
+                label = "Avg Vol/Set",
+                value = "%.1f kg".format(avgVolPerSet),
                 modifier = Modifier.weight(1f)
             )
         }

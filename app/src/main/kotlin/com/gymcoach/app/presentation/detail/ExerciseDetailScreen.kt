@@ -244,17 +244,49 @@ fun ExerciseDetailScreen(
                     )
                 }
 
-                if (ex.instructions.isNotBlank()) {
+                if (ex.setupInstructions.isNotBlank()) {
                     Spacer(Modifier.height(24.dp))
                     Text(
-                        text = "Instructions",
+                        text = "Setup",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = ex.instructions,
+                        text = ex.setupInstructions,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (ex.executionInstructions.isNotBlank() || ex.instructions.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Execution",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = if (ex.executionInstructions.isNotBlank()) ex.executionInstructions else ex.instructions,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (ex.breathingInstructions.isNotBlank()) {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Breathing Cues",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = ex.breathingInstructions,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )

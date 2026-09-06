@@ -91,12 +91,12 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun loadOrStartWorkout(workoutId: Long? = null) {
         viewModelScope.launch {
             try {
+                startWorkoutTimer()
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
                         loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                         calculateSessionVolume(it)
-                        startWorkoutTimer()
                     }
                 } else {
                     val existing = workoutRepository.getLatestIncompleteWorkout()
@@ -105,7 +105,6 @@ class WorkoutLoggingViewModel @Inject constructor(
                             _currentWorkout.value = it
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             calculateSessionVolume(it)
-                            startWorkoutTimer()
                         }
                     } else {
                         startNewWorkoutInternal()

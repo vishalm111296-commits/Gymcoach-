@@ -139,6 +139,14 @@ fun WorkoutSessionScreen(
         return
     }
 
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose {
+            view.keepScreenOn = false
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

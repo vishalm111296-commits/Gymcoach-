@@ -1,7 +1,6 @@
 package com.gymcoach.app.core.progression
 
 import com.gymcoach.app.core.exercise.EquipmentAvailability
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -29,14 +28,9 @@ class ProgressionEngineTest {
         reps: Int,
         completed: Boolean = true,
         setType: Int = 0
-    ) = WorkoutSetEntity(
-        id = 0,
-        workoutExerciseId = 1,
-        setNumber = 1,
+    ) = CompletedSetInfo(
         weight = weight,
         reps = reps,
-        rpe = 8.0,
-        restSeconds = 60,
         completed = completed,
         setType = setType
     )

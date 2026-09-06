@@ -1,8 +1,9 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.IsoFields
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -58,11 +59,7 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
-    /**
-     * Enriched set with workout context needed for volume calculations.
-     * WorkoutSetEntity does not store exerciseId or date directly;
-     * these come from the parent WorkoutExercise and Workout tables.
-     */
+    /** Workout set enriched with exercise and workout-date context. */
     data class SetWithContext(
         val set: WorkoutSetEntity,
         val exerciseId: Long,
@@ -70,78 +67,73 @@ class VolumeCalculator @Inject constructor() {
     )
 
     /**
-     * Calculate weekly volume per muscle group with ISO-week bucketing.
-     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     * Calculate average weekly muscle volume over the distinct ISO weeks represented
+     * by completed working sets. Secondary/stabilizer assignments retain their
+     * fractional credits rather than being promoted to full sets.
      *
-     * @param completedSets sets enriched with exercise ID and workout date context
-     * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
+     * Public set counts are rounded from the weighted weekly credits because the
+     * existing UI/data contract exposes integer set counts.
      */
     fun calculateWeeklyVolume(
         completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+        val workingSets = completedSets.filter { it.set.completed && it.set.setType == 0 }
+        val trackedWeeks = workingSets.map { isoWeekKey(it.workoutDate) }.toSet()
+        val weeksCount = trackedWeeks.size.coerceAtLeast(1)
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
-            val weekKey = isoWeekKey(ctx.workoutDate)
-            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
+        val weightedByMuscle = mutableMapOf<String, Double>()
+        val directByMuscle = mutableMapOf<String, Double>()
+        val indirectByMuscle = mutableMapOf<String, Double>()
 
-            for (assignment in muscleAssignments) {
-                val credits = assignment.role.credit
-                val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
-                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + credits
+        for (ctx in workingSets) {
+            for (assignment in exerciseMuscleMap[ctx.exerciseId].orEmpty()) {
+                weightedByMuscle[assignment.muscleName] =
+                    (weightedByMuscle[assignment.muscleName] ?: 0.0) + assignment.role.credit
+
+                when (assignment.role) {
+                    MuscleRole.PRIMARY -> {
+                        directByMuscle[assignment.muscleName] =
+                            (directByMuscle[assignment.muscleName] ?: 0.0) + 1.0
+                    }
+                    MuscleRole.SECONDARY,
+                    MuscleRole.STABILIZER -> {
+                        indirectByMuscle[assignment.muscleName] =
+                            (indirectByMuscle[assignment.muscleName] ?: 0.0) + assignment.role.credit
+                    }
+                }
             }
         }
 
-        val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
-            }
+        fun average(credits: Double): Double = credits / weeksCount.toDouble()
+        fun rounded(credits: Double): Int = kotlin.math.round(average(credits)).toInt()
+
+        fun vol(muscle: String): MuscleVolume {
+            val direct = rounded(directByMuscle[muscle] ?: 0.0)
+            val indirect = rounded(indirectByMuscle[muscle] ?: 0.0)
+            val total = rounded(weightedByMuscle[muscle] ?: 0.0)
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklySets = total,
+                directSets = direct,
+                indirectSets = indirect,
+                status = classify(total)
+            )
         }
-        if (weekBuckets.isNotEmpty()) {
-            for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
-            }
-        }
-
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role == MuscleRole.PRIMARY }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
-
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
-
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
 
         return TrainingBalance(
-            latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
-            rearDeltVolume = vol("Rear Deltoid"), upperChestVolume = vol("Upper Chest"),
-            upperBackVolume = vol("Upper Back"), bicepsVolume = vol("Biceps"),
-            tricepsVolume = vol("Triceps"), quadricepsVolume = vol("Quadriceps"),
-            hamstringsVolume = vol("Hamstrings"), glutesVolume = vol("Glutes"),
-            calvesVolume = vol("Calves"), coreVolume = vol("Core")
+            latVolume = vol("Lats"),
+            lateralDeltVolume = vol("Lateral Deltoid"),
+            rearDeltVolume = vol("Rear Deltoid"),
+            upperChestVolume = vol("Upper Chest"),
+            upperBackVolume = vol("Upper Back"),
+            bicepsVolume = vol("Biceps"),
+            tricepsVolume = vol("Triceps"),
+            quadricepsVolume = vol("Quadriceps"),
+            hamstringsVolume = vol("Hamstrings"),
+            glutesVolume = vol("Glutes"),
+            calvesVolume = vol("Calves"),
+            coreVolume = vol("Core")
         )
     }
 
@@ -158,19 +150,20 @@ class VolumeCalculator @Inject constructor() {
 
     private fun classify(sets: Int): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
-            sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
-            sets < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
-            sets < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
-            else -> VolumeStatus.EXCESSIVE          // > 21 = excessive per evidence
+            sets < 10 -> VolumeStatus.INSUFFICIENT
+            sets < 14 -> VolumeStatus.MODERATE
+            sets < 18 -> VolumeStatus.OPTIMAL
+            sets < 22 -> VolumeStatus.HIGH
+            else -> VolumeStatus.EXCESSIVE
         }
     }
 
     private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+        val date = Instant.ofEpochMilli(dateMs)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        val weekBasedYear = date.get(IsoFields.WEEK_BASED_YEAR)
+        val weekOfYear = date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        return weekBasedYear * 100 + weekOfYear
     }
 }

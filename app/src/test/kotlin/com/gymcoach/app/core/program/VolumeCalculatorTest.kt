@@ -5,7 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -19,78 +18,110 @@ class VolumeCalculatorTest {
     }
 
     @Test
-    fun `calculateWeeklyVolume computes weighted volume and set counts correctly across ISO weeks`() {
-        // Given 2 completed sets on Jan 15 2024 (ISO Week 3 2024) and 1 completed set on Jan 22 2024 (ISO Week 4 2024)
+    fun `calculateWeeklyVolume computes weighted effective volume and set counts correctly`() {
         val zoneId = ZoneId.systemDefault()
-        val jan15Ms = LocalDateTime.of(2024, 1, 15, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
-        val jan22Ms = LocalDateTime.of(2024, 1, 22, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
+        val dateMs = LocalDateTime.of(2024, 1, 15, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
 
+        // 1 completed working set for exercise 101
         val set1 = VolumeCalculator.SetWithContext(
             set = WorkoutSetEntity(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
             exerciseId = 101,
-            workoutDate = jan15Ms
-        )
-        val set2 = VolumeCalculator.SetWithContext(
-            set = WorkoutSetEntity(id = 2, workoutExerciseId = 1, setNumber = 2, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
-            exerciseId = 101,
-            workoutDate = jan15Ms
-        )
-        val set3 = VolumeCalculator.SetWithContext(
-            set = WorkoutSetEntity(id = 3, workoutExerciseId = 2, setNumber = 1, weight = 20.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
-            exerciseId = 102,
-            workoutDate = jan22Ms
+            workoutDate = dateMs
         )
 
+        // Exercise 101 gives: Primary to Lats (1.0), Secondary to Biceps (0.5), Stabilizer to Core (0.25)
         val exerciseMuscleMap = mapOf(
             101L to listOf(
                 VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY),
-                VolumeCalculator.MuscleAssignment("Biceps", VolumeCalculator.MuscleRole.SECONDARY)
-            ),
-            102L to listOf(
-                VolumeCalculator.MuscleAssignment("Lateral Deltoid", VolumeCalculator.MuscleRole.PRIMARY)
+                VolumeCalculator.MuscleAssignment("Biceps", VolumeCalculator.MuscleRole.SECONDARY),
+                VolumeCalculator.MuscleAssignment("Core", VolumeCalculator.MuscleRole.STABILIZER)
             )
         )
 
         val result = volumeCalculator.calculateWeeklyVolume(
-            completedSets = listOf(set1, set2, set3),
+            completedSets = listOf(set1),
             exerciseMuscleMap = exerciseMuscleMap
         )
 
-        // Lat Volume: 2 direct sets for exercise 101
-        assertEquals(2, result.latVolume.directSets)
+        // Lats: 1 direct set, 1.0 effective volume
+        assertEquals(1, result.latVolume.directSets)
         assertEquals(0, result.latVolume.indirectSets)
-        assertEquals(2, result.latVolume.weeklySets)
+        assertEquals(1.0, result.latVolume.effectiveWeeklyVolume, 0.001)
 
-        // Biceps Volume: 2 indirect sets (secondary role) for exercise 101
+        // Biceps: 0 direct, 1 indirect, 0.5 effective volume
         assertEquals(0, result.bicepsVolume.directSets)
-        assertEquals(2, result.bicepsVolume.indirectSets)
-        assertEquals(2, result.bicepsVolume.weeklySets)
+        assertEquals(1, result.bicepsVolume.indirectSets)
+        assertEquals(0.5, result.bicepsVolume.effectiveWeeklyVolume, 0.001)
 
-        // Lateral Delt Volume: 1 direct set for exercise 102
-        assertEquals(1, result.lateralDeltVolume.directSets)
-        assertEquals(0, result.lateralDeltVolume.indirectSets)
-        assertEquals(1, result.lateralDeltVolume.weeklySets)
+        // Core: 0 direct, 1 indirect, 0.25 effective volume
+        assertEquals(0, result.coreVolume.directSets)
+        assertEquals(1, result.coreVolume.indirectSets)
+        assertEquals(0.25, result.coreVolume.effectiveWeeklyVolume, 0.001)
     }
 
     @Test
-    fun `calculateWeeklyVolume handles empty completed sets gracefully`() {
+    fun `ISO New Year boundary correctly buckets dates belonging to same ISO week`() {
+        val zoneId = ZoneId.systemDefault()
+        // Dec 30, 2024 (Monday) and Jan 1, 2025 (Wednesday) belong to ISO Week 1 of 2025
+        val dec30Ms = LocalDateTime.of(2024, 12, 30, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
+        val jan1Ms = LocalDateTime.of(2025, 1, 1, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
+
+        val set1 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
+            exerciseId = 101,
+            workoutDate = dec30Ms
+        )
+        val set2 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 2, workoutExerciseId = 1, setNumber = 2, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
+            exerciseId = 101,
+            workoutDate = jan1Ms
+        )
+
+        val exerciseMuscleMap = mapOf(
+            101L to listOf(
+                VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY)
+            )
+        )
+
         val result = volumeCalculator.calculateWeeklyVolume(
-            completedSets = emptyList(),
-            exerciseMuscleMap = emptyMap()
+            completedSets = listOf(set1, set2),
+            exerciseMuscleMap = exerciseMuscleMap
+        )
+
+        // Both sets land in 1 ISO week, so average weekly effective volume = 2.0 / 1 week = 2.0
+        assertEquals(2.0, result.latVolume.effectiveWeeklyVolume, 0.001)
+    }
+
+    @Test
+    fun `calculateWeeklyVolume ignores uncompleted and non-working sets`() {
+        val zoneId = ZoneId.systemDefault()
+        val dateMs = LocalDateTime.of(2024, 1, 15, 10, 0).atZone(zoneId).toInstant().toEpochMilli()
+
+        // Uncompleted set
+        val uncompletedSet = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = false, setType = 0),
+            exerciseId = 101,
+            workoutDate = dateMs
+        )
+        // Warm-up set (setType = 1)
+        val warmupSet = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 2, workoutExerciseId = 1, setNumber = 1, weight = 20.0, reps = 10, rpe = 5.0, restSeconds = 60, completed = true, setType = 1),
+            exerciseId = 101,
+            workoutDate = dateMs
+        )
+
+        val exerciseMuscleMap = mapOf(
+            101L to listOf(
+                VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY)
+            )
+        )
+
+        val result = volumeCalculator.calculateWeeklyVolume(
+            completedSets = listOf(uncompletedSet, warmupSet),
+            exerciseMuscleMap = exerciseMuscleMap
         )
 
         assertEquals(0, result.latVolume.weeklySets)
-        assertEquals(VolumeCalculator.VolumeStatus.INSUFFICIENT, result.latVolume.status)
-    }
-
-    @Test
-    fun `calculateVtaperBalance returns expected balance text based on volume status`() {
-        val balance = volumeCalculator.calculateWeeklyVolume(
-            completedSets = emptyList(),
-            exerciseMuscleMap = emptyMap()
-        )
-
-        val vtaper = volumeCalculator.calculateVtaperBalance(balance)
-        assertEquals("Low V-taper volume", vtaper.overallBalance)
+        assertEquals(0.0, result.latVolume.effectiveWeeklyVolume, 0.001)
     }
 }

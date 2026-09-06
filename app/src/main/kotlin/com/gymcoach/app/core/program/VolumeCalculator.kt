@@ -14,6 +14,7 @@ class VolumeCalculator @Inject constructor() {
         val weeklySets: Int,
         val directSets: Int,
         val indirectSets: Int,
+        val effectiveWeeklyVolume: Double = 0.0,
         val status: VolumeStatus
     )
 
@@ -132,6 +133,7 @@ class VolumeCalculator @Inject constructor() {
             weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
             directSets = directSetsByMuscle[muscle] ?: 0,
             indirectSets = indirectSetsByMuscle[muscle] ?: 0,
+            effectiveWeeklyVolume = avgWeekly[muscle] ?: 0.0,
             status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
         )
 

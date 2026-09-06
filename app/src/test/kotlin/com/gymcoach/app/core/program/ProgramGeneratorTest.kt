@@ -26,6 +26,7 @@ import org.junit.Test
 class ProgramGeneratorTest {
 
     private lateinit var dao: ExerciseDao
+    private lateinit var readinessRepository: ReadinessRepository
     private lateinit var generator: ProgramGenerator
 
     // P: Back specialist, aggregate-inflated (lat9 + delt6 + rear4 = 19)
@@ -125,7 +126,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `low readiness (< 2.5) reduces sets to 2 and RPE to 7.0`() = runTest {
+    fun `low readiness less than 2_5 reduces sets to 2 and RPE to 7_0`() = runTest {
         val readiness = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
         val program = generate("gym", readiness)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
@@ -135,7 +136,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `high readiness (>= 4.0) increases sets to 4 and RPE to 8.0`() = runTest {
+    fun `high readiness 4_0 or greater increases sets to 4 and RPE to 8_0`() = runTest {
         val readiness = ReadinessEntity(sleepQuality = 5, soreness = 4, energy = 5, motivation = 4)
         val program = generate("gym", readiness)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
@@ -145,7 +146,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `default readiness (3.0) keeps base sets (3) and RPE (7.5)`() = runTest {
+    fun `default readiness 3_0 keeps base sets 3 and RPE 7_5`() = runTest {
         val program = generate("gym")
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
         val rpe = program.days.flatMap { it.exercises }.map { it.targetRpe }
@@ -154,7 +155,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `null readiness falls back to 3.0 score with base sets and RPE`() = runTest {
+    fun `null readiness falls back to 3_0 score with base sets and RPE`() = runTest {
         val program = generate("gym", null)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
         val rpe = program.days.flatMap { it.exercises }.map { it.targetRpe }

@@ -1,27 +1,40 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.IsoFields
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Computes weekly training volume per muscle group from completed workout
+ * sets, using primary/secondary/stabilizer role weighting, and derives a
+ * V-taper balance signal from that volume.
+ *
+ * Volume is bucketed by true ISO week (Mon-Sun, ISO-8601 week-based year)
+ * so a week that spans the Dec/Jan boundary is never split into two
+ * buckets, then averaged as a fractional (Double) value across the number
+ * of distinct weeks actually represented in the input sets. This avoids
+ * both integer truncation and the appearance of "weekly volume" that is
+ * actually an all-time total.
+ */
 @Singleton
 class VolumeCalculator @Inject constructor() {
 
     data class MuscleVolume(
         val muscleName: String,
-        val weeklySets: Int,
-        val directSets: Int,
-        val indirectSets: Int,
+        val weeklySets: Double,
+        val directSets: Double,
+        val indirectSets: Double,
         val status: VolumeStatus
     )
 
     enum class VolumeStatus(val label: String, val level: Int) {
         INSUFFICIENT("Too low", 0),
         MODERATE("Moderate", 1),
-        HIGH("High", 2),
-        OPTIMAL("Optimal", 3),
+        OPTIMAL("Optimal", 2),
+        HIGH("High", 3),
         EXCESSIVE("Very high", 4)
     }
 
@@ -59,7 +72,6 @@ class VolumeCalculator @Inject constructor() {
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
     /**
-     * Enriched set with workout context needed for volume calculations.
      * WorkoutSetEntity does not store exerciseId or date directly;
      * these come from the parent WorkoutExercise and Workout tables.
      */
@@ -70,8 +82,13 @@ class VolumeCalculator @Inject constructor() {
     )
 
     /**
-     * Calculate weekly volume per muscle group with ISO-week bucketing.
+     * Calculate weekly volume per muscle group with true ISO-week bucketing.
      * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
+     *
+     * Direct (primary-role) and indirect (secondary+stabilizer-role) credits are
+     * summed per ISO week per muscle, then averaged across the distinct weeks
+     * present in [completedSets] to produce a fractional weekly figure. Warmup
+     * sets (setType != 0) and incomplete sets are excluded.
      *
      * @param completedSets sets enriched with exercise ID and workout date context
      * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
@@ -80,61 +97,56 @@ class VolumeCalculator @Inject constructor() {
         completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+        val workingSets = completedSets.filter { it.set.completed && it.set.setType == 0 }
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+        // weekKey -> muscleName -> (direct credits, indirect credits)
+        val directByWeek = mutableMapOf<Long, MutableMap<String, Double>>()
+        val indirectByWeek = mutableMapOf<Long, MutableMap<String, Double>>()
+        val weeksSeen = mutableSetOf<Long>()
+
+        for (ctx in workingSets) {
             val weekKey = isoWeekKey(ctx.workoutDate)
-            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
+            weeksSeen.add(weekKey)
+            val assignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
-            for (assignment in muscleAssignments) {
-                val credits = assignment.role.credit
-                val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
-                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + credits
+            for (assignment in assignments) {
+                when (assignment.role) {
+                    MuscleRole.PRIMARY -> {
+                        val bucket = directByWeek.getOrPut(weekKey) { mutableMapOf() }
+                        bucket[assignment.muscleName] = (bucket[assignment.muscleName] ?: 0.0) + assignment.role.credit
+                    }
+                    MuscleRole.SECONDARY, MuscleRole.STABILIZER -> {
+                        val bucket = indirectByWeek.getOrPut(weekKey) { mutableMapOf() }
+                        bucket[assignment.muscleName] = (bucket[assignment.muscleName] ?: 0.0) + assignment.role.credit
+                    }
+                }
             }
         }
 
-        val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
-            }
-        }
-        if (weekBuckets.isNotEmpty()) {
-            for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
-            }
+        val weeksCount = weeksSeen.size.coerceAtLeast(1).toDouble()
+
+        fun averagedTotal(byWeek: Map<Long, Map<String, Double>>, muscle: String): Double {
+            val total = byWeek.values.sumOf { it[muscle] ?: 0.0 }
+            return total / weeksCount
         }
 
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role == MuscleRole.PRIMARY }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+        val allMuscles = (directByWeek.values.flatMap { it.keys } + indirectByWeek.values.flatMap { it.keys }).toSet()
 
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
-                    .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
+        fun vol(muscle: String): MuscleVolume {
+            val direct = averagedTotal(directByWeek, muscle)
+            val indirect = averagedTotal(indirectByWeek, muscle)
+            val total = direct + indirect
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklySets = total,
+                directSets = direct,
+                indirectSets = indirect,
+                status = classify(total)
+            )
+        }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
-
+        // Ensure every named muscle in the balance struct resolves even if
+        // it never appeared in allMuscles (no sets logged for it yet).
         return TrainingBalance(
             latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
             rearDeltVolume = vol("Rear Deltoid"), upperChestVolume = vol("Upper Chest"),
@@ -142,21 +154,23 @@ class VolumeCalculator @Inject constructor() {
             tricepsVolume = vol("Triceps"), quadricepsVolume = vol("Quadriceps"),
             hamstringsVolume = vol("Hamstrings"), glutesVolume = vol("Glutes"),
             calvesVolume = vol("Calves"), coreVolume = vol("Core")
-        )
+        ).also { allMuscles.size } // allMuscles retained for future muscle-list callers; suppress unused warning path
     }
 
-    fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
-        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
-        val text = when {
-            primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
-            primary >= 2.0 -> "Moderate V-taper focus"
-            else -> "Low V-taper volume"
-        }
-        return VtaperBalance(primary, secondary, text)
+    /**
+     * True ISO-8601 week key (week-based year * 100 + week-of-week-based-year).
+     * Unlike Calendar.WEEK_OF_YEAR (locale-dependent, can start on Sunday and
+     * can split the same ISO week across Dec 31 / Jan 1), this never divides
+     * a single ISO week into two buckets.
+     */
+    private fun isoWeekKey(dateMs: Long): Long {
+        val date = Instant.ofEpochMilli(dateMs).atZone(ZoneId.systemDefault()).toLocalDate()
+        val week = date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        val weekBasedYear = date.get(IsoFields.WEEK_BASED_YEAR)
+        return weekBasedYear.toLong() * 100L + week.toLong()
     }
 
-    private fun classify(sets: Int): VolumeStatus {
+    private fun classify(sets: Double): VolumeStatus {
         return when {
             sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
             sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
@@ -166,11 +180,35 @@ class VolumeCalculator @Inject constructor() {
         }
     }
 
-    private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+    /**
+     * V-taper balance score. Distance-from-OPTIMAL scoring: OPTIMAL scores
+     * highest (1.0), and both under-training (INSUFFICIENT) and over-training
+     * (EXCESSIVE) are penalized symmetrically, rather than rewarding raw
+     * ordinal magnitude (which previously scored EXCESSIVE above OPTIMAL).
+     */
+    fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
+        val optimalLevel = VolumeStatus.OPTIMAL.level
+        val maxDistance = maxOf(optimalLevel, VolumeStatus.EXCESSIVE.level - optimalLevel)
+
+        fun bandScore(status: VolumeStatus): Double {
+            val distance = kotlin.math.abs(status.level - optimalLevel)
+            return 1.0 - (distance.toDouble() / maxDistance.toDouble())
+        }
+
+        val primary = (bandScore(balance.latVolume.status) + bandScore(balance.lateralDeltVolume.status)) / 2.0
+        val secondary = (
+            bandScore(balance.rearDeltVolume.status) +
+                bandScore(balance.upperChestVolume.status) +
+                bandScore(balance.upperBackVolume.status)
+            ) / 3.0
+
+        val text = when {
+            primary >= 0.75 && secondary >= 0.5 -> "V-taper focus is well balanced this week."
+            primary < 0.5 -> "Lats and side delts need more direct volume for V-taper progress."
+            secondary < 0.35 -> "Add rear delt, upper chest, or upper back work to round out the taper."
+            else -> "V-taper volume is trending in the right direction."
+        }
+
+        return VtaperBalance(primary, secondary, text)
     }
 }

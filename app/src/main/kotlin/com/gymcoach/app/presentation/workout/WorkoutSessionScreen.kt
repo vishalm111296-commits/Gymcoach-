@@ -516,7 +516,10 @@ private fun ExerciseSetCard(
 
             // Instructions
                         if (instructions.isNotEmpty()) {
-                            TextButton(onClick = { showInstructions = !showInstructions }) {
+                            TextButton(onClick = {
+                                showInstructions = !showInstructions
+                                onInstructionsClick()
+                            }) {
                                 Text(if (showInstructions) "Hide Instructions" else "View Instructions")
                             }
                 

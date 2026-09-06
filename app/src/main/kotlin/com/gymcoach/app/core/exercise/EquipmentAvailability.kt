@@ -21,12 +21,16 @@ class EquipmentAvailability @Inject constructor() {
         "bulgarian bag", "battle rope", "sled", "bodyweight"
     )
 
-    // Core profile: dumbbells + bodyweight, with no bench unless the user
-    // explicitly selects a profile that includes one.
+    /** Generic home profile for users with additional home equipment. */
     private val homeEquipment = setOf(
         "dumbbell", "kettlebell", "resistance band", "bodyweight", "pull-up bar",
         "dip station", "floor", "adjustable dumbbell", "doorway pull-up bar",
         "suspension trainer", "foam roller"
+    )
+
+    /** Strict V-taper profile: dumbbells + bodyweight only. */
+    private val dumbbellBodyweightEquipment = setOf(
+        "dumbbell", "adjustable dumbbell", "bodyweight", "floor"
     )
 
     private val bodyweightOnly = setOf("bodyweight", "floor")
@@ -34,6 +38,7 @@ class EquipmentAvailability @Inject constructor() {
     fun getAvailableEquipment(equipmentType: String): Set<String> = when (equipmentType.trim().lowercase()) {
         "gym" -> gymEquipment
         "home" -> homeEquipment
+        "dumbbell_bodyweight", "dumbbell+bodyweight", "limited_home", "default" -> dumbbellBodyweightEquipment
         "custom", "bodyweight", "bodyweight_only" -> bodyweightOnly
         else -> homeEquipment
     }

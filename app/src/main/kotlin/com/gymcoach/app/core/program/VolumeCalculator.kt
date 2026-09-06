@@ -76,8 +76,11 @@ class VolumeCalculator @Inject constructor() {
 
         fun roleCredits(role: MuscleRole): Map<String, Double> = tracked
             .groupBy { it.exerciseId }
-            .flatMap { (exerciseId, sets) -> exerciseMuscleMap[exerciseId].orEmpty()
-                .filter { it.role == role }.map { it.muscleName to sets.size.toDouble() } }
+            .flatMap { (exerciseId, sets) ->
+                exerciseMuscleMap[exerciseId].orEmpty()
+                    .filter { it.role == role }
+                    .map { it.muscleName to sets.size.toDouble() }
+            }
             .groupBy({ it.first }, { it.second })
             .mapValues { (_, values) -> values.sum() / weekCount }
 
@@ -88,8 +91,10 @@ class VolumeCalculator @Inject constructor() {
         fun vol(muscle: String): MuscleVolume {
             val weighted = averageCredits[muscle] ?: 0.0
             val directSets = (direct[muscle] ?: 0.0).roundToInt()
-            val indirectCredits = ((secondary[muscle] ?: 0.0) * MuscleRole.SECONDARY.credit +
-                (stabilizer[muscle] ?: 0.0) * MuscleRole.STABILIZER.credit).roundToInt()
+            val indirectCredits = (
+                (secondary[muscle] ?: 0.0) * MuscleRole.SECONDARY.credit +
+                    (stabilizer[muscle] ?: 0.0) * MuscleRole.STABILIZER.credit
+                ).roundToInt()
             return MuscleVolume(muscle, weighted.roundToInt(), directSets, indirectCredits, classify(weighted))
         }
 

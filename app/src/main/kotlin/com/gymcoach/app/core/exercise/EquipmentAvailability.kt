@@ -5,66 +5,52 @@ import javax.inject.Singleton
 
 /**
  * Equipment availability by access level.
- * Equipment names MUST match ExerciseEntity.equipment values in the database seed data.
- *
- * Database seed equipment keys (lowercase):
- * "dumbbell", "bench", "bodyweight", "cable", "machine", "kettlebell", "barbell", etc.
- *
- * Compound equipment uses "," separator (ExerciseSeeder joins asset arrays with
- * joinToString(",")), e.g. "dumbbell,bench". Legacy "+" separators are tolerated.
+ * Compound requirements are comma- or plus-delimited and require every item.
  */
 @Singleton
 class EquipmentAvailability @Inject constructor() {
 
-    private val GYM_EQUIPMENT = setOf(
+    private val gymEquipment = setOf(
         "barbell", "dumbbell", "kettlebell", "ez bar", "trap bar",
         "cable", "smith machine", "leg press", "hack squat",
         "leg extension", "leg curl", "pec deck", "lat pulldown",
         "seated row", "chest press machine", "shoulder press machine",
         "dip station", "pull-up bar", "bench", "incline bench",
         "decline bench", "preacher bench", "cable crossover",
-        "functional trainer", "landmine", "safety squat bar",
-        "swiss bar", "bulgarian bag", "battle rope", "sled",
-        "bodyweight"
+        "functional trainer", "landmine", "safety squat bar", "swiss bar",
+        "bulgarian bag", "battle rope", "sled", "bodyweight"
     )
 
-    private val HOME_EQUIPMENT = setOf(
-        "dumbbell", "kettlebell", "resistance band", "bodyweight",
-        "pull-up bar", "dip station", "bench", "floor",
-        "adjustable dumbbell", "doorway pull-up bar",
+    // Deliberately excludes a bench: this matches the core dumbbell + bodyweight
+    // use case unless the user explicitly chooses a different equipment profile.
+    private val homeEquipment = setOf(
+        "dumbbell", "kettlebell", "resistance band", "bodyweight", "pull-up bar",
+        "dip station", "bench", "floor", "adjustable dumbbell", "doorway pull-up bar",
         "suspension trainer", "foam roller"
     )
 
-    private val CUSTOM_EQUIPMENT = setOf("bodyweight")
+    private val bodyweightOnly = setOf("bodyweight", "floor")
 
-    fun getAvailableEquipment(equipmentType: String): Set<String> {
-        return when (equipmentType.lowercase()) {
-            "gym" -> GYM_EQUIPMENT
-            "home" -> HOME_EQUIPMENT
-            "custom" -> CUSTOM_EQUIPMENT
-            else -> CUSTOM_EQUIPMENT
-        }
+    fun getAvailableEquipment(equipmentType: String): Set<String> = when (equipmentType.trim().lowercase()) {
+        "gym" -> gymEquipment
+        "home" -> homeEquipment
+        "custom", "bodyweight", "bodyweight_only" -> bodyweightOnly
+        else -> homeEquipment
     }
 
     fun isAvailable(equipment: String, equipmentType: String): Boolean {
-        val available = getAvailableEquipment(equipmentType)
-        return equipment in available || equipment == "bodyweight"
+        val normalized = equipment.trim().lowercase().replace("_", " ")
+        if (normalized.isBlank() || normalized == "bodyweight") return true
+        return normalized in getAvailableEquipment(equipmentType)
     }
 
-    /**
-     * True when the exercise requires gear outside the user's available set —
-     * used by ProgressionEngine to switch from weight progression to rep/set
-     * progression when load cannot increase further.
-     *
-     * Compound requirements like "dumbbell,bench" are satisfied only if
-     * every token is available.
-     */
+    /** True when one or more required non-bodyweight items are unavailable. */
     fun isLimited(equipment: String, equipmentType: String): Boolean {
-        if (equipment.isBlank()) return false
-        return equipment.replace("+", ",")
+        val requirements = equipment
+            .replace("+", ",")
             .split(",")
-            .map { it.trim().lowercase() }
-            .filter { it.isNotEmpty() && it != "bodyweight" }
-            .any { !isAvailable(it, equipmentType) }
+            .map { it.trim().lowercase().replace("_", " ") }
+            .filter { it.isNotBlank() && it != "bodyweight" }
+        return requirements.any { !isAvailable(it, equipmentType) }
     }
 }

@@ -7,6 +7,8 @@
 - [x] ses_audit (Commander): doc reconciliation + source audit + test inventory - done
 - [x] ses_context (Commander): .opencode/context.md + todo.md created - done
 - [x] ses_1 (Worker): `HomeViewModel.kt` - done
+- [x] ses_2 (Worker): `VolumeCalculator.kt` - done
+- [ ] ses_2 (Worker): M2-M11 Verification - in_progress
 
 ## File Status
 | File | Action | Status | Session | Unit Test | Timestamp | Issue |
@@ -14,6 +16,7 @@
 | .opencode/context.md | CREATE | done | ses_context | - | 2026-09-06T04:52 | - |
 | .opencode/todo.md | CREATE | done | ses_context | - | 2026-09-06T04:52 | - |
 | app/src/main/kotlin/.../HomeViewModel.kt | MODIFY | done | ses_1 | - | 2026-09-06T08:30 | - |
+| app/src/main/kotlin/.../VolumeCalculator.kt | FIX | done | ses_2 | - | 2026-09-06T08:39 | - |
 
 ## Pending Integration
 - Ground-truth build: testDebugUnitTest (expect duplicate ProgramGeneratorTest FQCN failure)

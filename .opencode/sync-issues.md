@@ -2,9 +2,9 @@
 
 ## SYNC-4
 - Severity: HIGH
-- Files: BodyMeasurementEntity.kt ↔ GymCoachDatabase.kt (MIGRATION_11_12)
-- Problem: Worker changed BodyMeasurementEntity fields from non-nullable `Double = 0.0` to nullable `Double?`. While the original migration SQL (MIGRATION_2_3) created these columns as nullable (`REAL` without NOT NULL), the Room schema v11 JSON was generated from the old non-nullable entity, so it records them as `notNull: true`. MIGRATION_11_12 only adds columns but doesn't recreate the table. Room's schema validation at startup compares the new entity against the v11 schema and will detect a notNull mismatch.
-- Fix: Either (a) Revert BodyMeasurementEntity fields to non-nullable `Double = 0.0` (simplest), OR (b) Add a table recreation migration that drops and recreates body_measurements with nullable columns, copying data.
+- Files: GymCoachDatabase.kt (@Database version = 11) + MIGRATION_11_12
+- Problem: Database version is still 11 but MIGRATION_11_12 was added. The migration will NEVER run because the @Database(version = 11) was not bumped to 12. This means the schema fixes (adding target_muscles to program_days, adding hips_cm to body_measurements) will NOT be applied on existing installs.
+- Fix: Change @Database(version = 11) to @Database(version = 12) and export a new 12.json schema.
 - Status: pending
 
 ## RESOLVED ISSUES (archived)
@@ -21,3 +21,6 @@
 ### SYNC-3 ✅ NOTED (out of scope)
 - HomeViewModel.buildTrainingBalance uses "Back" for latVolume key, VolumeCalculator uses "Lats"
 - Pre-existing naming inconsistency, not introduced by this fix
+
+### SYNC-5 ✅ RESOLVED
+- BodyMeasurementEntity nullable vs non-nullable: Worker reverted to non-nullable Double = 0.0 fields, ProgressViewModel.saveMeasurement uses `?: 0.0` to convert null → 0.0, load() uses `takeIf { it > 0 }` to convert 0.0 → null for UI. Convention is consistent across entity/ViewModel/UI layers.

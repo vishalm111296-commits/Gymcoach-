@@ -26,6 +26,7 @@ import org.junit.Test
 class ProgramGeneratorTest {
 
     private lateinit var dao: ExerciseDao
+    private lateinit var readinessRepository: ReadinessRepository
     private lateinit var generator: ProgramGenerator
 
     // P: Back specialist, aggregate-inflated (lat9 + delt6 + rear4 = 19)

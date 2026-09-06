@@ -14,6 +14,9 @@
 - [x] ses_5 (Worker): Readiness (M9) + Settings (M11) Verification - done
 - [x] ses_6 (Worker): Camera Pipeline (M10) Verification - done
 
+- [x] ses_7 (Worker): Database schema fix (M2) + final verification - done
+- [x] ses_8 (Worker): Body measurement entity revert + test update - done
+
 ## File Status
 | File | Action | Status | Session | Unit Test | Timestamp | Issue |
 |------|--------|--------|---------|-----------|-----------|-------|
@@ -27,10 +30,11 @@
 | app/src/main/kotlin/.../ExerciseDetailScreen.kt | VERIFY | done | ses_3 | - | 2026-09-06T08:45 | - |
 | app/src/main/kotlin/.../SubstitutionEngine.kt | VERIFY | done | ses_3 | - | 2026-09-06T08:45 | - |
 | app/src/main/kotlin/.../EquipmentAvailability.kt | VERIFY | done | ses_3 | - | 2026-09-06T08:45 | - |
-| app/src/main/kotlin/.../BodyMeasurementTrend.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | - |
-| app/src/main/kotlin/.../ProgressViewModel.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | - |
-| app/src/main/kotlin/.../ProgressDashboardScreen.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | - |
-| app/src/test/.../BodyMeasurementTest.kt | CREATE | done | ses_4 | pass | 2026-09-06T08:49 | M8 |
+| app/src/main/kotlin/.../BodyMeasurementEntity.kt | REVERT | done | ses_8 | - | 2026-09-06T08:58 | M8 |
+| app/src/main/kotlin/.../BodyMeasurementTrend.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | M8 |
+| app/src/main/kotlin/.../ProgressViewModel.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | M8 |
+| app/src/main/kotlin/.../ProgressDashboardScreen.kt | MODIFY | done | ses_4 | - | 2026-09-06T08:46 | M8 |
+| app/src/test/.../BodyMeasurementTest.kt | CREATE | done | ses_8 | pass | 2026-09-06T08:57 | M8 |
 | app/src/main/kotlin/.../ReadinessEntity.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
 | app/src/main/kotlin/.../ReadinessDao.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
 | app/src/main/kotlin/.../ReadinessRepositoryImpl.kt | VERIFY | done | ses_5 | - | 2026-09-06T08:53 | M9 |
@@ -52,6 +56,7 @@
 | app/src/main/kotlin/.../FormAnalyzer.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
 | app/src/main/kotlin/.../CameraOverlay.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
 | app/src/main/kotlin/.../ExerciseSeeder.kt | VERIFY | done | ses_6 | - | 2026-09-06T08:55 | M10 |
+| app/src/main/kotlin/.../GymCoachDatabase.kt | MODIFY | done | ses_7 | - | 2026-09-06T08:52 | M2 |
 
 ## Pending Integration
 - Ground-truth build: testDebugUnitTest (expect duplicate ProgramGeneratorTest FQCN failure)

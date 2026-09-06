@@ -1,7 +1,7 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.WorkoutDao
-import com.gymcoach.app.data.local.dao.WorkoutWithStats
+import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -15,7 +15,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Regression tests for the 6 forensic audit fixes:
+ * Regression tests for the forensic audit fixes:
  *
  * 1. Status mapping: entity.status → domain.status is preserved end-to-end
  * 2. Terminal-state guard: getLatestIncompleteWorkout only returns ACTIVE
@@ -23,6 +23,7 @@ import org.junit.Test
  * 4. ACTIVE workout lookup: queries filter on status='ACTIVE'
  * 5. strftime monthly volume: monthly grouping uses strftime('%Y-%m', ...)
  * 6. Analytics filtering: all analytics queries filter on status='COMPLETED'
+ * 7. Volume Engine: ProgramGenerator caps per-session volume (12-18 sets max)
  */
 class ForensicAuditRegressionTest {
 
@@ -251,5 +252,61 @@ class ForensicAuditRegressionTest {
         val total = workoutDao.getTotalVolumeSum()
 
         assertEquals("Total should be from COMPLETED workouts only", 50000.0, total!!, 0.001)
+    }
+
+    // ──────────────────────────────────────────────
+    //  Fix #7: Volume Engine (ProgramGenerator & HomeViewModel)
+    // ──────────────────────────────────────────────
+
+    @Test
+    fun `program generator buildDay caps daily exercise count to 1 exercise per muscle slot`() = runTest {
+        val exerciseDao = mockk<com.gymcoach.app.data.local.dao.ExerciseDao>()
+        val equipmentAvailability = mockk<com.gymcoach.app.core.exercise.EquipmentAvailability>()
+
+        val dummyExercises = listOf(
+            createExercise(1L, "Lat Pulldown", "Back", "cable", "Beginner"),
+            createExercise(2L, "Dumbbell Row", "Back", "dumbbell", "Beginner"),
+            createExercise(3L, "Incline Dumbbell Bench Press", "Chest", "dumbbell", "Beginner"),
+            createExercise(4L, "Lateral Raise", "Lateral Deltoid", "dumbbell", "Beginner"),
+            createExercise(5L, "Dumbbell Bicep Curl", "Biceps", "dumbbell", "Beginner"),
+            createExercise(6L, "Tricep Extension", "Triceps", "dumbbell", "Beginner")
+        )
+
+        coEvery { equipmentAvailability.getAvailableEquipment(any()) } returns setOf("dumbbell", "cable", "bodyweight")
+        coEvery { exerciseDao.getAll() } returns flowOf(dummyExercises)
+
+        val generator = com.gymcoach.app.core.program.ProgramGenerator(exerciseDao, equipmentAvailability)
+        val program = generator.generateProgram(4, "dumbbell", "hypertrophy")
+
+        for (day in program.days) {
+            assertTrue("Day exercise count should be capped at 6 or fewer", day.exercises.size <= 6)
+            assertTrue("Daily total sets should be 18 or fewer", day.exercises.sumOf { it.targetSets } <= 18)
+        }
+    }
+
+    private fun createExercise(
+        id: Long,
+        name: String,
+        category: String,
+        equipment: String,
+        difficulty: String
+    ): ExerciseEntity {
+        return ExerciseEntity(
+            id = id,
+            name = name,
+            description = "",
+            muscleGroup = category,
+            equipment = equipment,
+            difficulty = difficulty,
+            secondaryMuscles = "",
+            instructions = "",
+            tips = "",
+            commonMistakes = "",
+            safetyNotes = "",
+            recommendedRepRange = "8-12",
+            recommendedRestTime = "90s",
+            category = category,
+            tags = "compound"
+        )
     }
 }

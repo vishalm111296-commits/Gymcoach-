@@ -220,10 +220,13 @@ class WorkoutLoggingViewModel @Inject constructor(
             status = "ACTIVE"
         )
         val id = workoutRepository.createWorkout(workout)
+        // Start the timer BEFORE collecting: Room flows never complete, so any
+        // code after the collect below is unreachable. Starting the timer first
+        // lets _elapsedSeconds tick while the collect feeds _currentWorkout.
+        startWorkoutTimer()
         workoutRepository.getWorkoutWithDetails(id).collect {
             _currentWorkout.value = it
         }
-        startWorkoutTimer()
     }
 
     /**
@@ -252,13 +255,17 @@ class WorkoutLoggingViewModel @Inject constructor(
             )
         }
 
+        // Start the timer BEFORE collecting: Room flows never complete, so any
+        // code after the collect below is unreachable. Starting the timer first
+        // lets _elapsedSeconds tick while the collect feeds _currentWorkout.
+        startWorkoutTimer()
+
         // Load the new workout
         workoutRepository.getWorkoutWithDetails(newWorkoutId).collect {
             _currentWorkout.value = it
             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
             calculateSessionVolume(it)
         }
-        startWorkoutTimer()
     }
 
     fun updateNotes(notes: String) {

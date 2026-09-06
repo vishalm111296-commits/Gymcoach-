@@ -180,10 +180,6 @@ fun WorkoutSessionScreen(
                                 label = "Volume",
                                 value = "%.1f kg".format(completionStats.totalVolume)
                             )
-                            CompletionStatItem(
-                                label = "Est. Calories",
-                                value = "%.0f".format(completionStats.totalVolume * 0.05)
-                            )
                         }
                     }
                 }

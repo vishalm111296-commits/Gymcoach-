@@ -167,10 +167,11 @@ class VolumeCalculator @Inject constructor() {
     }
 
     private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+        val dateTime = java.time.Instant.ofEpochMilli(dateMs)
+            .atZone(java.time.ZoneId.systemDefault())
+        val isoFields = java.time.temporal.WeekFields.ISO
+        val week = dateTime.get(isoFields.weekOfWeekBasedYear())
+        val year = dateTime.get(isoFields.weekBasedYear())
+        return year * 100 + week
     }
 }

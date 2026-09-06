@@ -47,10 +47,10 @@ private const val ESTIMATED_WORK_SECONDS_PER_SET = 40
 
 /** Dashboard bars mapped from the generator's muscle vocabulary to user-facing groups. */
 private val VTAPER_BAR_SOURCES = listOf(
-    "Lats" to listOf("Back"),
-    "Lateral Delts" to listOf("Lateral Deltoid"),
-    "Chest" to listOf("Chest", "Upper Chest"),
-    "Legs" to listOf("Quadriceps", "Hamstrings", "Glutes", "Calves")
+    "Lats" to listOf("Lats", "Back", "Latissimus Dorsi", "latissimus_dorsi"),
+    "Lateral Delts" to listOf("Lateral Deltoid", "Lateral Delt", "Side Delt", "lateral_deltoid"),
+    "Chest" to listOf("Chest", "Upper Chest", "chest"),
+    "Legs" to listOf("Quadriceps", "Hamstrings", "Glutes", "Calves", "Legs")
 )
 
 private data class ProgramCore(
@@ -192,8 +192,8 @@ class HomeViewModel @Inject constructor(
         else -> VolumeCalculator.VolumeStatus.EXCESSIVE
     }
 
-    private fun volume(name: String, planned: Map<String, Int>): VolumeCalculator.MuscleVolume {
-        val sets = planned[name] ?: 0
+    private fun volumeForKeys(name: String, planned: Map<String, Int>, vararg keys: String): VolumeCalculator.MuscleVolume {
+        val sets = keys.sumOf { planned[it] ?: 0 }
         return VolumeCalculator.MuscleVolume(
             muscleName = name,
             weeklySets = sets,
@@ -205,18 +205,18 @@ class HomeViewModel @Inject constructor(
 
     private fun buildTrainingBalance(planned: Map<String, Int>): VolumeCalculator.TrainingBalance {
         return VolumeCalculator.TrainingBalance(
-            latVolume = volume("Back", planned),
-            lateralDeltVolume = volume("Lateral Deltoid", planned),
-            rearDeltVolume = volume("Rear Deltoid", planned),
-            upperChestVolume = volume("Upper Chest", planned),
-            upperBackVolume = volume("Upper Back", planned),
-            bicepsVolume = volume("Biceps", planned),
-            tricepsVolume = volume("Triceps", planned),
-            quadricepsVolume = volume("Quadriceps", planned),
-            hamstringsVolume = volume("Hamstrings", planned),
-            glutesVolume = volume("Glutes", planned),
-            calvesVolume = volume("Calves", planned),
-            coreVolume = volume("Core", planned)
+            latVolume = volumeForKeys("Lats", planned, "Lats", "Back", "Latissimus Dorsi", "latissimus_dorsi"),
+            lateralDeltVolume = volumeForKeys("Lateral Deltoid", planned, "Lateral Deltoid", "Lateral Delt", "Side Delt", "lateral_deltoid"),
+            rearDeltVolume = volumeForKeys("Rear Deltoid", planned, "Rear Deltoid", "Rear Delt", "rear_deltoid"),
+            upperChestVolume = volumeForKeys("Upper Chest", planned, "Upper Chest", "Chest", "upper_chest"),
+            upperBackVolume = volumeForKeys("Upper Back", planned, "Upper Back", "upper_back"),
+            bicepsVolume = volumeForKeys("Biceps", planned, "Biceps", "biceps"),
+            tricepsVolume = volumeForKeys("Triceps", planned, "Triceps", "triceps"),
+            quadricepsVolume = volumeForKeys("Quadriceps", planned, "Quadriceps", "quadriceps"),
+            hamstringsVolume = volumeForKeys("Hamstrings", planned, "Hamstrings", "hamstrings"),
+            glutesVolume = volumeForKeys("Glutes", planned, "Glutes", "glutes"),
+            calvesVolume = volumeForKeys("Calves", planned, "Calves", "calves"),
+            coreVolume = volumeForKeys("Core", planned, "Core", "core", "Abs")
         )
     }
 

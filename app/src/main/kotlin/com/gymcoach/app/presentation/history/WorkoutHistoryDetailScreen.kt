@@ -280,7 +280,12 @@ fun WorkoutHistoryDetailScreen(
 
 // --- Share ---
 
-private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
+internal fun shareWorkoutSummary(
+    context: Context,
+    workout: WorkoutWithDetails,
+    intentFactory: (String) -> Intent = { Intent(it) },
+    intentLauncher: (Intent) -> Unit = { context.startActivity(it) }
+) {
     val w = workout.workout
     val date = formatDate(w.date)
     val duration = formatDuration(w.duration)
@@ -333,12 +338,35 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
         sb.appendLine("\uD83D\uDCDD Notes: ${w.notes}")
     }
 
-    val intent = Intent(Intent.ACTION_SEND).apply {
+    val sendIntent = intentFactory(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, sb.toString())
         putExtra(Intent.EXTRA_SUBJECT, "My Workout - $date")
     }
-    context.startActivity(Intent.createChooser(intent, "Share Workout"))
+
+    val chooserIntent = Intent.createChooser(sendIntent, "Share Workout").apply {
+        if (context !is android.app.Activity) {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+
+    try {
+        if (sendIntent.resolveActivity(context.packageManager) != null || chooserIntent.resolveActivity(context.packageManager) != null) {
+            intentLauncher(chooserIntent)
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                "No app available to handle share action",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    } catch (e: Exception) {
+        android.widget.Toast.makeText(
+            context,
+            "Unable to share workout summary",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+    }
 }
 
 // --- Muscle Breakdown ---

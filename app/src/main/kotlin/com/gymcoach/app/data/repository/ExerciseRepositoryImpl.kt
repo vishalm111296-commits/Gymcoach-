@@ -13,21 +13,15 @@ class ExerciseRepositoryImpl @Inject constructor(
 ) : ExerciseRepository {
 
     override fun getAllExercises(): Flow<List<Exercise>> {
-        return exerciseDao.getAll().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return exerciseDao.getAll().mapList { it.toDomain() }
     }
 
     override fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<Exercise>> {
-        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).mapList { it.toDomain() }
     }
 
     override fun searchExercises(query: String): Flow<List<Exercise>> {
-        return exerciseDao.searchExercises(query).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return exerciseDao.searchExercises(query).mapList { it.toDomain() }
     }
 
     override fun getExerciseById(id: Long): Flow<Exercise?> {

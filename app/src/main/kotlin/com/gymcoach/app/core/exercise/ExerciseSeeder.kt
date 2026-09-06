@@ -18,13 +18,7 @@ import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Seeds the exercise catalog as one atomic catalog update.
- *
- * The seed version is bumped whenever the asset contract changes. Existing
- * rows are updated by stable exercise/muscle/equipment names instead of being
- * blindly appended, which keeps repeated catalog upgrades idempotent.
- */
+/** Atomic, idempotent exercise-catalog seeding. */
 @Singleton
 class ExerciseSeeder @Inject constructor(
     private val db: GymCoachDatabase,
@@ -40,9 +34,8 @@ class ExerciseSeeder @Inject constructor(
                 seedSubstitutions(exerciseIds)
                 rebuildSearchIndex()
             }
-            // Only advance the version after the transaction has completed.
-            // Any exception rolls the catalog back and leaves the version old,
-            // so the next launch retries instead of accepting a partial seed.
+            // A failed transaction never reaches this line, so a broken asset
+            // cannot be permanently marked as seeded.
             prefs.edit().putInt(KEY_SEED_VERSION, SEED_VERSION).apply()
         }
     }
@@ -59,14 +52,10 @@ class ExerciseSeeder @Inject constructor(
         for (g in 0 until groups.length()) {
             val group = groups.getJSONObject(g)
             val groupName = group.getString("id")
-            val existingGroup = db.muscleDao().getByName(groupName)
-            val groupId = if (existingGroup != null) {
-                existingGroup.id
-            } else {
-                db.muscleDao().insert(
+            val groupId = db.muscleDao().getByName(groupName)?.id
+                ?: db.muscleDao().insert(
                     MuscleEntity(name = groupName, displayName = group.getString("name"))
                 )
-            }
             ids[groupName] = groupId
 
             val subs = group.optJSONArray("subdivisions") ?: continue
@@ -74,15 +63,15 @@ class ExerciseSeeder @Inject constructor(
                 val sub = subs.getJSONObject(s)
                 val subName = sub.getString("id")
                 if (subName in ids) continue
-                val existing = db.muscleDao().getByName(subName)
-                ids[subName] = existing?.id ?: db.muscleDao().insert(
-                    MuscleEntity(
-                        name = subName,
-                        displayName = sub.getString("name"),
-                        parentMuscleId = groupId,
-                        bodyRegion = groupName
+                ids[subName] = db.muscleDao().getByName(subName)?.id
+                    ?: db.muscleDao().insert(
+                        MuscleEntity(
+                            name = subName,
+                            displayName = sub.getString("name"),
+                            parentMuscleId = groupId,
+                            bodyRegion = groupName
+                        )
                     )
-                )
             }
         }
         return ids
@@ -96,7 +85,6 @@ class ExerciseSeeder @Inject constructor(
                 strings(root.getJSONObject(i).optJSONArray("equipment")).forEach(equipmentNames::add)
             }
         }
-
         return equipmentNames.associateWith { name ->
             db.equipmentDao().getByName(name)?.id ?: db.equipmentDao().insert(
                 EquipmentEntity(
@@ -105,7 +93,7 @@ class ExerciseSeeder @Inject constructor(
                     category = name
                 )
             )
-        }.toMutableMap()
+        }
     }
 
     private suspend fun seedExercises(
@@ -113,7 +101,6 @@ class ExerciseSeeder @Inject constructor(
         equipmentIds: Map<String, Long>
     ): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
-
         for (file in ALL_EXERCISE_FILES) {
             val root = JSONArray(asset(file))
             for (i in 0 until root.length()) {
@@ -136,7 +123,6 @@ class ExerciseSeeder @Inject constructor(
                 val equipment = strings(e.optJSONArray("equipment"))
                 val name = e.getString("name")
                 val existing = db.exerciseDao().getByName(name)
-
                 val entity = ExerciseEntity(
                     id = existing?.id ?: 0L,
                     name = name,
@@ -175,26 +161,28 @@ class ExerciseSeeder @Inject constructor(
                 }
                 result[stableId] = rowId
 
-                // Relationship rows are refreshed for this exercise so a catalog
-                // update can add/remove aliases and equipment safely.
                 db.exerciseAliasDao().deleteByExerciseId(rowId)
                 db.exerciseAliasDao().insertAll(
                     strings(e.optJSONArray("aliases")).map {
                         ExerciseAliasEntity(exerciseId = rowId, alias = it.lowercase())
                     }
                 )
+
+                db.exerciseMuscleDao().deleteByExerciseId(rowId)
                 db.exerciseMuscleDao().insertAll(
                     (primary.map { it to "primary" } + secondary.map { it to "secondary" })
                         .mapNotNull { (muscle, role) ->
-                            muscleIds[muscle]?.let {
-                                ExerciseMuscleEntity(exerciseId = rowId, muscleId = it, role = role)
+                            muscleIds[muscle]?.let { muscleId ->
+                                ExerciseMuscleEntity(exerciseId = rowId, muscleId = muscleId, role = role)
                             }
                         }
                 )
+
+                db.exerciseEquipmentDao().deleteByExerciseId(rowId)
                 db.exerciseEquipmentDao().insertAll(
                     equipment.mapNotNull { eq ->
-                        equipmentIds[eq]?.let {
-                            ExerciseEquipmentEntity(exerciseId = rowId, equipmentId = it)
+                        equipmentIds[eq]?.let { equipmentId ->
+                            ExerciseEquipmentEntity(exerciseId = rowId, equipmentId = equipmentId)
                         }
                     }
                 )

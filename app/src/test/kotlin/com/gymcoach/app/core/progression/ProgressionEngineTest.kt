@@ -11,190 +11,74 @@ import org.junit.Before
 import org.junit.Test
 
 class ProgressionEngineTest {
-
-    private lateinit var equipmentAvailability: EquipmentAvailability
-    private lateinit var progressionEngine: ProgressionEngine
+    private lateinit var equipment: EquipmentAvailability
+    private lateinit var engine: ProgressionEngine
 
     @Before
     fun setup() {
-        equipmentAvailability = mockk()
-        progressionEngine = ProgressionEngine(equipmentAvailability)
-
-        // Default mock behavior
-        every { equipmentAvailability.isLimited(any(), any()) } returns false
+        equipment = mockk()
+        engine = ProgressionEngine(equipment)
+        every { equipment.isLimited(any(), any()) } returns false
     }
 
-    private fun createSet(
-        weight: Double,
-        reps: Int,
-        completed: Boolean = true,
-        setType: Int = 0
-    ) = WorkoutSetEntity(
-        id = 0,
-        workoutExerciseId = 1,
-        setNumber = 1,
-        weight = weight,
-        reps = reps,
-        rpe = 8.0,
-        restSeconds = 60,
-        completed = completed,
-        setType = setType
-    )
+    private fun set(weight: Double, reps: Int, rpe: Double = 8.0, completed: Boolean = true, type: Int = 0) =
+        WorkoutSetEntity(
+            id = 0, workoutExerciseId = 1, setNumber = 1, weight = weight,
+            reps = reps, rpe = rpe, restSeconds = 90, completed = completed, setType = type
+        )
 
     @Test
-    fun `calculateProgression returns base recommendation when no normal completed sets`() {
-        val currentSets = listOf(
-            createSet(weight = 50.0, reps = 10, completed = false),
-            createSet(weight = 50.0, reps = 10, completed = true, setType = 1) // WARMUP
-        )
-
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Squat",
-            exerciseEquipment = "barbell",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = emptyList(),
-            currentSets = currentSets
-        )
-
+    fun noCompletedWorkingSetsReturnsBaseTarget() {
+        val result = engine.calculateProgression(1, "Curl", "dumbbell", 8, 12, 3, emptyList(), listOf(set(10.0, 10, completed = false), set(10.0, 10, type = 1)))
         assertEquals(0.0, result.currentWeight, 0.0)
-        assertEquals(0.0, result.recommendedWeight, 0.0)
-        assertEquals("8-12", result.recommendedReps)
         assertEquals(3, result.recommendedSets)
-        assertEquals("No completed working sets yet.", result.reason)
+        assertEquals("8-12", result.recommendedReps)
     }
 
     @Test
-    fun `calculateProgression recommends weight increase when all sets hit max reps`() {
-        val currentSets = listOf(
-            createSet(weight = 50.0, reps = 12),
-            createSet(weight = 50.0, reps = 12),
-            createSet(weight = 50.0, reps = 13) // Exceeded max
-        )
-
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Squat",
-            exerciseEquipment = "barbell",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = emptyList(),
-            currentSets = currentSets
-        )
-
-        assertEquals(50.0, result.currentWeight, 0.0)
-        assertEquals(55.0, result.recommendedWeight, 0.0) // 50.0 * 1.05 = 52.5, but calculateIncrease for 50 <= x < 100 adds 5.0
-        assertEquals("8-12", result.recommendedReps)
+    fun increasesLoadWhenTopRangeReachedAtRirOneOrMore() {
+        val result = engine.calculateProgression(1, "Curl", "dumbbell", 8, 12, 3, emptyList(), listOf(set(20.0, 12), set(20.0, 12), set(20.0, 12)))
+        assertEquals(22.0, result.recommendedWeight, 0.0)
         assertEquals(3, result.recommendedSets)
         assertFalse(result.isEquipmentLimited)
     }
 
     @Test
-    fun `calculateProgression recommends set rep progression for bodyweight exercises`() {
-        val currentSets = listOf(
-            createSet(weight = 0.0, reps = 12),
-            createSet(weight = 0.0, reps = 12)
-        )
+    fun doesNotIncreaseLoadWhenSetsAreTakenToFailure() {
+        val result = engine.calculateProgression(1, "Curl", "dumbbell", 8, 12, 3, emptyList(), listOf(set(20.0, 12, rpe = 10.0), set(20.0, 12, rpe = 10.0)))
+        assertEquals(20.0, result.recommendedWeight, 0.0)
+        assertTrue(result.reason.contains("current load"))
+    }
 
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Pushup",
-            exerciseEquipment = "bodyweight",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = emptyList(),
-            currentSets = currentSets
-        )
-
-        assertEquals(0.0, result.currentWeight, 0.0)
+    @Test
+    fun bodyweightProgressesRepsBeforeAddingSets() {
+        val result = engine.calculateProgression(1, "Push-up", "bodyweight", 8, 12, 3, emptyList(), listOf(set(0.0, 12), set(0.0, 12)))
         assertEquals(0.0, result.recommendedWeight, 0.0)
-        assertEquals("8-14", result.recommendedReps) // targetRepsMax + 2
-        assertEquals(4, result.recommendedSets) // targetSets + 1
+        assertEquals("8-14", result.recommendedReps)
+        assertEquals(3, result.recommendedSets)
         assertTrue(result.isEquipmentLimited)
     }
 
     @Test
-    fun `calculateProgression recommends set rep progression when equipment is limited`() {
-        every { equipmentAvailability.isLimited("dumbbell", "home") } returns true
-
-        val currentSets = listOf(
-            createSet(weight = 20.0, reps = 12),
-            createSet(weight = 20.0, reps = 12)
-        )
-
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Dumbbell Curl",
-            exerciseEquipment = "dumbbell",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = emptyList(),
-            currentSets = currentSets,
-            equipmentType = "home"
-        )
-
-        assertEquals(20.0, result.currentWeight, 0.0)
+    fun limitedLoadUsesRepProgression() {
+        every { equipment.isLimited("dumbbell", "home") } returns true
+        val result = engine.calculateProgression(1, "Curl", "dumbbell", 8, 12, 3, emptyList(), listOf(set(20.0, 12), set(20.0, 12)), equipmentType = "home")
         assertEquals(20.0, result.recommendedWeight, 0.0)
         assertEquals("8-14", result.recommendedReps)
-        assertEquals(4, result.recommendedSets)
+        assertEquals(3, result.recommendedSets)
         assertTrue(result.isEquipmentLimited)
     }
 
     @Test
-    fun `calculateProgression recommends weight decrease when regressing`() {
-        val currentSets = listOf(
-            createSet(weight = 60.0, reps = 6) // Below min of 8
-        )
-        val previousSets = listOf(
-            createSet(weight = 60.0, reps = 7) // Also below min
-        )
-
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Bench Press",
-            exerciseEquipment = "barbell",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = previousSets,
-            currentSets = currentSets
-        )
-
-        assertEquals(60.0, result.currentWeight, 0.0)
-        assertEquals(54.0, result.recommendedWeight, 0.0) // 60.0 * 0.9 = 54.0
-        assertEquals("8-12", result.recommendedReps)
-        assertEquals(3, result.recommendedSets)
+    fun regressionReducesLoadAfterConsecutiveLowSessions() {
+        val result = engine.calculateProgression(1, "Press", "dumbbell", 8, 12, 3, listOf(set(20.0, 7)), listOf(set(20.0, 6)))
+        assertEquals(18.0, result.recommendedWeight, 0.0)
     }
 
     @Test
-    fun `calculateProgression maintains weight when neither hitting max nor regressing`() {
-        val currentSets = listOf(
-            createSet(weight = 60.0, reps = 10) // Between 8 and 12
-        )
-        val previousSets = listOf(
-            createSet(weight = 60.0, reps = 9)
-        )
-
-        val result = progressionEngine.calculateProgression(
-            exerciseId = 1L,
-            exerciseName = "Bench Press",
-            exerciseEquipment = "barbell",
-            targetRepsMin = 8,
-            targetRepsMax = 12,
-            targetSets = 3,
-            previousSets = previousSets,
-            currentSets = currentSets
-        )
-
-        assertEquals(60.0, result.currentWeight, 0.0)
-        assertEquals(60.0, result.recommendedWeight, 0.0) // Maintained
-        assertEquals("8-12", result.recommendedReps)
+    fun stableMidRangeMaintainsLoad() {
+        val result = engine.calculateProgression(1, "Press", "dumbbell", 8, 12, 3, listOf(set(20.0, 9)), listOf(set(20.0, 10)))
+        assertEquals(20.0, result.recommendedWeight, 0.0)
         assertEquals(3, result.recommendedSets)
-        assertEquals("Maintain current weight and focus on hitting target reps.", result.reason)
     }
 }

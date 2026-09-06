@@ -7,9 +7,8 @@ import com.gymcoach.app.core.program.ProgramGenerator
 import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,15 +25,14 @@ data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.WELCOME,
     val goal: String? = null,
     val experience: String? = null,
-    // Pre-selected defaults match the chips shown in PersonalInfoStep so the persisted
-    // profile is never silently empty when the user skips tapping these controls.
+    // Personal defaults are the target profile for this personal app; every value remains editable.
     val sex: String? = "Male",
-    val age: Float = 25f,
-    val heightCm: Float = 175f,
-    val weightKg: Float = 75f,
+    val age: Float = 30f,
+    val heightCm: Float = 170f,
+    val weightKg: Float = 70f,
     val daysPerWeek: Int = 4,
     val sessionMinutes: Int = 60,
-    val selectedEquipment: Set<String> = emptySet(),
+    val selectedEquipment: Set<String> = setOf("Dumbbell"),
     val preferredSchedule: String? = "Morning",
     val limitationsPreferences: String? = "None",
     val isGenerating: Boolean = false,
@@ -56,30 +54,21 @@ class OnboardingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userProfileRepository: UserProfileRepository,
     private val programGenerator: ProgramGenerator,
-    private val programRepository: ProgramRepository // persists the generated first program
+    private val programRepository: ProgramRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     fun selectGoal(goal: String) = _uiState.update { it.copy(goal = goal) }
-
     fun selectExperience(experience: String) = _uiState.update { it.copy(experience = experience) }
-
     fun setAge(age: Float) = _uiState.update { it.copy(age = age) }
-
     fun setHeight(heightCm: Float) = _uiState.update { it.copy(heightCm = heightCm) }
-
     fun setWeight(weightKg: Float) = _uiState.update { it.copy(weightKg = weightKg) }
-
     fun setSex(sex: String) = _uiState.update { it.copy(sex = sex) }
-
     fun setDaysPerWeek(days: Int) = _uiState.update { it.copy(daysPerWeek = days) }
-
     fun setSessionMinutes(minutes: Int) = _uiState.update { it.copy(sessionMinutes = minutes) }
-
     fun setPreferredSchedule(schedule: String) = _uiState.update { it.copy(preferredSchedule = schedule) }
-
     fun setLimitationsPreferences(limitations: String) = _uiState.update { it.copy(limitationsPreferences = limitations) }
 
     fun toggleEquipment(item: String) = _uiState.update { state ->
@@ -100,7 +89,6 @@ class OnboardingViewModel @Inject constructor(
         if (index > 0) state.copy(step = order[index - 1]) else state
     }
 
-    /** Saves the profile, generates and stores the first program, then signals completion. */
     fun completeOnboarding(onComplete: () -> Unit) {
         val state = _uiState.value
         if (state.isGenerating || !state.isLastContentStep) return
@@ -133,7 +121,6 @@ class OnboardingViewModel @Inject constructor(
                     goal = goal
                 )
                 programRepository.saveGeneratedProgram(generated)
-                // Mark onboarding as complete so returning users skip it
                 context.getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
                     .edit()
                     .putBoolean("onboarding_complete", true)
@@ -149,16 +136,18 @@ class OnboardingViewModel @Inject constructor(
     }
 
     /**
-     * Maps UI equipment selection to the equipment type used by ProgramGenerator.
-     * "gym" = has barbell/cable/machine access → full equipment set
-     * "home" = has dumbbells/bands/bench → filtered equipment set
-     * "custom" = no equipment → bodyweight only
-     *
-     * Equipment names now match ExerciseEntity.equipment values exactly.
+     * Equipment is mapped by capability, not by a generic "home" bucket.
+     * Dumbbell/bodyweight-only selections use the strict constrained profile;
+     * adding a bench, bar, cable, band or other item opts into the broader home/gym profile.
      */
-    private fun mapEquipmentType(equipment: Set<String>): String = when {
-        equipment.any { it == "Barbell" || it == "Cable" } -> "gym"
-        equipment.isNotEmpty() -> "home"
-        else -> "custom"
+    private fun mapEquipmentType(equipment: Set<String>): String {
+        val normalized = equipment.map { it.trim().lowercase() }.toSet()
+        val strict = setOf("dumbbell", "adjustable dumbbell", "bodyweight", "floor")
+        if (normalized.isEmpty() || normalized.all { it in strict }) return "dumbbell_bodyweight"
+        return if (normalized.any { it in setOf("barbell", "cable", "smith machine", "leg press", "hack squat") }) {
+            "gym"
+        } else {
+            "home"
+        }
     }
 }

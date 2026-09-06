@@ -29,20 +29,6 @@ data class WorkoutSetEntity(
     val setType: Int = 0 // 0=NORMAL, 1=WARMUP, 2=DROP, 3=FAILURE
 )
 
-fun WorkoutSetEntity.fromLastSetData(data: com.gymcoach.app.data.local.dao.LastSetData): WorkoutSetEntity {
-    return WorkoutSetEntity(
-        id = 0,
-        workoutExerciseId = 0,
-        setNumber = 0,
-        weight = data.weight,
-        reps = data.reps,
-        rpe = data.rpe,
-        restSeconds = data.restSeconds,
-        completed = true,
-        setType = data.setType
-    )
-}
-
 fun com.gymcoach.app.domain.model.WorkoutSet.toWorkoutSetEntity(): WorkoutSetEntity {
     return WorkoutSetEntity(
         id = id,

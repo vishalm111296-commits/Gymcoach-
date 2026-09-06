@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.progression.CompletedSetInfo
 import com.gymcoach.app.core.progression.ProgressionEngine
 import com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommendation
 import com.gymcoach.app.core.timer.RestPresets
@@ -9,7 +10,6 @@ import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.timer.RestTimerState
 import com.gymcoach.app.data.local.dao.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.SetType
 import com.gymcoach.app.domain.model.Workout
@@ -21,9 +21,6 @@ import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-
-
-
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -418,8 +415,8 @@ class WorkoutLoggingViewModel @Inject constructor(
                         targetRepsMin = 8,
                         targetRepsMax = 12,
                         targetSets = 3,
-                        previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
-                        currentSets = normalSets.map { it.toEntity() },
+                        previousSets = lastSets.map { CompletedSetInfo(weight = it.weight, reps = it.reps, completed = true, setType = it.setType) },
+                        currentSets = normalSets.map { CompletedSetInfo(weight = it.weight, reps = it.reps, completed = it.completed, setType = it.setType.ordinal) },
                         equipmentType = equipmentType
                     )
                     recommendations[exercise.id] = recommendation

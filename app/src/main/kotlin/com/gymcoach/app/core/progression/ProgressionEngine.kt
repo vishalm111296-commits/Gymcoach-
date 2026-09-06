@@ -1,9 +1,15 @@
 package com.gymcoach.app.core.progression
 
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.core.exercise.EquipmentAvailability
 import javax.inject.Inject
 import javax.inject.Singleton
+
+data class CompletedSetInfo(
+    val weight: Double,
+    val reps: Int,
+    val completed: Boolean = true,
+    val setType: Int = 0 // 0 = NORMAL
+)
 
 @Singleton
 class ProgressionEngine @Inject constructor(
@@ -30,8 +36,8 @@ class ProgressionEngine @Inject constructor(
         targetRepsMin: Int,
         targetRepsMax: Int,
         targetSets: Int,
-        previousSets: List<WorkoutSetEntity>,
-        currentSets: List<WorkoutSetEntity>,
+        previousSets: List<CompletedSetInfo>,
+        currentSets: List<CompletedSetInfo>,
         equipmentType: String = "home"
     ): ProgressionRecommendation {
         val normalSets = filterNormalSets(currentSets)
@@ -121,7 +127,7 @@ class ProgressionEngine @Inject constructor(
         }
     }
 
-    private fun filterNormalSets(sets: List<WorkoutSetEntity>): List<WorkoutSetEntity> {
+    private fun filterNormalSets(sets: List<CompletedSetInfo>): List<CompletedSetInfo> {
         return sets.filter { it.completed && it.setType == 0 } // 0 = NORMAL
     }
 
@@ -138,7 +144,7 @@ class ProgressionEngine @Inject constructor(
         return currentWeight * 0.9
     }
 
-    private fun isRegressing(previousSets: List<WorkoutSetEntity>, targetMin: Int): Boolean {
+    private fun isRegressing(previousSets: List<CompletedSetInfo>, targetMin: Int): Boolean {
         val normalPrev = filterNormalSets(previousSets)
         if (normalPrev.isEmpty()) return false
         val prevReps = normalPrev.map { it.reps }

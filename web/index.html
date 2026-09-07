@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GymCoach — V-Taper Dumbbell & Bodyweight Companion</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <span class="logo-icon">⚡</span>
+                    <div>
+                        <h1 class="app-title">GymCoach <span class="badge">V-Taper Edition</span></h1>
+                        <p class="subtitle">Dumbbell & Bodyweight Focus</p>
+                    </div>
+                </div>
+                <div class="user-chip" id="profile-chip">
+                    <span class="avatar">👤</span>
+                    <span class="profile-info">70 kg • 170 cm</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Scroll Area -->
+        <main class="main-content">
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-page active">
+                <!-- User Quick Stats Banner -->
+                <div class="card profile-banner">
+                    <div class="profile-header">
+                        <div>
+                            <h2>Target Physique: Golden V-Taper</h2>
+                            <p class="text-muted">30y • 70 kg • 170 cm • DB + BW Only</p>
+                        </div>
+                        <div class="vtaper-ratio-badge" id="current-vtaper-ratio">
+                            <span class="ratio-val">--</span>
+                            <span class="ratio-lbl">V-Ratio (S:W)</span>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">Shoulders</span>
+                            <span class="stat-value" id="stat-shoulder">-- cm</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Waist</span>
+                            <span class="stat-value" id="stat-waist">-- cm</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Target Ratio</span>
+                            <span class="stat-value highlight">1.618 (Ideal)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Readiness Card -->
+                <div class="card readiness-card">
+                    <h3>Daily Readiness Score</h3>
+                    <p class="card-subtitle">Adjusts today's set volume & target RPE dynamically</p>
+                    <div class="readiness-buttons">
+                        <button class="btn-readiness" data-score="1">😫 1 (Exhausted)</button>
+                        <button class="btn-readiness" data-score="2">🥱 2 (Tired)</button>
+                        <button class="btn-readiness active" data-score="3">👍 3 (Normal)</button>
+                        <button class="btn-readiness" data-score="4">🔥 4 (Fresh)</button>
+                        <button class="btn-readiness" data-score="5">⚡ 5 (Peak)</button>
+                    </div>
+                </div>
+
+                <!-- Today's Program Action Card -->
+                <div class="card today-workout-card">
+                    <div class="card-header">
+                        <div>
+                            <span class="tag tag-primary">Today's Focus</span>
+                            <h3 id="today-workout-title">Upper A — V-Taper Width & Mass</h3>
+                        </div>
+                        <button class="btn btn-accent" id="btn-start-workout">Start Workout 🚀</button>
+                    </div>
+                    <div id="today-exercise-preview-list" class="mini-exercise-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Program Split Selection -->
+                <div class="card">
+                    <h3>V-Taper Program Split</h3>
+                    <div class="program-selector">
+                        <button class="btn-option" data-freq="3">3-Day Full Body</button>
+                        <button class="btn-option active" data-freq="4">4-Day Upper/Lower</button>
+                        <button class="btn-option" data-freq="5">5-Day PPL/UL</button>
+                    </div>
+                    <div id="program-days-container" class="program-days-list">
+                        <!-- Program days populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- V-Taper Weekly Muscle Volume Bar Chart -->
+                <div class="card">
+                    <h3>Weekly V-Taper Target Sets</h3>
+                    <p class="card-subtitle">Primary Hypertrophy Bands (10-20 sets/week)</p>
+                    <div class="volume-bars">
+                        <div class="volume-bar-row">
+                            <span class="muscle-lbl">Lateral Delts</span>
+                            <div class="bar-track"><div class="bar-fill" id="bar-lat-delts" style="width: 80%;"></div></div>
+                            <span class="bar-val" id="val-lat-delts">16 sets</span>
+                        </div>
+                        <div class="volume-bar-row">
+                            <span class="muscle-lbl">Lats (Width)</span>
+                            <div class="bar-track"><div class="bar-fill" id="bar-lats" style="width: 75%;"></div></div>
+                            <span class="bar-val" id="val-lats">15 sets</span>
+                        </div>
+                        <div class="volume-bar-row">
+                            <span class="muscle-lbl">Upper Back</span>
+                            <div class="bar-track"><div class="bar-fill" id="bar-upper-back" style="width: 70%;"></div></div>
+                            <span class="bar-val" id="val-upper-back">14 sets</span>
+                        </div>
+                        <div class="volume-bar-row">
+                            <span class="muscle-lbl">Upper Chest</span>
+                            <div class="bar-track"><div class="bar-fill" id="bar-upper-chest" style="width: 60%;"></div></div>
+                            <span class="bar-val" id="val-upper-chest">12 sets</span>
+                        </div>
+                        <div class="volume-bar-row">
+                            <span class="muscle-lbl">Abs / Core</span>
+                            <div class="bar-track"><div class="bar-fill" id="bar-core" style="width: 50%;"></div></div>
+                            <span class="bar-val" id="val-core">10 sets</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: WORKOUT LOGGING -->
+            <section id="tab-workout" class="tab-page">
+                <div class="workout-header-card card">
+                    <div class="workout-header-main">
+                        <div>
+                            <h2 id="active-session-title">Upper A Workout</h2>
+                            <p class="text-muted" id="active-session-timer">Elapsed: 00:00</p>
+                        </div>
+                        <button class="btn btn-outline-danger" id="btn-cancel-workout">End Session</button>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="workout-progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Active Rest Timer Overlay / Sticky Box -->
+                <div id="rest-timer-banner" class="rest-timer-card card hidden">
+                    <div class="rest-timer-content">
+                        <div>
+                            <span class="timer-label">REST TIMER</span>
+                            <div class="timer-display" id="rest-timer-display">01:30</div>
+                        </div>
+                        <div class="timer-actions">
+                            <button class="btn btn-sm btn-secondary" id="btn-timer-add30">+30s</button>
+                            <button class="btn btn-sm btn-outline" id="btn-timer-skip">Skip</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise Cards Container -->
+                <div id="workout-exercises-container">
+                    <!-- Exercise log cards inserted dynamically -->
+                </div>
+
+                <div class="workout-footer">
+                    <button class="btn btn-primary btn-block btn-lg" id="btn-finish-workout">Finish & Save Workout 🎉</button>
+                </div>
+            </section>
+
+            <!-- TAB 3: EXERCISE LIBRARY -->
+            <section id="tab-exercises" class="tab-page">
+                <div class="card search-card">
+                    <h2>Dumbbell & Bodyweight Library</h2>
+                    <p class="card-subtitle">Equipment restricted to DB + BW only</p>
+                    <input type="text" id="exercise-search-input" class="form-input" placeholder="Search exercise or muscle...">
+                    <div class="filter-chips" id="muscle-filter-chips">
+                        <button class="chip active" data-filter="all">All</button>
+                        <button class="chip" data-filter="lat">Lats</button>
+                        <button class="chip" data-filter="lateral_delt">Lateral Delts</button>
+                        <button class="chip" data-filter="upper_back">Upper Back</button>
+                        <button class="chip" data-filter="upper_chest">Upper Chest</button>
+                        <button class="chip" data-filter="core">Core / Waist</button>
+                    </div>
+                </div>
+
+                <div id="exercise-list-container" class="exercise-grid">
+                    <!-- Filtered exercise cards -->
+                </div>
+            </section>
+
+            <!-- TAB 4: V-TAPER MEASUREMENTS -->
+            <section id="tab-measurements" class="tab-page">
+                <div class="card">
+                    <h2>V-Taper Body Measurements</h2>
+                    <p class="card-subtitle">Track your Shoulder-to-Waist Golden Ratio (Adonis Index)</p>
+
+                    <form id="measurement-form" class="measurement-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="m-shoulder">Shoulder Circumference (cm)</label>
+                                <input type="number" id="m-shoulder" step="0.5" class="form-input" placeholder="e.g. 112" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="m-waist">Waist Circumference (cm)</label>
+                                <input type="number" id="m-waist" step="0.5" class="form-input" placeholder="e.g. 76" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="m-chest">Chest Circumference (cm)</label>
+                                <input type="number" id="m-chest" step="0.5" class="form-input" placeholder="e.g. 98">
+                            </div>
+                            <div class="form-group">
+                                <label for="m-arm">Bicep / Arm (cm)</label>
+                                <input type="number" id="m-arm" step="0.5" class="form-input" placeholder="e.g. 35">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Log Measurement 📏</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>V-Taper Progression History</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Shoulders</th>
+                                    <th>Waist</th>
+                                    <th>V-Ratio</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="measurement-history-rows">
+                                <!-- Logged entries -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: NUTRITION & EVIDENCE -->
+            <section id="tab-nutrition" class="tab-page">
+                <div class="card">
+                    <h2>V-Taper Nutrition Engine</h2>
+                    <p class="card-subtitle">Calculated for 30yo • 70kg • 170cm</p>
+
+                    <div class="nutrition-goal-selector">
+                        <button class="btn-option active" id="nut-recomp">Lean Recomp (Maintain Weight)</button>
+                        <button class="btn-option" id="nut-surplus">Slight Surplus (+250 kcal)</button>
+                        <button class="btn-option" id="nut-deficit">Waist Reduction (-350 kcal)</button>
+                    </div>
+
+                    <div class="macro-grid">
+                        <div class="macro-card kcal">
+                            <span class="macro-val" id="macro-calories">2,250</span>
+                            <span class="macro-lbl">Daily Calories (kcal)</span>
+                        </div>
+                        <div class="macro-card protein">
+                            <span class="macro-val" id="macro-protein">154 g</span>
+                            <span class="macro-lbl">Protein (2.2g / kg)</span>
+                        </div>
+                        <div class="macro-card carbs">
+                            <span class="macro-val" id="macro-carbs">250 g</span>
+                            <span class="macro-lbl">Carbs (Energy)</span>
+                        </div>
+                        <div class="macro-card fats">
+                            <span class="macro-val" id="macro-fats">65 g</span>
+                            <span class="macro-lbl">Healthy Fats</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card science-card">
+                    <h3>🧬 Evidence-Based V-Taper Principles</h3>
+                    <div class="science-topic">
+                        <h4>1. Maximizing Lat Width with Dumbbells & Bodyweight</h4>
+                        <p>Lats create the visual upper-body width. Dumbbell single-arm rows with a full stretch at the bottom and pulling towards the hip maximally engage lower lat fibers. Pull-ups and inverted rows provide high-tension bodyweight compound stimulus.</p>
+                    </div>
+                    <div class="science-topic">
+                        <h4>2. Lateral Deltoid Hypertrophy (3D Shoulder Cap)</h4>
+                        <p>Lateral deltoids directly expand shoulder width. High-frequency (2-3x/week) lateral raises with slight forward lean isolate the middle delt head, building capped shoulders without heavy joint strain.</p>
+                    </div>
+                    <div class="science-topic">
+                        <h4>3. Waist Management & Core Taper</h4>
+                        <p>To maximize the V-ratio (S:W), avoid heavy weighted side bends that hypertrophy lateral obliques. Focus on vacuum exercises, plank variations, and leg raises for deep transverse abdominis tightness.</p>
+                    </div>
+                    <div class="science-topic">
+                        <h4>4. Progressive Overload Framework</h4>
+                        <p>Double progression: first add reps until upper target is hit (e.g. 12 reps @ RPE 8), then increase dumbbell weight by 1-2.5 kg or add slow eccentric pauses for bodyweight exercises.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar (Thumb Friendly) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="tab-dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-item" data-tab="tab-workout">
+                <span class="nav-icon">🏋️</span>
+                <span class="nav-label">Workout</span>
+            </button>
+            <button class="nav-item" data-tab="tab-exercises">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label">Exercises</span>
+            </button>
+            <button class="nav-item" data-tab="tab-measurements">
+                <span class="nav-icon">📐</span>
+                <span class="nav-label">V-Ratio</span>
+            </button>
+            <button class="nav-item" data-tab="tab-nutrition">
+                <span class="nav-icon">🥗</span>
+                <span class="nav-label">Nutrition</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="exercise-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Exercise Detail</h3>
+                <button class="btn-close" id="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

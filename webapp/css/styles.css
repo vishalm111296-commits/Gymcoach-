@@ -12,6 +12,8 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --accent-color: #38bdf8;
+  --btn-primary-bg: #38bdf8;
+  --btn-primary-text: #0f172a; /* High contrast text on light cyan */
   --accent-hover: #0284c7;
   --accent-light: rgba(56, 189, 248, 0.15);
   --success-color: #10b981;
@@ -37,13 +39,15 @@
 [data-theme="light"] {
   --bg-color: #f1f5f9;
   --card-bg: #ffffff;
-  --card-border: #e2e8f0;
+  --card-border: #cbd5e1;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --accent-color: #0284c7;
-  --accent-hover: #0369a1;
-  --accent-light: rgba(2, 132, 199, 0.1);
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-color: #0369a1; /* Darker blue for >= 4.5:1 contrast on white */
+  --btn-primary-bg: #0369a1;
+  --btn-primary-text: #ffffff;
+  --accent-hover: #0284c7;
+  --accent-light: rgba(3, 105, 161, 0.1);
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -271,9 +275,9 @@ html, body {
 }
 
 .pill.active, .filter-pill.active {
-  background-color: var(--accent-color);
-  border-color: var(--accent-color);
-  color: #ffffff;
+  background-color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
 }
 
 /* Buttons */
@@ -293,12 +297,12 @@ html, body {
 }
 
 .btn-primary {
-  background-color: var(--accent-color);
-  color: #ffffff;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-hover);
+  filter: brightness(0.95);
 }
 
 .btn-secondary {

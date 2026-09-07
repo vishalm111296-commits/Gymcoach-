@@ -32,7 +32,7 @@ class ProgressionEngine @Inject constructor(
         targetSets: Int,
         previousSets: List<WorkoutSetEntity>,
         currentSets: List<WorkoutSetEntity>,
-        equipmentType: String = "home"
+        equipmentType: String
     ): ProgressionRecommendation {
         val normalSets = filterNormalSets(currentSets)
         if (normalSets.isEmpty()) {

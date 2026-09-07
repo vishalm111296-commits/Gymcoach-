@@ -17,6 +17,7 @@ import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,11 +38,15 @@ import javax.inject.Inject
 class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val userProfileRepository: UserProfileRepository,
     private val restTimer: RestTimerManager,
     private val progressionEngine: ProgressionEngine
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
+
+    private val userProfile = userProfileRepository.getLatestProfile()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -74,8 +79,35 @@ class WorkoutLoggingViewModel @Inject constructor(
     val lastPerformanceSummary: StateFlow<Map<Long, LastPerformance>> = _lastPerformanceSummary.asStateFlow()
 
     // Progression recommendations: exerciseId -> recommendation
-    private val _progressionRecommendations = MutableStateFlow<Map<Long, ProgressionRecommendation>>(emptyMap())
-    val progressionRecommendations: StateFlow<Map<Long, ProgressionRecommendation>> = _progressionRecommendations.asStateFlow()
+    val progressionRecommendations: StateFlow<Map<Long, ProgressionRecommendation>> = combine(
+        _currentWorkout,
+        _previousPerformance,
+        userProfile
+    ) { workout, previousPerformance, profile ->
+        val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
+        val equipmentType = profile?.equipmentType ?: "gym"
+
+        workout?.exercises?.forEach { we ->
+            val exercise = we.exercise
+            val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
+            if (normalSets.isNotEmpty()) {
+                val lastSets = previousPerformance[exercise.id] ?: emptyList()
+                val recommendation = progressionEngine.calculateProgression(
+                    exerciseId = exercise.id,
+                    exerciseName = exercise.name,
+                    exerciseEquipment = exercise.equipment,
+                    targetRepsMin = 8,
+                    targetRepsMax = 12,
+                    targetSets = 3,
+                    previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
+                    currentSets = normalSets.map { it.toEntity() },
+                    equipmentType = equipmentType
+                )
+                recommendations[exercise.id] = recommendation
+            }
+        }
+        recommendations
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
@@ -140,8 +172,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         _previousPerformance.value = perfMap
         _lastPerformanceSummary.value = summaryMap
 
-        // Calculate initial progression recommendations
-        calculateProgressionRecommendations(exercises)
     }
 
     /** Calculate accumulated volume (weight × reps) for the current session. */
@@ -239,11 +269,6 @@ class WorkoutLoggingViewModel @Inject constructor(
             if (lastPerf != null) {
                 _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
             }
-            // Calculate progression for new exercise
-            val refreshed = _currentWorkout.value
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
-            }
         }
     }
 
@@ -323,9 +348,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         val we = workout.exercises[exerciseIndex]
         viewModelScope.launch {
             workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
-            // Remove progression recommendation for removed exercise
-            val updated = _progressionRecommendations.value - we.exercise.id
-            _progressionRecommendations.value = updated
         }
     }
 
@@ -341,10 +363,6 @@ class WorkoutLoggingViewModel @Inject constructor(
             // Recalculate session volume
             val refreshed = _currentWorkout.value
             calculateSessionVolume(refreshed)
-            // Recalculate progression recommendations after set completion change
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
-            }
         }
         if (updated.completed) {
             // Use the recommended rest time based on RPE and set type
@@ -394,37 +412,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Calculate progression recommendations for all exercises in the workout.
-     * Uses ProgressionEngine with double progression logic.
-     */
-    private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
-        val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
-        for (we in exercises) {
-            val exercise = we.exercise
-            val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
-            if (normalSets.isNotEmpty()) {
-                val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
-                val equipmentType = if (exercise.equipment.lowercase().contains("barbell") ||
-                                       exercise.equipment.lowercase().contains("dumbbell") ||
-                                       exercise.equipment.lowercase().contains("machine") ||
-                                       exercise.equipment.lowercase().contains("cable")) "gym" else "home"
-                val recommendation = progressionEngine.calculateProgression(
-                    exerciseId = exercise.id,
-                    exerciseName = exercise.name,
-                    exerciseEquipment = exercise.equipment,
-                    targetRepsMin = 8,
-                    targetRepsMax = 12,
-                    targetSets = 3,
-                    previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
-                    currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = equipmentType
-                )
-                recommendations[exercise.id] = recommendation
-            }
-        }
-        _progressionRecommendations.value = recommendations
-    }
 
     private fun updateSetField(exerciseIndex: Int, setIndex: Int, transform: (WorkoutSet) -> WorkoutSet) {
         val workout = _currentWorkout.value ?: return
@@ -436,11 +423,6 @@ class WorkoutLoggingViewModel @Inject constructor(
             workoutRepository.updateSet(updated)
             // Recalculate session volume after any field update
             calculateSessionVolume(_currentWorkout.value)
-            // Recalculate progression recommendations
-            val refreshed = _currentWorkout.value
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
-            }
         }
     }
 

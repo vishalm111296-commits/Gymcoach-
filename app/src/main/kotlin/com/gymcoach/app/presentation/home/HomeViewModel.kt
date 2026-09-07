@@ -6,6 +6,8 @@ import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.domain.model.Exercise
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
@@ -64,6 +66,7 @@ private data class ProgramCore(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
+    private val exerciseRepository: ExerciseRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
     analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
@@ -80,22 +83,26 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            programRepository.getActiveProgram()
-                .flatMapLatest { program ->
+            exerciseRepository.getAllExercises()
+                .combine(programRepository.getActiveProgram()) { exercises, program -> exercises to program }
+                .flatMapLatest { (exercises, program) ->
                     if (program == null) {
-                        flowOf(null)
+                        flowOf(null to emptyMap<Long, Exercise>())
                     } else {
+                        val exerciseMap = exercises.associateBy { it.id }
                         programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
                             val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
                             programRepository.getExercisesForDays(days.map { it.id }).map { byDay ->
-                                ProgramCore(program, pickToday(nonRest), days, byDay)
+                                ProgramCore(program, pickToday(nonRest), days, byDay) to exerciseMap
                             }
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
+                .combine(workoutRepository.getCompletedWorkouts()) { (core, exerciseMap), workouts ->
+                    Triple(core, exerciseMap, workouts)
+                }
+                .combine(_prCount.asStateFlow()) { (core, exerciseMap, workouts), prCount ->
+                    buildUiState(core, exerciseMap, workouts, prCount)
                 }
                 .collect { state -> _uiState.value = state }
         }
@@ -110,6 +117,7 @@ class HomeViewModel @Inject constructor(
 
     private fun buildUiState(
         core: ProgramCore?,
+        exerciseMap: Map<Long, Exercise>,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
         prCount: Int
     ): HomeUiState {
@@ -126,9 +134,8 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
+        // Planned sets per muscle attributed at the exercise level to avoid day-level volume broadcasting.
+        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays, exerciseMap)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
                 label = label,
@@ -167,20 +174,93 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
+    /** Planned weekly sets per muscle derived directly from exercise-level primary muscle targets. */
     private fun plannedWeeklySets(
         exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
-        days: List<ProgramDayEntity>
+        days: List<ProgramDayEntity>,
+        exerciseMap: Map<Long, Exercise>
     ): Map<String, Int> {
         val result = mutableMapOf<String, Int>()
         for (day in days) {
-            val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
-            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
-                result[muscle] = (result[muscle] ?: 0) + daySets
+            val dayExercises = exercisesByDay[day.id] ?: continue
+            for (pEx in dayExercises) {
+                if (pEx.sets <= 0) continue
+                val exercise = exerciseMap[pEx.exerciseId]
+                val muscleKeys = mapExerciseToMuscleKeys(exercise, day)
+                for (muscle in muscleKeys) {
+                    result[muscle] = (result[muscle] ?: 0) + pEx.sets
+                }
             }
         }
         return result
+    }
+
+    private fun mapExerciseToMuscleKeys(
+        exercise: Exercise?,
+        day: ProgramDayEntity
+    ): List<String> {
+        if (exercise == null) {
+            return day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        }
+        val keys = mutableListOf<String>()
+        val cat = exercise.category.lowercase()
+
+        when (cat) {
+            "back" -> keys.add("Back")
+            "shoulders" -> {
+                val sec = exercise.secondaryMuscles.lowercase()
+                val name = exercise.name.lowercase()
+                if (exercise.vtaperLateralDelt > 0 || sec.contains("lateral_deltoid") || name.contains("lateral")) {
+                    keys.add("Lateral Deltoid")
+                }
+                if (exercise.vtaperRearDelt > 0 || sec.contains("rear_deltoid") || name.contains("rear") || name.contains("reverse")) {
+                    keys.add("Rear Deltoid")
+                }
+                if (keys.isEmpty()) {
+                    keys.add("Lateral Deltoid")
+                }
+            }
+            "chest" -> {
+                if (exercise.vtaperUpperChest > 0 || exercise.secondaryMuscles.lowercase().contains("upper_chest") || exercise.name.lowercase().contains("incline")) {
+                    keys.add("Upper Chest")
+                } else {
+                    keys.add("Chest")
+                }
+            }
+            "legs" -> {
+                val sec = exercise.secondaryMuscles.lowercase()
+                val name = exercise.name.lowercase()
+                if (sec.contains("quadriceps") || listOf("squat", "lunge", "step", "leg extension", "quad").any { name.contains(it) }) {
+                    keys.add("Quadriceps")
+                }
+                if (sec.contains("hamstrings") || listOf("rdl", "deadlift", "curl", "good morning", "hamstring").any { name.contains(it) }) {
+                    keys.add("Hamstrings")
+                }
+                if (sec.contains("glutes") || listOf("hip thrust", "glute", "kickback").any { name.contains(it) }) {
+                    keys.add("Glutes")
+                }
+                if (sec.contains("calves") || name.contains("calf")) {
+                    keys.add("Calves")
+                }
+                if (keys.isEmpty()) {
+                    keys.add("Quadriceps")
+                }
+            }
+            "arms" -> {
+                val name = exercise.name.lowercase()
+                if (name.contains("curl") || exercise.secondaryMuscles.lowercase().contains("biceps")) {
+                    keys.add("Biceps")
+                }
+                if (name.contains("tricep") || name.contains("dip") || name.contains("extension") || exercise.secondaryMuscles.lowercase().contains("triceps")) {
+                    keys.add("Triceps")
+                }
+            }
+            "core" -> keys.add("Core")
+            else -> {
+                day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { keys.add(it) }
+            }
+        }
+        return keys.distinct()
     }
 
     /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */

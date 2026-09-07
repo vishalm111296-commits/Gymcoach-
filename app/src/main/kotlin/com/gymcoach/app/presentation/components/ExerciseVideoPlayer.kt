@@ -17,22 +17,22 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -58,7 +58,7 @@ fun ExerciseVideoPlayer(
         exoPlayer.prepare()
     }
 
-    LaunchedEffect(exoPlayer) {
+    DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 isPlaying = state == Player.STATE_READY && exoPlayer.playWhenReady
@@ -66,27 +66,47 @@ fun ExerciseVideoPlayer(
                     hasEnded = true
                     isPlaying = false
                 }
+                if (state == Player.STATE_READY) {
+                    duration = exoPlayer.duration.coerceAtLeast(0L)
+                    currentPosition = exoPlayer.currentPosition
+                }
             }
 
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
+                if (playing) {
+                    hasEnded = false
+                }
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                currentPosition = exoPlayer.currentPosition
+                duration = exoPlayer.duration.coerceAtLeast(0L)
             }
         }
 
         exoPlayer.addListener(listener)
 
-        // ponytail: polling for seek bar; replace with Compose animation frame callback if perf matters
-        while (true) {
-            kotlinx.coroutines.delay(200L)
-            if (exoPlayer.playbackState == Player.STATE_READY) {
-                currentPosition = exoPlayer.currentPosition
-                duration = exoPlayer.duration
-            }
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.release()
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose { exoPlayer.release() }
+    // Frame-synchronized update loop while video is actively playing
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (true) {
+                withFrameMillis {
+                    currentPosition = exoPlayer.currentPosition
+                    duration = exoPlayer.duration.coerceAtLeast(0L)
+                }
+            }
+        }
     }
 
     AndroidView(
@@ -169,7 +189,7 @@ fun ExerciseVideoPlayer(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     ) {
-        androidx.compose.material3.Text(
+        Text(
             text = "$formattedPosition / $formattedDuration",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

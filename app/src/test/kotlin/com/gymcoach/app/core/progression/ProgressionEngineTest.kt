@@ -56,7 +56,8 @@ class ProgressionEngineTest {
             targetRepsMax = 12,
             targetSets = 3,
             previousSets = emptyList(),
-            currentSets = currentSets
+            currentSets = currentSets,
+            equipmentType = "gym"
         )
 
         assertEquals(0.0, result.currentWeight, 0.0)
@@ -82,7 +83,8 @@ class ProgressionEngineTest {
             targetRepsMax = 12,
             targetSets = 3,
             previousSets = emptyList(),
-            currentSets = currentSets
+            currentSets = currentSets,
+            equipmentType = "gym"
         )
 
         assertEquals(50.0, result.currentWeight, 0.0)
@@ -107,7 +109,8 @@ class ProgressionEngineTest {
             targetRepsMax = 12,
             targetSets = 3,
             previousSets = emptyList(),
-            currentSets = currentSets
+            currentSets = currentSets,
+            equipmentType = "gym"
         )
 
         assertEquals(0.0, result.currentWeight, 0.0)
@@ -162,7 +165,8 @@ class ProgressionEngineTest {
             targetRepsMax = 12,
             targetSets = 3,
             previousSets = previousSets,
-            currentSets = currentSets
+            currentSets = currentSets,
+            equipmentType = "gym"
         )
 
         assertEquals(60.0, result.currentWeight, 0.0)
@@ -188,7 +192,8 @@ class ProgressionEngineTest {
             targetRepsMax = 12,
             targetSets = 3,
             previousSets = previousSets,
-            currentSets = currentSets
+            currentSets = currentSets,
+            equipmentType = "gym"
         )
 
         assertEquals(60.0, result.currentWeight, 0.0)

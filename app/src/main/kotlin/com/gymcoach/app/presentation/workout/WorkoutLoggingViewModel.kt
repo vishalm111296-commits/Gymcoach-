@@ -17,6 +17,7 @@ import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,10 +39,14 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
     private val restTimer: RestTimerManager,
+    private val userProfileRepository: UserProfileRepository,
     private val progressionEngine: ProgressionEngine
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
+
+    private val userProfile = userProfileRepository.getLatestProfile()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val allExercises = exerciseRepository.getAllExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -53,6 +58,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     val elapsedSeconds: StateFlow<Long> = _elapsedSeconds.asStateFlow()
 
     private var workoutTimerJob: kotlinx.coroutines.Job? = null
+    private var profileJob: kotlinx.coroutines.Job? = null
 
     private val _showExercisePicker = MutableStateFlow(false)
     val showExercisePicker: StateFlow<Boolean> = _showExercisePicker.asStateFlow()
@@ -80,6 +86,17 @@ class WorkoutLoggingViewModel @Inject constructor(
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
+
+    init {
+        profileJob = viewModelScope.launch {
+            userProfile.collect { profile ->
+                val refreshed = _currentWorkout.value
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
+            }
+        }
+    }
 
     fun dismissError() {
         _error.value = null
@@ -405,10 +422,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
             if (normalSets.isNotEmpty()) {
                 val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
-                val equipmentType = if (exercise.equipment.lowercase().contains("barbell") ||
-                                       exercise.equipment.lowercase().contains("dumbbell") ||
-                                       exercise.equipment.lowercase().contains("machine") ||
-                                       exercise.equipment.lowercase().contains("cable")) "gym" else "home"
+                val equipmentType = userProfile.value?.equipmentType ?: "gym"
                 val recommendation = progressionEngine.calculateProgression(
                     exerciseId = exercise.id,
                     exerciseName = exercise.name,
@@ -447,6 +461,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         workoutTimerJob?.cancel()
+        profileJob?.cancel()
         restTimer.stop()
     }
 }

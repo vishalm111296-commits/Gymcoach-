@@ -223,7 +223,6 @@ fun WorkoutSessionScreen(
                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                               onInstructionsClick = {},
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
@@ -448,7 +447,6 @@ private fun ExerciseSetCard(
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
-    onInstructionsClick: () -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }

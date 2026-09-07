@@ -126,8 +126,7 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
+        // V-taper dashboard bars display the active program's planned weekly set volume distribution.
         val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
             VtaperMuscleData(
@@ -152,7 +151,7 @@ class HomeViewModel @Inject constructor(
             hasProgram = true,
             todayWorkout = TodayWorkoutUiModel(
                 name = core.todayDay?.name?.takeIf { it.isNotBlank() } ?: "Training Session",
-                targetMuscles = targetMusclesMuscles(core.todayDay),
+                targetMuscles = parseTargetMuscles(core.todayDay),
                 exerciseCount = todayExercises.size,
                 estimatedDurationMin = estimatedDuration
             ),
@@ -164,7 +163,7 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
+    private fun parseTargetMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
     /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */

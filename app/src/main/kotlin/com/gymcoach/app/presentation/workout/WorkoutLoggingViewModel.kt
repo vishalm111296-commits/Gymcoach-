@@ -18,8 +18,8 @@ import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
 
@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -39,7 +40,8 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
     private val restTimer: RestTimerManager,
-    private val progressionEngine: ProgressionEngine
+    private val progressionEngine: ProgressionEngine,
+    private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
     private var defaultRestSeconds = 90
@@ -162,20 +164,29 @@ class WorkoutLoggingViewModel @Inject constructor(
         _sessionVolume.value = volume
     }
 
-
-
     private fun startWorkoutTimer() {
         workoutTimerJob?.cancel()
         workoutTimerJob = viewModelScope.launch {
             while (true) {
-                val startTime = _currentWorkout.value?.workout?.startTime
-                if (startTime != null) {
-                    _elapsedSeconds.value = Instant.now().epochSecond - startTime.epochSecond
+                val start = _currentWorkout.value?.workout?.startTime
+                if (start != null) {
+                    _elapsedSeconds.value = Instant.now().epochSecond - start.epochSecond
                 }
-                delay(1000L)
+                kotlinx.coroutines.delay(1000L)
             }
         }
     }
+
+    fun startNewWorkout() {
+        viewModelScope.launch {
+            try {
+                startNewWorkoutInternal()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start workout"
+            }
+        }
+    }
+
     private suspend fun startNewWorkoutInternal() {
         val now = Instant.now()
         val workout = Workout(
@@ -348,16 +359,16 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
-    fun stopRestTimer() {
-        restTimer.stop()
-    }
-
     fun pauseRestTimer() {
         restTimer.pause()
     }
 
     fun resumeRestTimer() {
         restTimer.resume()
+    }
+
+    fun stopRestTimer() {
+        restTimer.stop()
     }
 
     /** Change the rest timer duration while it's running (e.g., user taps a preset). */
@@ -391,31 +402,31 @@ class WorkoutLoggingViewModel @Inject constructor(
      * Uses ProgressionEngine with double progression logic.
      */
     private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
-        val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
-        for (we in exercises) {
-            val exercise = we.exercise
-            val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
-            if (normalSets.isNotEmpty()) {
-                val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
-                val equipmentType = if (exercise.equipment.lowercase().contains("barbell") ||
-                                       exercise.equipment.lowercase().contains("dumbbell") ||
-                                       exercise.equipment.lowercase().contains("machine") ||
-                                       exercise.equipment.lowercase().contains("cable")) "gym" else "home"
-                val recommendation = progressionEngine.calculateProgression(
-                    exerciseId = exercise.id,
-                    exerciseName = exercise.name,
-                    exerciseEquipment = exercise.equipment,
-                    targetRepsMin = 8,
-                    targetRepsMax = 12,
-                    targetSets = 3,
-                    previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
-                    currentSets = normalSets.map { it.toEntity() },
-                    equipmentType = equipmentType
-                )
-                recommendations[exercise.id] = recommendation
+        viewModelScope.launch {
+            val profile = userProfileRepository.getLatestProfile().firstOrNull()
+            val equipmentType = profile?.equipmentType ?: "home"
+            val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
+            for (we in exercises) {
+                val exercise = we.exercise
+                val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
+                if (normalSets.isNotEmpty()) {
+                    val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
+                    val recommendation = progressionEngine.calculateProgression(
+                        exerciseId = exercise.id,
+                        exerciseName = exercise.name,
+                        exerciseEquipment = exercise.equipment,
+                        targetRepsMin = 8,
+                        targetRepsMax = 12,
+                        targetSets = 3,
+                        previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
+                        currentSets = normalSets.map { it.toEntity() },
+                        equipmentType = equipmentType
+                    )
+                    recommendations[exercise.id] = recommendation
+                }
             }
+            _progressionRecommendations.value = recommendations
         }
-        _progressionRecommendations.value = recommendations
     }
 
     private fun updateSetField(exerciseIndex: Int, setIndex: Int, transform: (WorkoutSet) -> WorkoutSet) {

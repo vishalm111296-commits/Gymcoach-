@@ -32,11 +32,17 @@ class SubstitutionEngine @Inject constructor(
 
         // Check predefined substitutions first
         val existingSubs = exerciseSubstitutionDao.getByExerciseId(exerciseId).first()
-        for (sub in existingSubs) {
-            val substitute = exerciseDao.getById(sub.substituteExerciseId).first() ?: continue
-            if (equipmentAvailability.isAvailable(substitute.equipment, equipmentType)) {
-                val score = calculatePreservationScore(original, substitute)
-                substitutes.add(SubstitutionResult(substitute, score, "Recommended substitute"))
+        if (existingSubs.isNotEmpty()) {
+            val substituteIds = existingSubs.map { it.substituteExerciseId }
+            val substituteEntities = exerciseDao.getByIds(substituteIds).first()
+            val substituteMap = substituteEntities.associateBy { it.id }
+
+            for (sub in existingSubs) {
+                val substitute = substituteMap[sub.substituteExerciseId] ?: continue
+                if (equipmentAvailability.isAvailable(substitute.equipment, equipmentType)) {
+                    val score = calculatePreservationScore(original, substitute)
+                    substitutes.add(SubstitutionResult(substitute, score, "Recommended substitute"))
+                }
             }
         }
 

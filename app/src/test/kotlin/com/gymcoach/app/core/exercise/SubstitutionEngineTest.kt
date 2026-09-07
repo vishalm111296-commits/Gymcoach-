@@ -27,7 +27,7 @@ class SubstitutionEngineTest {
         name = "Barbell Bench Press",
         description = "Chest press with barbell",
         muscleGroup = "Chest",
-        equipment = "barbell,bench",
+        equipment = "barbell",
         difficulty = "Intermediate",
         category = "push",
         tags = "compound"
@@ -38,7 +38,7 @@ class SubstitutionEngineTest {
         name = "Dumbbell Bench Press",
         description = "Chest press with dumbbells",
         muscleGroup = "Chest",
-        equipment = "dumbbell,bench",
+        equipment = "dumbbell",
         difficulty = "Intermediate",
         category = "push",
         tags = "compound"
@@ -79,6 +79,7 @@ class SubstitutionEngineTest {
         coEvery { exerciseDao.getById(1) } returns flowOf(original)
         coEvery { exerciseSubstitutionDao.getByExerciseId(1) } returns flowOf(exerciseSubstitutions)
         coEvery { exerciseDao.getByIds(listOf(2L, 3L)) } returns flowOf(listOf(sub1, sub2))
+        coEvery { exerciseDao.getAll() } returns flowOf(listOf(original, sub1, sub2))
 
         val results = engine.findSubstitutes(exerciseId = 1, equipmentType = "gym", maxResults = 5)
 

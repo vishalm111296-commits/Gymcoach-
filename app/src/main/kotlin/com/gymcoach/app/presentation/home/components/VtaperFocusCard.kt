@@ -13,7 +13,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,12 +80,14 @@ fun VtaperFocusCard(
                         color = TextSecondary,
                         modifier = Modifier.width(110.dp)
                     )
+                    val targetProgress = if (data.target > 0) (data.current.toFloat() / data.target).coerceIn(0f, 1f) else 0f
+                    val animatedProgress by animateFloatAsState(
+                        targetValue = targetProgress,
+                        animationSpec = tween(durationMillis = 600),
+                        label = "progress"
+                    )
                     LinearProgressIndicator(
-                        progress = {
-                            if (data.target > 0) {
-                                (data.current.toFloat() / data.target).coerceIn(0f, 1f)
-                            } else 0f
-                        },
+                        progress = { animatedProgress },
                         color = MuscleActive,
                         trackColor = MuscleRest,
                         modifier = Modifier

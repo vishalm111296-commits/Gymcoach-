@@ -20,6 +20,7 @@ import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
 
@@ -164,29 +165,20 @@ class WorkoutLoggingViewModel @Inject constructor(
         _sessionVolume.value = volume
     }
 
+
+
     private fun startWorkoutTimer() {
         workoutTimerJob?.cancel()
         workoutTimerJob = viewModelScope.launch {
             while (true) {
-                val start = _currentWorkout.value?.workout?.startTime
-                if (start != null) {
-                    _elapsedSeconds.value = Instant.now().epochSecond - start.epochSecond
+                val startTime = _currentWorkout.value?.workout?.startTime
+                if (startTime != null) {
+                    _elapsedSeconds.value = Instant.now().epochSecond - startTime.epochSecond
                 }
-                kotlinx.coroutines.delay(1000L)
+                delay(1000L)
             }
         }
     }
-
-    fun startNewWorkout() {
-        viewModelScope.launch {
-            try {
-                startNewWorkoutInternal()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to start workout"
-            }
-        }
-    }
-
     private suspend fun startNewWorkoutInternal() {
         val now = Instant.now()
         val workout = Workout(
@@ -359,16 +351,16 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    fun stopRestTimer() {
+        restTimer.stop()
+    }
+
     fun pauseRestTimer() {
         restTimer.pause()
     }
 
     fun resumeRestTimer() {
         restTimer.resume()
-    }
-
-    fun stopRestTimer() {
-        restTimer.stop()
     }
 
     /** Change the rest timer duration while it's running (e.g., user taps a preset). */

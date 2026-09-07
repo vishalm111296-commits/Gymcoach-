@@ -6,7 +6,6 @@ import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.domain.repository.ReadinessRepository
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -26,6 +25,7 @@ import org.junit.Test
 class ProgramGeneratorTest {
 
     private lateinit var dao: ExerciseDao
+    private lateinit var readinessRepository: ReadinessRepository
     private lateinit var generator: ProgramGenerator
 
     // P: Back specialist, aggregate-inflated (lat9 + delt6 + rear4 = 19)
@@ -82,7 +82,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `lateral deltoid slot ranks specialists above aggregate-inflated candidates`() = runTest {
+    fun lateralDeltoidSlotRanksSpecialistsAboveAggregateInflatedCandidates() = runTest {
         val upperA = generate("gym").days.first { it.name == "Upper A" }
         val names = upperA.exercises.map { it.exerciseName }
         assertTrue("Lateral Raise expected in Upper A", "Lateral Raise" in names)
@@ -95,7 +95,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `chest slot selects chest builders not back champion`() = runTest {
+    fun chestSlotSelectsChestBuildersNotBackChampion() = runTest {
         val upperA = generate("gym").days.first { it.name == "Upper A" }
         val names = upperA.exercises.map { it.exerciseName }
         assertTrue("Incline DB Press expected in Upper A", "Incline DB Press" in names)
@@ -105,7 +105,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `home equipment excludes barbell keeps dumbbell and compound dumbbell+bench`() = runTest {
+    fun homeEquipmentExcludesBarbellKeepsDumbbellAndCompoundDumbbellBench() = runTest {
         val program = generate("home")
         val allNames = program.days.flatMap { it.exercises }.map { it.exerciseName }
         assertFalse("Barbell Row must be excluded at home", "Barbell Row" in allNames)
@@ -116,7 +116,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `custom bodyweight-only keeps only bodyweight exercises`() = runTest {
+    fun customBodyweightOnlyKeepsOnlyBodyweightExercises() = runTest {
         val allNames = generate("custom").days.flatMap { it.exercises }.map { it.exerciseName }
         assertTrue("Push-up expected", "Push-up" in allNames)
         assertFalse("Incline DB Press requires gear", "Incline DB Press" in allNames)
@@ -125,7 +125,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `low readiness (< 2.5) reduces sets to 2 and RPE to 7.0`() = runTest {
+    fun lowReadinessReducesSetsAndRpe() = runTest {
         val readiness = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
         val program = generate("gym", readiness)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
@@ -135,7 +135,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `high readiness (>= 4.0) increases sets to 4 and RPE to 8.0`() = runTest {
+    fun highReadinessIncreasesSetsAndRpe() = runTest {
         val readiness = ReadinessEntity(sleepQuality = 5, soreness = 4, energy = 5, motivation = 4)
         val program = generate("gym", readiness)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
@@ -145,7 +145,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `default readiness (3.0) keeps base sets (3) and RPE (7.5)`() = runTest {
+    fun defaultReadinessKeepsBaseSetsAndRpe() = runTest {
         val program = generate("gym")
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
         val rpe = program.days.flatMap { it.exercises }.map { it.targetRpe }
@@ -154,7 +154,7 @@ class ProgramGeneratorTest {
     }
 
     @Test
-    fun `null readiness falls back to 3.0 score with base sets and RPE`() = runTest {
+    fun nullReadinessFallsBackToBaseSetsAndRpe() = runTest {
         val program = generate("gym", null)
         val sets = program.days.flatMap { it.exercises }.map { it.targetSets }
         val rpe = program.days.flatMap { it.exercises }.map { it.targetRpe }

@@ -177,6 +177,7 @@ class ExerciseSeeder @Inject constructor(
         try {
             val root = JSONObject(asset(SUBSTITUTIONS_FILE))
             val keys = root.keys()
+            val substitutions = mutableListOf<ExerciseSubstitutionEntity>()
             while (keys.hasNext()) {
                 val original = keys.next()
                 val originalRow = exerciseIds[original] ?: continue
@@ -184,7 +185,7 @@ class ExerciseSeeder @Inject constructor(
                 for (i in 0 until substitutes.length()) {
                     val s = substitutes.getJSONObject(i)
                     val subRow = exerciseIds[s.getString("substitute_id")] ?: continue
-                    db.exerciseSubstitutionDao().insert(
+                    substitutions.add(
                         ExerciseSubstitutionEntity(
                             originalExerciseId = originalRow,
                             substituteExerciseId = subRow,
@@ -192,6 +193,9 @@ class ExerciseSeeder @Inject constructor(
                         )
                     )
                 }
+            }
+            if (substitutions.isNotEmpty()) {
+                db.exerciseSubstitutionDao().insertAll(substitutions)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to seed substitutions", e)

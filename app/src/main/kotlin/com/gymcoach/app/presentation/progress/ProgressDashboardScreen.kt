@@ -159,6 +159,8 @@ fun ProgressDashboardScreen(
 
                     Spacer(Modifier.height(16.dp))
 
+                    VTaperRatioCard(chestCm = state.latestChest, waistCm = state.latestWaist)
+                    Spacer(Modifier.height(8.dp))
                     // Body Measurements
                     SectionHeader("Body Measurements")
                     Spacer(Modifier.height(8.dp))
@@ -874,6 +876,66 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+
+@Composable
+private fun VTaperRatioCard(
+    chestCm: Double?,
+    waistCm: Double?
+) {
+    val ratio = if (chestCm != null && waistCm != null && waistCm > 0) chestCm / waistCm else null
+    val ratioStr = if (ratio != null) "%.2f".format(ratio) else "--"
+    val classification = when {
+        ratio == null -> "Log chest and waist measurements to track proportion changes"
+        ratio >= 1.4 -> "Classic Proportion Progress (1.40+ Ratio)"
+        ratio >= 1.25 -> "V-Taper Ratio Trend (1.25+ Ratio)"
+        else -> "Foundation Building (< 1.25 Ratio)"
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "V-TAPER PROPORTION METRIC",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = ratioStr,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = classification,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (chestCm != null && waistCm != null) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Chest/Shoulder: ${chestCm}cm", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Waist: ${waistCm}cm", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
 }

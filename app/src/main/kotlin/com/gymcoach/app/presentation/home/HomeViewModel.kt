@@ -6,8 +6,10 @@ import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
+import com.gymcoach.app.domain.repository.ReadinessRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,7 +40,9 @@ data class HomeUiState(
     val workoutsThisWeek: Int = 0,
     val targetWorkouts: Int = 0,
     val prCount: Int = 0,
-    val vtaperBars: List<VtaperMuscleData> = emptyList()
+    val vtaperBars: List<VtaperMuscleData> = emptyList(),
+    val latestReadiness: ReadinessEntity? = null,
+    val showRecoveryBanner: Boolean = false
 )
 
 /** Evidence-based optimal band floor (14-17 weekly sets) used as the bar target. */
@@ -65,6 +69,7 @@ private data class ProgramCore(
 class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
+    readinessRepository: ReadinessRepository,
     private val volumeCalculator: VolumeCalculator,
     analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
 ) : ViewModel() {
@@ -80,8 +85,8 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            programRepository.getActiveProgram()
-                .flatMapLatest { program ->
+            combine(
+                programRepository.getActiveProgram().flatMapLatest { program ->
                     if (program == null) {
                         flowOf(null)
                     } else {
@@ -92,12 +97,13 @@ class HomeViewModel @Inject constructor(
                             }
                         }
                     }
-                }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
-                }
-                .collect { state -> _uiState.value = state }
+                },
+                workoutRepository.getCompletedWorkouts(),
+                _prCount.asStateFlow(),
+                readinessRepository.getLatestReadiness()
+            ) { core, workouts, prCount, readiness ->
+                buildUiState(core, workouts, prCount, readiness)
+            }.collect { state -> _uiState.value = state }
         }
     }
 
@@ -111,14 +117,17 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        prCount: Int
+        prCount: Int,
+        readiness: ReadinessEntity?
     ): HomeUiState {
         if (core == null) {
             return HomeUiState(
                 isLoading = false,
                 hasProgram = false,
                 coachInsight = "Your first session is ready once you set up your plan.",
-                prCount = prCount
+                prCount = prCount,
+                latestReadiness = readiness,
+                showRecoveryBanner = readiness?.isRestDayRecommended == true
             )
         }
 
@@ -160,7 +169,9 @@ class HomeViewModel @Inject constructor(
             workoutsThisWeek = completedThisWeek,
             targetWorkouts = core.program.daysPerWeek,
             prCount = prCount,
-            vtaperBars = bars
+            vtaperBars = bars,
+            latestReadiness = readiness,
+            showRecoveryBanner = readiness?.isRestDayRecommended == true
         )
     }
 

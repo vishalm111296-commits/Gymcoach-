@@ -81,6 +81,11 @@ fun HomeDashboardScreen(
             GreetingHeader()
             Spacer(Modifier.height(20.dp))
 
+            if (state.showRecoveryBanner) {
+                RecoveryBanner(onNavigateToReadiness)
+                Spacer(Modifier.height(16.dp))
+            }
+
             when {
                 state.isLoading -> {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp)) {
@@ -237,6 +242,45 @@ private fun CoachInsightCard(insight: String) {
                 text = insight.ifBlank { "Log sessions to unlock volume insights." },
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmWhite
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecoveryBanner(onNavigateToReadiness: () -> Unit) {
+    Card(
+        onClick = onNavigateToReadiness,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "RECOVERY WARNING",
+                    style = MaterialTheme.typography.labelSmall,
+                    letterSpacing = 1.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Your recent readiness scores indicate high fatigue. A rest day or light session is highly recommended.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Text(
+                text = "→",
+                style = MaterialTheme.typography.headlineMedium
             )
         }
     }

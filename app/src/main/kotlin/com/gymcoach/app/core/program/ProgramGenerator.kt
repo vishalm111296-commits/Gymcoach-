@@ -150,12 +150,12 @@ class ProgramGenerator @Inject constructor(
                 if (ex.id !in usedExerciseIds) {
                     usedExerciseIds.add(ex.id)
                     val adjustedSets = when {
-                        baseReadinessScore < 2.5 -> maxOf(1, 3 - 1)
+                        baseReadinessScore < 2.5 -> 2
                         baseReadinessScore >= 4.0 -> 4
                         else -> 3
                     }
                     val adjustedRpe = when {
-                        baseReadinessScore < 2.5 -> maxOf(1.0, 7.5 - 0.5)
+                        baseReadinessScore < 2.5 -> 7.0
                         baseReadinessScore >= 4.0 -> 8.0
                         else -> 7.5
                     }

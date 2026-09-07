@@ -11,13 +11,13 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.ProgramDao
 import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramExerciseDao
+import com.gymcoach.app.data.local.dao.ReadinessDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -42,7 +42,9 @@ class ProgramRepositoryIntegrationTest {
     private lateinit var programDao: ProgramDao
     private lateinit var programDayDao: ProgramDayDao
     private lateinit var programExerciseDao: ProgramExerciseDao
+    private lateinit var readinessDao: ReadinessDao
     private lateinit var equipmentAvailability: EquipmentAvailability
+    private lateinit var readinessRepository: ReadinessRepositoryImpl
     private lateinit var programGenerator: ProgramGenerator
     private lateinit var programRepository: ProgramRepositoryImpl
 
@@ -56,8 +58,10 @@ class ProgramRepositoryIntegrationTest {
         programDao = db.programDao()
         programDayDao = db.programDayDao()
         programExerciseDao = db.programExerciseDao()
+        readinessDao = db.readinessDao()
+        readinessRepository = ReadinessRepositoryImpl(readinessDao)
         equipmentAvailability = EquipmentAvailability()
-        programGenerator = ProgramGenerator(exerciseDao, equipmentAvailability)
+        programGenerator = ProgramGenerator(exerciseDao, equipmentAvailability, readinessRepository)
         programRepository = ProgramRepositoryImpl(programDao, programDayDao, programExerciseDao)
     }
 

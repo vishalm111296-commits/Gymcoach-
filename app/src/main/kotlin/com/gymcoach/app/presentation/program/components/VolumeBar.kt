@@ -62,8 +62,7 @@ fun VolumeBar(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .width(progress)
+                    .fillMaxWidth(progress)
                     .height(8.dp)
                     .background(color, RoundedCornerShape(4.dp))
             )

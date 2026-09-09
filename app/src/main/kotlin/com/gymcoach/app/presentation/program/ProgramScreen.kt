@@ -288,7 +288,7 @@ private fun VolumeOverviewCard(
                 items(days.filter { !it.isRestDay }) { day ->
                     VolumeBar(
                         label = day.name,
-                        value = day.exercises.sumOf { it.sets.toFloat() },
+                        value = day.exercises.sumOf { it.sets }.toFloat(),
                         maxValue = 20f,
                         color = AccentBlue
                     )

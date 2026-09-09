@@ -23,11 +23,13 @@ class ProgressionEngine @Inject constructor(
         val isEquipmentLimited: Boolean
     )
 
-    /** Maximum number of working sets recommended for any single exercise. */
-    const val MAX_SETS = 5
+    companion object {
+        /** Maximum number of working sets recommended for any single exercise. */
+        const val MAX_SETS = 5
 
-    /** Maximum reps per set recommended for any single exercise. */
-    const val MAX_REPS = 20
+        /** Maximum reps per set recommended for any single exercise. */
+        const val MAX_REPS = 20
+    }
 
     fun calculateProgression(
         exerciseId: Long,

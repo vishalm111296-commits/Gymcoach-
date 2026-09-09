@@ -1,7 +1,7 @@
-# GymCoach Bug Register — Phase 1 Correction Pass
+# GymCoach Bug Register — Phase 2 Correction Pass
 **Created:** 2026-09-09  
-**Phase:** 1 Foundation Stabilization (Correction Pass)  
-**Branch:** phase5-recovery-verified | **HEAD:** 3840019
+**Phase:** 2 Workout UX + System Hardening  
+**Branch:** phase5-recovery-verified | **HEAD:** 368df01
 
 ---
 

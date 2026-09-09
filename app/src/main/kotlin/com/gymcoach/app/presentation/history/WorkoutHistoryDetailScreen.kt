@@ -81,8 +81,8 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<WorkoutHistoryDetailUiState>(WorkoutHistoryDetailUiState())
     val uiState: StateFlow<WorkoutHistoryDetailUiState> = _uiState.asStateFlow()
 
-    private val _showDeleteConfirmation = MutableStateFlow(false)
-    val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation
+    private val _deleteState = MutableStateFlow<DeleteState>(DeleteState.Idle)
+    val deleteState: StateFlow<DeleteState> = _deleteState
 
     private val _deleteTarget = MutableStateFlow<Long?>(null)
     val deleteTarget: StateFlow<Long?> = _deleteTarget
@@ -108,23 +108,35 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
 
     fun onDeleteClick(workoutId: Long) {
         _deleteTarget.value = workoutId
-        _showDeleteConfirmation.value = true
+        _deleteState.value = DeleteState.Confirming
     }
 
     fun confirmDelete() {
         _deleteTarget.value?.let { workoutId ->
+            _deleteState.value = DeleteState.Deleting
             viewModelScope.launch {
-                workoutRepository.deleteWorkout(workoutId)
+                try {
+                    workoutRepository.deleteWorkout(workoutId)
+                    _deleteState.value = DeleteState.Success
+                } catch (e: Exception) {
+                    _deleteState.value = DeleteState.Failed(e.message ?: "Failed to delete workout")
+                }
             }
         }
-        _showDeleteConfirmation.value = false
-        _deleteTarget.value = null
     }
 
     fun cancelDelete() {
-        _showDeleteConfirmation.value = false
+        _deleteState.value = DeleteState.Idle
         _deleteTarget.value = null
     }
+}
+
+sealed interface DeleteState {
+    data class Idle : DeleteState
+    data class Confirming : DeleteState
+    data class Deleting : DeleteState
+    data class Success : DeleteState
+    data class Failed(val message: String) : DeleteState
 }
 
 data class WorkoutHistoryDetailUiState(
@@ -142,11 +154,18 @@ fun WorkoutHistoryDetailScreen(
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
+    val deleteState by viewModel.deleteState.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
+    }
+
+    // Handle delete success - navigate back
+    LaunchedEffect(deleteState) {
+        if (deleteState is DeleteState.Success) {
+            onBackClick()
+        }
     }
 
     Scaffold(
@@ -279,25 +298,50 @@ fun WorkoutHistoryDetailScreen(
     }
 
     // Delete confirmation dialog
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelDelete() },
-            title = { Text("Delete Workout") },
-            text = { Text("Are you sure you want to delete this workout?") },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.confirmDelete()
-                    onBackClick()
-                }) {
-                    Text("Delete")
+    when (deleteState) {
+        is DeleteState.Confirming -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.cancelDelete() },
+                title = { Text("Delete Workout") },
+                text = { Text("Are you sure you want to delete this workout?") },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.confirmDelete() },
+                        enabled = deleteState !is DeleteState.Deleting
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.cancelDelete() }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelDelete() }) {
-                    Text("Cancel")
-                }
-            }
-        )
+            )
+        }
+        is DeleteState.Deleting -> {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Deleting...") },
+                text = { Text("Please wait while we delete the workout.") },
+                confirmButton = { },
+                dismissButton = { }
+            )
+        }
+        is DeleteState.Failed -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.cancelDelete() },
+                title = { Text("Delete Failed") },
+                text = { Text(deleteState.message) },
+                confirmButton = {
+                    Button(onClick = { viewModel.cancelDelete() }) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = { }
+            )
+        }
+        else -> { }
     }
 }
 
@@ -454,7 +498,7 @@ private fun SummaryStatItem(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }

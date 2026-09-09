@@ -80,6 +80,7 @@ fun WorkoutHistoryScreen(
     val filterOption by viewModel.filterOption.collectAsState()
     val incompleteWorkout by viewModel.incompleteWorkout.collectAsState()
     val deleteTarget by viewModel.deleteTarget.collectAsState()
+    val isInitialLoad by viewModel.isInitialLoad.collectAsState()
     val showDeleteConfirmation = deleteTarget != null
     var showSortOptions by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -192,17 +193,20 @@ fun WorkoutHistoryScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No workouts found for \"$searchQuery\"" else "No workouts yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (isInitialLoad) {
+                        CircularProgressIndicator()
+                    } else {
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "No workouts found for \"$searchQuery\"" else "No workouts yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(padding)
                         .padding(horizontal = 16.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -221,7 +225,10 @@ fun WorkoutHistoryScreen(
     if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { 
+                showDatePicker = false
+                viewModel.cancelCustomFilter()
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -236,7 +243,10 @@ fun WorkoutHistoryScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { 
+                    showDatePicker = false
+                    viewModel.cancelCustomFilter()
+                }) {
                     Text("Cancel")
                 }
             }

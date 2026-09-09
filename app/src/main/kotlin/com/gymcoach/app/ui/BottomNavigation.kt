@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
@@ -55,7 +57,15 @@ fun GymCoachBottomNav(
         ) {
             BOTTOM_NAV_ITEMS.forEach { item ->
                 val active = currentRoute == item.route
-                IconButton(onClick = { onNavigate(item.route) }, modifier = Modifier.size(48.dp)) {
+                IconButton(
+                    onClick = { onNavigate(item.route) },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics {
+                            selected = active
+                            role = Role.Tab
+                        }
+                ) {
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.label,

@@ -147,6 +147,7 @@ fun GymCoachNavHost(
             val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
+                onViewHistory = { navController.navigate(Routes.WORKOUT_HISTORY) },
                 workoutId = workoutId
             )
         }

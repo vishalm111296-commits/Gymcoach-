@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,6 +65,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -81,6 +84,7 @@ import java.time.format.DateTimeFormatter
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
     workoutId: Long? = null,
+    onViewHistory: () -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
     val sessionUiState by viewModel.sessionUiState.collectAsState()
@@ -97,6 +101,7 @@ fun WorkoutSessionScreen(
     val progressionRecommendations by viewModel.progressionRecommendations.collectAsState()
     val completionStats by viewModel.completionStats.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    var showLeaveDialog by rememberSaveable { mutableStateOf(false) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(restTimerState.isRunning) {
@@ -189,8 +194,16 @@ fun WorkoutSessionScreen(
                 }
 
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = onBackClick) {
-                    Text("Go Back")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(onClick = onBackClick, modifier = Modifier.heightIn(min = 48.dp).weight(1f)) {
+                        Text("Go Back")
+                    }
+                    Button(onClick = onViewHistory, modifier = Modifier.heightIn(min = 48.dp).weight(1f)) {
+                        Text("View History")
+                    }
                 }
             }
         }
@@ -278,7 +291,7 @@ fun WorkoutSessionScreen(
                     Spacer(Modifier.height(24.dp))
                     Button(onClick = {
                         viewModel.startNewWorkout()
-                    }) {
+                    }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text("Start New Workout")
                     }
                 }
@@ -297,7 +310,7 @@ fun WorkoutSessionScreen(
                             Text(
                                 text = formatDuration(elapsedSeconds),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (sessionVolume > 0) {
                                 Text(
@@ -310,7 +323,14 @@ fun WorkoutSessionScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        val hasLoggedSets = currentWorkout?.exercises?.any { it.sets.isNotEmpty() } == true
+                        if (hasLoggedSets) {
+                            showLeaveDialog = true
+                        } else {
+                            onBackClick()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -356,23 +376,22 @@ fun WorkoutSessionScreen(
                             val lastPerf = lastPerformanceSummary[we.exercise.id]
 
                             ExerciseSetCard(
-                               exerciseName = we.exercise.name,
-                               muscleGroup = we.exercise.muscleGroup,
-                               sets = we.sets,
-                               previousSets = lastSets,
-                               lastPerformance = lastPerf,
-                               instructions = we.exercise.instructions,
-                               recommendation = progressionRecommendations[we.exercise.id],
-                               onAddSet = { viewModel.addSet(exIdx) },
-                               onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
-                               onRemoveExercise = { viewModel.removeExercise(exIdx) },
-                               onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
-                               onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
-                               onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
-                               onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
-                               onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                               onInstructionsClick = {},
-                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
+                                exerciseName = we.exercise.name,
+                                muscleGroup = we.exercise.muscleGroup,
+                                sets = we.sets,
+                                previousSets = lastSets,
+                                lastPerformance = lastPerf,
+                                instructions = we.exercise.instructions,
+                                recommendation = progressionRecommendations[we.exercise.id],
+                                onAddSet = { viewModel.addSet(exIdx) },
+                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
+                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
+                                onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
+                                onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
+                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
+                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
+                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
+                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
 
@@ -397,7 +416,7 @@ fun WorkoutSessionScreen(
             ) {
                 Button(
                     onClick = { viewModel.showExercisePicker() },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
@@ -409,7 +428,7 @@ fun WorkoutSessionScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
@@ -435,6 +454,32 @@ fun WorkoutSessionScreen(
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showLeaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showLeaveDialog = false },
+            title = { Text("Leave Workout?") },
+            text = { Text("Your progress is saved and you can resume this workout from History.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLeaveDialog = false
+                        onBackClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Leave Workout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveDialog = false }) {
+                    Text("Keep Training")
                 }
             }
         )
@@ -618,7 +663,6 @@ private fun ExerciseSetCard(
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
-    onInstructionsClick: () -> Unit,
     onToggleComplete: (Int) -> Unit
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
@@ -912,15 +956,15 @@ private fun SetRow(
             com.gymcoach.app.domain.model.SetType.FAILURE -> "Fail"
             else -> "Set ${index + 1}"
         }
+        val nextTypeLabel = when (setType) {
+            com.gymcoach.app.domain.model.SetType.NORMAL -> "Warm"
+            com.gymcoach.app.domain.model.SetType.WARMUP -> "Drop"
+            com.gymcoach.app.domain.model.SetType.DROP -> "Fail"
+            com.gymcoach.app.domain.model.SetType.FAILURE -> "Normal"
+        }
         Box(
             modifier = Modifier
-                .width(42.dp)
-                .height(24.dp)
-                .border(
-                    width = 1.dp,
-                    color = setTypeColor.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(4.dp)
-                )
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .clickable {
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
@@ -929,16 +973,33 @@ private fun SetRow(
                         com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
                     }
                     onSetTypeChange(nextType)
+                }
+                .semantics {
+                    role = Role.Button
+                    stateDescription = "Set type: $setTypeLabel"
+                    contentDescription = "Set type $setTypeLabel, tap to switch to $nextTypeLabel"
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = setTypeLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = setTypeColor,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
+            Box(
+                modifier = Modifier
+                    .width(42.dp)
+                    .height(24.dp)
+                    .border(
+                        width = 1.dp,
+                        color = setTypeColor.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(4.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = setTypeLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = setTypeColor,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
         }
 
         OutlinedTextField(
@@ -1000,8 +1061,7 @@ private fun SetRow(
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggleComplete()
-                },
-                modifier = Modifier.size(24.dp)
+                }
             )
         }
     }
@@ -1019,7 +1079,7 @@ private fun CompletionStatItem(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }

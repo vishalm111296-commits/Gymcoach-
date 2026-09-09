@@ -45,6 +45,8 @@ class WorkoutHistoryViewModel @Inject constructor(
     private val _customEndDate = MutableStateFlow<Long?>(null)
     val customEndDate: StateFlow<Long?> = _customEndDate
 
+    private val _previousFilterOption = MutableStateFlow(FilterOption.ALL)
+
     private val _selectedWorkout = MutableStateFlow<Long?>(null)
 
     private val _incompleteWorkout = MutableStateFlow<Workout?>(null)
@@ -52,6 +54,9 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     private val _deleteTarget = MutableStateFlow<Long?>(null)
     val deleteTarget: StateFlow<Long?> = _deleteTarget
+
+    private val _isInitialLoad = MutableStateFlow(true)
+    val isInitialLoad: StateFlow<Boolean> = _isInitialLoad
 
     private val _workouts = MutableStateFlow<List<WorkoutWithStats>>(emptyList())
     val workouts: StateFlow<List<WorkoutWithStats>> = _workouts
@@ -131,6 +136,9 @@ class WorkoutHistoryViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collect { workouts ->
                     _workouts.value = workouts
+                    if (_isInitialLoad.value) {
+                        _isInitialLoad.value = false
+                    }
                 }
         }
     }
@@ -154,7 +162,18 @@ class WorkoutHistoryViewModel @Inject constructor(
     }
 
     fun onFilterChange(filter: FilterOption) {
+        if (filter == FilterOption.CUSTOM) {
+            _previousFilterOption.value = _filterOption.value
+        }
         _filterOption.value = filter
+    }
+
+    fun cancelCustomFilter() {
+        if (_filterOption.value == FilterOption.CUSTOM) {
+            _filterOption.value = _previousFilterOption.value
+            _customStartDate.value = null
+            _customEndDate.value = null
+        }
     }
 
     fun onSortChange(sort: SortOption) {
@@ -164,6 +183,12 @@ class WorkoutHistoryViewModel @Inject constructor(
     fun onCustomDateRangeChange(start: Long?, end: Long?) {
         _customStartDate.value = start
         _customEndDate.value = end
+        // If CUSTOM filter is active but no valid range provided, revert to previous filter
+        if (_filterOption.value == FilterOption.CUSTOM && (start == null || end == null || start > end)) {
+            _filterOption.value = _previousFilterOption.value
+            _customStartDate.value = null
+            _customEndDate.value = null
+        }
     }
 
     fun onWorkoutClick(workoutId: Long) {

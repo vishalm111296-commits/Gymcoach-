@@ -15,6 +15,7 @@ import com.gymcoach.app.presentation.home.HomeDashboardScreen
 import com.gymcoach.app.presentation.list.ExerciseListScreen
 import com.gymcoach.app.presentation.onboarding.OnboardingScreen
 import com.gymcoach.app.presentation.profile.ProfileScreen
+import com.gymcoach.app.presentation.program.ProgramDetailScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.readiness.ReadinessScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
@@ -30,6 +31,7 @@ object Routes {
     const val PROGRESS = "progress"
     const val PROFILE = "profile"
     const val READINESS = "readiness"
+    const val PROGRAM_DETAIL = "program_detail"
     const val CAMERA = "camera/{exerciseType}"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
@@ -63,7 +65,7 @@ fun GymCoachNavHost(
                     navController.navigate(Routes.workoutSession())
                 },
                 onViewProgram = {
-                    navController.navigate(Routes.EXERCISE_LIST)
+                    navController.navigate(Routes.PROGRAM_DETAIL)
                 },
                 onNavigateToProgress = {
                     navController.navigate(Routes.PROGRESS)
@@ -167,6 +169,13 @@ fun GymCoachNavHost(
         composable(Routes.READINESS) {
             ReadinessScreen(
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.PROGRAM_DETAIL) {
+            ProgramDetailScreen(
+                onBackClick = { navController.popBackStack() },
+                onStartWorkout = { navController.navigate(Routes.workoutSession()) }
             )
         }
 

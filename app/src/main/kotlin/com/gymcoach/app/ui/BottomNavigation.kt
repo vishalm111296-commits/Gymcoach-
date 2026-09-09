@@ -30,7 +30,7 @@ private data class BottomNavItem(val route: String, val label: String, val icon:
 private val BOTTOM_NAV_ITEMS = listOf(
     BottomNavItem("home", "Home", Icons.Filled.Home),
     BottomNavItem("workout", "Workout", Icons.Filled.FitnessCenter),
-    BottomNavItem("program", "Program", Icons.Filled.CalendarMonth),
+    BottomNavItem("program_detail", "Program", Icons.Filled.CalendarMonth),
     BottomNavItem("progress", "Progress", Icons.AutoMirrored.Filled.TrendingUp),
     BottomNavItem("profile", "Profile", Icons.Filled.Person)
 )

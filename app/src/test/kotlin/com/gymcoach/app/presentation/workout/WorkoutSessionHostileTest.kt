@@ -236,6 +236,7 @@ class WorkoutSessionHostileTest {
     @Test
     fun `startNewWorkout creates workout with ACTIVE status`() = vmRunTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 5L
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns null
         coEvery { workoutRepository.getWorkoutWithDetails(5L) } returns flowOf(makeWorkoutWithDetails(makeWorkout(id = 5L)))
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -34,6 +35,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -80,6 +82,7 @@ fun WorkoutSessionScreen(
     workoutId: Long? = null,
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
+    val sessionUiState by viewModel.sessionUiState.collectAsState()
     val currentWorkout by viewModel.currentWorkout.collectAsState()
     val showPicker by viewModel.showExercisePicker.collectAsState()
     val allExercises by viewModel.allExercises.collectAsState()
@@ -187,6 +190,96 @@ fun WorkoutSessionScreen(
                 Spacer(Modifier.height(24.dp))
                 Button(onClick = onBackClick) {
                     Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+
+    // Loading state
+    if (sessionUiState is WorkoutLoggingViewModel.SessionUiState.Loading) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Workout Session") },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Loading workout...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    // Empty state
+    if (sessionUiState is WorkoutLoggingViewModel.SessionUiState.Empty) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Workout Session") },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "No Active Workout",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Start a new workout from the home screen",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Button(onClick = {
+                        viewModel.startNewWorkout()
+                    }) {
+                        Text("Start New Workout")
+                    }
                 }
             }
         }
@@ -506,6 +599,8 @@ private fun ExerciseSetCard(
     onToggleComplete: (Int) -> Unit
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
+    var pendingDeleteSetIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showRemoveExerciseDialog by rememberSaveable { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -533,7 +628,7 @@ private fun ExerciseSetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onRemoveExercise) {
+                IconButton(onClick = { showRemoveExerciseDialog = true }) {
                     Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
                 }
             }
@@ -646,8 +741,8 @@ private fun ExerciseSetCard(
                 val dismissState = rememberSwipeToDismissBoxState(
                     confirmValueChange = {
                         if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                            onRemoveSet(index)
-                            true
+                            pendingDeleteSetIndex = index
+                            false
                         } else false
                     }
                 )
@@ -697,6 +792,60 @@ private fun ExerciseSetCard(
                 Text("Add Set")
             }
         }
+    }
+
+    // Confirmation dialog for swipe-to-delete set
+    if (pendingDeleteSetIndex != null) {
+        AlertDialog(
+            onDismissRequest = { pendingDeleteSetIndex = null },
+            title = { Text("Delete Set") },
+            text = { Text("Are you sure you want to delete this set? This cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onRemoveSet(pendingDeleteSetIndex!!)
+                        pendingDeleteSetIndex = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteSetIndex = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation dialog for removing the whole exercise
+    if (showRemoveExerciseDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemoveExerciseDialog = false },
+            title = { Text("Remove Exercise") },
+            text = { Text("Remove $exerciseName from this workout? All its sets will be deleted.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRemoveExerciseDialog = false
+                        onRemoveExercise()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveExerciseDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

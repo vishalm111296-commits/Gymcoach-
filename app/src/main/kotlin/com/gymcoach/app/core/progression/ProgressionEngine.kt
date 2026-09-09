@@ -23,6 +23,12 @@ class ProgressionEngine @Inject constructor(
         val isEquipmentLimited: Boolean
     )
 
+    /** Maximum number of working sets recommended for any single exercise. */
+    const val MAX_SETS = 5
+
+    /** Maximum reps per set recommended for any single exercise. */
+    const val MAX_REPS = 20
+
     fun calculateProgression(
         exerciseId: Long,
         exerciseName: String,
@@ -74,17 +80,22 @@ class ProgressionEngine @Inject constructor(
                 )
             }
             allHitTop && (isBodyweight || isEquipmentLimited) -> {
-                val newSets = targetSets + 1
-                val newReps = targetRepsMax + 2
+                val newSets = (targetSets + 1).coerceAtMost(MAX_SETS)
+                val newTopReps = (targetRepsMax + 2).coerceAtMost(MAX_REPS)
+                val alreadyAtSetCap = newSets >= MAX_SETS && currentReps.maxOrNull() ?: 0 >= MAX_REPS
                 ProgressionRecommendation(
                     exerciseId = exerciseId,
                     exerciseName = exerciseName,
                     currentWeight = currentWeight,
                     currentReps = currentReps,
                     recommendedWeight = currentWeight,
-                    recommendedReps = "$targetRepsMin-$newReps",
+                    recommendedReps = "$targetRepsMin-$newTopReps",
                     recommendedSets = newSets,
-                    reason = "Equipment limited — add set/rep progression instead of weight.",
+                    reason = if (alreadyAtSetCap) {
+                        "Equipment limited — both set ($MAX_SETS) and rep ($MAX_REPS) caps reached. Consider adding a harder variation or heavier equipment."
+                    } else {
+                        "Equipment limited — add set/rep progression instead of weight."
+                    },
                     confidence = 0.75,
                     isEquipmentLimited = true
                 )

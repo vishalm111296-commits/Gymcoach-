@@ -197,4 +197,83 @@ class ProgressionEngineTest {
         assertEquals(3, result.recommendedSets)
         assertEquals("Maintain current weight and focus on hitting target reps.", result.reason)
     }
+
+    @Test
+    fun `equipment limited progression caps sets at MAX_SETS`() {
+        every { equipmentAvailability.isLimited("dumbbell", "home") } returns true
+
+        // 5 completed sets already at max reps -> should not exceed MAX_SETS (5)
+        val currentSets = (1..5).map {
+            createSet(weight = 20.0, reps = 12)
+        }
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Dumbbell Curl",
+            exerciseEquipment = "dumbbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 4,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            equipmentType = "home"
+        )
+
+        assertEquals(ProgressionEngine.MAX_SETS, result.recommendedSets)
+        assertTrue(result.recommendedSets!! <= ProgressionEngine.MAX_SETS)
+        assertTrue(result.isEquipmentLimited)
+    }
+
+    @Test
+    fun `equipment limited progression caps reps at MAX_REPS`() {
+        every { equipmentAvailability.isLimited("dumbbell", "home") } returns true
+
+        // targetRepsMax = 19, +2 would be 21 > MAX_REPS (20), so capped at 20
+        val currentSets = listOf(
+            createSet(weight = 20.0, reps = 19),
+            createSet(weight = 20.0, reps = 19)
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Dumbbell Curl",
+            exerciseEquipment = "dumbbell",
+            targetRepsMin = 15,
+            targetRepsMax = 19,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            equipmentType = "home"
+        )
+
+        assertEquals("15-20", result.recommendedReps)
+        val upperBound = result.recommendedReps.split("-")[1].toInt()
+        assertTrue(upperBound <= ProgressionEngine.MAX_REPS)
+    }
+
+    @Test
+    fun `equipment limited progression reports maintenance when set and rep caps both reached`() {
+        every { equipmentAvailability.isLimited("bodyweight", "home") } returns true
+
+        // 5 sets at 20 reps = both caps reached
+        val currentSets = (1..5).map {
+            createSet(weight = 0.0, reps = 20)
+        }
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Pushup",
+            exerciseEquipment = "bodyweight",
+            targetRepsMin = 15,
+            targetRepsMax = 19,
+            targetSets = 5,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            equipmentType = "home"
+        )
+
+        assertEquals(ProgressionEngine.MAX_SETS, result.recommendedSets)
+        assertTrue(result.reason.contains("caps reached"))
+        assertTrue(result.reason.contains("harder variation"))
+    }
 }

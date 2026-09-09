@@ -45,6 +45,17 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
+    /** Sealed UI state for the workout session screen. */
+    sealed interface SessionUiState {
+        data object Loading : SessionUiState
+        data object Empty : SessionUiState
+        data class Active(val workout: WorkoutWithDetails) : SessionUiState
+        data class Error(val message: String) : SessionUiState
+    }
+
+    private val _sessionUiState = MutableStateFlow<SessionUiState>(SessionUiState.Loading)
+    val sessionUiState: StateFlow<SessionUiState> = _sessionUiState.asStateFlow()
+
     private var defaultRestSeconds = 90
 
     val allExercises = exerciseRepository.getAllExercises()
@@ -102,6 +113,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     fun loadOrStartWorkout(workoutId: Long? = null) {
+        _sessionUiState.value = SessionUiState.Loading
         viewModelScope.launch {
             try {
                 if (workoutId != null) {
@@ -115,6 +127,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         startWorkoutTimer()
                         workoutRepository.getWorkoutWithDetails(workoutId).collect {
                             _currentWorkout.value = it
+                            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             calculateSessionVolume(it)
                         }
@@ -125,6 +138,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         startWorkoutTimer()
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
+                            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
                             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
                             calculateSessionVolume(it)
                         }
@@ -134,6 +148,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load workout"
+                _sessionUiState.value = SessionUiState.Error(e.message ?: "Failed to load workout")
             }
         }
     }
@@ -226,6 +241,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         startWorkoutTimer()
         workoutRepository.getWorkoutWithDetails(id).collect {
             _currentWorkout.value = it
+            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
             calculateSessionVolume(it)
         }
@@ -265,6 +281,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         // Load the new workout
         workoutRepository.getWorkoutWithDetails(newWorkoutId).collect {
             _currentWorkout.value = it
+            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
             loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
             calculateSessionVolume(it)
         }

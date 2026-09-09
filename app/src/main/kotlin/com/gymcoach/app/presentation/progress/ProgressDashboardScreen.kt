@@ -253,7 +253,7 @@ fun ProgressDashboardScreen(
                             )
                             StatCard(
                                 label = "Avg Volume",
-                                value = "%.1f kg".format(state.averageWorkoutVolume),
+                                value = if (state.averageWorkoutVolume == 0.0) "None" else "%.1f kg".format(state.averageWorkoutVolume),
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -277,7 +277,7 @@ fun ProgressDashboardScreen(
                             val trendSymbol = when {
                                 state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
                                 state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
-                                else -> "\u2022 0.0%%"
+                                else -> "\u2014"
                             }
                             StatCard(
                                 label = "Weekly Trend",
@@ -372,7 +372,7 @@ fun ProgressDashboardScreen(
                         state.weeklySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = weekLabel(date),
-                                value = "%.0f kg".format(volume)
+                                value = if (volume == 0.0) "None" else "%.0f kg".format(volume)
                             )
                         }
                     } else {
@@ -388,7 +388,7 @@ fun ProgressDashboardScreen(
                         state.monthlySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = monthLabel(date),
-                                value = "%.0f kg".format(volume)
+                                value = if (volume == 0.0) "None" else "%.0f kg".format(volume)
                             )
                         }
                     } else {
@@ -709,11 +709,19 @@ private fun SectionHeader(title: String) {
 
 @Composable
 private fun EmptyPlaceholder(message: String) {
-    Text(
-        text = message,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
 }
 
 @Composable

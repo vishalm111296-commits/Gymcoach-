@@ -416,3 +416,11 @@ VERIFYING: T2.8 Screen-by-Screen Workout UX Audit — all 3 group files + consol
 
 Timestamp: 2026-09-09T23:01
 
+
+## T2.8 Final Gate (2026-09-09)
+- CI run 34400290084 @ phase5-recovery-verified: SUCCESS — Build and Test PASS, Android Lint PASS, Unit Tests PASS (205 tests, 0 failures, 0 errors, 0 skipped), Create Release skipped (by design).
+- XML evidence: /tmp/opencode/art34400290084/test-results/testDebugUnitTest/ (16 suites; WorkoutHistoryViewModelTest=8, WorkoutHistoryDetailViewModelTest=4 new).
+- Fix commits: 56c3cf4 (fix round 1) + compile-fix commits (smart-cast, DeleteState objects, semantics/layout imports). Baseline 193 tests retained — no deletions/weakenings; +12 new.
+- 7 pre-existing uncommitted UI files preserved unstaged/untouched by fix commits (pose/lists/home files).
+- Deferred (documented in docs/audit/UX_AUDIT_20260909.md): APP-020 (device screen-size verify), APP-028 (dead components, product sign-off), APP-031 (uncommitted file), APP-032/033/034/035 (uncommitted files), APP-043/044 (design).
+- OBSERVED (out of scope): main is RED — PR #98 merged 2026-09-09T19:11:32Z, CI run 34393583510 FAILED (Unresolved reference: latVolume in HomeViewModel.kt:175).

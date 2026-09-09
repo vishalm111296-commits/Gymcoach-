@@ -128,6 +128,9 @@ fun GymCoachNavHost(
                 onBackClick = { navController.popBackStack() },
                 onEditClick = { id ->
                     navController.navigate(Routes.workoutSession(id))
+                },
+                onPerformAgainClick = { newWorkoutId ->
+                    navController.navigate(Routes.workoutSession(newWorkoutId))
                 }
             )
         }

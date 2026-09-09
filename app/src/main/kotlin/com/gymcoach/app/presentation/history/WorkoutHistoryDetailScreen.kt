@@ -119,6 +119,15 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
     fun cancelDelete() {
         _deleteTarget.value = null
     }
+
+    fun performAgain(workoutId: Long, onCloned: (Long) -> Unit) {
+        viewModelScope.launch {
+            val newWorkoutId = workoutRepository.cloneWorkoutAsNewActive(workoutId)
+            if (newWorkoutId > 0) {
+                onCloned(newWorkoutId)
+            }
+        }
+    }
 }
 
 data class WorkoutHistoryDetailUiState(
@@ -133,6 +142,7 @@ fun WorkoutHistoryDetailScreen(
     workoutId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit = {},
+    onPerformAgainClick: (Long) -> Unit = {},
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -249,6 +259,25 @@ fun WorkoutHistoryDetailScreen(
                         }
 
                         Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                viewModel.performAgain(workoutId) { newId ->
+                                    onPerformAgainClick(newId)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text(
+                                text = "Perform Again",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
             }

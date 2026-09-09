@@ -154,7 +154,7 @@ class ForensicAuditRegressionTest {
     // ──────────────────────────────────────────────
 
     @Test
-    fun `getLatestIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun `getLatestIncompleteWorkout returns the refreshed ACTIVE workout`() = runTest {
         val activeWorkout = WorkoutEntity(
             id = 3L, date = 1700000000000L, startTime = 1700000000000L,
             endTime = 0, duration = 0, notes = "Current workout",
@@ -170,7 +170,7 @@ class ForensicAuditRegressionTest {
     }
 
     @Test
-    fun `getLatestIncompleteWorkout returns null when no ACTIVE workouts`() = runTest {
+    fun `getLatestIncompleteWorkout returns null when no ACTIVE workouts after refresh`() = runTest {
         coEvery { workoutDao.getLatestIncompleteWorkout() } returns null
 
         val result = workoutDao.getLatestIncompleteWorkout()

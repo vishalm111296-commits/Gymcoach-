@@ -117,7 +117,7 @@ class WorkoutConcurrencyTest {
         coEvery { workoutRepository.deleteSet(any()) } returns Unit
         coEvery { workoutRepository.removeExerciseFromWorkout(any()) } returns Unit
         coEvery { workoutRepository.updateWorkout(any()) } returns Unit
-        coEvery { userProfileRepository.getLatestProfile() } returns null
+        coEvery { userProfileRepository.getLatestProfile() } returns MutableStateFlow(null)
         every { restTimer.state } returns MutableStateFlow(
             com.gymcoach.app.core.timer.RestTimerState()
         )
@@ -403,7 +403,7 @@ class WorkoutConcurrencyTest {
         }
 
         val setNumbers = mutableListOf<Int>()
-        coEvery { workoutRepository.addSetToExercise(any(), capture(slot())) } coAnswer {
+        coEvery { workoutRepository.addSetToExercise(any(), capture(slot())) } coAnswers {
             val set = arg<com.gymcoach.app.domain.model.WorkoutSet>(1)
             setNumbers.add(set.setNumber)
             400L + setNumbers.size

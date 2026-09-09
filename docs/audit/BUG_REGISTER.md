@@ -66,7 +66,7 @@
   4. Update `HomeViewModel.onViewProgram` to navigate to "program"
 - **Regression Test:** Navigation integration test; UI test for program display with real data
 - **Verification:** Program tab shows persisted program with all required fields; start workout navigates to session
-- **Status:** OPEN — AUDITED, implementation ready
+- **Status:** VERIFIED — Fixed in Phase 1 (ProgramScreen.kt, ProgramViewModel.kt, VolumeBar.kt, GymCoachNavHost.kt route added, CI Run 34348295533)
 
 ### APP-002: Workout Session Blank Loading State
 - **Type:** Application Defect
@@ -86,7 +86,7 @@
   3. Update Screen to render Loading (spinner), Empty (prompt to add exercise), Error
 - **Regression Test:** Unit test for ViewModel state emissions; UI test for loading/empty states
 - **Verification:** No blank screen at any point; loading spinner → workout list or empty prompt
-- **Status:** OPEN — AUDITED, root cause confirmed
+- **Status:** VERIFIED — Fixed in Phase 1 (WorkoutLoggingViewModel sealed interface + WorkoutSessionScreen loading/empty states, CI Run 34348295533)
 
 ### APP-003: Set/Exercise Deletion Without Confirmation
 - **Type:** Application Defect
@@ -105,7 +105,7 @@
   3. Ensure DB transaction completes before navigation
 - **Regression Test:** UI test for delete confirmation; integration test for cascade delete
 - **Verification:** Swipe shows confirmation; cancel preserves set; confirm deletes and updates UI
-- **Status:** OPEN — AUDITED, sets and exercises need confirmation
+- **Status:** VERIFIED — Fixed in Phase 1 (pendingDeleteSetIndex + AlertDialog for sets; showRemoveExerciseDialog + AlertDialog for exercise removal, CI Run 34348295533)
 
 ### APP-004: Unbounded Progression Escalation
 - **Type:** Application Defect
@@ -123,7 +123,7 @@
   5. Write regression test for 10-session escalation scenario
 - **Regression Test:** Test equipment-limited progression for 10 sessions → verify caps enforced
 - **Verification:** Progression recommendations never exceed defined caps; escalation test passes
-- **Status:** OPEN — AUDITED, unbounded escalation confirmed; needs behavior analysis before capping
+- **Status:** VERIFIED — Fixed in Phase 1 (MAX_SETS=5, MAX_REPS=20 caps with coerceAtMost(), 3 regression tests, CI Run 34348295533)
 
 ---
 
@@ -140,7 +140,7 @@
 - **Fix:** Change line 280 fallback to `"—"` or `"Stable"`
 - **Regression Test:** UI test with empty database; verify Weekly Trend card
 - **Verification:** Zero database → Weekly Trend shows "—"
-- **Status:** OPEN — AUDITED, minor fix needed
+- **Status:** VERIFIED — Fixed in Phase 1 (em-dash "—" fallback, CI Run 34348295533)
 
 ### APP-006: Missing Instructional Media (All Exercises)
 - **Type:** Application Defect
@@ -236,6 +236,132 @@
 - **Severity:** P3
 - **Area:** Utilities
 - **Status:** OPEN
+
+---
+
+## Phase 2 Workout Session Audit Findings (2026-09-09)
+
+**Audit Scope:** Full data flow trace of workout session (ViewModel → Repository → DAO → Room → Flow → UI)
+**Files Audited:** WorkoutLoggingViewModel.kt, WorkoutSessionScreen.kt, WorkoutRepository.kt, WorkoutRepositoryImpl.kt, WorkoutDao.kt, RestTimerManager.kt, ProgressionEngine.kt, Workout.kt, WorkoutEntity.kt, WorkoutExerciseEntity.kt, WorkoutSetEntity.kt, GymCoachNavHost.kt
+
+### Key Findings
+
+**Architecture (STATICALLY VERIFIED):**
+- CASCADE deletes properly configured: WorkoutExerciseEntity → WorkoutSetEntity (onDelete=CASCADE)
+- Sealed UI state (Loading/Empty/Active/Error) properly implemented
+- Room Flow collection with ViewModelScope lifecycle management
+- Rest timer scoped to viewModelScope (Singleton correctly uses injected scope)
+- Terminal-state guard prevents double-completion
+- ProgressionEngine caps (MAX_SETS=5, MAX_REPS=20) enforced with coerceAtMost()
+
+**P2 Issues Found:**
+
+#### APP-015: Duplicate Repository Methods [FIXED]
+- **Type:** Code Quality
+- **Severity:** P2
+- **Area:** Domain Repository
+- **Root Cause:** `getLatestIncompleteWorkout()` and `getIncompleteWorkout()` both existed and mapped to the same DAO query (`SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1`)
+- **Impact:** Code duplication, no functional bug
+- **Fix:** Removed `getIncompleteWorkout()` from interface, implementation, and DAO. Updated WorkoutHistoryViewModel caller to use `getLatestIncompleteWorkout()`
+- **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
+
+#### APP-016: Exercise Picker Shows All Exercises (No Dedup) [FIXED]
+- **Type:** Application Defect
+- **Severity:** P2
+- **Area:** Workout Session UI
+- **Reproduction:** Add "Bench Press" to workout, tap "Add Exercise" again
+- **Expected:** "Bench Press" filtered out or grayed out
+- **Actual:** All exercises shown, can add duplicates
+- **Root Cause:** `WorkoutSessionScreen.kt:448` — `items(allExercises)` with no filtering against current workout exercises
+- **Domain Analysis:** WorkoutExerciseEntity has no unique constraint on (workoutId, exerciseId). Domain EXPLICITLY allows duplicate exercises (e.g., different warm-up sets, multiple rows of same movement).
+- **Fix:** Added visual "Added" indicator in exercise picker with reduced opacity. Domain allows duplicates; UI now clearly shows which exercises are already present.
+- **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
+
+#### APP-017: Set Type Cycle Button Uses Star Icon [FIXED]
+- **Type:** UX Enhancement
+- **Severity:** P2
+- **Area:** Workout Session UI
+- **Root Cause:** Star icon (`Icons.Default.Star`) used to cycle through set types (Normal → Warmup → Drop → Failure). Non-obvious interaction, cryptic abbreviations (W/D/F).
+- **Fix:** Replaced Star icon + abbreviations with labeled tappable chip showing "Set 1"/"Warm"/"Drop"/"Fail". Tappable border with color coding. Chip is explicitly labeled and visually indicates interactivity.
+- **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
+
+#### APP-018: Instructions Toggle Label Inconsistent [FIXED]
+- **Type:** UX Enhancement
+- **Severity:** P2
+- **Area:** Workout Session UI
+- **Root Cause:** `WorkoutSessionScreen.kt:669` — "View Instructions" / "Hide Instructions" text toggles
+- **Fix:** Changed "View Instructions" to "Show Instructions". "Hide Instructions" unchanged.
+- **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
+
+### Confirmation: Phase 1 Fixes Verified in Deep Audit
+
+The following Phase 1 fixes were verified as working correctly during the deep audit:
+
+| Fix | Verification |
+|-----|-------------|
+| APP-001: Program Screen | ProgramScreen + ProgramViewModel + VolumeBar + NavHost route — all present and correct |
+| APP-002: Loading/Empty States | SessionUiState sealed interface properly handles Loading/Empty/Active/Error |
+| APP-003: Confirmation Dialogs | pendingDeleteSetIndex + AlertDialog for sets; showRemoveExerciseDialog + AlertDialog for exercises |
+| APP-004: Progression Caps | MAX_SETS=5, MAX_REPS=20 with coerceAtMost() — properly bounded |
+| APP-005: Weekly Trend | Em-dash "—" fallback — verified in ProgressDashboardScreen |
+
+---
+
+## Workout State Machine Audit (T2.5) — STATICALLY VERIFIED
+
+**Date:** 2026-09-09
+**Scope:** Complete workout lifecycle trace
+
+### State Transitions
+
+| # | Source State | Action | Destination State | Persistence | Flow/UI Update | Failure Behavior | Duplicate-Action |
+|---|-------------|--------|-------------------|-------------|----------------|------------------|-----------------|
+| 1 | NO_WORKOUT | loadOrStartWorkout(null) | CREATE | query getLatestIncompleteWorkout | If null → create | Exception → Error state | Idempotent |
+| 2 | NO_WORKOUT | loadOrStartWorkout(id) with completed workout | CREATE | query getWorkoutWithDetails | if completed → performAgain | Exception → Error state | Creates new copy |
+| 3 | NO_WORKOUT | loadOrStartWorkout(id) with active workout | ACTIVE | collect getWorkoutWithDetails Flow | _currentWorkout emits | Exception → Error state | Resumes existing |
+| 4 | NO_WORKOUT | startNewWorkout() | ACTIVE | insertWorkout (status=ACTIVE) | Room Flow → _currentWorkout | Exception → Error state | Creates new workout |
+| 5 | ACTIVE | addSet(exerciseIndex) | ACTIVE | insertWorkoutSet | Room Flow → sets list | silently ignored | Adds duplicate set |
+| 6 | ACTIVE | removeSet(exerciseIndex, setIndex) | ACTIVE | deleteSet (cascade) | Room Flow → sets list | silently ignored | No-op if already removed |
+| 7 | ACTIVE | addExerciseToWorkout(exercise) | ACTIVE | insertWorkoutExercise | Room Flow → exercises list | silently ignored | Adds duplicate exercise |
+| 8 | ACTIVE | removeExercise(exerciseIndex) | ACTIVE | deleteWorkoutExercise (cascade) | Room Flow → exercises list | silently ignored | No-op if already removed |
+| 9 | ACTIVE | updateSetField(...) | ACTIVE | updateWorkoutSet | Room Flow → sets list | silently ignored | Overwrites with same value |
+| 10 | ACTIVE | toggleSetCompletion | ACTIVE | updateWorkoutSet | Room Flow + volume calc | silently ignored | Toggles back |
+| 11 | ACTIVE | completeWorkout() | COMPLETED | updateWorkout (status=COMPLETED) | _completed = true → summary screen | terminal guard blocks | Guard: "already completed" |
+| 12 | ACTIVE | navigate away | LEAVE | (no DB write) | ViewModel.onCleared cancels jobs | Timer stops, data persists | N/A |
+| 13 | LEAVE | navigate back to session | ACTIVE | getLatestIncompleteWorkout → collect Flow | _currentWorkout emits | Creates new if none found | Resumes existing |
+
+### Race Condition Analysis
+
+| Scenario | Analysis | Risk |
+|----------|----------|------|
+| Rapid set field updates | Each update is a separate coroutine via viewModelScope.launch. Room handles serialization. UI reflects latest Flow emission. | LOW — sequential DB writes |
+| Complete + navigate away | completeWorkout cancels timer job, then launches DB update. If user navigates mid-update, ViewModel.onCleared cancels coroutine. DB write may not complete. | MEDIUM — data loss risk on rapid exit |
+| addExercise + removeExercise rapid | Both are separate coroutines. Room Flow re-emits after each. UI may briefly show stale state. | LOW — eventual consistency |
+| Rest timer + set completion | toggleSetCompletion starts rest timer. If user rapidly toggles, timer is restarted each time (tickJob?.cancel()). | LOW — timer is idempotent |
+| loadOrStartWorkout called twice | LaunchedEffect(workoutId) in WorkoutSessionScreen. If recomposition triggers re-entry, _sessionUiState is set to Loading first, preventing duplicate state. | LOW — guarded by Loading state |
+
+### Product Data Gap
+
+#### APP-019: No Workout-Program Linkage
+- **Type:** Data Gap
+- **Severity:** P3 (blocks future product loop, not current functionality)
+- **Area:** Domain Model / Database Schema
+- **Root Cause:** Workout entity has no `programId` or `programDayId` field. When user starts workout from ProgramScreen, the workout is created but not linked to the program.
+- **Impact:** Cannot track which program exercises were completed; cannot adapt program based on workout performance; cannot show program progress in analytics.
+- **Data currently persisted per workout:**
+  - ✅ Exercise performed (via WorkoutExercise → Exercise)
+  - ✅ Sets, reps, load, RPE, rest
+  - ✅ Set type (Normal/Warmup/Drop/Failure)
+  - ✅ Completion state
+  - ✅ Date/time, duration
+  - ✅ Notes
+  - ❌ Program ID (missing)
+  - ❌ Program Day ID (missing)
+  - ✅ Muscle group attribution (via Exercise.muscleGroup)
+  - ✅ Progression outcome (via ProgressionEngine)
+  - ✅ Incomplete/abandoned state (status field)
+- **Fix:** Add programId and programDayId to WorkoutEntity (requires schema migration)
+- **Status:** OPEN — Documented for Phase 7 (Adaptive Programming)
 
 ---
 

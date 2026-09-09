@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
@@ -33,6 +32,8 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
@@ -440,25 +441,44 @@ fun WorkoutSessionScreen(
     }
 
     if (showPicker) {
+        val currentExerciseIds = currentWorkout?.exercises?.map { it.exercise.id }?.toSet() ?: emptySet()
         AlertDialog(
             onDismissRequest = { viewModel.hideExercisePicker() },
             title = { Text("Add Exercise") },
             text = {
                 LazyColumn {
                     items(allExercises, key = { it.id }) { exercise ->
+                        val isAlreadyAdded = exercise.id in currentExerciseIds
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { viewModel.addExerciseToWorkout(exercise) },
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                containerColor = if (isAlreadyAdded)
+                                    MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f)
+                                else
+                                    MaterialTheme.colorScheme.surfaceContainerLow
                             )
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = exercise.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = exercise.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (isAlreadyAdded) {
+                                        Text(
+                                            text = "Added",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = exercise.muscleGroup,
                                     style = MaterialTheme.typography.bodySmall,
@@ -666,7 +686,7 @@ private fun ExerciseSetCard(
             // Instructions
                         if (instructions.isNotEmpty()) {
                             TextButton(onClick = { showInstructions = !showInstructions }) {
-                                Text(if (showInstructions) "Hide Instructions" else "View Instructions")
+                                Text(if (showInstructions) "Hide Instructions" else "Show Instructions")
                             }
                 
                             if (showInstructions) {
@@ -882,21 +902,39 @@ private fun SetRow(
             com.gymcoach.app.domain.model.SetType.FAILURE -> MaterialTheme.colorScheme.error
             else -> MaterialTheme.colorScheme.onSurface
         }
-        val setTypeText = when (setType) {
-            com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
-            com.gymcoach.app.domain.model.SetType.DROP -> "D"
-            com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
-            else -> "${index + 1}"
+        // Set type chip (tappable to cycle: Normal → Warm → Drop → Fail → Normal)
+        val setTypeLabel = when (setType) {
+            com.gymcoach.app.domain.model.SetType.WARMUP -> "Warm"
+            com.gymcoach.app.domain.model.SetType.DROP -> "Drop"
+            com.gymcoach.app.domain.model.SetType.FAILURE -> "Fail"
+            else -> "Set ${index + 1}"
         }
         Box(
-            modifier = Modifier.width(24.dp),
+            modifier = Modifier
+                .width(42.dp)
+                .height(24.dp)
+                .border(
+                    width = 1.dp,
+                    color = setTypeColor.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .clickable {
+                    val nextType = when (setType) {
+                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
+                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
+                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
+                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
+                    }
+                    onSetTypeChange(nextType)
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = setTypeText,
-                style = MaterialTheme.typography.bodyMedium,
+                text = setTypeLabel,
+                style = MaterialTheme.typography.labelSmall,
                 color = setTypeColor,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
             )
         }
 
@@ -962,25 +1000,6 @@ private fun SetRow(
                 },
                 modifier = Modifier.size(24.dp)
             )
-            IconButton(
-                onClick = { 
-                    val nextType = when (setType) {
-                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
-                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
-                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
-                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
-                    }
-                    onSetTypeChange(nextType)
-                },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "Cycle Set Type",
-                    modifier = Modifier.size(16.dp),
-                    tint = setTypeColor
-                )
-            }
         }
     }
 }

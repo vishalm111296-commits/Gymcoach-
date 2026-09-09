@@ -360,8 +360,6 @@ interface WorkoutDao {
     """)
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
 
-    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
-    suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
 
 data class LastPerformance(

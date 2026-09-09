@@ -213,10 +213,6 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun searchWorkouts(query: String): List<WorkoutWithStats> {
         return workoutDao.searchWorkouts(query).map { it.toDomain() }
     }
-
-    override suspend fun getIncompleteWorkout(): Workout? {
-        return workoutDao.getIncompleteWorkout()?.toDomain()
-    }
 }
 
 // Entity -> Domain mappers

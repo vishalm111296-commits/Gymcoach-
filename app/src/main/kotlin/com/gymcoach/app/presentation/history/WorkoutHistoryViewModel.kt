@@ -145,7 +145,7 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     private fun loadIncompleteWorkout() {
         viewModelScope.launch {
-            _incompleteWorkout.value = workoutRepository.getIncompleteWorkout()
+            _incompleteWorkout.value = workoutRepository.getLatestIncompleteWorkout()
         }
     }
 

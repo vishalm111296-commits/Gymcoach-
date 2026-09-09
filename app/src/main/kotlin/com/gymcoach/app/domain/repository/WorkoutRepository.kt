@@ -44,5 +44,4 @@ interface WorkoutRepository {
     suspend fun getCompletedWorkoutsWithDetails(minDateMillis: Long): List<WorkoutWithDetails>
 
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
-    suspend fun getIncompleteWorkout(): Workout?
 }

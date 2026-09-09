@@ -329,10 +329,11 @@ fun WorkoutHistoryDetailScreen(
             )
         }
         is DeleteState.Failed -> {
+            val failedState = deleteState as DeleteState.Failed
             AlertDialog(
                 onDismissRequest = { viewModel.cancelDelete() },
                 title = { Text("Delete Failed") },
-                text = { Text(deleteState.message) },
+                text = { Text(failedState.message) },
                 confirmButton = {
                     Button(onClick = { viewModel.cancelDelete() }) {
                         Text("OK")

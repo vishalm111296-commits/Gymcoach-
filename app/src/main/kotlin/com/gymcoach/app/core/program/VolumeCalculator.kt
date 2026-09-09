@@ -1,7 +1,9 @@
 package com.gymcoach.app.core.program
 
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
+import com.gymcoach.app.domain.model.CompletedSetContext
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.WeekFields
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,20 +11,40 @@ import javax.inject.Singleton
 @Singleton
 class VolumeCalculator @Inject constructor() {
 
+    /**
+     * Domain representation of a muscle's training volume.
+     *
+     * @param muscleName Display/category name of the muscle.
+     * @param weeklyEffectiveSets Effective weighted volume (PRIMARY=1.0, SECONDARY=0.5, STABILIZER=0.25).
+     * @param rawDirectSets Count of completed direct (PRIMARY) sets.
+     * @param rawIndirectSets Count of completed indirect (SECONDARY + STABILIZER) sets.
+     * @param status Volume coaching classification band based on effective weighted sets.
+     */
     data class MuscleVolume(
         val muscleName: String,
-        val weeklySets: Int,
-        val directSets: Int,
-        val indirectSets: Int,
+        val weeklyEffectiveSets: Double,
+        val rawDirectSets: Int,
+        val rawIndirectSets: Int,
         val status: VolumeStatus
-    )
+    ) {
+        /** Alias for weeklyEffectiveSets enforcing EFFECTIVE_WEIGHTED_SETS semantics. */
+        val weeklySets: Double get() = weeklyEffectiveSets
 
+        /** Raw unweighted sum of direct and indirect completed sets. */
+        val rawTotalSets: Int get() = rawDirectSets + rawIndirectSets
+
+        /** Backward compatibility aliases for raw direct/indirect set counts. */
+        val directSets: Int get() = rawDirectSets
+        val indirectSets: Int get() = rawIndirectSets
+    }
+
+    /** Volume status bands presented as evidence-informed coaching guidance. */
     enum class VolumeStatus(val label: String, val level: Int) {
-        INSUFFICIENT("Too low", 0),
-        MODERATE("Moderate", 1),
-        HIGH("High", 2),
-        OPTIMAL("Optimal", 3),
-        EXCESSIVE("Very high", 4)
+        INSUFFICIENT("Below target guidance", 0),
+        MODERATE("Moderate guidance", 1),
+        HIGH("High guidance range", 2),
+        OPTIMAL("Target guidance range", 3),
+        EXCESSIVE("Above target guidance", 4)
     }
 
     data class TrainingBalance(
@@ -58,19 +80,24 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
-    data class SetWithContext(
-        val set: WorkoutSetEntity,
-        val exerciseId: Long,
-        val workoutDate: Long
-    )
-
+    /**
+     * Calculates weekly volume for completed hypertrophy sets (excluding warmups and incomplete sets).
+     *
+     * Volume credits per completed set:
+     * - Primary muscle: 1.0 effective set
+     * - Secondary muscle: 0.5 effective set
+     * - Stabilizer muscle: 0.25 effective set
+     */
     fun calculateWeeklyVolume(
-        completedSets: List<SetWithContext>,
+        completedSets: List<CompletedSetContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+        // Filter: ONLY completed hypertrophy sets (completed == true AND setType != 1 where 1=WARMUP)
+        val validSets = completedSets.filter { it.completed && it.setType != 1 }
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+        val weekBuckets = mutableMapOf<String, MutableMap<String, Double>>()
+
+        for (ctx in validSets) {
             val weekKey = isoWeekKey(ctx.workoutDate)
             val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
@@ -81,20 +108,19 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
-            }
-        }
+        val avgWeeklyEffectiveSets = mutableMapOf<String, Double>()
         if (weekBuckets.isNotEmpty()) {
-            for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+            for ((_, weekMap) in weekBuckets) {
+                for ((muscle, credits) in weekMap) {
+                    avgWeeklyEffectiveSets[muscle] = (avgWeeklyEffectiveSets[muscle] ?: 0.0) + credits
+                }
+            }
+            for ((muscle, total) in avgWeeklyEffectiveSets) {
+                avgWeeklyEffectiveSets[muscle] = total / weekBuckets.size.toDouble()
             }
         }
 
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val directSetsByMuscle = validSets
             .flatMap { ctx ->
                 (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
@@ -103,8 +129,7 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val indirectSetsByMuscle = validSets
             .flatMap { ctx ->
                 (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
@@ -113,13 +138,18 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
+        fun vol(muscle: String): MuscleVolume {
+            val effective = avgWeeklyEffectiveSets[muscle] ?: 0.0
+            val direct = directSetsByMuscle[muscle] ?: 0
+            val indirect = indirectSetsByMuscle[muscle] ?: 0
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklyEffectiveSets = effective,
+                rawDirectSets = direct,
+                rawIndirectSets = indirect,
+                status = classify(effective)
+            )
+        }
 
         return TrainingBalance(
             latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
@@ -142,21 +172,21 @@ class VolumeCalculator @Inject constructor() {
         return VtaperBalance(primary, secondary, text)
     }
 
-    private fun classify(sets: Int): VolumeStatus {
+    private fun classify(effectiveSets: Double): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT
-            sets < 14 -> VolumeStatus.MODERATE
-            sets < 18 -> VolumeStatus.OPTIMAL
-            sets < 22 -> VolumeStatus.HIGH
+            effectiveSets < 10.0 -> VolumeStatus.INSUFFICIENT
+            effectiveSets < 14.0 -> VolumeStatus.MODERATE
+            effectiveSets < 18.0 -> VolumeStatus.OPTIMAL
+            effectiveSets < 22.0 -> VolumeStatus.HIGH
             else -> VolumeStatus.EXCESSIVE
         }
     }
 
-    private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+    fun isoWeekKey(dateMs: Long, zoneId: ZoneId = ZoneId.systemDefault()): String {
+        val zdt = Instant.ofEpochMilli(dateMs).atZone(zoneId)
+        val weekFields = WeekFields.ISO
+        val weekOfYear = zdt.get(weekFields.weekOfWeekBasedYear())
+        val year = zdt.get(weekFields.weekBasedYear())
+        return "%04d-W%02d".format(Locale.US, year, weekOfYear)
     }
 }

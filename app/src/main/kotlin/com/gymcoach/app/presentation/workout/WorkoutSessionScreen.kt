@@ -69,7 +69,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.timer.RestPresets
-import com.gymcoach.app.data.local.dao.LastSetData
+import com.gymcoach.app.domain.model.LastSetData
+import com.gymcoach.app.domain.model.LastPerformance
 import com.gymcoach.app.presentation.history.formatDuration
 import java.time.Instant
 import java.time.ZoneId
@@ -436,7 +437,7 @@ private fun ExerciseSetCard(
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
     previousSets: List<LastSetData>?,
-    lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
+    lastPerformance: com.gymcoach.app.domain.model.LastPerformance?,
     instructions: String,
     recommendation: com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommendation? = null,
     onAddSet: () -> Unit,

@@ -3,18 +3,20 @@ package com.gymcoach.app.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.VolumeCalculator
-import com.gymcoach.app.data.local.dao.ExerciseMuscleWithDetails
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
-import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
+import com.gymcoach.app.domain.model.CanonicalMuscle
+import com.gymcoach.app.domain.model.CompletedSetContext
+import com.gymcoach.app.domain.model.Exercise
+import com.gymcoach.app.domain.model.ExerciseMuscleAssignment
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Calendar
-import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +26,12 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.time.temporal.WeekFields
+import java.util.Calendar
+import javax.inject.Inject
 
 data class TodayWorkoutUiModel(
     val name: String,
@@ -74,6 +82,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
+            val weekStart = weekStartMillis()
             val programFlow = programRepository.getActiveProgram()
                 .flatMapLatest { program ->
                     if (program == null) {
@@ -96,16 +105,18 @@ class HomeViewModel @Inject constructor(
             combine(
                 programFlow,
                 workoutRepository.getCompletedWorkouts(),
-                workoutRepository.getCompletedSetsWithContext(),
+                workoutRepository.getCompletedSetsWithContext(weekStart),
                 exerciseRepository.getAllExercises(),
                 exerciseRepository.getAllExerciseMuscleDetails()
-            ) { p1, p2, p3, p4, p5 ->
-                val core = p1 as ProgramCore?
-                val workouts = p2 as List<com.gymcoach.app.domain.model.WorkoutWithStats>
-                val completedSets = p3 as List<VolumeCalculator.SetWithContext>
-                val exercises = p4 as List<com.gymcoach.app.domain.model.Exercise>
-                val muscleDetails = p5 as List<ExerciseMuscleWithDetails>
-                buildUiState(core, workouts, completedSets, exercises, muscleDetails, _prCount.value)
+            ) { core, workouts, completedSets, exercises, muscleDetails ->
+                buildUiState(
+                    core,
+                    workouts,
+                    completedSets,
+                    exercises,
+                    muscleDetails,
+                    _prCount.value
+                )
             }.collect { state -> _uiState.value = state }
         }
     }
@@ -118,10 +129,10 @@ class HomeViewModel @Inject constructor(
 
     private fun buildUiState(
         core: ProgramCore?,
-        workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
-        completedSets: List<VolumeCalculator.SetWithContext>,
-        exercises: List<com.gymcoach.app.domain.model.Exercise>,
-        muscleDetails: List<ExerciseMuscleWithDetails>,
+        workouts: List<WorkoutWithStats>,
+        completedSets: List<CompletedSetContext>,
+        exercises: List<Exercise>,
+        muscleDetails: List<ExerciseMuscleAssignment>,
         prCount: Int
     ): HomeUiState {
         if (core == null) {
@@ -153,15 +164,16 @@ class HomeViewModel @Inject constructor(
                         "stabilizer" -> VolumeCalculator.MuscleRole.STABILIZER
                         else -> VolumeCalculator.MuscleRole.PRIMARY
                     }
-                    assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(rel.muscleName), role))
+                    val mappedName = mapMuscleNameCanonical(rel.muscleName)
+                    assignments.add(VolumeCalculator.MuscleAssignment(mappedName, role))
                 }
             } else {
                 if (exercise.muscleGroup.isNotBlank()) {
-                    assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(exercise.muscleGroup), VolumeCalculator.MuscleRole.PRIMARY))
+                    assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleNameCanonical(exercise.muscleGroup), VolumeCalculator.MuscleRole.PRIMARY))
                 }
                 if (exercise.secondaryMuscles.isNotBlank()) {
                     exercise.secondaryMuscles.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { sec ->
-                        assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(sec), VolumeCalculator.MuscleRole.SECONDARY))
+                        assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleNameCanonical(sec), VolumeCalculator.MuscleRole.SECONDARY))
                     }
                 }
             }
@@ -171,15 +183,21 @@ class HomeViewModel @Inject constructor(
         val currentWeekSets = completedSets.filter { it.workoutDate >= weekStart }
         val trainingBalance = volumeCalculator.calculateWeeklyVolume(currentWeekSets, muscleAssignments)
 
+        // Lower body volume metric definition:
+        // "Legs" is calculated as the average effective weekly sets across the four primary lower-body muscle groups
+        // (Quadriceps, Hamstrings, Glutes, Calves) compared against the target of 14 effective sets/week.
+        val avgLegsEffectiveSets = (
+            trainingBalance.quadricepsVolume.weeklyEffectiveSets +
+            trainingBalance.hamstringsVolume.weeklyEffectiveSets +
+            trainingBalance.glutesVolume.weeklyEffectiveSets +
+            trainingBalance.calvesVolume.weeklyEffectiveSets
+        ) / 4.0
+
         val bars = listOf(
-            VtaperMuscleData(label = "Lats", current = trainingBalance.latVolume.weeklySets, target = TARGET_WEEKLY_SETS),
-            VtaperMuscleData(label = "Lateral Delts", current = trainingBalance.lateralDeltVolume.weeklySets, target = TARGET_WEEKLY_SETS),
-            VtaperMuscleData(label = "Chest", current = trainingBalance.upperChestVolume.weeklySets, target = TARGET_WEEKLY_SETS),
-            VtaperMuscleData(
-                label = "Legs",
-                current = trainingBalance.quadricepsVolume.weeklySets + trainingBalance.hamstringsVolume.weeklySets + trainingBalance.glutesVolume.weeklySets + trainingBalance.calvesVolume.weeklySets,
-                target = TARGET_WEEKLY_SETS
-            )
+            VtaperMuscleData(label = "Lats", current = trainingBalance.latVolume.weeklyEffectiveSets, target = TARGET_WEEKLY_SETS),
+            VtaperMuscleData(label = "Lateral Delts", current = trainingBalance.lateralDeltVolume.weeklyEffectiveSets, target = TARGET_WEEKLY_SETS),
+            VtaperMuscleData(label = "Chest", current = trainingBalance.upperChestVolume.weeklyEffectiveSets, target = TARGET_WEEKLY_SETS),
+            VtaperMuscleData(label = "Legs", current = avgLegsEffectiveSets, target = TARGET_WEEKLY_SETS)
         )
 
         val insight = volumeCalculator.calculateVtaperBalance(trainingBalance).overallBalance
@@ -211,28 +229,18 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    private fun mapMuscleName(raw: String): String = when {
-        raw.contains("latissimus", ignoreCase = true) || raw.contains("lat", ignoreCase = true) || raw.contains("back", ignoreCase = true) -> "Lats"
-        raw.contains("lateral_deltoid", ignoreCase = true) || raw.contains("lateral delt", ignoreCase = true) || raw.contains("side delt", ignoreCase = true) -> "Lateral Deltoid"
-        raw.contains("rear_deltoid", ignoreCase = true) || raw.contains("rear delt", ignoreCase = true) -> "Rear Deltoid"
-        raw.contains("upper_chest", ignoreCase = true) || raw.contains("chest", ignoreCase = true) -> "Upper Chest"
-        raw.contains("bicep", ignoreCase = true) -> "Biceps"
-        raw.contains("tricep", ignoreCase = true) -> "Triceps"
-        raw.contains("quadricep", ignoreCase = true) || raw.contains("quad", ignoreCase = true) -> "Quadriceps"
-        raw.contains("hamstring", ignoreCase = true) -> "Hamstrings"
-        raw.contains("glute", ignoreCase = true) -> "Glutes"
-        raw.contains("calf", ignoreCase = true) || raw.contains("calves", ignoreCase = true) -> "Calves"
-        raw.contains("core", ignoreCase = true) || raw.contains("abs", ignoreCase = true) -> "Core"
-        else -> raw
+    /**
+     * Resolves raw muscle ID/name using CanonicalMuscle taxonomy to avoid fuzzy substring collisions.
+     */
+    private fun mapMuscleNameCanonical(raw: String): String {
+        val canonical = CanonicalMuscle.fromIdOrName(raw)
+        return canonical?.displayName ?: raw
     }
 
-    private fun weekStartMillis(): Long {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
+    private fun weekStartMillis(nowMs: Long = System.currentTimeMillis(), zoneId: ZoneId = ZoneId.systemDefault()): Long {
+        val zdt = Instant.ofEpochMilli(nowMs).atZone(zoneId)
+        val monday = zdt.with(WeekFields.ISO.dayOfWeek(), 1L)
+            .truncatedTo(ChronoUnit.DAYS)
+        return monday.toInstant().toEpochMilli()
     }
 }

@@ -17,6 +17,7 @@ import com.gymcoach.app.data.local.entity.MuscleEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
+import com.gymcoach.app.domain.model.CanonicalMuscle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -29,23 +30,21 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
 class RoomDatabaseClosedLoopIntegrationTest {
 
     private lateinit var db: GymCoachDatabase
     private lateinit var workoutDao: WorkoutDao
     private lateinit var exerciseDao: ExerciseDao
-    private lateinit var exerciseMuscleDao: ExerciseMuscleDao
     private lateinit var muscleDao: MuscleDao
+    private lateinit var exerciseMuscleDao: ExerciseMuscleDao
     private lateinit var repository: WorkoutRepositoryImpl
     private lateinit var volumeCalculator: VolumeCalculator
     private lateinit var progressionEngine: ProgressionEngine
 
     @Before
-    fun setup() {
+    fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, GymCoachDatabase::class.java)
             .allowMainThreadQueries()
@@ -53,8 +52,8 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
         workoutDao = db.workoutDao()
         exerciseDao = db.exerciseDao()
-        exerciseMuscleDao = db.exerciseMuscleDao()
         muscleDao = db.muscleDao()
+        exerciseMuscleDao = db.exerciseMuscleDao()
 
         repository = WorkoutRepositoryImpl(workoutDao, exerciseDao)
         volumeCalculator = VolumeCalculator()
@@ -67,14 +66,14 @@ class RoomDatabaseClosedLoopIntegrationTest {
     }
 
     @Test
-    fun `databaseBackedVolumeCalculationTest calculates real completed sets with primary and secondary credits`() = runTest {
-        // 1. Insert Muscles
+    fun `databaseBackedVolumeCalculationTest calculates exact weighted credits from real database rows`() = runTest {
+        // 1. Insert Muscle entities into real Room DB
         val latId = muscleDao.insert(MuscleEntity(name = "latissimus_dorsi", displayName = "Lats", bodyRegion = "Back"))
         val bicepId = muscleDao.insert(MuscleEntity(name = "biceps", displayName = "Biceps", bodyRegion = "Arms"))
 
-        // 2. Insert Exercises
+        // 2. Insert Exercise entities
         val exAId = exerciseDao.insert(
-            ExerciseEntity(name = "Lat Pulldown", description = "Back exercise", muscleGroup = "Back", equipment = "cable", difficulty = "Beginner")
+            ExerciseEntity(name = "Lat Pulldown", description = "Back exercise", muscleGroup = "Lats", equipment = "cable", difficulty = "Beginner")
         )
         val exBId = exerciseDao.insert(
             ExerciseEntity(name = "Bicep Curl", description = "Arm exercise", muscleGroup = "Biceps", equipment = "dumbbell", difficulty = "Beginner")
@@ -118,21 +117,22 @@ class RoomDatabaseClosedLoopIntegrationTest {
                     "stabilizer" -> VolumeCalculator.MuscleRole.STABILIZER
                     else -> VolumeCalculator.MuscleRole.PRIMARY
                 }
-                val muscleName = when {
-                    rel.muscleName.contains("lat", ignoreCase = true) -> "Lats"
-                    rel.muscleName.contains("bicep", ignoreCase = true) -> "Biceps"
-                    else -> rel.muscleName
-                }
+                val canonical = CanonicalMuscle.fromIdOrName(rel.muscleName)
+                val muscleName = canonical?.displayName ?: rel.muscleName
                 VolumeCalculator.MuscleAssignment(muscleName, role)
             }
         }
 
         val balance = volumeCalculator.calculateWeeklyVolume(completedSets, muscleAssignments)
 
-        // 6. Verify real volume credits
-        assertEquals(3, balance.latVolume.directSets) // 3 primary sets
-        assertEquals(2, balance.bicepsVolume.directSets) // 2 primary sets
-        assertEquals(3, balance.bicepsVolume.indirectSets) // 3 secondary sets from Lat Pulldown
+        // 6. Verify exact effective volume calculations:
+        // Lats: 3 primary sets = 3.0 effective sets
+        // Biceps: 2 primary sets (2.0) + 3 secondary sets from Lat Pulldown (3 * 0.5 = 1.5) = 3.5 effective sets
+        assertEquals(3, balance.latVolume.rawDirectSets)
+        assertEquals(2, balance.bicepsVolume.rawDirectSets)
+        assertEquals(3, balance.bicepsVolume.rawIndirectSets)
+        assertEquals(3.0, balance.latVolume.weeklyEffectiveSets, 0.001)
+        assertEquals(3.5, balance.bicepsVolume.weeklyEffectiveSets, 0.001)
     }
 
     @Test

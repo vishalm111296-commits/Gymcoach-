@@ -8,6 +8,7 @@ import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
+import com.gymcoach.app.domain.model.CompletedSetContext
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -122,10 +123,15 @@ class GymCoachClosedLoopIntegrationTest {
 
         // Step 6: Verify volume calculator counts only completed sets with ACSM weighting
         val setContexts = listOf(
-            VolumeCalculator.SetWithContext(
-                set = WorkoutSetEntity(id = 2000L, workoutExerciseId = 20L, setNumber = 1, weight = 85.0, reps = 8, rpe = 8.5, restSeconds = 120, completed = true, setType = 0),
+            CompletedSetContext(
+                setId = 2000L,
                 exerciseId = 100L,
-                workoutDate = System.currentTimeMillis()
+                workoutDate = System.currentTimeMillis(),
+                weightKg = 85.0,
+                reps = 8,
+                rpe = 8.5f,
+                completed = true,
+                setType = 0
             )
         )
         val muscleAssignments = mapOf(
@@ -136,7 +142,9 @@ class GymCoachClosedLoopIntegrationTest {
         )
 
         val balance = volumeCalculator.calculateWeeklyVolume(setContexts, muscleAssignments)
-        assertEquals(1, balance.upperChestVolume.directSets)
-        assertEquals(1, balance.tricepsVolume.indirectSets)
+        assertEquals(1, balance.upperChestVolume.rawDirectSets)
+        assertEquals(1, balance.tricepsVolume.rawIndirectSets)
+        assertEquals(1.0, balance.upperChestVolume.weeklyEffectiveSets, 0.001)
+        assertEquals(0.5, balance.tricepsVolume.weeklyEffectiveSets, 0.001)
     }
 }

@@ -2,11 +2,7 @@ package com.gymcoach.app.presentation.progress.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -29,13 +25,15 @@ import androidx.compose.ui.unit.dp
 fun MeasurementLogDialog(
     latestWeight: Double?,
     latestWaist: Double?,
+    latestShoulders: Double?,
     latestChest: Double?,
     latestBodyFat: Double?,
     onDismiss: () -> Unit,
-    onSave: (weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) -> Unit
+    onSave: (weightKg: Double, waistCm: Double?, shouldersCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) -> Unit
 ) {
     var weight by remember { mutableStateOf(latestWeight?.let { "%.1f".format(it) } ?: "") }
     var waist by remember { mutableStateOf(latestWaist?.let { "%.1f".format(it) } ?: "") }
+    var shoulders by remember { mutableStateOf(latestShoulders?.let { "%.1f".format(it) } ?: "") }
     var chest by remember { mutableStateOf(latestChest?.let { "%.1f".format(it) } ?: "") }
     var bodyFat by remember { mutableStateOf(latestBodyFat?.let { "%.1f".format(it) } ?: "") }
     var notes by remember { mutableStateOf("") }
@@ -57,6 +55,14 @@ fun MeasurementLogDialog(
                     value = waist,
                     onValueChange = { waist = it },
                     label = { Text("Waist (cm)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = shoulders,
+                    onValueChange = { shoulders = it },
+                    label = { Text("Shoulders (cm)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -90,9 +96,10 @@ fun MeasurementLogDialog(
                 onClick = {
                     val w = weight.toDoubleOrNull() ?: 0.0
                     val waistVal = waist.toDoubleOrNull()
+                    val shVal = shoulders.toDoubleOrNull()
                     val chestVal = chest.toDoubleOrNull()
                     val bf = bodyFat.toDoubleOrNull()
-                    onSave(w, waistVal, chestVal, bf, notes)
+                    onSave(w, waistVal, shVal, chestVal, bf, notes)
                 },
                 enabled = weight.toDoubleOrNull() != null && (weight.toDoubleOrNull() ?: 0.0) > 0
             ) {

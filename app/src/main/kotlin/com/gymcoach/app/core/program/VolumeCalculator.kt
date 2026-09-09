@@ -58,24 +58,12 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
-    /**
-     * Enriched set with workout context needed for volume calculations.
-     * WorkoutSetEntity does not store exerciseId or date directly;
-     * these come from the parent WorkoutExercise and Workout tables.
-     */
     data class SetWithContext(
         val set: WorkoutSetEntity,
         val exerciseId: Long,
         val workoutDate: Long
     )
 
-    /**
-     * Calculate weekly volume per muscle group with ISO-week bucketing.
-     * Uses primary/secondary/stabilizer weighting (1.0/0.5/0.25) per ACSM evidence.
-     *
-     * @param completedSets sets enriched with exercise ID and workout date context
-     * @param exerciseMuscleMap mapping from exercise ID to its muscle assignments
-     */
     fun calculateWeeklyVolume(
         completedSets: List<SetWithContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
@@ -107,9 +95,8 @@ class VolumeCalculator @Inject constructor() {
 
         val directSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
                     .map { it.muscleName }
             }
@@ -118,9 +105,8 @@ class VolumeCalculator @Inject constructor() {
 
         val indirectSetsByMuscle = completedSets
             .filter { it.set.completed && it.set.setType == 0 }
-            .groupBy { it.exerciseId }
-            .flatMap { (exId, _) ->
-                (exerciseMuscleMap[exId] ?: emptyList())
+            .flatMap { ctx ->
+                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
                     .map { it.muscleName }
             }
@@ -158,11 +144,11 @@ class VolumeCalculator @Inject constructor() {
 
     private fun classify(sets: Int): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT // < 10 = below evidence band
-            sets < 14 -> VolumeStatus.MODERATE      // 10-13 = lower evidence band
-            sets < 18 -> VolumeStatus.OPTIMAL       // 14-17 = optimal evidence band
-            sets < 22 -> VolumeStatus.HIGH          // 18-21 = upper evidence band
-            else -> VolumeStatus.EXCESSIVE          // > 21 = excessive per evidence
+            sets < 10 -> VolumeStatus.INSUFFICIENT
+            sets < 14 -> VolumeStatus.MODERATE
+            sets < 18 -> VolumeStatus.OPTIMAL
+            sets < 22 -> VolumeStatus.HIGH
+            else -> VolumeStatus.EXCESSIVE
         }
     }
 

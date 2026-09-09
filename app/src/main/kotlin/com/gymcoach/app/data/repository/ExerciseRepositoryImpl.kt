@@ -1,6 +1,8 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
+import com.gymcoach.app.data.local.dao.ExerciseMuscleWithDetails
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
@@ -9,7 +11,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ExerciseRepositoryImpl @Inject constructor(
-    private val exerciseDao: ExerciseDao
+    private val exerciseDao: ExerciseDao,
+    private val exerciseMuscleDao: ExerciseMuscleDao
 ) : ExerciseRepository {
 
     override fun getAllExercises(): Flow<List<Exercise>> {
@@ -32,6 +35,10 @@ class ExerciseRepositoryImpl @Inject constructor(
 
     override fun getExerciseById(id: Long): Flow<Exercise?> {
         return exerciseDao.getById(id).map { it?.toDomain() }
+    }
+
+    override fun getAllExerciseMuscleDetails(): Flow<List<ExerciseMuscleWithDetails>> {
+        return exerciseMuscleDao.getAllWithDetails()
     }
 
     override suspend fun addExercise(exercise: Exercise) {
@@ -65,23 +72,18 @@ class ExerciseRepositoryImpl @Inject constructor(
         tags = tags,
         isFavorite = isFavorite,
         lastViewed = lastViewed,
-        // V-taper relevance scores (0-10)
         vtaperLat = vtaperLat,
         vtaperLateralDelt = vtaperLateralDelt,
         vtaperUpperChest = vtaperUpperChest,
         vtaperRearDelt = vtaperRearDelt,
-        // Movement pattern
         movementPattern = movementPattern,
-        // Media (nullable, architecture-ready)
         imageUrl = imageUrl,
         videoUrl = videoUrl,
         animationUrl = animationUrl,
-        // Instructions
         setupInstructions = setupInstructions,
         executionInstructions = executionInstructions,
         breathingInstructions = breathingInstructions,
         tempoGuidance = tempoGuidance,
-        // Progression variants
         beginnerVariantId = beginnerVariantId,
         advancedVariantId = advancedVariantId
     )
@@ -105,23 +107,18 @@ class ExerciseRepositoryImpl @Inject constructor(
         tags = tags,
         isFavorite = isFavorite,
         lastViewed = lastViewed,
-        // V-taper relevance scores (0-10)
         vtaperLat = vtaperLat,
         vtaperLateralDelt = vtaperLateralDelt,
         vtaperUpperChest = vtaperUpperChest,
         vtaperRearDelt = vtaperRearDelt,
-        // Movement pattern
         movementPattern = movementPattern,
-        // Media (nullable, architecture-ready)
         imageUrl = imageUrl,
         videoUrl = videoUrl,
         animationUrl = animationUrl,
-        // Instructions
         setupInstructions = setupInstructions,
         executionInstructions = executionInstructions,
         breathingInstructions = breathingInstructions,
         tempoGuidance = tempoGuidance,
-        // Progression variants
         beginnerVariantId = beginnerVariantId,
         advancedVariantId = advancedVariantId
     )

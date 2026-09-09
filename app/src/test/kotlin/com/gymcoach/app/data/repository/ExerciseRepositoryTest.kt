@@ -17,6 +17,7 @@ import org.junit.Test
 class ExerciseRepositoryTest {
 
     private lateinit var dao: ExerciseDao
+    private lateinit var exerciseMuscleDao: com.gymcoach.app.data.local.dao.ExerciseMuscleDao
     private lateinit var repo: ExerciseRepositoryImpl
 
     private val entity1 = ExerciseEntity(
@@ -40,7 +41,8 @@ class ExerciseRepositoryTest {
     @Before
     fun setup() {
         dao = mockk(relaxed = true)
-        repo = ExerciseRepositoryImpl(dao)
+        exerciseMuscleDao = mockk(relaxed = true)
+        repo = ExerciseRepositoryImpl(dao, exerciseMuscleDao)
     }
 
     @Test

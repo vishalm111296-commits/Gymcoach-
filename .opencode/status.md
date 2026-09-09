@@ -1,19 +1,20 @@
 # Mission Status
 
 ## Progress
-- .opencode/todo.md: M5 audits 5x [x], M6: W1 prod+tests [x], W2 [x], W3 [x], W4/W5 in_progress, verification pass pending
-- Issues: 0 unresolved sync issues
-- Workers: 1 active (W5 migration rebase task_f7d09d71)
-- Verification Strategy: single gradle pass (qemu AAPT2) after all fixes land, then Reviewer
-- Execution Status: running
+- .opencode/todo.md: T2.1-T2.6 completed, T2.7 in_progress (CI blocked), T2.8 pending
+- Issues: 0 unresolved (APP-016 corrected and fixed)
+- Workers: 0 active
+- Verification Strategy: LSP static verification; CI requires credentials or manual dispatch
+- Execution Status: PASS (LSP) / BLOCKED (Gradle, CI, device)
 
 ## Current Phase
-M6 core-fix execution (3 of 4 fix groups landed verified; migration rebase in 3rd attempt)
+Phase 2 — Verification Gate (CI blocker unresolved)
 
-## Loop 9 Summary (2026-09-06)
-- W1 prod verified correct: VolumeCalculator weeklyVolume Double + ISO week (WeekFields.ISO UTC) + statusFor bands; VtaperAttribution pure object + bar sources map; test rewrite verified (no weeklySets remains, VtaperAttributionTest.kt added)
-- W2 verified correct: getPrimaryMusclesByExercise + PrimaryMuscleRow; matchesMuscle exact token/id matching; PRIMARY_BOOST=10 / SECONDARY_BOOST=4; ProgramGeneratorTest 11 tests incl. slot regressions; delimiter test W2B landed (MockK, ScoreDistinguishesCategories) with .opencode/docs/w2b-program-generator-matcher.md
-- W3 verified correct: WorkoutDao relation POJOs + getCompletedWorkoutDetails(minDateMillis); ExerciseDao.getByIds; repo bulk mapping matches domain model; Benchmark.kt deleted
-- W4 (1st+2nd attempts) FALSE both times; W5 (3rd attempt, spec-driven, task_f7d09d71) in flight
-- Audits landed: phase1011-media-audit.md, phase13-security-audit.md, phase8-audit.md (P0: calories*0.05 heuristic on 2 screens; P1s: week bucketing key, count windows, avg-volume label, strength selector dead names, legacy totals incl non-completed)
-- Migration ground truth generated: .opencode/docs/migration-rebase-spec.md (exact DDL from exports)
+## Key Metrics
+- Commits in phase5-recovery-verified: 3 (1fa0313 → 9d1f172 → 368df01 → ed3aeb4)
+- Files committed: 12 (across 9d1f172 + 368df01 + ed3aeb4)
+- Files uncommitted (pre-existing): 7
+- Tests created: 32 (27 original + 5 APP-016 duplicates)
+- LSP diagnostics: CLEAN (all modified files)
+- Gradle compilation: UNVERIFIED (ARM64 AAPT2)
+- CI: BLOCKED (no credentials for workflow_dispatch)

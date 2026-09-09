@@ -21,8 +21,10 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -51,6 +53,7 @@ import java.time.Instant
 class WorkoutSessionHostileTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private val applicationScope = CoroutineScope(SupervisorJob() + testDispatcher)
     private lateinit var workoutRepository: WorkoutRepository
     private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var restTimer: RestTimerManager
@@ -178,7 +181,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
         coEvery { workoutRepository.getWorkoutWithDetails(1L) } returns flowOf(makeWorkoutWithDetails())
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -194,7 +197,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns existing
         coEvery { workoutRepository.getWorkoutWithDetails(42L) } returns flowOf(makeWorkoutWithDetails(workout = existing))
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -210,7 +213,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 20L
         coEvery { workoutRepository.getWorkoutWithDetails(20L) } returns flowOf(makeWorkoutWithDetails(makeWorkout(id = 20L), exercises))
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(10L)
         advanceUntilIdle()
 
@@ -224,7 +227,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 5L
         coEvery { workoutRepository.getWorkoutWithDetails(5L) } returns flowOf(makeWorkoutWithDetails(makeWorkout(id = 5L)))
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.startNewWorkout()
         advanceUntilIdle()
 
@@ -250,7 +253,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -279,7 +282,7 @@ class WorkoutSessionHostileTest {
         )
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -304,7 +307,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -328,7 +331,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -360,7 +363,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -386,7 +389,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 6L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -409,7 +412,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 5L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -429,7 +432,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -453,7 +456,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 6L
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -479,7 +482,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -509,7 +512,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
         coEvery { workoutRepository.getWorkoutWithDetails(1L) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -531,7 +534,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -548,7 +551,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -565,7 +568,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -591,7 +594,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns workout
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(details)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -613,7 +616,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns workout
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(details)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -635,7 +638,7 @@ class WorkoutSessionHostileTest {
 
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(details)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(1L)
         advanceUntilIdle()
 
@@ -662,7 +665,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns workout
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(details)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -691,7 +694,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -712,7 +715,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -724,28 +727,28 @@ class WorkoutSessionHostileTest {
 
     @Test
     fun `stopRestTimer delegates to RestTimerManager`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.stopRestTimer()
         coVerify { restTimer.stop() }
     }
 
     @Test
     fun `pauseRestTimer delegates to RestTimerManager`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.pauseRestTimer()
         coVerify { restTimer.pause() }
     }
 
     @Test
     fun `resumeRestTimer delegates to RestTimerManager`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.resumeRestTimer()
         coVerify { restTimer.resume() }
     }
 
     @Test
     fun `changeRestTimerDuration restarts timer with new duration`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.changeRestTimerDuration(120)
         coVerify { restTimer.restart(120, any()) }
     }
@@ -761,7 +764,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -778,7 +781,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -790,7 +793,7 @@ class WorkoutSessionHostileTest {
 
     @Test
     fun `dismissError clears error state`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         assertNull(viewModel.error.value)
 
         // Force an error by making repository throw
@@ -813,7 +816,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns workout
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(details)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 
@@ -825,7 +828,7 @@ class WorkoutSessionHostileTest {
 
     @Test
     fun `addSet with no current workout does nothing`() = runTest {
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         // Don't load a workout
         viewModel.addSet(0)
         advanceUntilIdle()
@@ -843,7 +846,7 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
 
-        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
         advanceUntilIdle()
 

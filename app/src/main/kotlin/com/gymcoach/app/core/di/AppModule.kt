@@ -16,6 +16,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -65,4 +68,17 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBodyMeasurementDao(database: GymCoachDatabase): BodyMeasurementDao = database.bodyMeasurementDao()
+
+    /**
+     * Application-scoped CoroutineScope that survives ViewModel destruction.
+     * Use ONLY for critical persistence operations (e.g., completing a workout)
+     * that must finish even if the user navigates away immediately.
+     *
+     * Do NOT use for UI updates or state flow emissions.
+     */
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }

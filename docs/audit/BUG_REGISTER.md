@@ -329,14 +329,14 @@ The following Phase 1 fixes were verified as working correctly during the deep a
 | 2 | NO_WORKOUT | loadOrStartWorkout(id) with completed workout | CREATE | query getWorkoutWithDetails | if completed → performAgain | Exception → Error state | Creates new copy |
 | 3 | NO_WORKOUT | loadOrStartWorkout(id) with active workout | ACTIVE | collect getWorkoutWithDetails Flow | _currentWorkout emits | Exception → Error state | Resumes existing |
 | 4 | NO_WORKOUT | startNewWorkout() | ACTIVE | insertWorkout (status=ACTIVE) | Room Flow → _currentWorkout | Exception → Error state | Creates new workout |
-| 5 | ACTIVE | addSet(exerciseIndex) | ACTIVE | insertWorkoutSet | Room Flow → sets list | silently ignored | Adds duplicate set |
+| 5 | ACTIVE | addSet(exerciseIndex) | ACTIVE | insertWorkoutSet | Room Flow → sets list | silently ignored | addSetMutex: re-read inside lock → sequential setNumbers, no dups |
 | 6 | ACTIVE | removeSet(exerciseIndex, setIndex) | ACTIVE | deleteSet (cascade) | Room Flow → sets list | silently ignored | No-op if already removed |
-| 7 | ACTIVE | addExerciseToWorkout(exercise) | ACTIVE | insertWorkoutExercise | Room Flow → exercises list | silently ignored | Adds duplicate exercise |
-| 8 | ACTIVE | removeExercise(exerciseIndex) | ACTIVE | deleteWorkoutExercise (cascade) | Room Flow → exercises list | silently ignored | No-op if already removed |
+| 7 | ACTIVE | addExerciseToWorkout(exercise) | ACTIVE | insertWorkoutExercise | Room Flow → exercises list | silently ignored | Duplicate guard + exerciseAddMutex: at most 1 insert per exercise |
+| 8 | ACTIVE | removeExercise(exerciseIndex) | ACTIVE | deleteWorkoutExercise (cascade) | Room Flow → exercises list | silently ignored | Stable ID: workoutExerciseId captured at call site; stale-index repeat hits same ID |
 | 9 | ACTIVE | updateSetField(...) | ACTIVE | updateWorkoutSet | Room Flow → sets list | silently ignored | Overwrites with same value |
-| 10 | ACTIVE | toggleSetCompletion | ACTIVE | updateWorkoutSet | Room Flow + volume calc | silently ignored | Toggles back |
-| 11 | ACTIVE | completeWorkout() | COMPLETED | updateWorkout (status=COMPLETED) | _completed = true → summary screen | terminal guard blocks | Guard: "already completed" |
-| 12 | ACTIVE | navigate away | LEAVE | (no DB write) | ViewModel.onCleared cancels jobs | Timer stops, data persists | N/A |
+| 10 | ACTIVE | toggleSetCompletion | ACTIVE | updateWorkoutSet | Room Flow + volume calc | silently ignored | Toggles back (NOT idempotent — toggle semantics) |
+| 11 | ACTIVE | completeWorkout() | COMPLETED | updateWorkout (status=COMPLETED) via applicationScope | _completed = true only AFTER successful DB write | catch → reset guard, retry allowed | completionInProgress AtomicBoolean.compareAndSet: at most 1 admission |
+| 12 | ACTIVE | navigate away | LEAVE | (no DB write) | ViewModel.onCleared cancels viewModelScope jobs | Timer stops, data persists | N/A |
 | 13 | LEAVE | navigate back to session | ACTIVE | getLatestIncompleteWorkout → collect Flow | _currentWorkout emits | Creates new if none found | Resumes existing |
 
 ### Race Condition Analysis
@@ -344,16 +344,33 @@ The following Phase 1 fixes were verified as working correctly during the deep a
 | Scenario | Analysis | Risk |
 |----------|----------|------|
 | Rapid set field updates | Each update is a separate coroutine via viewModelScope.launch. Room handles serialization. UI reflects latest Flow emission. | LOW — sequential DB writes |
-| Complete + navigate away | completeWorkout cancels timer job, then launches DB update. If user navigates mid-update, ViewModel.onCleared cancels coroutine. DB write may not complete. | MEDIUM — data loss risk on rapid exit |
-| addExercise + removeExercise rapid | Both are separate coroutines. Room Flow re-emits after each. UI may briefly show stale state. | LOW — eventual consistency |
-| Rest timer + set completion | toggleSetCompletion starts rest timer. If user rapidly toggles, timer is restarted each time (tickJob?.cancel()). | LOW — timer is idempotent |
-| loadOrStartWorkout called twice | LaunchedEffect(workoutId) in WorkoutSessionScreen. If recomposition triggers re-entry, _sessionUiState is set to Loading first, preventing duplicate state. | LOW — guarded by Loading state |
+| Complete + navigate away | completeWorkout launches DB update on applicationScope (SupervisorJob + IO). ViewModel.onCleared does NOT cancel it — survives ViewModel cancellation. NOT process-death durable. | LOW — survives ViewModel cancellation only |
+| addExercise + removeExercise rapid | Both are separate coroutines. Room Flow re-emits after each. UI may briefly show stale state. exerciseAddMutex serializes inserts; removeExercise uses stable DB identity. | LOW — eventual consistency |
+| Rest timer + set completion | toggleSetCompletion starts rest timer. If user rapidly toggles, timer is restarted each time (tickJob?.cancel()). | LOW — timer restarts; last call wins (NOT idempotent) |
+| loadOrStartWorkout called twice | LaunchedEffect(workoutId) in WorkoutSessionScreen runs once per unique key. Re-entry guarded by Loading state + workoutCreationMutex serializes check-then-create. | LOW — Mutex + Loading state |
+
+### At-Most-One ACTIVE Workout Invariant — Enforcement Points
+
+The product assumes at most one ACTIVE workout exists at any time. This is an
+**application-layer invariant** — Room schema has no unique partial index on
+`status = 'ACTIVE'` (deferred to Phase 7 defense-in-depth).
+
+| Layer | Enforcement | Location |
+|-------|------------|----------|
+| ViewModel — creation path | `workoutCreationMutex` serializes check-then-create in `loadOrStartWorkout(null)` and DB insert in `startNewWorkout()`. Room Flow collect runs outside the lock (never holds it). | `WorkoutLoggingViewModel.kt:155` (load), `:251` (startNewWorkout) |
+| ViewModel — resume path | `getLatestIncompleteWorkout()` returns at most one workout; resumed not re-created. | `WorkoutLoggingViewModel.kt:156` |
+| DAO | `SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1` | `WorkoutDao.kt:18` |
+| Completion | A workout leaves ACTIVE only via `completeWorkout()` (status→COMPLETED, AtomicBoolean-guarded). | `WorkoutLoggingViewModel.kt:511` |
+
+**Known gap (documented, not fixed):** nothing in the schema prevents a second
+ACTIVE row if written outside the ViewModel (e.g., future feature code calling
+`createWorkout` directly). Defense-in-depth unique index deferred to Phase 7.
 
 ### Product Data Gap
 
 #### APP-019: No Workout-Program Linkage
 - **Type:** Data Gap
-- **Severity:** P3 (blocks future product loop, not current functionality)
+- **Severity:** P2 (blocks future product loop, not current functionality)
 - **Area:** Domain Model / Database Schema
 - **Root Cause:** Workout entity has no `programId` or `programDayId` field. When user starts workout from ProgramScreen, the workout is created but not linked to the program.
 - **Impact:** Cannot track which program exercises were completed; cannot adapt program based on workout performance; cannot show program progress in analytics.

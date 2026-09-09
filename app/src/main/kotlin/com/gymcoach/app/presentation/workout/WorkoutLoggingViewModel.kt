@@ -16,11 +16,16 @@ import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import com.gymcoach.app.core.di.ApplicationScope
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 
@@ -42,7 +47,8 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     private val restTimer: RestTimerManager,
     private val progressionEngine: ProgressionEngine,
-    private val userProfileRepository: UserProfileRepository
+    private val userProfileRepository: UserProfileRepository,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
 
     /** Sealed UI state for the workout session screen. */
@@ -96,6 +102,15 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
 
+    /** Serializes exercise additions to prevent duplicate inserts under concurrent taps. */
+    private val exerciseAddMutex = Mutex()
+    /** Serializes set additions to prevent duplicate set numbers under concurrent taps. */
+    private val addSetMutex = Mutex()
+    /** Serializes workout creation to prevent duplicate ACTIVE workouts under concurrent starts. */
+    private val workoutCreationMutex = Mutex()
+    /** Ensures completeWorkout() executes at most once (true atomicity via compareAndSet). */
+    private val completionInProgress = AtomicBoolean(false)
+
     // Stats shown on the completion screen
     data class CompletionStats(
         val durationSeconds: Long = 0,
@@ -133,17 +148,30 @@ class WorkoutLoggingViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    val existing = workoutRepository.getLatestIncompleteWorkout()
-                    if (existing != null) {
-                        startWorkoutTimer()
-                        workoutRepository.getWorkoutWithDetails(existing.id).collect {
-                            _currentWorkout.value = it
-                            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
-                            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
-                            calculateSessionVolume(it)
+                    // Serialize the creation decision (check-then-create) to enforce
+                    // at-most-one ACTIVE workout invariant. Returns the workout ID
+                    // (either existing or newly created). Mutex is released before
+                    // the Room Flow collect, which suspends indefinitely.
+                    val targetWorkoutId = workoutCreationMutex.withLock {
+                        val existing = workoutRepository.getLatestIncompleteWorkout()
+                        if (existing != null) {
+                            existing.id
+                        } else {
+                            val now = Instant.now()
+                            val workout = Workout(
+                                date = now, startTime = now, endTime = now,
+                                duration = 0, notes = "", completed = false, status = "ACTIVE"
+                            )
+                            workoutRepository.createWorkout(workout)
                         }
-                    } else {
-                        startNewWorkoutInternal()
+                    }
+                    // Mutex released. Start timer and collect outside the lock.
+                    startWorkoutTimer()
+                    workoutRepository.getWorkoutWithDetails(targetWorkoutId).collect {
+                        _currentWorkout.value = it
+                        _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
+                        loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                        calculateSessionVolume(it)
                     }
                 }
             } catch (e: Exception) {
@@ -216,34 +244,32 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun startNewWorkout() {
         viewModelScope.launch {
             try {
-                startNewWorkoutInternal()
+                // Explicit user intent to create a new ACTIVE workout.
+                // The Mutex only guards the DB insert; the Room Flow collect
+                // (which suspends indefinitely) runs outside the lock.
+                val id = workoutCreationMutex.withLock {
+                    val now = Instant.now()
+                    val workout = Workout(
+                        date = now,
+                        startTime = now,
+                        endTime = now,
+                        duration = 0,
+                        notes = "",
+                        completed = false,
+                        status = "ACTIVE"
+                    )
+                    workoutRepository.createWorkout(workout)
+                }
+                startWorkoutTimer()
+                workoutRepository.getWorkoutWithDetails(id).collect {
+                    _currentWorkout.value = it
+                    _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
+                    loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                    calculateSessionVolume(it)
+                }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start workout"
             }
-        }
-    }
-
-    private suspend fun startNewWorkoutInternal() {
-        val now = Instant.now()
-        val workout = Workout(
-            date = now,
-            startTime = now,
-            endTime = now,
-            duration = 0,
-            notes = "",
-            completed = false,
-            status = "ACTIVE"
-        )
-        val id = workoutRepository.createWorkout(workout)
-        // Start the timer BEFORE collecting: Room flows never complete, so any
-        // code after the collect below is unreachable. Starting the timer first
-        // lets _elapsedSeconds tick while the collect feeds _currentWorkout.
-        startWorkoutTimer()
-        workoutRepository.getWorkoutWithDetails(id).collect {
-            _currentWorkout.value = it
-            _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
-            loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
-            calculateSessionVolume(it)
         }
     }
 
@@ -318,7 +344,15 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (alreadyPresent) return
         val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
         viewModelScope.launch {
-            workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
+            // Serialize to prevent concurrent duplicate inserts (race-safe).
+            exerciseAddMutex.withLock {
+                // Re-read current workout inside the lock to catch mutations
+                // that occurred between the outer read and acquiring the lock.
+                val currentWorkout = _currentWorkout.value ?: return@withLock
+                val duplicateInsideLock = currentWorkout.exercises.any { it.exercise.id == exercise.id }
+                if (duplicateInsideLock) return@withLock
+                workoutRepository.addExerciseToWorkout(currentWorkout.workout.id, exercise.id, nextOrder)
+            }
             _showExercisePicker.value = false
             // Load previous performance for newly added exercise
             val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
@@ -346,7 +380,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
         val exerciseId = we.exercise.id
-        val nextSetNumber = (we.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
 
         // Auto-populate from previous session if available
         val lastSets = _previousPerformance.value[exerciseId]
@@ -366,17 +399,24 @@ class WorkoutLoggingViewModel @Inject constructor(
             prefilledRest = defaultRestSeconds
         }
 
-        val newSet = WorkoutSet(
-            workoutExerciseId = we.workoutExercise.id,
-            setNumber = nextSetNumber,
-            weight = prefilledWeight,
-            reps = prefilledReps,
-            rpe = 0.0,
-            restSeconds = prefilledRest,
-            completed = false
-        )
         viewModelScope.launch {
-            workoutRepository.addSetToExercise(we.workoutExercise.id, newSet)
+            // Serialize set additions to prevent duplicate set numbers under concurrent taps.
+            addSetMutex.withLock {
+                // Re-read current workout inside the lock to get the latest set list.
+                val currentWorkout = _currentWorkout.value ?: return@withLock
+                val currentWe = currentWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                val nextSetNumber = (currentWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
+                val newSet = WorkoutSet(
+                    workoutExerciseId = currentWe.workoutExercise.id,
+                    setNumber = nextSetNumber,
+                    weight = prefilledWeight,
+                    reps = prefilledReps,
+                    rpe = 0.0,
+                    restSeconds = prefilledRest,
+                    completed = false
+                )
+                workoutRepository.addSetToExercise(currentWe.workoutExercise.id, newSet)
+            }
         }
     }
 
@@ -410,11 +450,14 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun removeExercise(exerciseIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
+        // Capture stable DB identity at call site, not index.
         val we = workout.exercises[exerciseIndex]
+        val workoutExerciseId = we.workoutExercise.id
+        val exerciseId = we.exercise.id
         viewModelScope.launch {
-            workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
+            workoutRepository.removeExerciseFromWorkout(workoutExerciseId)
             // Remove progression recommendation for removed exercise
-            val updated = _progressionRecommendations.value - we.exercise.id
+            val updated = _progressionRecommendations.value - exerciseId
             _progressionRecommendations.value = updated
         }
     }
@@ -469,6 +512,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         // Terminal-state guard: refuse to complete an already-completed,
         // abandoned, or otherwise terminal workout.
         if (workout.completed || workout.status == "COMPLETED" || workout.status == "ABANDONED") return
+        // Atomic admission control: exactly one caller wins the compareAndSet.
+        if (!completionInProgress.compareAndSet(false, true)) return
         workoutTimerJob?.cancel()
         restTimer.stop()
 
@@ -501,9 +546,16 @@ class WorkoutLoggingViewModel @Inject constructor(
             completed = true,
             status = "COMPLETED"
         )
-        viewModelScope.launch {
-            workoutRepository.updateWorkout(updated)
-            _completed.value = true
+        applicationScope.launch {
+            try {
+                workoutRepository.updateWorkout(updated)
+                // Only set terminal UI state AFTER successful DB write.
+                _completed.value = true
+            } catch (e: Exception) {
+                // If DB write fails, allow retry by resetting the guard.
+                completionInProgress.set(false)
+                _error.value = "Failed to save workout: ${e.message}"
+            }
         }
     }
 

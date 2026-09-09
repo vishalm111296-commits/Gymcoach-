@@ -22,23 +22,17 @@ data class WorkoutSetWithContext(
 
 @Dao
 abstract class WorkoutDao {
+    @Query("UPDATE workouts SET status = 'ABANDONED', completed = 1, endTime = :now WHERE status = 'ACTIVE'")
+    abstract suspend fun abandonAllActiveWorkouts(now: Long = System.currentTimeMillis())
+
     @Transaction
     open suspend fun createWorkoutFromHistoryTransaction(
         sourceWorkout: WorkoutEntity,
         sourceExercisesWithSets: List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>
     ): Long {
         val now = System.currentTimeMillis()
-        // Policy C: Enforce one-active-workout policy by abandoning pre-existing active session
-        val activeWorkout = getIncompleteWorkout()
-        if (activeWorkout != null) {
-            updateWorkout(
-                activeWorkout.copy(
-                    completed = true,
-                    status = "ABANDONED",
-                    endTime = now
-                )
-            )
-        }
+        // Policy C: Enforce one-active-workout policy by abandoning ALL pre-existing active sessions
+        abandonAllActiveWorkouts(now)
         val newWorkoutEntity = sourceWorkout.copy(
             id = 0,
             date = now,
@@ -66,6 +60,7 @@ abstract class WorkoutDao {
         }
         return newWorkoutId
     }
+
     // Workouts
     @Query("SELECT * FROM workouts ORDER BY date DESC")
     abstract fun getAllWorkouts(): Flow<List<WorkoutEntity>>
@@ -119,10 +114,6 @@ abstract class WorkoutDao {
 
     // ─── Previous Performance Queries ───────────────────────────────────
 
-    /**
-     * Get the last completed workout's date and max weight for a given exercise.
-     * Returns the most recent completed workout date + max weight achieved.
-     */
     @Query("""
         SELECT w.date, MAX(ws.weight) as maxWeight
         FROM workout_sets ws
@@ -134,46 +125,32 @@ abstract class WorkoutDao {
     """)
     abstract suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
 
-    /**
-     * Get the last completed workout's sets for a given exercise.
-     * Returns the weight, reps, rpe, and rest from the most recent session.
-     */
     @Query("""
         SELECT ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.setType, w.date
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
         WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
-        ORDER BY w.date DESC, ws.setNumber ASC
-        LIMIT 10
+        AND w.date = (
+            SELECT MAX(w2.date)
+            FROM workouts w2
+            INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+            WHERE we2.exerciseId = :exerciseId AND w2.status = 'COMPLETED'
+        )
+        ORDER BY ws.setNumber ASC
     """)
     abstract suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
 
-
-    /**
-     * Batched version of getLastPerformanceForExercise
-     */
     @Query("""
-        WITH LastWorkouts AS (
-            SELECT we.exerciseId, MAX(w.date) as maxDate
-            FROM workouts w
-            INNER JOIN workout_exercises we ON we.workoutId = w.id
-            WHERE w.status = 'COMPLETED' AND we.exerciseId IN (:exerciseIds)
-            GROUP BY we.exerciseId
-        )
         SELECT we.exerciseId, w.date, MAX(ws.weight) as maxWeight
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        INNER JOIN LastWorkouts lw ON lw.exerciseId = we.exerciseId AND lw.maxDate = w.date
-        WHERE w.status = 'COMPLETED'
+        WHERE we.exerciseId IN (:exerciseIds) AND w.status = 'COMPLETED'
         GROUP BY we.exerciseId
     """)
     abstract suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): List<LastPerformanceWithExercise>
 
-    /**
-     * Batched version of getLastSetsForExercise
-     */
     @Query("""
         SELECT we.exerciseId, ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.setType, w.date
         FROM workout_sets ws

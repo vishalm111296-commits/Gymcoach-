@@ -7,6 +7,7 @@ import com.gymcoach.app.data.local.dao.ExerciseMuscleWithDetails
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
+import com.gymcoach.app.domain.model.CanonicalMuscleTaxonomy
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
@@ -44,6 +45,7 @@ data class HomeUiState(
 )
 
 private const val TARGET_WEEKLY_SETS = 14
+private const val TARGET_LEGS_WEEKLY_SETS = 28 // Aggregate lower-body floor (quads, hamstrings, glutes, calves)
 private const val ESTIMATED_WORK_SECONDS_PER_SET = 40
 
 private data class ProgramCore(
@@ -140,7 +142,7 @@ class HomeViewModel @Inject constructor(
 
         val detailsByExercise = muscleDetails.groupBy { it.exerciseId }
 
-        // Build muscle assignments for VolumeCalculator using canonical exercise_muscles relationships
+        // Build muscle assignments using canonical muscle taxonomy lookup table
         val muscleAssignments = exercises.associate { exercise ->
             val rels = detailsByExercise[exercise.id]
             val assignments = mutableListOf<VolumeCalculator.MuscleAssignment>()
@@ -153,15 +155,15 @@ class HomeViewModel @Inject constructor(
                         "stabilizer" -> VolumeCalculator.MuscleRole.STABILIZER
                         else -> VolumeCalculator.MuscleRole.PRIMARY
                     }
-                    assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(rel.muscleName), role))
+                    assignments.add(VolumeCalculator.MuscleAssignment(CanonicalMuscleTaxonomy.mapToCategory(rel.muscleName), role))
                 }
             } else {
                 if (exercise.muscleGroup.isNotBlank()) {
-                    assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(exercise.muscleGroup), VolumeCalculator.MuscleRole.PRIMARY))
+                    assignments.add(VolumeCalculator.MuscleAssignment(CanonicalMuscleTaxonomy.mapToCategory(exercise.muscleGroup), VolumeCalculator.MuscleRole.PRIMARY))
                 }
                 if (exercise.secondaryMuscles.isNotBlank()) {
                     exercise.secondaryMuscles.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { sec ->
-                        assignments.add(VolumeCalculator.MuscleAssignment(mapMuscleName(sec), VolumeCalculator.MuscleRole.SECONDARY))
+                        assignments.add(VolumeCalculator.MuscleAssignment(CanonicalMuscleTaxonomy.mapToCategory(sec), VolumeCalculator.MuscleRole.SECONDARY))
                     }
                 }
             }
@@ -178,7 +180,7 @@ class HomeViewModel @Inject constructor(
             VtaperMuscleData(
                 label = "Legs",
                 current = trainingBalance.quadricepsVolume.weeklySets + trainingBalance.hamstringsVolume.weeklySets + trainingBalance.glutesVolume.weeklySets + trainingBalance.calvesVolume.weeklySets,
-                target = TARGET_WEEKLY_SETS
+                target = TARGET_LEGS_WEEKLY_SETS
             )
         )
 
@@ -210,21 +212,6 @@ class HomeViewModel @Inject constructor(
 
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
-
-    private fun mapMuscleName(raw: String): String = when {
-        raw.contains("latissimus", ignoreCase = true) || raw.contains("lat", ignoreCase = true) || raw.contains("back", ignoreCase = true) -> "Lats"
-        raw.contains("lateral_deltoid", ignoreCase = true) || raw.contains("lateral delt", ignoreCase = true) || raw.contains("side delt", ignoreCase = true) -> "Lateral Deltoid"
-        raw.contains("rear_deltoid", ignoreCase = true) || raw.contains("rear delt", ignoreCase = true) -> "Rear Deltoid"
-        raw.contains("upper_chest", ignoreCase = true) || raw.contains("chest", ignoreCase = true) -> "Upper Chest"
-        raw.contains("bicep", ignoreCase = true) -> "Biceps"
-        raw.contains("tricep", ignoreCase = true) -> "Triceps"
-        raw.contains("quadricep", ignoreCase = true) || raw.contains("quad", ignoreCase = true) -> "Quadriceps"
-        raw.contains("hamstring", ignoreCase = true) -> "Hamstrings"
-        raw.contains("glute", ignoreCase = true) -> "Glutes"
-        raw.contains("calf", ignoreCase = true) || raw.contains("calves", ignoreCase = true) -> "Calves"
-        raw.contains("core", ignoreCase = true) || raw.contains("abs", ignoreCase = true) -> "Core"
-        else -> raw
-    }
 
     private fun weekStartMillis(): Long {
         val calendar = Calendar.getInstance()

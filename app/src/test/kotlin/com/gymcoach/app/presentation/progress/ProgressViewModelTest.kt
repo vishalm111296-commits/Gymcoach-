@@ -4,7 +4,6 @@ import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +45,7 @@ class ProgressViewModelTest {
     }
 
     @Test
-    fun `valid shoulder and waist calculates shoulder-to-waist ratio`() = runTest {
+    fun `shoulders 120 waist 80 calculates ratio 1_5`() = runTest {
         val measurement = BodyMeasurementEntity(
             recordedAt = System.currentTimeMillis(),
             weightKg = 75.0,
@@ -66,13 +65,13 @@ class ProgressViewModelTest {
     }
 
     @Test
-    fun `zero shoulder returns null shoulder-to-waist ratio without falling back to chest`() = runTest {
+    fun `shoulders 0 waist 80 returns null ratio`() = runTest {
         val measurement = BodyMeasurementEntity(
             recordedAt = System.currentTimeMillis(),
             weightKg = 75.0,
             waistCm = 80.0,
-            shouldersCm = 0.0, // Zero / missing shoulders
-            chestCm = 100.0 // Chest present
+            shouldersCm = 0.0,
+            chestCm = 100.0
         )
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
 
@@ -81,16 +80,50 @@ class ProgressViewModelTest {
         val state = viewModel.uiState.value
         assertNull("Shoulder-to-waist ratio must be null when shoulders are 0", state.latestShoulderToWaistRatio)
         assertTrue("Shoulder-to-waist trend must be empty", state.shoulderToWaistTrend.isEmpty())
-        assertEquals(1.25, state.latestChestToWaistRatio!!, 0.01) // Chest ratio evaluated separately
     }
 
     @Test
-    fun `zero waist returns null shoulder-to-waist ratio`() = runTest {
+    fun `shoulders missing chest 100 waist 80 returns null shoulder-to-waist ratio`() = runTest {
+        val measurement = BodyMeasurementEntity(
+            recordedAt = System.currentTimeMillis(),
+            weightKg = 75.0,
+            waistCm = 80.0,
+            shouldersCm = 0.0, // Missing shoulder
+            chestCm = 100.0 // Chest present
+        )
+        every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
+
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+
+        val state = viewModel.uiState.value
+        assertNull("Shoulder-to-waist ratio must NOT fall back to chest", state.latestShoulderToWaistRatio)
+        assertEquals(1.25, state.latestChestToWaistRatio!!, 0.01) // Chest ratio evaluated separately as 100 / 80 = 1.25
+    }
+
+    @Test
+    fun `shoulders 120 waist 0 returns null ratio`() = runTest {
         val measurement = BodyMeasurementEntity(
             recordedAt = System.currentTimeMillis(),
             weightKg = 75.0,
             waistCm = 0.0,
             shouldersCm = 120.0
+        )
+        every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
+
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+
+        val state = viewModel.uiState.value
+        assertNull(state.latestShoulderToWaistRatio)
+        assertTrue(state.shoulderToWaistTrend.isEmpty())
+    }
+
+    @Test
+    fun `shoulders missing waist missing returns null ratio`() = runTest {
+        val measurement = BodyMeasurementEntity(
+            recordedAt = System.currentTimeMillis(),
+            weightKg = 75.0,
+            waistCm = 0.0,
+            shouldersCm = 0.0
         )
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
 

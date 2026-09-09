@@ -47,10 +47,10 @@ private const val ESTIMATED_WORK_SECONDS_PER_SET = 40
 
 /** Dashboard bars mapped from the generator's muscle vocabulary to user-facing groups. */
 private val VTAPER_BAR_SOURCES = listOf(
-    "Lats" to listOf("Back"),
-    "Lateral Delts" to listOf("Lateral Deltoid"),
-    "Chest" to listOf("Chest", "Upper Chest"),
-    "Legs" to listOf("Quadriceps", "Hamstrings", "Glutes", "Calves")
+    "Lats" to listOf("Back", "Lats", "Latissimus Dorsi"),
+    "Lateral Delts" to listOf("Lateral Deltoid", "Lateral Delts"),
+    "Chest" to listOf("Chest", "Upper Chest", "Lower Chest", "Mid Chest"),
+    "Legs" to listOf("Quadriceps", "Hamstrings", "Glutes", "Calves", "Quads")
 )
 
 private data class ProgramCore(
@@ -66,7 +66,7 @@ class HomeViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     workoutRepository: WorkoutRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository // PR count until PR queries live on WorkoutRepository
+    analyticsRepository: AnalyticsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -80,7 +80,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            programRepository.getActiveProgram()
+            val programCoreFlow = programRepository.getActiveProgram()
                 .flatMapLatest { program ->
                     if (program == null) {
                         flowOf(null)
@@ -93,11 +93,15 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
-                .combine(workoutRepository.getCompletedWorkouts()) { core, workouts -> core to workouts }
-                .combine(_prCount.asStateFlow()) { pair, prCount ->
-                    buildUiState(pair.first, pair.second, prCount)
-                }
-                .collect { state -> _uiState.value = state }
+
+            combine(
+                programCoreFlow,
+                workoutRepository.getCompletedWorkouts(),
+                workoutRepository.getCompletedSetsByMuscle(weekStartMillis()),
+                _prCount.asStateFlow()
+            ) { core, workouts, completedSets, prCount ->
+                buildUiState(core, workouts, completedSets, prCount)
+            }.collect { state -> _uiState.value = state }
         }
     }
 
@@ -111,6 +115,7 @@ class HomeViewModel @Inject constructor(
     private fun buildUiState(
         core: ProgramCore?,
         workouts: List<com.gymcoach.app.domain.model.WorkoutWithStats>,
+        completedSetsMap: Map<String, Int>,
         prCount: Int
     ): HomeUiState {
         if (core == null) {
@@ -126,18 +131,18 @@ class HomeViewModel @Inject constructor(
             it.completed && it.date.toEpochMilli() >= weekStartMillis()
         }
 
-        // ponytail: bars use planned volume because workout_sets lacks exerciseId+date columns;
-        // once added, swap to volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap).
-        val plannedSets = plannedWeeklySets(core.exercisesByDay, core.allDays)
         val bars = VTAPER_BAR_SOURCES.map { (label, sources) ->
+            val count = sources.sumOf { source ->
+                completedSetsMap.entries.filter { it.key.equals(source, ignoreCase = true) }.sumOf { it.value }
+            }
             VtaperMuscleData(
                 label = label,
-                current = sources.sumOf { plannedSets[it] ?: 0 },
+                current = count,
                 target = TARGET_WEEKLY_SETS
             )
         }
         val insight = volumeCalculator
-            .calculateVtaperBalance(buildTrainingBalance(plannedSets))
+            .calculateVtaperBalance(buildTrainingBalance(completedSetsMap))
             .overallBalance
 
         val todayExercises = core.todayDay?.let { core.exercisesByDay[it.id] }.orEmpty()
@@ -167,22 +172,6 @@ class HomeViewModel @Inject constructor(
     private fun targetMusclesMuscles(day: ProgramDayEntity?): List<String> =
         day?.targetMuscles?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
-    /** Planned weekly sets per muscle from program day targetMuscles tags and exercise set counts. */
-    private fun plannedWeeklySets(
-        exercisesByDay: Map<Long, List<ProgramExerciseEntity>>,
-        days: List<ProgramDayEntity>
-    ): Map<String, Int> {
-        val result = mutableMapOf<String, Int>()
-        for (day in days) {
-            val daySets = exercisesByDay[day.id]?.sumOf { it.sets } ?: continue
-            if (daySets == 0) continue
-            day.targetMuscles.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { muscle ->
-                result[muscle] = (result[muscle] ?: 0) + daySets
-            }
-        }
-        return result
-    }
-
     /** Mirrors VolumeCalculator's evidence bands (its classifier is private). */
     private fun statusFor(weeklySets: Int): VolumeCalculator.VolumeStatus = when {
         weeklySets < 10 -> VolumeCalculator.VolumeStatus.INSUFFICIENT
@@ -192,8 +181,7 @@ class HomeViewModel @Inject constructor(
         else -> VolumeCalculator.VolumeStatus.EXCESSIVE
     }
 
-    private fun volume(name: String, planned: Map<String, Int>): VolumeCalculator.MuscleVolume {
-        val sets = planned[name] ?: 0
+    private fun volume(name: String, sets: Int): VolumeCalculator.MuscleVolume {
         return VolumeCalculator.MuscleVolume(
             muscleName = name,
             weeklySets = sets,
@@ -203,20 +191,25 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun buildTrainingBalance(planned: Map<String, Int>): VolumeCalculator.TrainingBalance {
+    private fun buildTrainingBalance(completedSets: Map<String, Int>): VolumeCalculator.TrainingBalance {
+        fun setsFor(vararg names: String): Int {
+            return names.sumOf { name ->
+                completedSets.entries.filter { it.key.equals(name, ignoreCase = true) }.sumOf { it.value }
+            }
+        }
         return VolumeCalculator.TrainingBalance(
-            latVolume = volume("Back", planned),
-            lateralDeltVolume = volume("Lateral Deltoid", planned),
-            rearDeltVolume = volume("Rear Deltoid", planned),
-            upperChestVolume = volume("Upper Chest", planned),
-            upperBackVolume = volume("Upper Back", planned),
-            bicepsVolume = volume("Biceps", planned),
-            tricepsVolume = volume("Triceps", planned),
-            quadricepsVolume = volume("Quadriceps", planned),
-            hamstringsVolume = volume("Hamstrings", planned),
-            glutesVolume = volume("Glutes", planned),
-            calvesVolume = volume("Calves", planned),
-            coreVolume = volume("Core", planned)
+            latVolume = volume("Back", setsFor("Back", "Lats", "Latissimus Dorsi")),
+            lateralDeltVolume = volume("Lateral Deltoid", setsFor("Lateral Deltoid", "Lateral Delts")),
+            rearDeltVolume = volume("Rear Deltoid", setsFor("Rear Deltoid")),
+            upperChestVolume = volume("Upper Chest", setsFor("Upper Chest", "Chest")),
+            upperBackVolume = volume("Upper Back", setsFor("Upper Back")),
+            bicepsVolume = volume("Biceps", setsFor("Biceps")),
+            tricepsVolume = volume("Triceps", setsFor("Triceps")),
+            quadricepsVolume = volume("Quadriceps", setsFor("Quadriceps", "Quads")),
+            hamstringsVolume = volume("Hamstrings", setsFor("Hamstrings")),
+            glutesVolume = volume("Glutes", setsFor("Glutes")),
+            calvesVolume = volume("Calves", setsFor("Calves")),
+            coreVolume = volume("Core", setsFor("Core", "Abs"))
         )
     }
 

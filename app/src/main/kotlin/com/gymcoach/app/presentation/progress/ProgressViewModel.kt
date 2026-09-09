@@ -67,7 +67,10 @@ data class ProgressUiState(
     val latestWeight: Double? = null,
     val latestWaist: Double? = null,
     val latestChest: Double? = null,
+    val latestShoulders: Double? = null,
     val latestBodyFat: Double? = null,
+    val shoulderToWaistTrend: List<TrendPoint> = emptyList(),
+    val latestShoulderToWaistRatio: Double? = null,
     val showMeasurementDialog: Boolean = false
 )
 
@@ -196,6 +199,17 @@ class ProgressViewModel @Inject constructor(
                         )
                     }
 
+                val shoulderToWaistTrend = measurements
+                    .filter { (it.shouldersCm > 0 || it.chestCm > 0) && it.waistCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        val top = if (measurement.shouldersCm > 0) measurement.shouldersCm else measurement.chestCm
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = top / measurement.waistCm
+                        )
+                    }
+
                 val latest = measurements.firstOrNull()
 
                 val volumeHistory = analyticsRepository.getVolumeHistory()
@@ -248,7 +262,13 @@ class ProgressViewModel @Inject constructor(
                     latestWeight = latest?.weightKg,
                     latestWaist = latest?.waistCm,
                     latestChest = latest?.chestCm,
-                    latestBodyFat = latest?.bodyFatPct
+                    latestShoulders = latest?.shouldersCm?.takeIf { it > 0 },
+                    latestBodyFat = latest?.bodyFatPct,
+                    shoulderToWaistTrend = shoulderToWaistTrend,
+                    latestShoulderToWaistRatio = if (latest != null && latest.waistCm > 0) {
+                        val top = if (latest.shouldersCm > 0) latest.shouldersCm else latest.chestCm
+                        if (top > 0) top / latest.waistCm else null
+                    } else null
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),

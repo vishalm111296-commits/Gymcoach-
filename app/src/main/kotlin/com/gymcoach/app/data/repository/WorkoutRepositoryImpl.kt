@@ -185,6 +185,16 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
     }
+
+    override suspend fun cloneWorkoutAsNewActive(workoutId: Long): Long {
+        return workoutDao.cloneWorkoutAsNewActive(workoutId)
+    }
+
+    override fun getCompletedSetsByMuscle(startDate: Long): Flow<Map<String, Int>> {
+        return workoutDao.getCompletedSetsByMuscle(startDate).map { list ->
+            list.associate { it.muscleGroup to it.setCount }
+        }
+    }
 }
 
 // Entity -> Domain mappers

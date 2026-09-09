@@ -362,7 +362,78 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     suspend fun getIncompleteWorkout(): WorkoutEntity?
+
+    @Query("SELECT * FROM workouts WHERE id = :id")
+    suspend fun getWorkoutByIdSync(id: Long): WorkoutEntity?
+
+    @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex ASC")
+    suspend fun getExercisesForWorkoutList(workoutId: Long): List<WorkoutExerciseEntity>
+
+    @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId ORDER BY setNumber ASC")
+    suspend fun getSetsForExerciseList(workoutExerciseId: Long): List<WorkoutSetEntity>
+
+    @Transaction
+    suspend fun cloneWorkoutAsNewActive(workoutId: Long): Long {
+        val sourceWorkout = getWorkoutByIdSync(workoutId) ?: return -1L
+        val now = System.currentTimeMillis()
+        val newWorkoutId = insertWorkout(
+            WorkoutEntity(
+                id = 0,
+                date = now,
+                startTime = now,
+                endTime = now,
+                duration = 0,
+                notes = sourceWorkout.notes,
+                completed = false,
+                status = "ACTIVE"
+            )
+        )
+        val sourceExercises = getExercisesForWorkoutList(workoutId)
+        for (sourceEx in sourceExercises) {
+            val newExId = insertWorkoutExercise(
+                WorkoutExerciseEntity(
+                    id = 0,
+                    workoutId = newWorkoutId,
+                    exerciseId = sourceEx.exerciseId,
+                    orderIndex = sourceEx.orderIndex
+                )
+            )
+            val sourceSets = getSetsForExerciseList(sourceEx.id)
+            for (sourceSet in sourceSets) {
+                insertWorkoutSet(
+                    WorkoutSetEntity(
+                        id = 0,
+                        workoutExerciseId = newExId,
+                        setNumber = sourceSet.setNumber,
+                        weight = sourceSet.weight,
+                        reps = sourceSet.reps,
+                        rpe = sourceSet.rpe,
+                        restSeconds = sourceSet.restSeconds,
+                        completed = false,
+                        setType = sourceSet.setType
+                    )
+                )
+            }
+        }
+        return newWorkoutId
+    }
+
+    @Query("""
+        SELECT e.muscleGroup as muscleGroup, COUNT(ws.id) as setCount
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        INNER JOIN exercises e ON e.id = we.exerciseId
+        WHERE w.status = 'COMPLETED' AND w.date >= :startDate AND ws.completed = 1 AND ws.setType = 0
+        GROUP BY e.muscleGroup
+    """)
+    fun getCompletedSetsByMuscle(startDate: Long): Flow<List<MuscleSetCount>>
 }
+
+data class MuscleSetCount(
+    val muscleGroup: String,
+    val setCount: Int
+)
 
 data class LastPerformance(
     val date: Long,

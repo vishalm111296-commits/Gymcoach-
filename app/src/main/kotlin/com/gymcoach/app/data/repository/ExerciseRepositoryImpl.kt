@@ -1,6 +1,7 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.core.program.VolumeCalculator.MuscleAssignment
+import com.gymcoach.app.core.program.VolumeCalculator.MuscleRole
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
@@ -55,7 +56,7 @@ class ExerciseRepositoryImpl @Inject constructor(
                 assignments.map { row ->
                     MuscleAssignment(
                         muscleName = row.muscleName,
-                        role = VolumeCalculator.MuscleRole.valueOf(row.role.uppercase())
+                        role = MuscleRole.valueOf(row.role.uppercase())
                     )
                 }
             }

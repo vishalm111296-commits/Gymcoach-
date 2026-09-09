@@ -142,7 +142,7 @@ class ProgressViewModel @Inject constructor(
                 val windowStart = today.minusWeeks(HEATMAP_WEEKS.toLong())
                 val minDateMillis = windowStart.atStartOfDay(zone).toInstant().toEpochMilli()
                 val detailsById = workoutRepository.getCompletedWorkoutsWithDetails(minDateMillis)
-                    .associateBy { it.id }
+                    .associateBy { it.workout.id }
                 val muscleSets = linkedMapOf<String, Int>()
                 val workoutDays = sortedSetOf<LocalDate>()
                 val bestByExerciseDate = mutableMapOf<String, MutableMap<LocalDate, Double>>()

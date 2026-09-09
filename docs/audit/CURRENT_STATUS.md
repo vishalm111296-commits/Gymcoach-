@@ -1,8 +1,8 @@
-# GymCoach Current State Matrix — Phase 1 P0 Stabilization COMPLETE
+# GymCoach Current State Matrix — Phase 1 P0 Stabilization COMPLETE + Phase 2 Hardening
 **Generated:** 2026-09-09  
 **Repository:** vishalm111296-commits/Gymcoach-  
 **Branch:** phase5-recovery-verified  
-**HEAD Commit:** 1025283 fix: remove remaining periods from test names (7.0, 8.0, 7.5)  
+**HEAD Commit:** 5a00a8f test: stub latest-incomplete as null in startNewWorkout ACTIVE-status test  
 **Gradle/AGP:** 8.4 / 8.2.2  
 **Kotlin:** 1.9.22  
 **KSP:** 1.9.22-1.0.17  
@@ -15,7 +15,12 @@
 **Local Build:** BLOCKED (AAPT2 daemon crash)  
 **Local Tests:** BLOCKED (require build)  
 **CI Workflow:** EXISTS (.github/workflows/android-build.yml)  
-**CI Status for Current HEAD:** ✅ **CI VERIFIED** — Run 34348295533: BUILD PASSED, LINT PASSED, TESTS PASSED  
+**CI Status for Current HEAD (5a00a8f):** ✅ **CI VERIFIED** — Run 34390107502: BUILD PASSED, LINT PASSED, UNIT TESTS PASSED (193/193 incl. all 57 Phase-2 tests)  
+**CI Status for Prior Head (b0dda69):** ❌ Unit Tests FAILED (1 test) — run 34388028766 — 193 completed, 1 failed, fixed in 5a00a8f  
+**CI Status for Prior Head (c3b5f0a):** ⏹ Unit Tests HUNG -> cancelled — run 34384393433 — fixed via vmRunTest finally-cancel (b0dda69)  
+**CI Status for Prior Head (2621aea):** ❌ Unit Tests compile FAILED — run 34377935000 — fixed in bfeab00  
+**CI Status for Prior Head (51cc5bb):** ❌ Unit Tests compile FAILED — run 34375461804 — fixed in 2621aea  
+**CI Status for Baseline (1025283):** ✅ **CI VERIFIED** — Run 34348295533: BUILD PASSED, LINT PASSED, TESTS PASSED  
 **Device Testing:** NOT AVAILABLE  
 
 ---
@@ -46,6 +51,7 @@
 | CI Build | **✅ CI VERIFIED** | Run 34348295533 — Build Debug APK PASSED on commit 1025283 |
 | CI Lint | **✅ CI VERIFIED** | Run 34348295533 — Android Lint PASSED |
 | CI Unit Tests | **✅ CI VERIFIED** | Run 34348295533 — All unit tests PASSED |
+| CI Unit Tests (51cc5bb attempt) | ❌ COMPILE FAILED | Run 34375461804 — `compileDebugUnitTestKotlin` failed: Double→Int literals in WorkoutConcurrencyTest/WorkoutSessionHostileTest; stale `getIncompleteWorkout()` refs in ForensicAuditRegressionTest + WorkoutRepositoryIntegrationTest (pre-existing APP-015 rename breakage). Fixed in 2621aea (LSP had reported these files "clean" — evidence-first lesson: CI compiler is the only compile gate) |
 
 ---
 

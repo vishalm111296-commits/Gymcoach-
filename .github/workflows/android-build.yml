@@ -196,14 +196,6 @@ jobs:
         with:
           android-sdk-version: ${{ env.ANDROID_SDK_VERSION }}
 
-      - name: Probe single failing test (diagnostic)
-        timeout-minutes: 15
-        continue-on-error: true
-        run: |
-          echo "=== Isolated probe: startNewWorkout ACTIVE status ==="
-          chmod +x ./gradlew
-          ./gradlew testDebugUnitTest --tests "com.gymcoach.app.presentation.workout.WorkoutSessionHostileTest.startNewWorkout creates workout with ACTIVE status" --stacktrace
-
       - name: Run Unit Tests
         timeout-minutes: 40
         run: |

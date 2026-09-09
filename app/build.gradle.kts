@@ -40,20 +40,21 @@ android {
             useSupportLibrary = true
         }
 
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
-
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
-        }
+        // F-BUILD-1 fix: removed empty CMake stub. The app has no JNI/native
+        // code. The cpp/ directory with gymcoach.cpp and CMakeLists.txt was
+        // scaffolded and never implemented. Keeping it added build complexity,
+        // NDK dependency, and packaged a do-nothing libgymcoach.so into the APK.
+        // ndk.abiFilters removed along with the CMake block.
     }
 
     signingConfigs {
         create("release") {
             // Priority: environment variables (CI) > local.properties (dev)
+            // NOTE (F-BUILD-2): Release builds require either KEYSTORE_PATH,
+            // KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD env vars (CI) or
+            // the equivalent entries in local.properties. bundleRelease will
+            // fail with FileNotFoundException if neither source is set and
+            // keystore/release.jks does not exist locally.
             storeFile = file(
                 System.getenv("KEYSTORE_PATH")
                     ?: keystoreProperties.getProperty("KEYSTORE_PATH", "keystore/release.jks")
@@ -97,13 +98,6 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
-    }
-
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
     }
 
     packaging {

@@ -51,19 +51,29 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            // Priority: environment variables (CI) > local.properties (dev)
-            storeFile = file(
-                System.getenv("KEYSTORE_PATH")
-                    ?: keystoreProperties.getProperty("KEYSTORE_PATH", "keystore/release.jks")
-            )
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-                ?: keystoreProperties.getProperty("KEYSTORE_PASSWORD", "")
-            keyAlias = System.getenv("KEY_ALIAS")
-                ?: keystoreProperties.getProperty("KEY_ALIAS", "gymcoach")
-            keyPassword = System.getenv("KEY_PASSWORD")
-                ?: keystoreProperties.getProperty("KEY_PASSWORD", "")
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+        ?: keystoreProperties.getProperty("KEYSTORE_PATH")
+    val keystorePass = System.getenv("KEYSTORE_PASSWORD")
+        ?: keystoreProperties.getProperty("KEYSTORE_PASSWORD")
+    val aliasName = System.getenv("KEY_ALIAS")
+        ?: keystoreProperties.getProperty("KEY_ALIAS")
+    val aliasPass = System.getenv("KEY_PASSWORD")
+        ?: keystoreProperties.getProperty("KEY_PASSWORD")
+
+    val hasReleaseSigning = !keystorePath.isNullOrBlank() &&
+            !keystorePass.isNullOrBlank() &&
+            !aliasName.isNullOrBlank() &&
+            !aliasPass.isNullOrBlank() &&
+            file(keystorePath).exists()
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePass
+                keyAlias = aliasName
+                keyPassword = aliasPass
+            }
         }
     }
 
@@ -71,7 +81,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

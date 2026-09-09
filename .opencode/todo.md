@@ -1,6 +1,6 @@
 # GymCoach Mission TODO
 
-## Phase 2 — Workout UX + System Hardening | status: in_progress
+## Phase 2 — Workout UX + System Hardening | status: completed
 
 ### T2.1: Preserve + Inspect Uncommitted Work | status: completed
 - [x] S2.1.1: Inspect all 7 uncommitted files | size:S
@@ -61,7 +61,7 @@
 - [x] S2.7.5: Push + CI — (14 commits pushed; workflow_dispatch via gh works) | verified: CI run 34391125085 GREEN
 - [x] S2.7.6: Record CI run ID, commit SHA, pass/fail | verified: 34391125085 @ 26dc5ae PASS (193 tests, 0 failures)
 
-### T2.8: Screen-by-Screen Workout UX Audit | depends:T2.7 | status:in_progress
+### T2.8: Screen-by-Screen Workout UX Audit | depends:T2.7 | status:completed
 #### T2.8.1: Parallel Audit Group A — Active Session (WorkoutSessionScreen + RestTimerCard + ExerciseSetCard/SetRow + Set type chip + Completion flow; VM state → loading/empty/error/active UI; rest timer lifecycle; swipe-to-delete + exercise removal confirmations)
 - [x] S2.8.1.a: Read WorkoutSessionScreen.kt (1025 lines) — trace all state paths (Loading/Empty/Active/Error/Completed), top-app-bar live clock/volume, bottom buttons, finish dialog
 - [x] S2.8.1.b: Read RestTimerCard (lines 508-601) — progress bar, presets, pause/resume/skip, haptic on set complete, timer state sync
@@ -95,15 +95,15 @@
 - [x] S2.8.4.b: For each defect: ID, severity, reproduction, expected, actual, root cause, files, proposed fix, verification
 - [x] S2.8.4.c: Cross-reference with BUG_REGISTER.md to avoid ID collisions (APP-001..APP-019 used; INFRA-001..INFRA-002 used)
 
-### T2.8.5: Fix Defects (Prioritized) | depends:T2.8.4 | size:XL
-- [ ] S2.8.5.a: P0 fixes (if any found)
-- [ ] S2.8.5.b: P1 fixes (if any found)
-- [ ] S2.8.5.c: P2 fixes (if any found)
-- [ ] S2.8.5.d: Note: any fix touching the 7 pre-existing uncommitted UI files (PoseDetector.kt, ExerciseItemCard.kt, ExerciseDetailScreen.kt, HomeDashboardScreen.kt, HomeViewModel.kt, TodayWorkoutCard.kt, ExerciseListScreen.kt) requires explicit documentation in the fix PR
+### T2.8.5: Fix Defects (Prioritized) | depends:T2.8.4 | size:XL | status:completed
+- [x] S2.8.5.a: P0 fixes (if any found)
+- [x] S2.8.5.b: P1 fixes (if any found)
+- [x] S2.8.5.c: P2 fixes (if any found)
+- [x] S2.8.5.d: Note: any fix touching the 7 pre-existing uncommitted UI files (PoseDetector.kt, ExerciseItemCard.kt, ExerciseDetailScreen.kt, HomeDashboardScreen.kt, HomeViewModel.kt, TodayWorkoutCard.kt, ExerciseListScreen.kt) requires explicit documentation in the fix PR
 
-### T2.8.6: Final CI Pass | depends:T2.8.5 | size:M
-- [ ] S2.8.6.a: gh workflow run android-build.yml on phase5-recovery-verified
-- [ ] S2.8.6.b: Verify 193+ tests pass (Build + Lint + Unit Tests all GREEN)
+### T2.8.6: Final CI Pass | depends:T2.8.5 | size:M | status:completed
+- [x] S2.8.6.a: gh workflow run android-build.yml on phase5-recovery-verified
+- [x] S2.8.6.b: Verify 193+ tests pass (Build + Lint + Unit Tests all GREEN)
 
 ## Phase 3 — Design System | status: pending
 ## Phase 4 — Exercise/Content/Media | status: pending

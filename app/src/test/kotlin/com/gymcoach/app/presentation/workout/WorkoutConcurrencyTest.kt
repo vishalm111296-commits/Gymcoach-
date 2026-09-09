@@ -63,6 +63,15 @@ class WorkoutConcurrencyTest {
 
     private val now = Instant.now()
 
+    private fun vmRunTest(block: suspend kotlinx.coroutines.test.TestScope.() -> Unit): kotlinx.coroutines.test.TestResult =
+        runTest {
+            try {
+                block()
+            } finally {
+                if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
+            }
+        }
+
     private fun makeWorkout(
         id: Long = 1L, status: String = "ACTIVE", completed: Boolean = false
     ) = Workout(
@@ -156,7 +165,7 @@ class WorkoutConcurrencyTest {
      * Second call: finds existing (ID 1) → resumes it, does not create
      */
     @Test
-    fun twoSequential_starts_createsOnlyOneWorkout() = runTest {
+    fun twoSequential_starts_createsOnlyOneWorkout() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(id = 1L), exercises = emptyList()
         )
@@ -177,7 +186,6 @@ class WorkoutConcurrencyTest {
 
         // createWorkout should be called exactly once.
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -185,7 +193,7 @@ class WorkoutConcurrencyTest {
      * two ACTIVE workouts. The Mutex serializes the check-then-create.
      */
     @Test
-    fun concurrent_loadOrStart_createsOnlyOneWorkout() = runTest {
+    fun concurrent_loadOrStart_createsOnlyOneWorkout() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(id = 1L), exercises = emptyList()
         )
@@ -207,7 +215,6 @@ class WorkoutConcurrencyTest {
 
         // createWorkout should be called exactly once (Mutex prevents double creation).
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -215,7 +222,7 @@ class WorkoutConcurrencyTest {
      * rather than creating a duplicate.
      */
     @Test
-    fun existingActiveWorkout_isResumedNotDuplicated() = runTest {
+    fun existingActiveWorkout_isResumedNotDuplicated() = vmRunTest {
         val existingWorkout = makeWorkout(id = 42L, status = "ACTIVE")
         val workoutDetails = makeWorkoutWithDetails(
             workout = existingWorkout, exercises = emptyList()
@@ -228,7 +235,6 @@ class WorkoutConcurrencyTest {
 
         // Should NOT create a new workout.
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -237,7 +243,7 @@ class WorkoutConcurrencyTest {
      * just-created workout instead of creating a duplicate ACTIVE row.
      */
     @Test
-    fun concurrent_startNewWorkout_createsExactlyOneWorkout() = runTest {
+    fun concurrent_startNewWorkout_createsExactlyOneWorkout() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(id = 1L), exercises = emptyList()
         )
@@ -257,7 +263,6 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -265,7 +270,7 @@ class WorkoutConcurrencyTest {
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    fun concurrent_addExercise_sameExercise_exactlyOneInsert() = runTest {
+    fun concurrent_addExercise_sameExercise_exactlyOneInsert() = vmRunTest {
         val exercise = makeExercise(id = 10L)
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(), exercises = emptyList()
@@ -289,11 +294,10 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun concurrent_addExercise_existingExercisesPreserved() = runTest {
+    fun concurrent_addExercise_existingExercisesPreserved() = vmRunTest {
         val exercise1 = makeExercise(id = 10L)
         val exercise2 = makeExercise(id = 11L)
         val we = makeWorkoutExercise(id = 200L, exerciseId = 10L)
@@ -315,7 +319,6 @@ class WorkoutConcurrencyTest {
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), eq(11L), any()) }
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -327,7 +330,7 @@ class WorkoutConcurrencyTest {
      * The second tap uses the same stale snapshot → same DB ID → no-op.
      */
     @Test
-    fun doubleTap_removeExercise_targetsSameStableId() = runTest {
+    fun doubleTap_removeExercise_targetsSameStableId() = vmRunTest {
         val exerciseA = makeExercise(id = 10L, name = "Bench Press")
         val exerciseB = makeExercise(id = 11L, name = "Squat")
         val weA = makeWorkoutExercise(id = 200L, exerciseId = 10L, orderIndex = 0)
@@ -349,7 +352,6 @@ class WorkoutConcurrencyTest {
 
         coVerify(exactly = 2) { workoutRepository.removeExerciseFromWorkout(eq(201L)) }
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(eq(200L)) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -357,7 +359,7 @@ class WorkoutConcurrencyTest {
      * the SAME entity (stale snapshot), not the next exercise.
      */
     @Test
-    fun staleIndex_removeExercise_doesNotShiftTarget() = runTest {
+    fun staleIndex_removeExercise_doesNotShiftTarget() = vmRunTest {
         val exerciseA = makeExercise(id = 10L)
         val exerciseB = makeExercise(id = 11L)
         val exerciseC = makeExercise(id = 12L)
@@ -382,7 +384,6 @@ class WorkoutConcurrencyTest {
 
         coVerify(exactly = 2) { workoutRepository.removeExerciseFromWorkout(eq(201L)) }
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(eq(202L)) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -390,7 +391,7 @@ class WorkoutConcurrencyTest {
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    fun concurrent_addSet_noDuplicateSetNumbers() = runTest {
+    fun concurrent_addSet_noDuplicateSetNumbers() = vmRunTest {
         val exercise = makeExercise(id = 10L)
         val we = makeWorkoutExercise(id = 200L, exerciseId = 10L)
         val workoutDetails = makeWorkoutWithDetails(
@@ -429,11 +430,10 @@ class WorkoutConcurrencyTest {
         assertEquals(2, setNumbers[0])
         assertEquals(3, setNumbers[1])
         assertTrue("No duplicate set numbers", setNumbers.distinct().size == setNumbers.size)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun concurrent_addSet_bothSetsPreserved() = runTest {
+    fun concurrent_addSet_bothSetsPreserved() = vmRunTest {
         val exercise = makeExercise(id = 10L)
         val we = makeWorkoutExercise(id = 200L, exerciseId = 10L)
         val workoutDetails = makeWorkoutWithDetails(
@@ -458,7 +458,6 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 2) { workoutRepository.addSetToExercise(eq(200L), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -466,7 +465,7 @@ class WorkoutConcurrencyTest {
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    fun doubleCall_completeWorkout_exactlyOneUpdate() = runTest {
+    fun doubleCall_completeWorkout_exactlyOneUpdate() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ACTIVE", completed = false),
             exercises = listOf(
@@ -482,11 +481,10 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.updateWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_persistsTerminalState() = runTest {
+    fun completeWorkout_persistsTerminalState() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ACTIVE", completed = false),
             exercises = listOf(
@@ -508,11 +506,10 @@ class WorkoutConcurrencyTest {
         assertTrue(persisted.completed)
         assertTrue(persisted.endTime.epochSecond >= persisted.startTime.epochSecond)
         assertTrue(persisted.duration >= 0)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_uiStateAfterPersistence() = runTest {
+    fun completeWorkout_uiStateAfterPersistence() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ACTIVE", completed = false),
             exercises = listOf(
@@ -531,11 +528,10 @@ class WorkoutConcurrencyTest {
 
         // After DB write succeeds, completed is true.
         assertTrue(viewModel.completed.value)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_dbFailure_allowsRetry() = runTest {
+    fun completeWorkout_dbFailure_allowsRetry() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ACTIVE", completed = false),
             exercises = listOf(
@@ -561,11 +557,10 @@ class WorkoutConcurrencyTest {
 
         // Now it should succeed.
         assertTrue(viewModel.completed.value)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_alreadyCompleted_rejected() = runTest {
+    fun completeWorkout_alreadyCompleted_rejected() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "COMPLETED", completed = true),
             exercises = listOf(
@@ -580,11 +575,10 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_abandoned_rejected() = runTest {
+    fun completeWorkout_abandoned_rejected() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ABANDONED", completed = false),
             exercises = listOf(
@@ -599,11 +593,10 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun completeWorkout_statsNotCorrupted() = runTest {
+    fun completeWorkout_statsNotCorrupted() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(status = "ACTIVE", completed = false),
             exercises = listOf(
@@ -629,7 +622,6 @@ class WorkoutConcurrencyTest {
         assertEquals(18, stats.totalReps)
         assertEquals(1800.0, stats.totalVolume, 0.01)
         assertEquals(1, stats.exerciseCount)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -637,7 +629,7 @@ class WorkoutConcurrencyTest {
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    fun doubleLoadOrStartWorkout_createsOnlyOneWorkout() = runTest {
+    fun doubleLoadOrStartWorkout_createsOnlyOneWorkout() = vmRunTest {
         val workoutDetails = makeWorkoutWithDetails(
             workout = makeWorkout(), exercises = emptyList()
         )
@@ -649,6 +641,5 @@ class WorkoutConcurrencyTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 }

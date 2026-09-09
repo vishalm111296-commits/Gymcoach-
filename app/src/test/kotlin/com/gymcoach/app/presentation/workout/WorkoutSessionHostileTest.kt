@@ -63,6 +63,15 @@ class WorkoutSessionHostileTest {
     private lateinit var userProfileRepository: UserProfileRepository
     private lateinit var viewModel: WorkoutLoggingViewModel
 
+    private fun vmRunTest(block: suspend kotlinx.coroutines.test.TestScope.() -> Unit): kotlinx.coroutines.test.TestResult =
+        runTest {
+            try {
+                block()
+            } finally {
+                if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
+            }
+        }
+
     private val now = Instant.now()
 
     private fun makeWorkout(
@@ -178,7 +187,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `loadOrStartWorkout with null id creates new workout when none exists`() = runTest {
+    fun `loadOrStartWorkout with null id creates new workout when none exists`() = vmRunTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns null
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
         coEvery { workoutRepository.getWorkoutWithDetails(1L) } returns flowOf(makeWorkoutWithDetails())
@@ -191,11 +200,10 @@ class WorkoutSessionHostileTest {
         val state = viewModel.sessionUiState.value
         assertTrue("Should be Active or Empty after creation",
             state is WorkoutLoggingViewModel.SessionUiState.Active || state is WorkoutLoggingViewModel.SessionUiState.Empty)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `loadOrStartWorkout with null id resumes existing incomplete workout`() = runTest {
+    fun `loadOrStartWorkout with null id resumes existing incomplete workout`() = vmRunTest {
         val existing = makeWorkout(id = 42L)
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns existing
         coEvery { workoutRepository.getWorkoutWithDetails(42L) } returns flowOf(makeWorkoutWithDetails(workout = existing))
@@ -206,11 +214,10 @@ class WorkoutSessionHostileTest {
 
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
         coVerify { workoutRepository.getWorkoutWithDetails(42L) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `loadOrStartWorkout with id of completed workout creates fresh copy`() = runTest {
+    fun `loadOrStartWorkout with id of completed workout creates fresh copy`() = vmRunTest {
         val completed = makeWorkout(id = 10L, completed = true, status = "COMPLETED")
         val exercises = listOf(makeExerciseWithSets())
         coEvery { workoutRepository.getWorkoutWithDetails(10L) } returns flowOf(makeWorkoutWithDetails(completed, exercises))
@@ -224,11 +231,10 @@ class WorkoutSessionHostileTest {
         coVerify { workoutRepository.createWorkout(any()) }
         // Should copy exercises from original
         coVerify { workoutRepository.addExerciseToWorkout(20L, any(), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `startNewWorkout creates workout with ACTIVE status`() = runTest {
+    fun `startNewWorkout creates workout with ACTIVE status`() = vmRunTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 5L
         coEvery { workoutRepository.getWorkoutWithDetails(5L) } returns flowOf(makeWorkoutWithDetails(makeWorkout(id = 5L)))
 
@@ -240,7 +246,6 @@ class WorkoutSessionHostileTest {
         coVerify { workoutRepository.createWorkout(capture(workoutSlot)) }
         assertEquals("ACTIVE", workoutSlot.captured.status)
         assertFalse(workoutSlot.captured.completed)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -248,7 +253,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `addSet creates new set with incremented setNumber`() = runTest {
+    fun `addSet creates new set with incremented setNumber`() = vmRunTest {
         val exercise = makeExercise()
         val existingSet = makeSet(id = 100L, setNumber = 1)
         val we = makeWorkoutExercise()
@@ -272,11 +277,10 @@ class WorkoutSessionHostileTest {
         val setSlot = slot<WorkoutSet>()
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(2, setSlot.captured.setNumber)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `addSet with previous performance pre-fills weight and reps`() = runTest {
+    fun `addSet with previous performance pre-fills weight and reps`() = vmRunTest {
         val exercise = makeExercise(id = 10L)
         val we = makeWorkoutExercise(exerciseId = 10L)
         val workoutEx = makeExerciseWithSets(exercise = exercise, sets = emptyList(), workoutExercise = we)
@@ -306,11 +310,10 @@ class WorkoutSessionHostileTest {
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(60.0, setSlot.captured.weight, 0.01)
         assertEquals(8, setSlot.captured.reps)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `addSet to warmup set type preserves type`() = runTest {
+    fun `addSet to warmup set type preserves type`() = vmRunTest {
         val exercise = makeExercise()
         val warmupSet = makeSet(id = 100L, setNumber = 1, setType = SetType.WARMUP)
         val we = makeWorkoutExercise()
@@ -335,11 +338,10 @@ class WorkoutSessionHostileTest {
         val setSlot = slot<WorkoutSet>()
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(SetType.NORMAL, setSlot.captured.setType)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `updateSetType cycles through all types`() = runTest {
+    fun `updateSetType cycles through all types`() = vmRunTest {
         val exercise = makeExercise()
         val set = makeSet(id = 100L, setType = SetType.NORMAL)
         val we = makeWorkoutExercise()
@@ -367,11 +369,10 @@ class WorkoutSessionHostileTest {
         viewModel.updateSetType(0, 0, SetType.FAILURE)
         runCurrent()
         coVerify { workoutRepository.updateSet(match { it.setType == SetType.FAILURE }) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `removeSet deletes correct set by index`() = runTest {
+    fun `removeSet deletes correct set by index`() = vmRunTest {
         val exercise = makeExercise()
         val set1 = makeSet(id = 100L, setNumber = 1)
         val set2 = makeSet(id = 101L, setNumber = 2)
@@ -390,7 +391,6 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { workoutRepository.deleteSet(100L) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -398,7 +398,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `addExerciseToWorkout appends at end with correct orderIndex`() = runTest {
+    fun `addExerciseToWorkout appends at end with correct orderIndex`() = vmRunTest {
         val exercise1 = makeExercise(id = 10L, name = "Bench Press")
         val exercise2 = makeExercise(id = 20L, name = "Squat")
         val we1 = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
@@ -419,7 +419,6 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -427,7 +426,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `APP-016 first add of exercise succeeds`() = runTest {
+    fun `APP-016 first add of exercise succeeds`() = vmRunTest {
         val exercise = makeExercise(id = 10L, name = "Bench Press")
         val workout = makeWorkoutWithDetails(exercises = emptyList())
 
@@ -443,11 +442,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 10L, 0) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `APP-016 second add of same exercise is rejected`() = runTest {
+    fun `APP-016 second add of same exercise is rejected`() = vmRunTest {
         val exercise = makeExercise(id = 10L, name = "Bench Press")
         val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
         val workoutEx = makeExerciseWithSets(exercise = exercise, sets = emptyList(), workoutExercise = we)
@@ -466,11 +464,10 @@ class WorkoutSessionHostileTest {
 
         // Repository addExerciseToWorkout should NOT be called — guard rejects it
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `APP-016 different exercise can still be added after duplicate rejection`() = runTest {
+    fun `APP-016 different exercise can still be added after duplicate rejection`() = vmRunTest {
         val benchPress = makeExercise(id = 10L, name = "Bench Press")
         val squat = makeExercise(id = 20L, name = "Squat")
         val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
@@ -496,11 +493,10 @@ class WorkoutSessionHostileTest {
         viewModel.addExerciseToWorkout(squat)
         runCurrent()
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `APP-016 existing exercises remain unchanged after duplicate rejection`() = runTest {
+    fun `APP-016 existing exercises remain unchanged after duplicate rejection`() = vmRunTest {
         val benchPress = makeExercise(id = 10L, name = "Bench Press")
         val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
         val existingSet = makeSet(id = 100L, setNumber = 1, weight = 80.0, reps = 8)
@@ -526,11 +522,10 @@ class WorkoutSessionHostileTest {
         assertEquals(1, currentExercises[0].sets.size)
         assertEquals(80.0, currentExercises[0].sets[0].weight, 0.01)
         assertEquals(8, currentExercises[0].sets[0].reps)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `APP-016 duplicate prevention uses stale snapshot and rejects correctly`() = runTest {
+    fun `APP-016 duplicate prevention uses stale snapshot and rejects correctly`() = vmRunTest {
         // Simulates: exercise added via performAgainInternal, then user tries to add same exercise
         val benchPress = makeExercise(id = 10L, name = "Bench Press")
         val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
@@ -551,11 +546,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `removeExercise deletes workout exercise and cascades sets`() = runTest {
+    fun `removeExercise deletes workout exercise and cascades sets`() = vmRunTest {
         val exercise = makeExercise()
         val we = makeWorkoutExercise(id = 5L)
         val workoutEx = makeExerciseWithSets(exercise = exercise, sets = listOf(makeSet()), workoutExercise = we)
@@ -572,11 +566,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { workoutRepository.removeExerciseFromWorkout(5L) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `removeExercise with invalid index does nothing`() = runTest {
+    fun `removeExercise with invalid index does nothing`() = vmRunTest {
         val workout = makeWorkoutWithDetails(exercises = listOf(makeExerciseWithSets()))
 
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
@@ -590,11 +583,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `removeExercise from empty workout does nothing`() = runTest {
+    fun `removeExercise from empty workout does nothing`() = vmRunTest {
         val workout = makeWorkoutWithDetails(exercises = emptyList())
 
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
@@ -608,7 +600,6 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -616,7 +607,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `completeWorkout marks workout as COMPLETED`() = runTest {
+    fun `completeWorkout marks workout as COMPLETED`() = vmRunTest {
         val workout = makeWorkout()
         val exercise = makeExercise()
         val completedSet = makeSet(completed = true, weight = 50.0, reps = 10)
@@ -639,11 +630,10 @@ class WorkoutSessionHostileTest {
         assertTrue(workoutSlot.captured.completed)
         assertEquals("COMPLETED", workoutSlot.captured.status)
         assertTrue(viewModel.completed.value)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `completeWorkout double tap is idempotent`() = runTest {
+    fun `completeWorkout double tap is idempotent`() = vmRunTest {
         val workout = makeWorkout()
         val details = makeWorkoutWithDetails(workout = workout)
 
@@ -663,11 +653,10 @@ class WorkoutSessionHostileTest {
 
         // updateWorkout should only be called once (for the first completeWorkout)
         coVerify(exactly = 1) { workoutRepository.updateWorkout(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `completeWorkout on already-completed workout is no-op`() = runTest {
+    fun `completeWorkout on already-completed workout is no-op`() = vmRunTest {
         val completedWorkout = makeWorkout(completed = true, status = "COMPLETED")
         val details = makeWorkoutWithDetails(workout = completedWorkout)
 
@@ -684,11 +673,10 @@ class WorkoutSessionHostileTest {
 
         // The original completed workout should NOT be updated again
         // (performAgainInternal creates a new workout, which is the one that gets completed)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `completeWorkout captures correct statistics`() = runTest {
+    fun `completeWorkout captures correct statistics`() = vmRunTest {
         val workout = makeWorkout()
         val exercise = makeExercise()
         val set1 = makeSet(completed = true, weight = 50.0, reps = 10)
@@ -713,7 +701,6 @@ class WorkoutSessionHostileTest {
         assertEquals(18, stats.totalReps) // 10 + 8
         assertEquals(940.0, stats.totalVolume, 0.01) // 50*10 + 55*8
         assertEquals(1, stats.exerciseCount)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -721,7 +708,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `toggleSetCompletion starts rest timer when completing`() = runTest {
+    fun `toggleSetCompletion starts rest timer when completing`() = vmRunTest {
         val exercise = makeExercise()
         val set = makeSet(completed = false)
         val we = makeWorkoutExercise()
@@ -739,11 +726,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { restTimer.start(any(), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `toggleSetCompletion stops rest timer when uncompleting`() = runTest {
+    fun `toggleSetCompletion stops rest timer when uncompleting`() = vmRunTest {
         val exercise = makeExercise()
         val set = makeSet(completed = true)
         val we = makeWorkoutExercise()
@@ -761,39 +747,34 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { restTimer.stop() }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `stopRestTimer delegates to RestTimerManager`() = runTest {
+    fun `stopRestTimer delegates to RestTimerManager`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.stopRestTimer()
         coVerify { restTimer.stop() }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `pauseRestTimer delegates to RestTimerManager`() = runTest {
+    fun `pauseRestTimer delegates to RestTimerManager`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.pauseRestTimer()
         coVerify { restTimer.pause() }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `resumeRestTimer delegates to RestTimerManager`() = runTest {
+    fun `resumeRestTimer delegates to RestTimerManager`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.resumeRestTimer()
         coVerify { restTimer.resume() }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `changeRestTimerDuration restarts timer with new duration`() = runTest {
+    fun `changeRestTimerDuration restarts timer with new duration`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.changeRestTimerDuration(120)
         coVerify { restTimer.restart(120, any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -801,7 +782,7 @@ class WorkoutSessionHostileTest {
     // ═══════════════════════════════════════════════════════════
 
     @Test
-    fun `updateSetWeight with invalid index does nothing`() = runTest {
+    fun `updateSetWeight with invalid index does nothing`() = vmRunTest {
         val workout = makeWorkoutWithDetails(exercises = listOf(makeExerciseWithSets(sets = listOf(makeSet()))))
 
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
@@ -815,11 +796,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateSet(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `updateSetReps with invalid set index does nothing`() = runTest {
+    fun `updateSetReps with invalid set index does nothing`() = vmRunTest {
         val workout = makeWorkoutWithDetails(exercises = listOf(makeExerciseWithSets(sets = listOf(makeSet()))))
 
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
@@ -833,11 +813,10 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateSet(any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `dismissError clears error state`() = runTest {
+    fun `dismissError clears error state`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         assertNull(viewModel.error.value)
 
@@ -851,11 +830,10 @@ class WorkoutSessionHostileTest {
 
         viewModel.dismissError()
         assertNull(viewModel.error.value)
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `updateNotes updates workout notes`() = runTest {
+    fun `updateNotes updates workout notes`() = vmRunTest {
         val workout = makeWorkout()
         val details = makeWorkoutWithDetails(workout = workout)
 
@@ -870,22 +848,20 @@ class WorkoutSessionHostileTest {
         runCurrent()
 
         coVerify { workoutRepository.updateWorkout(match { it.notes == "Great session" }) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `addSet with no current workout does nothing`() = runTest {
+    fun `addSet with no current workout does nothing`() = vmRunTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         // Don't load a workout
         viewModel.addSet(0)
         runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.addSetToExercise(any(), any()) }
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
-    fun `removeExercise clears progression recommendation`() = runTest {
+    fun `removeExercise clears progression recommendation`() = vmRunTest {
         val exercise = makeExercise(id = 10L)
         val we = makeWorkoutExercise(exerciseId = 10L)
         val workoutEx = makeExerciseWithSets(exercise = exercise, sets = listOf(makeSet()), workoutExercise = we)
@@ -903,7 +879,6 @@ class WorkoutSessionHostileTest {
 
         // Progression recommendation for removed exercise should be cleared
         assertFalse(viewModel.progressionRecommendations.value.containsKey(10L))
-        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════

@@ -28,6 +28,7 @@ class ProgramGeneratorTest {
     private lateinit var dao: ExerciseDao
     private lateinit var readinessRepository: ReadinessRepository
     private lateinit var generator: ProgramGenerator
+    private lateinit var readinessRepository: ReadinessRepository
 
     // P: Back specialist, aggregate-inflated (lat9 + delt6 + rear4 = 19)
     private val p = ExerciseEntity(

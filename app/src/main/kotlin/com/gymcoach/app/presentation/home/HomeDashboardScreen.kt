@@ -60,7 +60,7 @@ fun HomeDashboardScreen(
                 onNavigate = { route ->
                     when (route) {
                         "workout" -> onStartWorkout()
-                        "program" -> onViewProgram()
+                        "program_detail" -> onViewProgram()
                         "progress" -> onNavigateToProgress()
                         "profile" -> onNavigateToProfile()
                         else -> Unit

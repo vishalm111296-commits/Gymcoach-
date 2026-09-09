@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.history.formatDuration
+import com.gymcoach.app.presentation.progress.components.MuscleDistributionPieChart
 import com.gymcoach.app.presentation.progress.components.BodyMeasurementTrend
 import com.gymcoach.app.presentation.progress.components.MeasurementLogDialog
 import java.text.SimpleDateFormat
@@ -147,6 +148,11 @@ fun ProgressDashboardScreen(
                         selected = state.dateRange,
                         onSelect = { viewModel.selectDateRange(it) }
                     )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Muscle Group Distribution
+                    MuscleDistributionPieChart(stats = state.muscleGroupDistribution)
 
                     Spacer(Modifier.height(16.dp))
 

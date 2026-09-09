@@ -119,6 +119,15 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
     fun cancelDelete() {
         _deleteTarget.value = null
     }
+
+    fun performAgain(workoutId: Long, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val newId = workoutRepository.createWorkoutFromHistory(workoutId)
+            if (newId != null) {
+                onCreated(newId)
+            }
+        }
+    }
 }
 
 data class WorkoutHistoryDetailUiState(
@@ -133,6 +142,7 @@ fun WorkoutHistoryDetailScreen(
     workoutId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit = {},
+    onPerformAgainClick: (Long) -> Unit = {},
     viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -208,7 +218,12 @@ fun WorkoutHistoryDetailScreen(
                         Spacer(Modifier.height(8.dp))
 
                         // Workout header
-                        WorkoutHeaderCard(workout = workout.workout)
+                        WorkoutHeaderCard(
+                            workout = workout.workout,
+                            onPerformAgain = {
+                                viewModel.performAgain(workoutId, onPerformAgainClick)
+                            }
+                        )
 
                         Spacer(Modifier.height(16.dp))
 
@@ -486,7 +501,7 @@ private fun MuscleGroupRow(
 }
 
 @Composable
-fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
+fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformAgain: () -> Unit = {}) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -519,6 +534,15 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout) {
                 if (workout.notes.isNotBlank()) {
                     StatItem(label = "Notes", value = workout.notes)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onPerformAgain,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Perform Again")
             }
         }
     }

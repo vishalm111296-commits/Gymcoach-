@@ -185,6 +185,16 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun getIncompleteWorkout(): Workout? {
         return workoutDao.getIncompleteWorkout()?.toDomain()
     }
+
+    override suspend fun createWorkoutFromHistory(workoutId: Long): Long? {
+        val sourceEntity = workoutDao.getWorkoutById(workoutId).first() ?: return null
+        val exerciseEntities = workoutDao.getExercisesForWorkout(workoutId).first()
+        val exercisesWithSets = exerciseEntities.map { we ->
+            val sets = workoutDao.getSetsForExercise(we.id).first()
+            we to sets
+        }
+        return workoutDao.createWorkoutFromHistoryTransaction(sourceEntity, exercisesWithSets)
+    }
 }
 
 // Entity -> Domain mappers

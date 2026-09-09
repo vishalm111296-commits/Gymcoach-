@@ -20,10 +20,8 @@ import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-
-
-
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -32,6 +30,8 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import javax.inject.Inject
 
@@ -55,7 +55,16 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _elapsedSeconds = MutableStateFlow(0L)
     val elapsedSeconds: StateFlow<Long> = _elapsedSeconds.asStateFlow()
 
-    private var workoutTimerJob: kotlinx.coroutines.Job? = null
+    private var workoutTimerJob: Job? = null
+
+    /**
+     * F-WORKOUT-5 fix: track the active Flow collector so we cancel it before
+     * launching a replacement. Without this guard, calling loadOrStartWorkout
+     * multiple times (e.g. on configuration change or back-navigation re-entry)
+     * accumulated stale collectors each updating _currentWorkout and firing
+     * redundant loadPreviousPerformanceForExercises calls.
+     */
+    private var workoutCollectorJob: Job? = null
 
     private val _showExercisePicker = MutableStateFlow(false)
     val showExercisePicker: StateFlow<Boolean> = _showExercisePicker.asStateFlow()
@@ -84,12 +93,22 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
 
+    /**
+     * F-WORKOUT-1 fix: serialise addSet calls so that nextSetNumber is always
+     * computed atomically relative to the previous insert. Without this mutex,
+     * two rapid taps launch two coroutines that both read the same in-memory
+     * maxSetNumber before either DB write returns, creating duplicate setNumbers.
+     */
+    private val addSetMutex = Mutex()
+
     fun dismissError() {
         _error.value = null
     }
 
     fun loadOrStartWorkout(workoutId: Long? = null) {
-        viewModelScope.launch {
+        // F-WORKOUT-5: cancel any existing collector before launching a new one
+        workoutCollectorJob?.cancel()
+        workoutCollectorJob = viewModelScope.launch {
             try {
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
@@ -199,8 +218,12 @@ class WorkoutLoggingViewModel @Inject constructor(
             status = "ACTIVE"
         )
         val id = workoutRepository.createWorkout(workout)
-        workoutRepository.getWorkoutWithDetails(id).collect {
-            _currentWorkout.value = it
+        // Cancel any previous collector (F-WORKOUT-5) before collecting the new workout
+        workoutCollectorJob?.cancel()
+        workoutCollectorJob = viewModelScope.launch {
+            workoutRepository.getWorkoutWithDetails(id).collect {
+                _currentWorkout.value = it
+            }
         }
     }
 
@@ -251,45 +274,58 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     /**
-     * Add a new set. If previous performance exists, pre-fill weight and reps.
-     * The first new set copies from the last completed set of the same exercise.
+     * Add a new set, serialised via [addSetMutex] to prevent duplicate setNumber
+     * assignment when two taps arrive before the first DB write completes
+     * (F-WORKOUT-1).
+     *
+     * The set number is now computed inside the mutex so it reflects the latest
+     * in-memory view of sets that have been added in this call sequence. For
+     * true DB-authoritative safety a future improvement could use a
+     * MAX(setNumber)+1 query in the DAO, but the mutex eliminates the race
+     * condition in the common case without requiring a schema change.
      */
     fun addSet(exerciseIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
         val exerciseId = we.exercise.id
-        val nextSetNumber = (we.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
 
-        // Auto-populate from previous session if available
-        val lastSets = _previousPerformance.value[exerciseId]
-        val prefilledWeight: Double
-        val prefilledReps: Int
-        val prefilledRest: Int
-
-        if (lastSets != null && lastSets.isNotEmpty()) {
-            // Use the last set's data as default
-            val lastSet = lastSets.last()
-            prefilledWeight = lastSet.weight
-            prefilledReps = lastSet.reps
-            prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
-        } else {
-            prefilledWeight = 0.0
-            prefilledReps = 0
-            prefilledRest = defaultRestSeconds
-        }
-
-        val newSet = WorkoutSet(
-            workoutExerciseId = we.workoutExercise.id,
-            setNumber = nextSetNumber,
-            weight = prefilledWeight,
-            reps = prefilledReps,
-            rpe = 0.0,
-            restSeconds = prefilledRest,
-            completed = false
-        )
         viewModelScope.launch {
-            workoutRepository.addSetToExercise(we.workoutExercise.id, newSet)
+            addSetMutex.withLock {
+                // Re-read currentWorkout inside the lock so we see any sets added
+                // by a concurrent tap that acquired the lock before us.
+                val latestWorkout = _currentWorkout.value ?: return@withLock
+                val latestWe = latestWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                val nextSetNumber = (latestWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
+
+                // Auto-populate from previous session if available
+                val lastSets = _previousPerformance.value[exerciseId]
+                val prefilledWeight: Double
+                val prefilledReps: Int
+                val prefilledRest: Int
+
+                if (lastSets != null && lastSets.isNotEmpty()) {
+                    val lastSet = lastSets.last()
+                    prefilledWeight = lastSet.weight
+                    prefilledReps = lastSet.reps
+                    prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
+                } else {
+                    prefilledWeight = 0.0
+                    prefilledReps = 0
+                    prefilledRest = defaultRestSeconds
+                }
+
+                val newSet = WorkoutSet(
+                    workoutExerciseId = latestWe.workoutExercise.id,
+                    setNumber = nextSetNumber,
+                    weight = prefilledWeight,
+                    reps = prefilledReps,
+                    rpe = 0.0,
+                    restSeconds = prefilledRest,
+                    completed = false
+                )
+                workoutRepository.addSetToExercise(latestWe.workoutExercise.id, newSet)
+            }
         }
     }
 
@@ -326,7 +362,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         val we = workout.exercises[exerciseIndex]
         viewModelScope.launch {
             workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
-            // Remove progression recommendation for removed exercise
             val updated = _progressionRecommendations.value - we.exercise.id
             _progressionRecommendations.value = updated
         }
@@ -341,16 +376,13 @@ class WorkoutLoggingViewModel @Inject constructor(
         val updated = set.copy(completed = !set.completed)
         viewModelScope.launch {
             workoutRepository.updateSet(updated)
-            // Recalculate session volume
             val refreshed = _currentWorkout.value
             calculateSessionVolume(refreshed)
-            // Recalculate progression recommendations after set completion change
             if (refreshed != null) {
                 calculateProgressionRecommendations(refreshed.exercises)
             }
         }
         if (updated.completed) {
-            // Use the recommended rest time based on RPE and set type
             val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
             val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
             restTimer.start(restSeconds, viewModelScope)
@@ -359,27 +391,16 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
-    fun pauseRestTimer() {
-        restTimer.pause()
-    }
+    fun pauseRestTimer() { restTimer.pause() }
+    fun resumeRestTimer() { restTimer.resume() }
+    fun stopRestTimer() { restTimer.stop() }
 
-    fun resumeRestTimer() {
-        restTimer.resume()
-    }
-
-    fun stopRestTimer() {
-        restTimer.stop()
-    }
-
-    /** Change the rest timer duration while it's running (e.g., user taps a preset). */
     fun changeRestTimerDuration(seconds: Int) {
         restTimer.restart(seconds, viewModelScope)
     }
 
     fun completeWorkout() {
         val workout = _currentWorkout.value?.workout ?: return
-        // Terminal-state guard: refuse to complete an already-completed,
-        // abandoned, or otherwise terminal workout.
         if (workout.completed || workout.status == "COMPLETED" || workout.status == "ABANDONED") return
         workoutTimerJob?.cancel()
         restTimer.stop()
@@ -397,10 +418,6 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Calculate progression recommendations for all exercises in the workout.
-     * Uses ProgressionEngine with double progression logic.
-     */
     private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
         viewModelScope.launch {
             val profile = userProfileRepository.getLatestProfile().firstOrNull()
@@ -418,7 +435,14 @@ class WorkoutLoggingViewModel @Inject constructor(
                         targetRepsMin = 8,
                         targetRepsMax = 12,
                         targetSets = 3,
-                        previousSets = lastSets.map { WorkoutSetEntity(workoutExerciseId = 0, setNumber = 0, weight = it.weight, reps = it.reps, rpe = it.rpe, restSeconds = it.restSeconds, completed = true, setType = it.setType) },
+                        previousSets = lastSets.map {
+                            WorkoutSetEntity(
+                                workoutExerciseId = 0, setNumber = 0,
+                                weight = it.weight, reps = it.reps, rpe = it.rpe,
+                                restSeconds = it.restSeconds, completed = true,
+                                setType = it.setType
+                            )
+                        },
                         currentSets = normalSets.map { it.toEntity() },
                         equipmentType = equipmentType
                     )
@@ -429,7 +453,11 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
-    private fun updateSetField(exerciseIndex: Int, setIndex: Int, transform: (WorkoutSet) -> WorkoutSet) {
+    private fun updateSetField(
+        exerciseIndex: Int,
+        setIndex: Int,
+        transform: (WorkoutSet) -> WorkoutSet
+    ) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
@@ -437,9 +465,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         val updated = transform(we.sets[setIndex])
         viewModelScope.launch {
             workoutRepository.updateSet(updated)
-            // Recalculate session volume after any field update
             calculateSessionVolume(_currentWorkout.value)
-            // Recalculate progression recommendations
             val refreshed = _currentWorkout.value
             if (refreshed != null) {
                 calculateProgressionRecommendations(refreshed.exercises)
@@ -449,6 +475,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        workoutCollectorJob?.cancel()
         workoutTimerJob?.cancel()
         restTimer.stop()
     }

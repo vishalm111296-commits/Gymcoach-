@@ -148,6 +148,28 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getCompletedSetsWithContext(): Flow<List<com.gymcoach.app.core.program.VolumeCalculator.SetWithContext>> {
+        return workoutDao.getCompletedSetsWithContext().map { list ->
+            list.map {
+                com.gymcoach.app.core.program.VolumeCalculator.SetWithContext(
+                    set = com.gymcoach.app.data.local.entity.WorkoutSetEntity(
+                        id = it.id,
+                        workoutExerciseId = it.workoutExerciseId,
+                        setNumber = it.setNumber,
+                        weight = it.weight,
+                        reps = it.reps,
+                        rpe = it.rpe,
+                        restSeconds = it.restSeconds,
+                        completed = it.completed,
+                        setType = it.setType
+                    ),
+                    exerciseId = it.exerciseId,
+                    workoutDate = it.workoutDate
+                )
+            }
+        }
+    }
+
     override fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>> {
         return workoutDao.getWorkoutsInDateRangeWithStats(startDate, endDate).map { entities ->
             entities.map { it.toDomain() }

@@ -60,14 +60,24 @@ data class ProgressUiState(
     val recentPRs: List<PersonalRecordItem> = emptyList(),
     val bodyweightTrend: List<TrendPoint> = emptyList(),
     val waistTrend: List<TrendPoint> = emptyList(),
+    val shouldersTrend: List<TrendPoint> = emptyList(),
+    val chestTrend: List<TrendPoint> = emptyList(),
+    val shoulderToWaistTrend: List<TrendPoint> = emptyList(),
+    val chestToWaistTrend: List<TrendPoint> = emptyList(),
     val bodyweightDirection: TrendDirection = TrendDirection.STABLE,
     val waistDirection: TrendDirection = TrendDirection.STABLE,
+    val shouldersDirection: TrendDirection = TrendDirection.STABLE,
+    val ratioDirection: TrendDirection = TrendDirection.STABLE,
     val workoutDays: Set<LocalDate> = emptySet(),
     // Body measurements
     val latestWeight: Double? = null,
     val latestWaist: Double? = null,
+    val latestShoulders: Double? = null,
     val latestChest: Double? = null,
     val latestBodyFat: Double? = null,
+    val latestShoulderToWaistRatio: Double? = null,
+    val latestChestToWaistRatio: Double? = null,
+    val shoulderToWaistChange: Double? = null,
     val showMeasurementDialog: Boolean = false
 )
 
@@ -105,12 +115,20 @@ class ProgressViewModel @Inject constructor(
         _uiState.update { it.copy(showMeasurementDialog = false) }
     }
 
-    fun saveMeasurement(weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) {
+    fun saveMeasurement(
+        weightKg: Double,
+        waistCm: Double?,
+        shouldersCm: Double?,
+        chestCm: Double?,
+        bodyFatPct: Double?,
+        notes: String
+    ) {
         viewModelScope.launch {
             bodyMeasurementDao.insert(
                 BodyMeasurementEntity(
                     weightKg = weightKg,
                     waistCm = waistCm ?: 0.0,
+                    shouldersCm = shouldersCm ?: 0.0,
                     chestCm = chestCm ?: 0.0,
                     bodyFatPct = bodyFatPct ?: 0.0,
                     notes = notes
@@ -196,7 +214,52 @@ class ProgressViewModel @Inject constructor(
                         )
                     }
 
+                val shouldersTrend = measurements
+                    .filter { it.shouldersCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.shouldersCm
+                        )
+                    }
+
+                val chestTrend = measurements
+                    .filter { it.chestCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.chestCm
+                        )
+                    }
+
+                // Shoulder-to-Waist ratio STRICTLY requires valid shoulders and waist (> 0). NO fallback to chest.
+                val shoulderToWaistTrend = measurements
+                    .filter { it.shouldersCm > 0 && it.waistCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.shouldersCm / measurement.waistCm
+                        )
+                    }
+
+                // Chest-to-Waist ratio evaluated distinctly
+                val chestToWaistTrend = measurements
+                    .filter { it.chestCm > 0 && it.waistCm > 0 }
+                    .sortedBy { it.recordedAt }
+                    .map { measurement ->
+                        TrendPoint(
+                            date = Instant.ofEpochMilli(measurement.recordedAt).atZone(zoneId).toLocalDate(),
+                            value = measurement.chestCm / measurement.waistCm
+                        )
+                    }
+
                 val latest = measurements.firstOrNull()
+                val latestRatio = shoulderToWaistTrend.lastOrNull()?.value
+                val previousRatio = if (shoulderToWaistTrend.size >= 2) shoulderToWaistTrend[shoulderToWaistTrend.size - 2].value else null
+                val ratioChange = if (latestRatio != null && previousRatio != null) latestRatio - previousRatio else null
 
                 val volumeHistory = analyticsRepository.getVolumeHistory()
                 val weekly = analyticsRepository.getWeeklySummary()
@@ -226,6 +289,10 @@ class ProgressViewModel @Inject constructor(
                     }.sortedByDescending { it.date },
                     bodyweightTrend = bodyweightTrend,
                     waistTrend = waistTrend,
+                    shouldersTrend = shouldersTrend,
+                    chestTrend = chestTrend,
+                    shoulderToWaistTrend = shoulderToWaistTrend,
+                    chestToWaistTrend = chestToWaistTrend,
                     workoutDays = workoutDays,
                     volumeHistory = volumeHistory,
                     weeklySummary = weekly,
@@ -247,12 +314,18 @@ class ProgressViewModel @Inject constructor(
                     shortestWorkout = analyticsRepository.getShortestWorkout(),
                     latestWeight = latest?.weightKg,
                     latestWaist = latest?.waistCm,
+                    latestShoulders = latest?.shouldersCm,
                     latestChest = latest?.chestCm,
-                    latestBodyFat = latest?.bodyFatPct
+                    latestBodyFat = latest?.bodyFatPct,
+                    latestShoulderToWaistRatio = latestRatio,
+                    latestChestToWaistRatio = chestToWaistTrend.lastOrNull()?.value,
+                    shoulderToWaistChange = ratioChange
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),
-                    waistDirection = trendDirection(state.waistTrend)
+                    waistDirection = trendDirection(state.waistTrend),
+                    shouldersDirection = trendDirection(state.shouldersTrend),
+                    ratioDirection = trendDirection(state.shoulderToWaistTrend)
                 )
             } catch (e: Exception) {
                 _uiState.update {

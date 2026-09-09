@@ -6,6 +6,20 @@ import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import kotlinx.coroutines.flow.Flow
 
+data class WorkoutSetWithContext(
+    val id: Long,
+    val workoutExerciseId: Long,
+    val setNumber: Int,
+    val weight: Double,
+    val reps: Int,
+    val rpe: Double,
+    val restSeconds: Int,
+    val completed: Boolean,
+    val setType: Int,
+    val exerciseId: Long,
+    val workoutDate: Long
+)
+
 @Dao
 abstract class WorkoutDao {
     @Transaction
@@ -14,6 +28,17 @@ abstract class WorkoutDao {
         sourceExercisesWithSets: List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>
     ): Long {
         val now = System.currentTimeMillis()
+        // Policy C: Enforce one-active-workout policy by abandoning pre-existing active session
+        val activeWorkout = getIncompleteWorkout()
+        if (activeWorkout != null) {
+            updateWorkout(
+                activeWorkout.copy(
+                    completed = true,
+                    status = "ABANDONED",
+                    endTime = now
+                )
+            )
+        }
         val newWorkoutEntity = sourceWorkout.copy(
             id = 0,
             date = now,
@@ -281,6 +306,16 @@ abstract class WorkoutDao {
     abstract suspend fun getAverageWorkoutDurationSeconds(): Long
 
     // Workout History queries
+    @Query("""
+        SELECT ws.id, ws.workoutExerciseId, ws.setNumber, ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.completed, ws.setType, we.exerciseId, w.date as workoutDate
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        WHERE w.status = 'COMPLETED' AND ws.completed = 1 AND ws.setType = 0
+        ORDER BY w.date DESC
+    """)
+    abstract fun getCompletedSetsWithContext(): Flow<List<WorkoutSetWithContext>>
+
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date DESC")
     abstract fun getCompletedWorkouts(): Flow<List<WorkoutEntity>>
 

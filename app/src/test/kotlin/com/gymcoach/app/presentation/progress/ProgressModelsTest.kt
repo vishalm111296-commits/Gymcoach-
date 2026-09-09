@@ -83,7 +83,7 @@ class ProgressModelsTest {
 /**
  * Tests for ProgressViewModel calculations.
  */
-class ProgressViewModelTest {
+class ProgressCalculationTest {
 
     @Test
     fun `calculateWeeklyTrend returns 0 for empty list`() {

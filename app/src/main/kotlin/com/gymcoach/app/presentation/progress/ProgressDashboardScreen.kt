@@ -74,11 +74,12 @@ fun ProgressDashboardScreen(
         MeasurementLogDialog(
             latestWeight = state.latestWeight,
             latestWaist = state.latestWaist,
+            latestShoulders = state.latestShoulders,
             latestChest = state.latestChest,
             latestBodyFat = state.latestBodyFat,
             onDismiss = { viewModel.hideMeasurementDialog() },
-            onSave = { weight, waist, chest, bodyFat, notes ->
-                viewModel.saveMeasurement(weight, waist, chest, bodyFat, notes)
+            onSave = { weight, waist, shoulders, chest, bodyFat, notes ->
+                viewModel.saveMeasurement(weight, waist, shoulders, chest, bodyFat, notes)
             }
         )
     }
@@ -189,6 +190,30 @@ fun ProgressDashboardScreen(
                             dataPoints = state.waistTrend,
                             modifier = Modifier.weight(1f),
                             goodWhenDown = true
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        BodyMeasurementTrend(
+                            label = "Shoulders",
+                            currentValue = state.latestShoulders ?: 0.0,
+                            unit = "cm",
+                            trend = state.shouldersDirection,
+                            dataPoints = state.shouldersTrend,
+                            modifier = Modifier.weight(1f),
+                            goodWhenDown = false
+                        )
+                        BodyMeasurementTrend(
+                            label = "Shoulder/Waist Ratio",
+                            currentValue = state.shoulderToWaistTrend.lastOrNull()?.value ?: 0.0,
+                            unit = "ratio",
+                            trend = state.ratioDirection,
+                            dataPoints = state.shoulderToWaistTrend,
+                            modifier = Modifier.weight(1f),
+                            goodWhenDown = false
                         )
                     }
 

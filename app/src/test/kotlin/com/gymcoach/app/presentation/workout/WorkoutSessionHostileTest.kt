@@ -92,15 +92,15 @@ class WorkoutSessionHostileTest {
         safetyNotes = "",
         recommendedRepRange = "8-12",
         recommendedRestTime = "90",
-        estimatedCalories = 100.0,
+        estimatedCalories = 100,
         category = "compound",
         tags = "",
         isFavorite = false,
         lastViewed = 0L,
-        vtaperLat = 0.0,
-        vtaperLateralDelt = 0.0,
-        vtaperUpperChest = 0.0,
-        vtaperRearDelt = 0.0,
+        vtaperLat = 0,
+        vtaperLateralDelt = 0,
+        vtaperUpperChest = 0,
+        vtaperRearDelt = 0,
         movementPattern = "push",
         imageUrl = null,
         videoUrl = null,
@@ -252,6 +252,9 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
+        // DB-truth reads: exercise 10 exists in DB with set numbers [1].
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } returns listOf(1)
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
@@ -281,6 +284,9 @@ class WorkoutSessionHostileTest {
             10L to LastPerformance(date = now.toEpochMilli(), maxWeight = 60.0)
         )
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
+        // DB-truth reads: exercise 10 exists in DB with no sets yet.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } returns emptyList()
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
@@ -306,6 +312,9 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 200L
+        // DB-truth reads: exercise 10 exists in DB with set numbers [1].
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } returns listOf(1)
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
@@ -388,6 +397,8 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 6L
+        // DB-truth: exercise 10 already committed.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
@@ -455,6 +466,8 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
         coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 6L
+        // DB-truth: exercise 10 (bench press) already committed.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)

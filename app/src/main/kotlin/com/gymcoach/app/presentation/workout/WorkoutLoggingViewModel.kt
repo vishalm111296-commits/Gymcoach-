@@ -245,23 +245,30 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // Explicit user intent to create a new ACTIVE workout.
-                // The Mutex only guards the DB insert; the Room Flow collect
-                // (which suspends indefinitely) runs outside the lock.
-                val id = workoutCreationMutex.withLock {
-                    val now = Instant.now()
-                    val workout = Workout(
-                        date = now,
-                        startTime = now,
-                        endTime = now,
-                        duration = 0,
-                        notes = "",
-                        completed = false,
-                        status = "ACTIVE"
-                    )
-                    workoutRepository.createWorkout(workout)
+                // Check-then-create inside the lock: a rapid second tap must
+                // converge to the just-created workout (at-most-one ACTIVE
+                // invariant), not create a duplicate ACTIVE row.
+                val targetWorkoutId = workoutCreationMutex.withLock {
+                    val existing = workoutRepository.getLatestIncompleteWorkout()
+                    if (existing != null) {
+                        existing.id
+                    } else {
+                        val now = Instant.now()
+                        val workout = Workout(
+                            date = now,
+                            startTime = now,
+                            endTime = now,
+                            duration = 0,
+                            notes = "",
+                            completed = false,
+                            status = "ACTIVE"
+                        )
+                        workoutRepository.createWorkout(workout)
+                    }
                 }
+                // Mutex released. Room Flow collect runs outside the lock.
                 startWorkoutTimer()
-                workoutRepository.getWorkoutWithDetails(id).collect {
+                workoutRepository.getWorkoutWithDetails(targetWorkoutId).collect {
                     _currentWorkout.value = it
                     _sessionUiState.value = if (it != null) SessionUiState.Active(it) else SessionUiState.Empty
                     loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
@@ -346,12 +353,12 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             // Serialize to prevent concurrent duplicate inserts (race-safe).
             exerciseAddMutex.withLock {
-                // Re-read current workout inside the lock to catch mutations
-                // that occurred between the outer read and acquiring the lock.
-                val currentWorkout = _currentWorkout.value ?: return@withLock
-                val duplicateInsideLock = currentWorkout.exercises.any { it.exercise.id == exercise.id }
-                if (duplicateInsideLock) return@withLock
-                workoutRepository.addExerciseToWorkout(currentWorkout.workout.id, exercise.id, nextOrder)
+                // Authoritative duplicate check: query the DB inside the lock.
+                // The Flow-backed _currentWorkout can lag behind committed rows
+                // (Room emission latency), so re-reading it is NOT race-safe.
+                val existingIds = workoutRepository.getExerciseIdsForWorkout(workout.workout.id)
+                if (exercise.id in existingIds) return@withLock
+                workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
             }
             _showExercisePicker.value = false
             // Load previous performance for newly added exercise
@@ -402,12 +409,17 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             // Serialize set additions to prevent duplicate set numbers under concurrent taps.
             addSetMutex.withLock {
-                // Re-read current workout inside the lock to get the latest set list.
-                val currentWorkout = _currentWorkout.value ?: return@withLock
-                val currentWe = currentWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
-                val nextSetNumber = (currentWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
+                // Authoritative nextSetNumber: query the DB inside the lock.
+                // The Flow-backed _currentWorkout can lag behind committed rows,
+                // so re-reading it is NOT race-safe for set numbering.
+                // Also verify the exercise still exists: removeExercise may have
+                // deleted it concurrently (cascade would orphan any insert).
+                val existingExerciseIds = workoutRepository.getExerciseIdsForWorkout(we.workoutExercise.workoutId)
+                if (we.exercise.id !in existingExerciseIds) return@withLock
+                val existingSetNumbers = workoutRepository.getSetNumbersForWorkoutExercise(we.workoutExercise.id)
+                val nextSetNumber = (existingSetNumbers.maxOrNull() ?: 0) + 1
                 val newSet = WorkoutSet(
-                    workoutExerciseId = currentWe.workoutExercise.id,
+                    workoutExerciseId = we.workoutExercise.id,
                     setNumber = nextSetNumber,
                     weight = prefilledWeight,
                     reps = prefilledReps,
@@ -415,7 +427,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     restSeconds = prefilledRest,
                     completed = false
                 )
-                workoutRepository.addSetToExercise(currentWe.workoutExercise.id, newSet)
+                workoutRepository.addSetToExercise(we.workoutExercise.id, newSet)
             }
         }
     }

@@ -131,7 +131,7 @@ class WorkoutRepositoryIntegrationTest {
         )
         workoutDao.insertWorkout(active)
 
-        val result = repository.getIncompleteWorkout()
+        val result = repository.getLatestIncompleteWorkout()
         assertNotNull("Should return ACTIVE workout", result)
         assertEquals("ACTIVE", result!!.status)
     }

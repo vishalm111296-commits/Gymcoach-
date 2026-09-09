@@ -22,6 +22,10 @@ interface WorkoutRepository {
     suspend fun updateSet(set: WorkoutSet)
     suspend fun deleteSet(setId: Long)
 
+    // Concurrency-safe DB-truth reads (one-shot, reflect committed rows)
+    suspend fun getExerciseIdsForWorkout(workoutId: Long): List<Long>
+    suspend fun getSetNumbersForWorkoutExercise(workoutExerciseId: Long): List<Int>
+
     // Previous performance
     suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
     suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>

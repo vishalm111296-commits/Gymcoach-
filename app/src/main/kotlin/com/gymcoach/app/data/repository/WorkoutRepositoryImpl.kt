@@ -104,6 +104,14 @@ class WorkoutRepositoryImpl @Inject constructor(
         return workoutDao.insertWorkoutSet(set.toWorkoutSetEntity().copy(workoutExerciseId = workoutExerciseId))
     }
 
+    override suspend fun getExerciseIdsForWorkout(workoutId: Long): List<Long> {
+        return workoutDao.getExercisesForWorkout(workoutId).first().map { it.exerciseId }
+    }
+
+    override suspend fun getSetNumbersForWorkoutExercise(workoutExerciseId: Long): List<Int> {
+        return workoutDao.getSetsForExercise(workoutExerciseId).first().map { it.setNumber }
+    }
+
     override suspend fun updateSet(set: WorkoutSet) {
         workoutDao.updateWorkoutSet(set.toWorkoutSetEntity())
     }

@@ -73,9 +73,9 @@ class WorkoutConcurrencyTest {
         equipment = "barbell", difficulty = "intermediate", secondaryMuscles = "",
         instructions = "", tips = "", commonMistakes = "", safetyNotes = "",
         recommendedRepRange = "8-12", recommendedRestTime = "90",
-        estimatedCalories = 100.0, category = "compound", tags = "",
-        isFavorite = false, lastViewed = 0L, vtaperLat = 0.0,
-        vtaperLateralDelt = 0.0, vtaperUpperChest = 0.0, vtaperRearDelt = 0.0,
+        estimatedCalories = 100, category = "compound", tags = "",
+        isFavorite = false, lastViewed = 0L, vtaperLat = 0,
+        vtaperLateralDelt = 0, vtaperUpperChest = 0, vtaperRearDelt = 0,
         movementPattern = "push", imageUrl = null, videoUrl = null,
         animationUrl = null, setupInstructions = "", executionInstructions = "",
         breathingInstructions = "", tempoGuidance = "",
@@ -106,6 +106,9 @@ class WorkoutConcurrencyTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns workoutDetails.workout
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 300L
         coEvery { workoutRepository.addSetToExercise(any(), any()) } returns 400L
+        // DB-truth reads (default: empty; individual tests override with callCount).
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns emptyList()
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } returns emptyList()
         coEvery { workoutRepository.getLastSetsForExercise(any()) } returns emptyList()
         coEvery { workoutRepository.getLastPerformanceForExercise(any()) } returns null
         coEvery { workoutRepository.getLastSetsForExercises(any()) } returns emptyMap()
@@ -185,8 +188,13 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
 
-        // Both calls see null (no existing) → Mutex serializes → only one creates.
-        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns null
+        // Mutex serializes; first call sees null → creates; second call (after
+        // the first created row is committed) sees the new workout → resumes.
+        var callCount = 0
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } coAnswers {
+            callCount++
+            if (callCount <= 1) null else workoutDetails.workout
+        }
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
 
         val job1 = async(Dispatchers.Default) { viewModel.loadOrStartWorkout() }
@@ -220,8 +228,8 @@ class WorkoutConcurrencyTest {
 
     /**
      * Two concurrent startNewWorkout() calls must create exactly one workout.
-     * The workoutCreationMutex guards the DB insert; the Flow collect runs
-     * outside the lock (cannot deadlock).
+     * Check-then-create inside the Mutex: a rapid second tap converges to the
+     * just-created workout instead of creating a duplicate ACTIVE row.
      */
     @Test
     fun concurrent_startNewWorkout_createsExactlyOneWorkout() = runTest {
@@ -230,9 +238,13 @@ class WorkoutConcurrencyTest {
         )
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
         viewModel = createViewModel(workoutDetails)
-        // startNewWorkout must not depend on a pre-existing workout.
-        coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns
-            MutableStateFlow(workoutDetails)
+
+        // First call: no existing → creates. Second call: sees created workout.
+        var callCount = 0
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } coAnswers {
+            callCount++
+            if (callCount <= 1) null else workoutDetails.workout
+        }
 
         val job1 = async(Dispatchers.Default) { viewModel.startNewWorkout() }
         val job2 = async(Dispatchers.Default) { viewModel.startNewWorkout() }
@@ -257,13 +269,20 @@ class WorkoutConcurrencyTest {
         advanceUntilIdle()
 
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 300L
+        // DB-truth: first lock holder sees no rows → inserts; second sees the
+        // committed row → skips (exercise 10 already present).
+        var exerciseQueryCount = 0
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } coAnswers {
+            exerciseQueryCount++
+            if (exerciseQueryCount <= 1) emptyList() else listOf(10L)
+        }
 
         val job1 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise) }
         val job2 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise) }
         awaitAll(job1, job2)
         advanceUntilIdle()
 
-        coVerify(atMost = 1) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
+        coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
     }
 
     @Test
@@ -278,6 +297,9 @@ class WorkoutConcurrencyTest {
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
         advanceUntilIdle()
+
+        // DB-truth: exercise 10 is already committed.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
 
         val job1 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise1) } // dup
         val job2 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise2) } // new
@@ -371,6 +393,15 @@ class WorkoutConcurrencyTest {
         viewModel.loadOrStartWorkout()
         advanceUntilIdle()
 
+        // Exercise 10 exists in the DB.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
+        // DB-truth set numbers: second lock holder sees the row committed by first.
+        var setQueryCount = 0
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } coAnswers {
+            setQueryCount++
+            if (setQueryCount <= 1) listOf(1) else listOf(1, 2)
+        }
+
         val setNumbers = mutableListOf<Int>()
         coEvery { workoutRepository.addSetToExercise(any(), capture(slot())) } coAnswer {
             val set = arg<com.gymcoach.app.domain.model.WorkoutSet>(1)
@@ -384,7 +415,7 @@ class WorkoutConcurrencyTest {
         advanceUntilIdle()
 
         assertEquals(2, setNumbers.size)
-        // Mutex serialization + re-read: first sees [set1] → 2, second sees [set1,set2] → 3
+        // Mutex serialization + DB-truth read: first sees [1] → 2, second sees [1,2] → 3
         assertEquals(2, setNumbers[0])
         assertEquals(3, setNumbers[1])
         assertTrue("No duplicate set numbers", setNumbers.distinct().size == setNumbers.size)
@@ -401,6 +432,14 @@ class WorkoutConcurrencyTest {
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
         advanceUntilIdle()
+
+        // Exercise 10 exists in the DB; set numbers serialize to 1 then 2.
+        coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
+        var setQueryCount = 0
+        coEvery { workoutRepository.getSetNumbersForWorkoutExercise(any()) } coAnswers {
+            setQueryCount++
+            if (setQueryCount <= 1) emptyList() else listOf(1)
+        }
 
         val job1 = async(Dispatchers.Default) { viewModel.addSet(0) }
         val job2 = async(Dispatchers.Default) { viewModel.addSet(0) }

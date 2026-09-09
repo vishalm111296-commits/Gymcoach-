@@ -451,7 +451,10 @@ fun WorkoutSessionScreen(
                         val isAlreadyAdded = exercise.id in currentExerciseIds
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            onClick = { viewModel.addExerciseToWorkout(exercise) },
+                            onClick = {
+                                if (!isAlreadyAdded) viewModel.addExerciseToWorkout(exercise)
+                            },
+                            enabled = !isAlreadyAdded,
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isAlreadyAdded)
                                     MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f)

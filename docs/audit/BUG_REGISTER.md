@@ -265,17 +265,26 @@
 - **Fix:** Removed `getIncompleteWorkout()` from interface, implementation, and DAO. Updated WorkoutHistoryViewModel caller to use `getLatestIncompleteWorkout()`
 - **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
 
-#### APP-016: Exercise Picker Shows All Exercises (No Dedup) [FIXED]
+#### APP-016: Exercise Picker Allows Duplicate Insertion [FIXED]
 - **Type:** Application Defect
 - **Severity:** P2
-- **Area:** Workout Session UI
-- **Reproduction:** Add "Bench Press" to workout, tap "Add Exercise" again
-- **Expected:** "Bench Press" filtered out or grayed out
-- **Actual:** All exercises shown, can add duplicates
-- **Root Cause:** `WorkoutSessionScreen.kt:448` — `items(allExercises)` with no filtering against current workout exercises
-- **Domain Analysis:** WorkoutExerciseEntity has no unique constraint on (workoutId, exerciseId). Domain EXPLICITLY allows duplicate exercises (e.g., different warm-up sets, multiple rows of same movement).
-- **Fix:** Added visual "Added" indicator in exercise picker with reduced opacity. Domain allows duplicates; UI now clearly shows which exercises are already present.
-- **Status:** FIXED — STATICALLY VERIFIED (LSP clean)
+- **Area:** Workout Session UI / Domain Logic
+- **Reproduction:** Add "Bench Press" to workout, tap "Add Exercise" again, tap "Bench Press"
+- **Expected:** Duplicate rejected; existing exercise list unchanged
+- **Actual (before fix):** UI showed "Added" indicator but clicking still inserted duplicate row. `addExerciseToWorkout()` in ViewModel had no duplicate guard.
+- **Root Cause:** `WorkoutLoggingViewModel.addExerciseToWorkout()` at line 313 — no check against existing exercises before calling `workoutRepository.addExerciseToWorkout()`. UI `Card(onClick)` always invoked the ViewModel method regardless of `isAlreadyAdded`.
+- **Domain Analysis:** WorkoutExerciseEntity has no unique constraint on (workoutId, exerciseId). Domain EXPLICITLY allows duplicate exercises (e.g., different warm-up sets, multiple rows of same movement). Enforcement is at application layer.
+- **Fix (3 layers):**
+  1. **ViewModel guard** (`WorkoutLoggingViewModel.addExerciseToWorkout()`): early-return if `workout.exercises.any { it.exercise.id == exercise.id }` — prevents insertion even if UI bypassed
+  2. **UI guard** (`WorkoutSessionScreen.kt`): `Card(enabled = !isAlreadyAdded)` + onClick checks `!isAlreadyAdded` — makes already-added exercises visually and interactively non-clickable
+  3. **Visual indicator**: "Added" label with reduced opacity (retained from prior fix)
+- **Regression Tests:** 5 new tests in `WorkoutSessionHostileTest.kt`:
+  1. First add succeeds
+  2. Second add of same exercise is rejected (repo never called)
+  3. Different exercise can still be added after rejection
+  4. Existing exercises remain unchanged after rejection
+  5. Duplicate prevention works after workout reload
+- **Status:** FIXED — STATICALLY VERIFIED (LSP clean for ViewModel + Screen + tests)
 
 #### APP-017: Set Type Cycle Button Uses Star Icon [FIXED]
 - **Type:** UX Enhancement

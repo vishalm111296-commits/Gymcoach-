@@ -396,6 +396,131 @@ class WorkoutSessionHostileTest {
         coVerify { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // APP-016: DUPLICATE EXERCISE PREVENTION
+    // ═══════════════════════════════════════════════════════════
+
+    @Test
+    fun `APP-016 first add of exercise succeeds`() = runTest {
+        val exercise = makeExercise(id = 10L, name = "Bench Press")
+        val workout = makeWorkoutWithDetails(exercises = emptyList())
+
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
+        coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
+        coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 5L
+
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel.loadOrStartWorkout(null)
+        advanceUntilIdle()
+
+        viewModel.addExerciseToWorkout(exercise)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 10L, 0) }
+    }
+
+    @Test
+    fun `APP-016 second add of same exercise is rejected`() = runTest {
+        val exercise = makeExercise(id = 10L, name = "Bench Press")
+        val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
+        val workoutEx = makeExerciseWithSets(exercise = exercise, sets = emptyList(), workoutExercise = we)
+        val workout = makeWorkoutWithDetails(exercises = listOf(workoutEx))
+
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
+        coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
+
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel.loadOrStartWorkout(null)
+        advanceUntilIdle()
+
+        // Attempt to add the same exercise again
+        viewModel.addExerciseToWorkout(exercise)
+        advanceUntilIdle()
+
+        // Repository addExerciseToWorkout should NOT be called — guard rejects it
+        coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
+    }
+
+    @Test
+    fun `APP-016 different exercise can still be added after duplicate rejection`() = runTest {
+        val benchPress = makeExercise(id = 10L, name = "Bench Press")
+        val squat = makeExercise(id = 20L, name = "Squat")
+        val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
+        val workoutEx = makeExerciseWithSets(exercise = benchPress, sets = emptyList(), workoutExercise = we)
+        val workout = makeWorkoutWithDetails(exercises = listOf(workoutEx))
+
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
+        coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
+        coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 6L
+
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel.loadOrStartWorkout(null)
+        advanceUntilIdle()
+
+        // Duplicate should be rejected
+        viewModel.addExerciseToWorkout(benchPress)
+        advanceUntilIdle()
+        coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), 10L, any()) }
+
+        // Different exercise should be accepted
+        viewModel.addExerciseToWorkout(squat)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
+    }
+
+    @Test
+    fun `APP-016 existing exercises remain unchanged after duplicate rejection`() = runTest {
+        val benchPress = makeExercise(id = 10L, name = "Bench Press")
+        val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
+        val existingSet = makeSet(id = 100L, setNumber = 1, weight = 80.0, reps = 8)
+        val workoutEx = makeExerciseWithSets(exercise = benchPress, sets = listOf(existingSet), workoutExercise = we)
+        val workout = makeWorkoutWithDetails(exercises = listOf(workoutEx))
+
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns makeWorkout()
+        coEvery { workoutRepository.getWorkoutWithDetails(any()) } returns flowOf(workout)
+
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel.loadOrStartWorkout(null)
+        advanceUntilIdle()
+
+        // Attempt duplicate — should be rejected
+        viewModel.addExerciseToWorkout(benchPress)
+        advanceUntilIdle()
+
+        // Verify existing set data was not modified
+        val currentExercises = viewModel.currentWorkout.value?.exercises
+        assertNotNull(currentExercises)
+        assertEquals(1, currentExercises!!.size)
+        assertEquals(10L, currentExercises[0].exercise.id)
+        assertEquals(1, currentExercises[0].sets.size)
+        assertEquals(80.0, currentExercises[0].sets[0].weight, 0.01)
+        assertEquals(8, currentExercises[0].sets[0].reps)
+    }
+
+    @Test
+    fun `APP-016 duplicate prevention uses stale snapshot and rejects correctly`() = runTest {
+        // Simulates: exercise added via performAgainInternal, then user tries to add same exercise
+        val benchPress = makeExercise(id = 10L, name = "Bench Press")
+        val we = makeWorkoutExercise(id = 5L, exerciseId = 10L, orderIndex = 0)
+        val workoutEx = makeExerciseWithSets(exercise = benchPress, sets = emptyList(), workoutExercise = we)
+        val workout = makeWorkoutWithDetails(exercises = listOf(workoutEx))
+
+        coEvery { workoutRepository.getLatestIncompleteWorkout() } returns null
+        coEvery { workoutRepository.createWorkout(any()) } returns 1L
+        coEvery { workoutRepository.getWorkoutWithDetails(1L) } returns flowOf(workout)
+
+        viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository)
+        viewModel.loadOrStartWorkout(null)
+        advanceUntilIdle()
+
+        // Exercise is already in workout from loadOrStartWorkout
+        // Attempting to add same exercise should be rejected
+        viewModel.addExerciseToWorkout(benchPress)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
+    }
+
     @Test
     fun `removeExercise deletes workout exercise and cascades sets`() = runTest {
         val exercise = makeExercise()

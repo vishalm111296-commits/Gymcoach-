@@ -312,6 +312,10 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun addExerciseToWorkout(exercise: Exercise) {
         val workout = _currentWorkout.value ?: return
+        // APP-016: Reject duplicate exercises — a workout session must not
+        // accidentally contain the same exercise more than once.
+        val alreadyPresent = workout.exercises.any { it.exercise.id == exercise.id }
+        if (alreadyPresent) return
         val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
         viewModelScope.launch {
             workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)

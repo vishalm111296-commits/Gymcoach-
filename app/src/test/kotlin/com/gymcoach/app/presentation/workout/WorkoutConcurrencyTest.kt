@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.workout
 
+import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.progression.ProgressionEngine
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.domain.model.Exercise
@@ -20,11 +21,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -169,12 +171,13 @@ class WorkoutConcurrencyTest {
         coEvery { workoutRepository.createWorkout(any()) } returns 1L
 
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // createWorkout should be called exactly once.
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -200,10 +203,11 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.loadOrStartWorkout() }
         val job2 = async(Dispatchers.Default) { viewModel.loadOrStartWorkout() }
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         // createWorkout should be called exactly once (Mutex prevents double creation).
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -220,10 +224,11 @@ class WorkoutConcurrencyTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } returns existingWorkout
 
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Should NOT create a new workout.
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -249,9 +254,10 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.startNewWorkout() }
         val job2 = async(Dispatchers.Default) { viewModel.startNewWorkout() }
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.createWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -266,7 +272,7 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         coEvery { workoutRepository.addExerciseToWorkout(any(), any(), any()) } returns 300L
         // DB-truth: first lock holder sees no rows → inserts; second sees the
@@ -280,9 +286,10 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise) }
         val job2 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise) }
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -296,7 +303,7 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // DB-truth: exercise 10 is already committed.
         coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
@@ -304,10 +311,11 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise1) } // dup
         val job2 = async(Dispatchers.Default) { viewModel.addExerciseToWorkout(exercise2) } // new
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), eq(11L), any()) }
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), eq(10L), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -333,14 +341,15 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(1)
         viewModel.removeExercise(1)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 2) { workoutRepository.removeExerciseFromWorkout(eq(201L)) }
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(eq(200L)) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     /**
@@ -365,14 +374,15 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(1) // targets weB (stale snapshot index 1)
         viewModel.removeExercise(1) // still targets weB (same stale snapshot)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 2) { workoutRepository.removeExerciseFromWorkout(eq(201L)) }
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(eq(202L)) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -391,7 +401,7 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Exercise 10 exists in the DB.
         coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
@@ -412,13 +422,14 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.addSet(0) }
         val job2 = async(Dispatchers.Default) { viewModel.addSet(0) }
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(2, setNumbers.size)
         // Mutex serialization + DB-truth read: first sees [1] → 2, second sees [1,2] → 3
         assertEquals(2, setNumbers[0])
         assertEquals(3, setNumbers[1])
         assertTrue("No duplicate set numbers", setNumbers.distinct().size == setNumbers.size)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -431,7 +442,7 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Exercise 10 exists in the DB; set numbers serialize to 1 then 2.
         coEvery { workoutRepository.getExerciseIdsForWorkout(any()) } returns listOf(10L)
@@ -444,9 +455,10 @@ class WorkoutConcurrencyTest {
         val job1 = async(Dispatchers.Default) { viewModel.addSet(0) }
         val job2 = async(Dispatchers.Default) { viewModel.addSet(0) }
         awaitAll(job1, job2)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 2) { workoutRepository.addSetToExercise(eq(200L), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -463,13 +475,14 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.updateWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -482,19 +495,20 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val workoutSlot = slot<Workout>()
         coEvery { workoutRepository.updateWorkout(capture(workoutSlot)) } returns Unit
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val persisted = workoutSlot.captured
         assertEquals("COMPLETED", persisted.status)
         assertTrue(persisted.completed)
         assertTrue(persisted.endTime.epochSecond >= persisted.startTime.epochSecond)
         assertTrue(persisted.duration >= 0)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -507,16 +521,17 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Before completion, completed is false.
         assertEquals(false, viewModel.completed.value)
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // After DB write succeeds, completed is true.
         assertTrue(viewModel.completed.value)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -529,12 +544,12 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // First call: DB fails.
         coEvery { workoutRepository.updateWorkout(any()) } throws RuntimeException("DB error")
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Error should be set.
         assertTrue(viewModel.error.value?.contains("Failed to save workout") == true)
@@ -542,10 +557,11 @@ class WorkoutConcurrencyTest {
         // Second call: guard was reset by catch, should be allowed.
         coEvery { workoutRepository.updateWorkout(any()) } returns Unit
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Now it should succeed.
         assertTrue(viewModel.completed.value)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -558,12 +574,13 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -576,12 +593,13 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -600,17 +618,18 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val stats = viewModel.completionStats.value
         assertEquals(2, stats.totalSets)
         assertEquals(18, stats.totalReps)
         assertEquals(1800.0, stats.totalVolume, 0.01)
         assertEquals(1, stats.exerciseCount)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -624,11 +643,12 @@ class WorkoutConcurrencyTest {
         )
         viewModel = createViewModel(workoutDetails)
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.loadOrStartWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 }

@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.workout
 
+import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.progression.ProgressionEngine
 import com.gymcoach.app.core.timer.RestPresets
 import com.gymcoach.app.core.timer.RestTimerManager
@@ -29,7 +30,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -183,12 +185,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.createWorkout(any()) }
         val state = viewModel.sessionUiState.value
         assertTrue("Should be Active or Empty after creation",
             state is WorkoutLoggingViewModel.SessionUiState.Active || state is WorkoutLoggingViewModel.SessionUiState.Empty)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -199,10 +202,11 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.createWorkout(any()) }
         coVerify { workoutRepository.getWorkoutWithDetails(42L) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -215,11 +219,12 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(10L)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.createWorkout(any()) }
         // Should copy exercises from original
         coVerify { workoutRepository.addExerciseToWorkout(20L, any(), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -229,12 +234,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.startNewWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val workoutSlot = slot<Workout>()
         coVerify { workoutRepository.createWorkout(capture(workoutSlot)) }
         assertEquals("ACTIVE", workoutSlot.captured.status)
         assertFalse(workoutSlot.captured.completed)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -258,14 +264,15 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.addSet(0)
-        advanceUntilIdle()
+        runCurrent()
 
         val setSlot = slot<WorkoutSet>()
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(2, setSlot.captured.setNumber)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -290,15 +297,16 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.addSet(0)
-        advanceUntilIdle()
+        runCurrent()
 
         val setSlot = slot<WorkoutSet>()
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(60.0, setSlot.captured.weight, 0.01)
         assertEquals(8, setSlot.captured.reps)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -318,15 +326,16 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.addSet(0)
-        advanceUntilIdle()
+        runCurrent()
 
         // New set should be NORMAL (default), not WARMUP
         val setSlot = slot<WorkoutSet>()
         coVerify { workoutRepository.addSetToExercise(any(), capture(setSlot)) }
         assertEquals(SetType.NORMAL, setSlot.captured.setType)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -342,22 +351,23 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         // Normal → Warmup
         viewModel.updateSetType(0, 0, SetType.WARMUP)
-        advanceUntilIdle()
+        runCurrent()
         coVerify { workoutRepository.updateSet(match { it.setType == SetType.WARMUP }) }
 
         // Warmup → Drop
         viewModel.updateSetType(0, 0, SetType.DROP)
-        advanceUntilIdle()
+        runCurrent()
         coVerify { workoutRepository.updateSet(match { it.setType == SetType.DROP }) }
 
         // Drop → Failure
         viewModel.updateSetType(0, 0, SetType.FAILURE)
-        advanceUntilIdle()
+        runCurrent()
         coVerify { workoutRepository.updateSet(match { it.setType == SetType.FAILURE }) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -374,12 +384,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeSet(0, 0) // Remove first set
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.deleteSet(100L) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -402,12 +413,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.addExerciseToWorkout(exercise2)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -425,12 +437,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.addExerciseToWorkout(exercise)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 10L, 0) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -445,14 +458,15 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         // Attempt to add the same exercise again
         viewModel.addExerciseToWorkout(exercise)
-        advanceUntilIdle()
+        runCurrent()
 
         // Repository addExerciseToWorkout should NOT be called — guard rejects it
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -471,17 +485,18 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         // Duplicate should be rejected
         viewModel.addExerciseToWorkout(benchPress)
-        advanceUntilIdle()
+        runCurrent()
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), 10L, any()) }
 
         // Different exercise should be accepted
         viewModel.addExerciseToWorkout(squat)
-        advanceUntilIdle()
+        runCurrent()
         coVerify(exactly = 1) { workoutRepository.addExerciseToWorkout(any(), 20L, 1) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -497,11 +512,11 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         // Attempt duplicate — should be rejected
         viewModel.addExerciseToWorkout(benchPress)
-        advanceUntilIdle()
+        runCurrent()
 
         // Verify existing set data was not modified
         val currentExercises = viewModel.currentWorkout.value?.exercises
@@ -511,6 +526,7 @@ class WorkoutSessionHostileTest {
         assertEquals(1, currentExercises[0].sets.size)
         assertEquals(80.0, currentExercises[0].sets[0].weight, 0.01)
         assertEquals(8, currentExercises[0].sets[0].reps)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -527,14 +543,15 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         // Exercise is already in workout from loadOrStartWorkout
         // Attempting to add same exercise should be rejected
         viewModel.addExerciseToWorkout(benchPress)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.addExerciseToWorkout(any(), any(), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -549,12 +566,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(0)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.removeExerciseFromWorkout(5L) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -566,12 +584,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(99) // Invalid index
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -583,12 +602,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(0)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.removeExerciseFromWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -609,16 +629,17 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val workoutSlot = slot<Workout>()
         coVerify { workoutRepository.updateWorkout(capture(workoutSlot)) }
         assertTrue(workoutSlot.captured.completed)
         assertEquals("COMPLETED", workoutSlot.captured.status)
         assertTrue(viewModel.completed.value)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -631,17 +652,18 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // Second call should be blocked by terminal-state guard
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // updateWorkout should only be called once (for the first completeWorkout)
         coVerify(exactly = 1) { workoutRepository.updateWorkout(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -653,15 +675,16 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(1L)
-        advanceUntilIdle()
+        runCurrent()
 
         // Should create a fresh copy (performAgainInternal), not complete the old one
         // The terminal-state guard in completeWorkout should prevent completing an already-completed workout
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         // The original completed workout should NOT be updated again
         // (performAgainInternal creates a new workout, which is the one that gets completed)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -680,16 +703,17 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.completeWorkout()
-        advanceUntilIdle()
+        runCurrent()
 
         val stats = viewModel.completionStats.value
         assertEquals(2, stats.totalSets) // Only completed sets
         assertEquals(18, stats.totalReps) // 10 + 8
         assertEquals(940.0, stats.totalVolume, 0.01) // 50*10 + 55*8
         assertEquals(1, stats.exerciseCount)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -709,12 +733,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.toggleSetCompletion(0, 0)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { restTimer.start(any(), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -730,12 +755,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.toggleSetCompletion(0, 0) // Uncomplete
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { restTimer.stop() }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -743,6 +769,7 @@ class WorkoutSessionHostileTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.stopRestTimer()
         coVerify { restTimer.stop() }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -750,6 +777,7 @@ class WorkoutSessionHostileTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.pauseRestTimer()
         coVerify { restTimer.pause() }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -757,6 +785,7 @@ class WorkoutSessionHostileTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.resumeRestTimer()
         coVerify { restTimer.resume() }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -764,6 +793,7 @@ class WorkoutSessionHostileTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.changeRestTimerDuration(120)
         coVerify { restTimer.restart(120, any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -779,12 +809,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.updateSetWeight(99, 0, 100.0) // Invalid exercise index
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateSet(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -796,12 +827,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.updateSetReps(0, 99, 15) // Invalid set index
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.updateSet(any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -813,12 +845,13 @@ class WorkoutSessionHostileTest {
         coEvery { workoutRepository.getLatestIncompleteWorkout() } throws RuntimeException("Test error")
 
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         assertNotNull(viewModel.error.value)
 
         viewModel.dismissError()
         assertNull(viewModel.error.value)
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -831,12 +864,13 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.updateNotes("Great session")
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify { workoutRepository.updateWorkout(match { it.notes == "Great session" }) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -844,9 +878,10 @@ class WorkoutSessionHostileTest {
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         // Don't load a workout
         viewModel.addSet(0)
-        advanceUntilIdle()
+        runCurrent()
 
         coVerify(exactly = 0) { workoutRepository.addSetToExercise(any(), any()) }
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -861,13 +896,14 @@ class WorkoutSessionHostileTest {
 
         viewModel = WorkoutLoggingViewModel(workoutRepository, exerciseRepository, restTimer, progressionEngine, userProfileRepository, applicationScope)
         viewModel.loadOrStartWorkout(null)
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.removeExercise(0)
-        advanceUntilIdle()
+        runCurrent()
 
         // Progression recommendation for removed exercise should be cleared
         assertFalse(viewModel.progressionRecommendations.value.containsKey(10L))
+        if (::viewModel.isInitialized) viewModel.viewModelScope.cancel()
     }
 
     // ═══════════════════════════════════════════════════════════

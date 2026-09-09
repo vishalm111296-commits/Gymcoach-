@@ -197,6 +197,7 @@ jobs:
           android-sdk-version: ${{ env.ANDROID_SDK_VERSION }}
 
       - name: Run Unit Tests
+        timeout-minutes: 40
         run: |
           echo "=== Running Unit Tests ==="
           chmod +x ./gradlew

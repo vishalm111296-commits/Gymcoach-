@@ -1,15 +1,14 @@
 # Mission Status
 
 ## Progress
-- T2.8 UX audit: evidence complete (Groups A/B/C + registry APP-020..044)
-- Fix round 1: 14 of 14 APP-IDs implemented (compiled), committed+pushable on phase5-recovery-verified
-- Fix commits: 56c3cf4 (fix round 1), 56c3cf4+2 (tracking), a4f4f90 (smart-cast), +compile-imports fix
-- CI: run 34399246621 FAILED (smart-cast) -> fixed; run 34399731161 FAILED (objects/imports) -> fixed;
-  run 34400290084 IN_PROGRESS (final gate)
-- Deferred (documented): APP-020 (device-screen verify), APP-028 (dead components - product sign-off),
-  APP-031 (uncommitted file), APP-032/033/034/035 (uncommitted file), APP-043/044 (design choice)
-- Main branch: RED (run 34393583510, PR #98 merged 19:11Z, Unresolved reference: latVolume) - OUT OF SCOPE
-- No merge to main performed. 7 pre-existing uncommitted UI files preserved untouched.
+- .opencode/todo.md (repo): T2.8 block 100% [x] — audit, registry, fixes, final CI all completed (Reviewer-marked).
+- CI run 34400290084 @ phase5-recovery-verified: SUCCESS — Build PASS, Lint PASS, Unit Tests PASS.
+- Tests: 205 total, 0 failures, 0 errors, 0 skipped (XML evidence /tmp/opencode/art34400290084) — baseline 193 retained, +12 new (APP-037/038/041 VM coverage).
+- Fix commits on branch: 56c3cf4 (round 1) + smart-cast/DeleteState-objects/imports compile fixes; pushed.
+- 7 pre-existing uncommitted UI files preserved unstaged (not in fix commits).
+- Deferred (documented): APP-020 (device verify), APP-028 (product sign-off), APP-031/032/033/034/035 (uncommitted files), APP-043/044 (design).
+- OBSERVED out-of-scope: main branch RED — PR #98 merged 2026-09-09T19:11:32Z, CI 34393583510 FAILED (Unresolved reference: latVolume in HomeViewModel.kt:175). No action taken (no merge/main access policy).
+- No merge to main performed by this mission.
 
 ## Current Phase
-T2.8.6 Final CI Pass - waiting on run 34400290084
+T2.8 COMPLETE — Mission concluded (verification evidence secured).

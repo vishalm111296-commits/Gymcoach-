@@ -78,7 +78,7 @@ class GymCoachClosedLoopIntegrationTest {
         // Step 1: Mock source historical workout details
         every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
         every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(sourceExerciseEntity))
-        every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet))
+        every { workoutDao.getSetsForExercises(listOf(10L)) } returns flowOf(listOf(sourceSet))
 
         val capturedWorkout = slot<WorkoutEntity>()
         val capturedExercisesWithSets = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()

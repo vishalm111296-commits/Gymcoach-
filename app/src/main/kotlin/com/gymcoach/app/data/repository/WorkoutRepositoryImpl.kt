@@ -211,9 +211,14 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun createWorkoutFromHistory(workoutId: Long): Long? {
         val sourceEntity = workoutDao.getWorkoutById(workoutId).first() ?: return null
         val exerciseEntities = workoutDao.getExercisesForWorkout(workoutId).first()
+        if (exerciseEntities.isEmpty()) {
+            return workoutDao.createWorkoutFromHistoryTransaction(sourceEntity, emptyList())
+        }
+        val exerciseIds = exerciseEntities.map { it.id }
+        val allSets = workoutDao.getSetsForExercises(exerciseIds).first()
+        val setsByExerciseId = allSets.groupBy { it.workoutExerciseId }
         val exercisesWithSets = exerciseEntities.map { we ->
-            val sets = workoutDao.getSetsForExercise(we.id).first()
-            we to sets
+            we to (setsByExerciseId[we.id] ?: emptyList())
         }
         return workoutDao.createWorkoutFromHistoryTransaction(sourceEntity, exercisesWithSets)
     }

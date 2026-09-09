@@ -93,7 +93,7 @@ class WorkoutRepositoryPerformAgainTest {
         every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
         every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(sourceWorkoutExerciseEntity))
         every { exerciseDao.getById(1L) } returns flowOf(exerciseEntity)
-        every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet1, sourceSet2))
+        every { workoutDao.getSetsForExercises(listOf(10L)) } returns flowOf(listOf(sourceSet1, sourceSet2))
 
         val capturedSourceWorkout = slot<WorkoutEntity>()
         val capturedSourceExercisesWithSets = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()
@@ -142,7 +142,7 @@ class WorkoutRepositoryPerformAgainTest {
     fun `repeated createWorkoutFromHistory calls create independent sessions`() = runTest {
         every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
         every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(sourceWorkoutExerciseEntity))
-        every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet1))
+        every { workoutDao.getSetsForExercises(listOf(10L)) } returns flowOf(listOf(sourceSet1))
 
         coEvery { workoutDao.createWorkoutFromHistoryTransaction(any(), any()) } returnsMany listOf(201L, 202L)
 

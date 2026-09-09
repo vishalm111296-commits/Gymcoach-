@@ -11,7 +11,7 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.HttpURLConnection
+import javax.net.ssl.HttpsURLConnection
 import java.net.URL
 
 /**
@@ -99,9 +99,9 @@ class PoseDetector private constructor(
             if (target.exists() && target.length() >= MIN_VALID_MODEL_BYTES) return target
 
             val tmp = File(context.filesDir, "$MODEL_FILE_NAME.tmp")
-            var connection: HttpURLConnection? = null
+            var connection: HttpsURLConnection? = null
             try {
-                connection = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
+                connection = (URL(MODEL_URL).openConnection() as HttpsURLConnection).apply {
                     connectTimeout = 15_000
                     readTimeout = 60_000
                     instanceFollowRedirects = true

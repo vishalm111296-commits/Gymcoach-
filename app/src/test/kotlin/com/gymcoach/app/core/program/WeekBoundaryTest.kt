@@ -17,7 +17,7 @@ class WeekBoundaryTest {
     }
 
     @Test
-    fun `isoWeekKey correctly groups New Year boundary dates into ISO week-based years`() {
+    fun `isoWeekKey correctly groups 2024 to 2025 New Year boundary dates into ISO week-based years`() {
         fun keyFor(year: Int, month: Int, day: Int, hour: Int = 12): String {
             val ms = LocalDate.of(year, month, day)
                 .atTime(hour, 0)
@@ -41,6 +41,27 @@ class WeekBoundaryTest {
 
         // Jan 6, 2025 starts ISO week 02 of 2025
         assertEquals("2025-W02", keyFor(2025, 1, 6))
+    }
+
+    @Test
+    fun `isoWeekKey correctly groups 2026 to 2027 New Year boundary dates into ISO week-based years`() {
+        fun keyFor(year: Int, month: Int, day: Int, hour: Int = 12): String {
+            val ms = LocalDate.of(year, month, day)
+                .atTime(hour, 0)
+                .atZone(zoneId)
+                .toInstant()
+                .toEpochMilli()
+            return volumeCalculator.isoWeekKey(ms, zoneId)
+        }
+
+        // Dec 28, 2026 through Jan 3, 2027 belong to ISO week 53 of 2026
+        assertEquals("2026-W53", keyFor(2026, 12, 28))
+        assertEquals("2026-W53", keyFor(2026, 12, 31))
+        assertEquals("2026-W53", keyFor(2027, 1, 1))
+        assertEquals("2026-W53", keyFor(2027, 1, 3))
+
+        // Jan 4, 2027 starts ISO week 01 of 2027
+        assertEquals("2027-W01", keyFor(2027, 1, 4))
     }
 
     @Test

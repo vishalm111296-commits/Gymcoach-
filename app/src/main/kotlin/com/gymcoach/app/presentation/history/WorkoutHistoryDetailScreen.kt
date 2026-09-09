@@ -132,10 +132,10 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
 }
 
 sealed interface DeleteState {
-    data class Idle : DeleteState
-    data class Confirming : DeleteState
-    data class Deleting : DeleteState
-    data class Success : DeleteState
+    object Idle : DeleteState
+    object Confirming : DeleteState
+    object Deleting : DeleteState
+    object Success : DeleteState
     data class Failed(val message: String) : DeleteState
 }
 

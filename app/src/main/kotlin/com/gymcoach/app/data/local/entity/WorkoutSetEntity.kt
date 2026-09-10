@@ -15,7 +15,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("workoutExerciseId")]
+    indices = [
+        Index("workoutExerciseId"),
+        Index(value = ["workoutExerciseId", "setNumber"], unique = true)
+    ]
 )
 data class WorkoutSetEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

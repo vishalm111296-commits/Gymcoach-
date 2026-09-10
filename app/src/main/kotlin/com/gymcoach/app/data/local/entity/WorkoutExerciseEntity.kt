@@ -23,7 +23,8 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index("workoutId"),
-        Index("exerciseId")
+        Index("exerciseId"),
+        Index(value = ["workoutId", "orderIndex"], unique = true)
     ]
 )
 data class WorkoutExerciseEntity(

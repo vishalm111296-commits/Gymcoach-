@@ -73,6 +73,27 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id")
     abstract fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
 
+
+    @Query("SELECT COALESCE(MAX(orderIndex), -1) + 1 FROM workout_exercises WHERE workoutId = :workoutId")
+    abstract suspend fun getNextOrderIndexForWorkout(workoutId: Long): Int
+
+    @Query("SELECT COALESCE(MAX(setNumber), 0) + 1 FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId")
+    abstract suspend fun getNextSetNumberForExercise(workoutExerciseId: Long): Int
+
+    @Transaction
+    open suspend fun addExerciseToWorkoutAtomic(workoutId: Long, exerciseId: Long): Long {
+        val nextOrder = getNextOrderIndexForWorkout(workoutId)
+        val entity = WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exerciseId, orderIndex = nextOrder)
+        return insertWorkoutExercise(entity)
+    }
+
+    @Transaction
+    open suspend fun addSetToExerciseAtomic(workoutExerciseId: Long, set: WorkoutSetEntity): Long {
+        val nextSetNumber = getNextSetNumberForExercise(workoutExerciseId)
+        val entity = set.copy(setNumber = nextSetNumber)
+        return insertWorkoutSet(entity)
+    }
+
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     abstract suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
 
@@ -428,10 +449,10 @@ abstract class WorkoutDao {
     """)
     abstract suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
 
-    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
+
+        @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     abstract suspend fun getIncompleteWorkout(): WorkoutEntity?
 }
-
 data class LastPerformance(
     val date: Long,
     val maxWeight: Double

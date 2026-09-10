@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,9 +28,13 @@ import com.gymcoach.app.ui.theme.TextTertiary
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
 
+// F-NAV-1 fix: add the exercise_list route so users can reach the Exercise Library
+// from the main navigation. Previously the screen was registered in the NavHost
+// but had no tab, making it effectively invisible to most users.
 private val BOTTOM_NAV_ITEMS = listOf(
     BottomNavItem("home", "Home", Icons.Filled.Home),
     BottomNavItem("workout", "Workout", Icons.Filled.FitnessCenter),
+    BottomNavItem("exercise_list", "Exercises", Icons.Filled.Search),
     BottomNavItem("program_detail", "Program", Icons.Filled.CalendarMonth),
     BottomNavItem("progress", "Progress", Icons.AutoMirrored.Filled.TrendingUp),
     BottomNavItem("profile", "Profile", Icons.Filled.Person)

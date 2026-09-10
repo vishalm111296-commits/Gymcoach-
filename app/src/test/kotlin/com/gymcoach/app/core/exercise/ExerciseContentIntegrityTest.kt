@@ -11,8 +11,8 @@ import java.io.File
 /**
  * Content-corpus integrity audit (Phase 4 / M4.1).
  *
- * Reads the raw seed JSON assets (app/src/main/assets/exercises/*.json — the
- * unit-test working dir is the module dir, so "src/main/assets/..." resolves)
+ * Reads the raw seed JSON assets under app/src/main/assets/exercises — the
+ * unit-test working dir is the module dir, so "src/main/assets/exercises" resolves
  * and enforces structural + referential invariants that ExerciseSeeder
  * silently depends on:
  *

@@ -91,6 +91,10 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
 
+    // P2 FIX: Track equipment type from user profile
+    private val _equipmentType = MutableStateFlow("home")
+    val equipmentType: StateFlow<String> = _equipmentType.asStateFlow()
+
     /**
      * F-WORKOUT-1 fix: serialise addSet calls so that nextSetNumber is always
      * computed atomically relative to the previous insert. Without this mutex,
@@ -111,6 +115,12 @@ class WorkoutLoggingViewModel @Inject constructor(
         workoutCollectorJob?.cancel()
         workoutCollectorJob = viewModelScope.launch {
             try {
+                // P2 FIX: Load equipment type from user profile
+                val profile = userProfileRepository.getLatestProfile().firstOrNull()
+                if (profile != null) {
+                    _equipmentType.value = profile.equipmentType
+                }
+
                 if (workoutId != null) {
                     workoutRepository.getWorkoutWithDetails(workoutId).collect {
                         _currentWorkout.value = it
@@ -434,8 +444,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
         viewModelScope.launch {
-            val profile = userProfileRepository.getLatestProfile().firstOrNull()
-            val equipmentType = profile?.equipmentType ?: "home"
+            val currentEquipmentType = _equipmentType.value
             val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
             for (we in exercises) {
                 val exercise = we.exercise
@@ -458,7 +467,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                             )
                         },
                         currentSets = normalSets.map { it.toEntity() },
-                        equipmentType = equipmentType
+                        equipmentType = currentEquipmentType
                     )
                     recommendations[exercise.id] = recommendation
                 }

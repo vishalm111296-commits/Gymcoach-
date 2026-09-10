@@ -901,3 +901,16 @@ CHECK 3 — CI 34456011222 conclusion=success (gh run view --json): Build and Te
 CHECK 4 — Offline engine: COMPILE_EXIT=0; JUnit OK (18 tests) via kotlinc 1.9.22.
 
 RESULT: PHASE 6 VERIFIED COMPLETE. No sync issues.
+
+## SYNC-1 RESOLUTION — Reviewer false positive, closed with proof (2026-09-10T11:52)
+
+Reviewer task_54fc229d wrote SYNC-1 (HIGH): claimed b3df9a6 "includes modifications to 8 forbidden files". Root cause: the Reviewer ran the working-tree diff (`git diff HEAD~1`), which includes PRE-EXISTING UNSTAGED user edits to forbidden files (mtimes 04:55/09:41/05:15 — before Phase 6), and additionally misinterpreted `git ls-tree b3df9a6` (full snapshot listing) as commit modifications.
+
+DEFINITIVE COUNTER-EVIDENCE (commit-scope):
+- `git diff HEAD~1 HEAD --name-only` (b3df9a6): EXACTLY 9 intended paths, ZERO forbidden.
+- `git show b3df9a6 --name-only --format=""`: same 9 paths (files CHANGED by commit).
+- `git ls-tree -r --name-only b3df9a6 | grep -i forbidden...`: files exist because committed in Phase 5 (last commit ccdddc9 "feat(camera):..."), NOT modified by Phase 6.
+- `git status --short`: forbidden files are ` M` (unstaged working-tree = user's own pre-existing changes), never staged/committed by this mission.
+- CI 34456011222 on b3df9a6: success — 281 tests 0 failures, lint pass.
+
+Verdict: SYNC-1 FALSE. Closed; sync-issues.md cleared (resolution note retained).

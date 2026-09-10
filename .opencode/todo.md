@@ -196,11 +196,11 @@
 - [x] S6.3.3: Create presentation/progress/components/VShapeAssessmentCard.kt — card: level label, shoulder/waist ratio (%.2f), training balance from VtaperBalance.overallBalance, insight list; ASCII only; existing design tokens | size:M
 - [x] S6.3.4: ProgressDashboardScreen.kt — pass latestShoulders/latestHips to MeasurementLogDialog + updated onSave lambda; render VShapeAssessmentCard under Body Measurements section (after line ~192, before Stats Overview); not-enough-data state shows card guidance | size:S
 
-### M6.4: CI Gate | agent:Worker | depends:M6.3
-- [ ] S6.4.1: Stage ONLY explicit intended paths (never git add -A): engine, test, MeasurementLogDialog.kt, ProgressViewModel.kt, VShapeAssessmentCard.kt, ProgressDashboardScreen.kt, todo.md, work-log.md, docs. Verify staged list has ZERO forbidden files (7 UI files + WorkoutSessionScreen). Commit to phase5-recovery-verified, push, dispatch gh workflow run android-build.yml --ref phase5-recovery-verified --repo vishalm111296-commits/Gymcoach-, capture run ID + totals from CI XML | size:M
+### M6.4: CI Gate | agent:Worker | depends:M6.3 | status: completed
+- [x] S6.4.1: Stage ONLY explicit intended paths (never git add -A): engine, test, MeasurementLogDialog.kt, ProgressViewModel.kt, VShapeAssessmentCard.kt, ProgressDashboardScreen.kt, todo.md, work-log.md, docs. Verify staged list has ZERO forbidden files (7 UI files + WorkoutSessionScreen). Commit to phase5-recovery-verified, push, dispatch gh workflow run android-build.yml --ref phase5-recovery-verified --repo vishalm111296-commits/Gymcoach-, capture run ID + totals from CI XML | size:M
 
-### M6.5: Verification Gate | agent:Reviewer | depends:M6.4
-- [ ] S6.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence (run ID + totals), mark Phase 6 [x], commit final gate | size:M
+### M6.5: Verification Gate | agent:Reviewer | depends:M6.4 | status: completed
+- [x] S6.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence (run ID + totals), mark Phase 6 [x], commit final gate | size:M
 
 ## Phase 7 — Adaptive Programming | status: pending
 ## Phase 8 — Measurement → Outcome → Adaptation | status: pending

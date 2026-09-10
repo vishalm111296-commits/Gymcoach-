@@ -1,16 +1,17 @@
 # Mission Status
 
 ## Progress
-- .opencode/todo.md: 160/160 ([100%])
+- .opencode/todo.md: Phase 6 M6.1-M6.3 complete; M6.4 CI RUNNING (run 34456011222); M6.5 pending
 - Issues: 0 unresolved
-- Workers: 0 active
-- Verification Strategy: evidence-first — CI run 34447891743 (commit 82fd4a7) Build+Lint+UnitTests GREEN (263 tests, 0 failures, 0 errors); 31/31 core/ml JVM tests GREEN offline (kotlinc 1.9.22 + JUnit); Python state-machine mirror replayed all fixed scenarios
-- Execution Status: pass
+- Workers: 0 active (Commander-direct execution mode; Worker/Planner/Reviewer delegations failed 5x this session)
+- Verification Strategy: offline kotlinc+JUnit for engine (COMPILE_EXIT=0, OK 18/18); CI gate for Compose wiring; final evidence from gh run + CI XML re-parse
+- Execution Status: running
 
 ## Current Phase
-Phase 5 — Camera/Form: COMPLETED (gated)
-- FormAnalyzer spec-lock tests (16 StateMachine + 8 MathAndConfig + 2 pre-existing), FrameConverter rotation-cache fix, plank rep-persistence bug fix, FeedbackTone single-source tone mapping, camera UX deep-check fixes (semantic colors kill all-red feedback bug, liveRegion, insets, close button, permission settings deep link)
-- Device/camera verification: NOT CLAIMED (honest gap documented in docs/audit/CURRENT_STATUS.md)
+Phase 6 — V-Shape Assessment (M6.4 CI gate in progress)
 
-## Next
-Phase 6 — V-Shape Assessment (pending)
+## Phase 6 Deliverables
+- M6.1+M6.2: VShapeAssessment.kt + VShapeAssessmentTest.kt (18 tests) — VERIFIED offline
+- M6.3: VShapeAssessmentCard.kt + MeasurementLogDialog/ProgressViewModel/ProgressDashboardScreen wiring — LSP clean, committed b3df9a6
+- M6.4: CI run 34456011222 in_progress on phase5-recovery-verified
+- M6.5: pending final verification (diff + CI totals + todo [x])

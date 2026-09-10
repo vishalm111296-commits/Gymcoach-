@@ -60,6 +60,7 @@ fun GymCoachNavHost(
         }
 
         composable(Routes.HOME) {
+            // F-NAV-1: pass onNavigateToExercises so the new Exercises tab works from Home
             HomeDashboardScreen(
                 onStartWorkout = {
                     navController.navigate(Routes.workoutSession())
@@ -75,6 +76,9 @@ fun GymCoachNavHost(
                 },
                 onNavigateToReadiness = {
                     navController.navigate(Routes.READINESS)
+                },
+                onNavigateToExercises = {
+                    navController.navigate(Routes.EXERCISE_LIST)
                 }
             )
         }

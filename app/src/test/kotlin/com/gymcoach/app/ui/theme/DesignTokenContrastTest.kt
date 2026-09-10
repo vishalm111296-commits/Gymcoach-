@@ -10,7 +10,7 @@ import org.junit.Test
  * NO Compose imports. NO Android dependencies. Runs on plain JVM.
  *
  * Tests the 11 semantic text-on-surface pairs from DESIGN_SYSTEM_20260910.md.
- * All ratios computed per WCAG: sRGB → linear → luminance → contrast.
+ * All ratios computed per WCAG: sRGB -> linear -> luminance -> contrast.
  *
  * Tolerance: ±0.1 for assertTrue comparisons (using >= target - 0.1).
  * Known deviation: TextTertiary on DarkBackground ~3.8:1 (intentional muted text).
@@ -48,88 +48,85 @@ class DesignTokenContrastTest {
     private fun contrastRatio(fg: Long, bg: Long): Double {
         val l1 = luminance(fg)
         val l2 = luminance(bg)
-        val lighter = max(l1, l2)
-        val darker = min(l1, l2)
+        val lighter = if (l1 > l2) l1 else l2
+        val darker  = if (l1 < l2) l1 else l2
         return (lighter + 0.05) / (darker + 0.05)
     }
 
     @Test
-    fun `TextPrimary on DarkBackground ≥ 7.0 (enhanced)`() {
+    fun text_primary_on_dark_background_ge_7_0() {
         val ratio = contrastRatio(DesignTokens.TextPrimary, DesignTokens.DarkBackground)
         println("TextPrimary on DarkBackground = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥7.0, got $ratio", ratio >= 6.9) // ±0.1 tolerance
+        assertTrue("Expected >=7.0, got $ratio", ratio >= 6.9)
     }
 
     @Test
-    fun `TextPrimary on DarkSurface ≥ 4.5`() {
+    fun text_primary_on_dark_surface_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.TextPrimary, DesignTokens.DarkSurface)
         println("TextPrimary on DarkSurface = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `AccentBlueLight (BrandAccentText) on DarkBackground ≥ 4.5`() {
+    fun accent_blue_light_on_dark_background_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.AccentBlueLight, DesignTokens.DarkBackground)
         println("AccentBlueLight on DarkBackground = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `AccentBlueLight on DarkCard ≥ 4.5`() {
+    fun accent_blue_light_on_dark_card_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.AccentBlueLight, DesignTokens.DarkCard)
         println("AccentBlueLight on DarkCard = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `TextPrimary on PrimaryActionContainer (AccentBlueDark) ≥ 4.5`() {
+    fun text_primary_on_primary_action_container_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.TextPrimary, DesignTokens.PrimaryActionContainer)
         println("TextPrimary on PrimaryActionContainer = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `TextPrimary on SuccessContainer ≥ 4.5`() {
+    fun text_primary_on_success_container_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.TextPrimary, DesignTokens.SuccessContainer)
         println("TextPrimary on SuccessContainer = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `TextPrimary on ErrorContainerDark ≥ 4.5`() {
+    fun text_primary_on_error_container_dark_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.TextPrimary, DesignTokens.ErrorContainerDark)
         println("TextPrimary on ErrorContainerDark = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `AccentBlue on DarkBackground ≥ 3.0 (graphics)`() {
+    fun accent_blue_on_dark_background_ge_3_0_graphics() {
         val ratio = contrastRatio(DesignTokens.AccentBlue, DesignTokens.DarkBackground)
         println("AccentBlue on DarkBackground = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥3.0, got $ratio", ratio >= 2.9)
+        assertTrue("Expected >=3.0, got $ratio", ratio >= 2.9)
     }
 
     @Test
-    fun `AccentBlue on DarkSurface ≥ 3.0 (graphics)`() {
+    fun accent_blue_on_dark_surface_ge_3_0_graphics() {
         val ratio = contrastRatio(DesignTokens.AccentBlue, DesignTokens.DarkSurface)
         println("AccentBlue on DarkSurface = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥3.0, got $ratio", ratio >= 2.9)
+        assertTrue("Expected >=3.0, got $ratio", ratio >= 2.9)
     }
 
     @Test
-    fun `TextSecondary on DarkBackground ≥ 4.5`() {
+    fun text_secondary_on_dark_background_ge_4_5() {
         val ratio = contrastRatio(DesignTokens.TextSecondary, DesignTokens.DarkBackground)
         println("TextSecondary on DarkBackground = ${String.format("%.2f", ratio)}:1")
-        assertTrue("Expected ≥4.5, got $ratio", ratio >= 4.4)
+        assertTrue("Expected >=4.5, got $ratio", ratio >= 4.4)
     }
 
     @Test
-    fun `TextTertiary on DarkBackground — known low contrast (documented)`() {
+    fun text_tertiary_on_dark_background_known_low_contrast() {
         val ratio = contrastRatio(DesignTokens.TextTertiary, DesignTokens.DarkBackground)
         println("TextTertiary on DarkBackground = ${String.format("%.2f", ratio)}:1 (KNOWN LOW — muted tertiary)")
-        // Document the actual value; do not weaken to pass.
-        // This is intentional for "muted/disabled" tertiary text per M3 semantics.
-        // If this ever needs to meet 4.5:1, the token value must change (design decision).
         assertTrue("Ratio should be computable", ratio > 0.0)
     }
 }

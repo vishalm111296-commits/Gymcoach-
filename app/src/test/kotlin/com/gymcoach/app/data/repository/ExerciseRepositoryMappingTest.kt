@@ -5,6 +5,7 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.dao.MuscleAssignmentRow
 import com.gymcoach.app.domain.model.Exercise
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -161,7 +162,7 @@ class ExerciseRepositoryMappingTest {
             role = "mystery_role"
         )
 
-        every { dao.getAllMuscleAssignments() } returns listOf(validRow, unknownRow)
+        coEvery { dao.getAllMuscleAssignments() } returns listOf(validRow, unknownRow)
 
         val result = repo.getMuscleAssignmentsWithRoles()
 
@@ -194,7 +195,7 @@ class ExerciseRepositoryMappingTest {
             role = "PrImArY"
         )
 
-        every { dao.getAllMuscleAssignments() } returns listOf(primaryRow, secondaryRow, stabilizerRow, mixedCaseRow)
+        coEvery { dao.getAllMuscleAssignments() } returns listOf(primaryRow, secondaryRow, stabilizerRow, mixedCaseRow)
 
         val result = repo.getMuscleAssignmentsWithRoles()
 

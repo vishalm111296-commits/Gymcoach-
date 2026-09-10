@@ -109,8 +109,6 @@ class HomeViewModelVTaperTest {
             WorkoutWithStats(id = 1000L, date = Instant.ofEpochMilli(now), startTime = Instant.ofEpochMilli(now - 3600000), endTime = Instant.ofEpochMilli(now), duration = 3600, notes = "", completed = true, status = "COMPLETED", volume = 1000.0, setCount = 8, repCount = 80, exerciseCount = 2)
         )
 
-        // 4 completed sets of Quads (4.0 effective) + 4 completed sets of Hamstrings (4.0 effective)
-        // Average across 4 lower body muscle groups (Quads 4.0 + Hams 4.0 + Glutes 0 + Calves 0) / 4.0 = 2.0 average effective sets
         val completedSets = mutableListOf<CompletedSetContext>()
         repeat(4) { i -> completedSets.add(CompletedSetContext(setId = i + 1L, exerciseId = 501L, workoutDate = now, weightKg = 50.0, reps = 10, rpe = 8f, completed = true, setType = 0)) }
         repeat(4) { i -> completedSets.add(CompletedSetContext(setId = i + 10L, exerciseId = 502L, workoutDate = now, weightKg = 40.0, reps = 10, rpe = 8f, completed = true, setType = 0)) }
@@ -134,6 +132,49 @@ class HomeViewModelVTaperTest {
     }
 
     @Test
+    fun `asymmetric lower body distribution computes exact average effective volume`() = runTest {
+        val program = ProgramEntity(id = 1L, name = "V-Taper Plan", daysPerWeek = 4)
+        val day = ProgramDayEntity(id = 10L, programId = 1L, dayNumber = 1, name = "Leg Day", isRestDay = false)
+
+        val exQuad = Exercise(id = 701L, name = "Squat", description = "", muscleGroup = "Quadriceps", equipment = "barbell", difficulty = "Intermediate")
+        val exHam = Exercise(id = 702L, name = "RDL", description = "", muscleGroup = "Hamstrings", equipment = "barbell", difficulty = "Intermediate")
+        val exGlute = Exercise(id = 703L, name = "Hip Thrust", description = "", muscleGroup = "Glutes", equipment = "barbell", difficulty = "Intermediate")
+
+        val assignments = listOf(
+            ExerciseMuscleAssignment(exerciseId = 701L, muscleName = "Quadriceps", role = "primary"),
+            ExerciseMuscleAssignment(exerciseId = 702L, muscleName = "Hamstrings", role = "primary"),
+            ExerciseMuscleAssignment(exerciseId = 703L, muscleName = "Glutes", role = "primary")
+        )
+
+        val now = System.currentTimeMillis()
+        val workouts = listOf(
+            WorkoutWithStats(id = 3000L, date = Instant.ofEpochMilli(now), startTime = Instant.ofEpochMilli(now - 3600000), endTime = Instant.ofEpochMilli(now), duration = 3600, notes = "", completed = true, status = "COMPLETED", volume = 3000.0, setCount = 24, repCount = 240, exerciseCount = 3)
+        )
+
+        // Quads = 12 sets, Hamstrings = 8 sets, Glutes = 4 sets, Calves = 0 sets
+        // Total = 24.0 effective sets / 4 lower body muscle groups = 6.0 average effective sets
+        val completedSets = mutableListOf<CompletedSetContext>()
+        repeat(12) { i -> completedSets.add(CompletedSetContext(setId = i + 1L, exerciseId = 701L, workoutDate = now, weightKg = 100.0, reps = 8, rpe = 8f, completed = true, setType = 0)) }
+        repeat(8) { i -> completedSets.add(CompletedSetContext(setId = i + 100L, exerciseId = 702L, workoutDate = now, weightKg = 90.0, reps = 8, rpe = 8f, completed = true, setType = 0)) }
+        repeat(4) { i -> completedSets.add(CompletedSetContext(setId = i + 200L, exerciseId = 703L, workoutDate = now, weightKg = 110.0, reps = 8, rpe = 8f, completed = true, setType = 0)) }
+
+        every { programRepository.getActiveProgram() } returns flowOf(program)
+        every { programRepository.getDaysForProgram(1L) } returns flowOf(listOf(day))
+        every { programRepository.getExercisesForDays(listOf(10L)) } returns flowOf(emptyMap())
+
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(workouts)
+        every { workoutRepository.getCompletedSetsWithContext(any()) } returns flowOf(completedSets)
+        every { exerciseRepository.getAllExercises() } returns flowOf(listOf(exQuad, exHam, exGlute))
+        every { exerciseRepository.getAllExerciseMuscleDetails() } returns flowOf(assignments)
+
+        val viewModel = HomeViewModel(programRepository, workoutRepository, exerciseRepository, volumeCalculator, analyticsRepository)
+        val state = viewModel.uiState.value
+
+        val legsBar = state.vtaperBars.find { it.label == "Legs" }
+        assertEquals("Asymmetric lower body (12+8+4+0 = 24 / 4) must equal 6.0 average effective sets", 6.0, legsBar!!.current, 0.001)
+    }
+
+    @Test
     fun `historical workout outside current week does not contribute to current week bars`() = runTest {
         val program = ProgramEntity(id = 1L, name = "V-Taper Plan", daysPerWeek = 4)
         val day = ProgramDayEntity(id = 10L, programId = 1L, dayNumber = 1, name = "Pull Day", isRestDay = false)
@@ -141,7 +182,6 @@ class HomeViewModelVTaperTest {
         val exLat = Exercise(id = 601L, name = "Lat Pulldown", description = "", muscleGroup = "Lats", equipment = "cable", difficulty = "Beginner")
         val assignments = listOf(ExerciseMuscleAssignment(exerciseId = 601L, muscleName = "Lats", role = "primary"))
 
-        // Workout from 3 weeks ago (21 days ago)
         val oldDate = System.currentTimeMillis() - (21L * 86400000L)
         val oldWorkouts = listOf(
             WorkoutWithStats(id = 2000L, date = Instant.ofEpochMilli(oldDate), startTime = Instant.ofEpochMilli(oldDate), endTime = Instant.ofEpochMilli(oldDate + 3600000), duration = 3600, notes = "", completed = true, status = "COMPLETED", volume = 2000.0, setCount = 4, repCount = 40, exerciseCount = 1)
@@ -152,7 +192,7 @@ class HomeViewModelVTaperTest {
         every { programRepository.getExercisesForDays(listOf(10L)) } returns flowOf(emptyMap())
 
         every { workoutRepository.getCompletedWorkouts() } returns flowOf(oldWorkouts)
-        every { workoutRepository.getCompletedSetsWithContext(any()) } returns flowOf(emptyList()) // Filtered out by start date in repository
+        every { workoutRepository.getCompletedSetsWithContext(any()) } returns flowOf(emptyList())
         every { exerciseRepository.getAllExercises() } returns flowOf(listOf(exLat))
         every { exerciseRepository.getAllExerciseMuscleDetails() } returns flowOf(assignments)
 

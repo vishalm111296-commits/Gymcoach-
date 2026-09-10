@@ -1,6 +1,7 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.domain.model.CompletedSetContext
+import com.gymcoach.app.domain.model.SetType
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.WeekFields
@@ -83,7 +84,13 @@ class VolumeCalculator @Inject constructor() {
     /**
      * Calculates weekly volume for completed hypertrophy sets (excluding warmups and incomplete sets).
      *
-     * Volume credits per completed set:
+     * Set-Type Contract:
+     * - NORMAL (0), DROP (2), and FAILURE (3) completed sets deliver effective working stimulus
+     *   and are INCLUDED in hypertrophy volume calculations.
+     * - WARMUP (1) sets are submaximal preparation sets and are EXCLUDED.
+     * - Incomplete sets (completed = false) are EXCLUDED.
+     *
+     * Volume credits per completed working set:
      * - Primary muscle: 1.0 effective set
      * - Secondary muscle: 0.5 effective set
      * - Stabilizer muscle: 0.25 effective set
@@ -92,8 +99,8 @@ class VolumeCalculator @Inject constructor() {
         completedSets: List<CompletedSetContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        // Filter: ONLY completed hypertrophy sets (completed == true AND setType != 1 where 1=WARMUP)
-        val validSets = completedSets.filter { it.completed && it.setType != 1 }
+        // Filter: ONLY completed hypertrophy working sets (completed == true AND setType != SetType.WARMUP)
+        val validSets = completedSets.filter { it.isHypertrophyWorkingSet }
 
         val weekBuckets = mutableMapOf<String, MutableMap<String, Double>>()
 
@@ -188,5 +195,11 @@ class VolumeCalculator @Inject constructor() {
         val weekOfYear = zdt.get(weekFields.weekOfWeekBasedYear())
         val year = zdt.get(weekFields.weekBasedYear())
         return "%04d-W%02d".format(Locale.US, year, weekOfYear)
+    }
+
+    companion object {
+        /** Explicit predicate determining whether a set context represents a completed working set for hypertrophy volume. */
+        val CompletedSetContext.isHypertrophyWorkingSet: Boolean
+            get() = completed && setType != SetType.WARMUP.ordinal
     }
 }

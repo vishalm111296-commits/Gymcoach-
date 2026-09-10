@@ -46,10 +46,6 @@ class VolumeCalculatorTest {
     @Test
     fun `deterministic volume weighting example 1 - 3 primary 2 secondary 4 stabilizer`() {
         val now = System.currentTimeMillis()
-        // Create 3 completed sets for Ex A (Primary=Lats, Secondary=Biceps, Stabilizer=Core)
-        // 3 primary sets = 3.0 credits for Lats
-        // 2 secondary sets for Ex B = 2 * 0.5 = 1.0 credit for Lats
-        // 4 stabilizer sets for Ex C = 4 * 0.25 = 1.0 credit for Lats
         val sets = mutableListOf<CompletedSetContext>()
         repeat(3) { i -> sets.add(CompletedSetContext(setId = i + 1L, exerciseId = 101, workoutDate = now, weightKg = 60.0, reps = 10, rpe = 8f, completed = true, setType = 0)) }
         repeat(2) { i -> sets.add(CompletedSetContext(setId = i + 10L, exerciseId = 102, workoutDate = now, weightKg = 50.0, reps = 10, rpe = 8f, completed = true, setType = 0)) }
@@ -100,9 +96,9 @@ class VolumeCalculatorTest {
     }
 
     @Test
-    fun `multiple sets of same exercise are each individually counted`() {
+    fun `multiple sets up to 12 completed sets are individually counted without grouping or capping`() {
         val now = System.currentTimeMillis()
-        val sets = List(3) { i ->
+        val sets = List(12) { i ->
             CompletedSetContext(setId = i + 1L, exerciseId = 400, workoutDate = now, weightKg = 80.0, reps = 8, rpe = 8f, completed = true, setType = 0)
         }
         val muscleMap = mapOf(
@@ -110,8 +106,8 @@ class VolumeCalculatorTest {
         )
 
         val balance = volumeCalculator.calculateWeeklyVolume(sets, muscleMap)
-        assertEquals("Every set must be counted (3.0 effective sets)", 3.0, balance.quadricepsVolume.weeklyEffectiveSets, 0.001)
-        assertEquals("Raw direct sets should be 3", 3, balance.quadricepsVolume.rawDirectSets)
+        assertEquals("12 completed sets must yield 12.0 effective sets", 12.0, balance.quadricepsVolume.weeklyEffectiveSets, 0.001)
+        assertEquals("Raw direct sets should be 12", 12, balance.quadricepsVolume.rawDirectSets)
     }
 
     @Test

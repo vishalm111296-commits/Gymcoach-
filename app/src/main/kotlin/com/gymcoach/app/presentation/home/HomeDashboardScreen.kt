@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
 import com.gymcoach.app.ui.GymCoachBottomNav
+import com.gymcoach.app.ui.Routes
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.ui.theme.DarkSurface
@@ -48,6 +49,7 @@ fun HomeDashboardScreen(
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToReadiness: () -> Unit = {},
+    onNavigateToExerciseList: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,13 +58,14 @@ fun HomeDashboardScreen(
         containerColor = DarkBackground,
         bottomBar = {
             GymCoachBottomNav(
-                currentRoute = "home",
+                currentRoute = Routes.HOME,
                 onNavigate = { route ->
                     when (route) {
-                        "workout" -> onStartWorkout()
-                        "program_detail" -> onViewProgram()
-                        "progress" -> onNavigateToProgress()
-                        "profile" -> onNavigateToProfile()
+                        Routes.WORKOUT_SESSION -> onStartWorkout()
+                        Routes.PROGRAM_DETAIL -> onViewProgram()
+                        Routes.EXERCISE_LIST -> onNavigateToExerciseList()
+                        Routes.PROGRESS -> onNavigateToProgress()
+                        Routes.PROFILE -> onNavigateToProfile()
                         else -> Unit
                     }
                 }

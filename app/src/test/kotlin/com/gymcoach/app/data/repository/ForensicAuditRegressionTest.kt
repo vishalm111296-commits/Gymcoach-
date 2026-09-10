@@ -18,7 +18,7 @@ import org.junit.Test
  * Regression tests for the 6 forensic audit fixes:
  *
  * 1. Status mapping: entity.status → domain.status is preserved end-to-end
- * 2. Terminal-state guard: getLatestIncompleteWorkout only returns ACTIVE
+ * 2. Terminal-state guard: getIncompleteWorkout only returns ACTIVE
  * 3. PR filtering: getPersonalRecordMax filters on status='COMPLETED'
  * 4. ACTIVE workout lookup: queries filter on status='ACTIVE'
  * 5. strftime monthly volume: monthly grouping uses strftime('%Y-%m', ...)
@@ -84,16 +84,16 @@ class ForensicAuditRegressionTest {
     // ──────────────────────────────────────────────
 
     @Test
-    fun `getLatestIncompleteWorkout returns only ACTIVE workouts`() = runTest {
+    fun `getIncompleteWorkout returns only ACTIVE workouts`() = runTest {
         val activeWorkout = WorkoutEntity(
             id = 5L, date = 1700000000000L, startTime = 1700000000000L,
             endTime = 0, duration = 0, notes = "Active workout",
             completed = false, status = "ACTIVE"
         )
 
-        coEvery { workoutDao.getLatestIncompleteWorkout() } returns activeWorkout
+        coEvery { workoutDao.getIncompleteWorkout() } returns activeWorkout
 
-        val result = workoutDao.getLatestIncompleteWorkout()
+        val result = workoutDao.getIncompleteWorkout()
 
         assertNotNull("Should return the ACTIVE workout", result)
         assertEquals("ACTIVE", result!!.status)
@@ -101,28 +101,28 @@ class ForensicAuditRegressionTest {
     }
 
     @Test
-    fun `getLatestIncompleteWorkout returns null when no ACTIVE workouts`() = runTest {
-        coEvery { workoutDao.getLatestIncompleteWorkout() } returns null
+    fun `getIncompleteWorkout returns null when no ACTIVE workouts`() = runTest {
+        coEvery { workoutDao.getIncompleteWorkout() } returns null
 
-        val result = workoutDao.getLatestIncompleteWorkout()
+        val result = workoutDao.getIncompleteWorkout()
 
         assertNull("Should return null when no ACTIVE workouts", result)
     }
 
     @Test
-    fun `getLatestIncompleteWorkout ignores COMPLETED workouts`() = runTest {
-        coEvery { workoutDao.getLatestIncompleteWorkout() } returns null
+    fun `getIncompleteWorkout ignores COMPLETED workouts`() = runTest {
+        coEvery { workoutDao.getIncompleteWorkout() } returns null
 
-        val result = workoutDao.getLatestIncompleteWorkout()
+        val result = workoutDao.getIncompleteWorkout()
 
         assertNull("COMPLETED workouts should not be returned", result)
     }
 
     @Test
-    fun `getLatestIncompleteWorkout ignores ABANDONED workouts`() = runTest {
-        coEvery { workoutDao.getLatestIncompleteWorkout() } returns null
+    fun `getIncompleteWorkout ignores ABANDONED workouts`() = runTest {
+        coEvery { workoutDao.getIncompleteWorkout() } returns null
 
-        val result = workoutDao.getLatestIncompleteWorkout()
+        val result = workoutDao.getIncompleteWorkout()
 
         assertNull("ABANDONED workouts should not be returned", result)
     }
@@ -149,34 +149,7 @@ class ForensicAuditRegressionTest {
         assertNull("Should return null when no COMPLETED workouts with this exercise", maxWeight)
     }
 
-    // ──────────────────────────────────────────────
-    //  Fix #4: ACTIVE workout lookup
-    // ──────────────────────────────────────────────
 
-    @Test
-    fun `getIncompleteWorkout returns only ACTIVE workouts`() = runTest {
-        val activeWorkout = WorkoutEntity(
-            id = 3L, date = 1700000000000L, startTime = 1700000000000L,
-            endTime = 0, duration = 0, notes = "Current workout",
-            completed = false, status = "ACTIVE"
-        )
-
-        coEvery { workoutDao.getIncompleteWorkout() } returns activeWorkout
-
-        val result = workoutDao.getIncompleteWorkout()
-
-        assertNotNull("Should return the ACTIVE workout", result)
-        assertEquals("ACTIVE", result!!.status)
-    }
-
-    @Test
-    fun `getIncompleteWorkout returns null when no ACTIVE workouts`() = runTest {
-        coEvery { workoutDao.getIncompleteWorkout() } returns null
-
-        val result = workoutDao.getIncompleteWorkout()
-
-        assertNull("Should return null when no ACTIVE workouts", result)
-    }
 
     // ──────────────────────────────────────────────
     //  Fix #5: strftime monthly volume

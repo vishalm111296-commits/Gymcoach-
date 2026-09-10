@@ -128,6 +128,7 @@ class OnboardingViewModel @Inject constructor(
                     )
                 )
                 val generated = programGenerator.generateProgram(
+                    sessionLengthMinutes = state.sessionMinutes,
                     frequency = state.daysPerWeek,
                     equipmentType = equipmentType,
                     goal = goal

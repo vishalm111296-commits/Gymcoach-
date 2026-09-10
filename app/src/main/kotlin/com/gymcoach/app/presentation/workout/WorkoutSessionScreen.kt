@@ -1,5 +1,8 @@
 package com.gymcoach.app.presentation.workout
 
+import androidx.compose.material.icons.filled.CameraAlt
+import com.gymcoach.app.core.ml.ExerciseType
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,6 +83,7 @@ import java.time.format.DateTimeFormatter
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
     workoutId: Long? = null,
+    onFormCoachingClick: (ExerciseType) -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
     val currentWorkout by viewModel.currentWorkout.collectAsState()
@@ -223,7 +227,13 @@ fun WorkoutSessionScreen(
                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
+                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
+                               onFormCoachingClick = {
+                                   val exerciseType = ExerciseType.entries.firstOrNull {
+                                       it.name.equals(we.exercise.name.replace(" ", "_").replace("-", "_"), ignoreCase = true)
+                                   } ?: ExerciseType.BICEP_CURL
+                                   onFormCoachingClick(exerciseType)
+                               }
                             )
                         }
 
@@ -447,7 +457,8 @@ private fun ExerciseSetCard(
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
-    onToggleComplete: (Int) -> Unit
+    onToggleComplete: (Int) -> Unit,
+    onFormCoachingClick: () -> Unit = {}
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     Card(

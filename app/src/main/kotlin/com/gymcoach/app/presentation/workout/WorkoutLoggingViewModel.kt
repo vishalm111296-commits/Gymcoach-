@@ -118,7 +118,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         startWorkoutTimer()
                     }
                 } else {
-                    val existing = workoutRepository.getLatestIncompleteWorkout()
+                    val existing = workoutRepository.getIncompleteWorkout()
                     if (existing != null) {
                         workoutRepository.getWorkoutWithDetails(existing.id).collect {
                             _currentWorkout.value = it
@@ -252,9 +252,8 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun addExerciseToWorkout(exercise: Exercise) {
         val workout = _currentWorkout.value ?: return
-        val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
         viewModelScope.launch {
-            workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
+            workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, -1)
             _showExercisePicker.value = false
             // Load previous performance for newly added exercise
             val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)

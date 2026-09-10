@@ -35,7 +35,8 @@ class VolumeCalculator @Inject constructor() {
      * They provide direction, not precision.
      */
     data class TrainingBalance(
-        val backVolume: MuscleVolume,          // replaces former "Lats" — canonical name is "Back"
+        val backVolume: MuscleVolume,
+        val latVolume: MuscleVolume = backVolume,          // replaces former "Lats" — canonical name is "Back"
         val lateralDeltVolume: MuscleVolume,
         val rearDeltVolume: MuscleVolume,
         val upperChestVolume: MuscleVolume,

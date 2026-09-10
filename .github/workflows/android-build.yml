@@ -84,6 +84,14 @@ jobs:
           ./gradlew assembleDebug --stacktrace
           echo "Debug build completed successfully"
 
+      - name: Build Release APK and Verify R8/ProGuard
+        run: |
+          echo "=== Building Release APK ==="
+          echo "Starting release compilation to verify R8/ProGuard rules..."
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
+          echo "Release compilation completed successfully"
+
       - name: Verify Build Output
         run: |
           echo "=== Verifying build outputs ==="

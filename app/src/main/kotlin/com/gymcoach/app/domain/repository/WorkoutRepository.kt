@@ -1,13 +1,13 @@
 package com.gymcoach.app.domain.repository
 
+import com.gymcoach.app.domain.model.CompletedSetContext
+import com.gymcoach.app.domain.model.LastPerformance
+import com.gymcoach.app.domain.model.LastSetData
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
-import com.gymcoach.app.data.local.dao.LastPerformance
-import com.gymcoach.app.data.local.dao.LastSetData
-import com.gymcoach.app.core.program.VolumeCalculator
 import kotlinx.coroutines.flow.Flow
 
 interface WorkoutRepository {
@@ -31,7 +31,7 @@ interface WorkoutRepository {
 
     // History
     fun getCompletedWorkouts(): Flow<List<WorkoutWithStats>>
-    fun getCompletedSetsWithContext(): Flow<List<VolumeCalculator.SetWithContext>>
+    fun getCompletedSetsWithContext(startDate: Long? = null): Flow<List<CompletedSetContext>>
     fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutWithStats>>
     fun getWorkoutsByVolumeDesc(): Flow<List<WorkoutWithStats>>
     fun getWorkoutsByVolumeAsc(): Flow<List<WorkoutWithStats>>

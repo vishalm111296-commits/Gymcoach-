@@ -1,19 +1,22 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.WorkoutDao
+import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
-import com.gymcoach.app.domain.model.WorkoutWithStats
-import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.time.temporal.WeekFields
 import java.util.Date
-import java.util.GregorianCalendar
 import javax.inject.Inject
 
 class AnalyticsRepositoryImpl @Inject constructor(
     private val workoutDao: WorkoutDao
 ) : AnalyticsRepository {
+
     override suspend fun getVolumeHistory(): List<Pair<Date, Double>> {
         return workoutDao.getAllWorkoutVolumes().map {
             Pair(Date(it.date), it.volume)
@@ -26,20 +29,16 @@ class AnalyticsRepositoryImpl @Inject constructor(
 
     override suspend fun getWeeklySummary(): List<Pair<Date, Double>> {
         val volumes = workoutDao.getAllWorkoutVolumes()
-        val calendar = GregorianCalendar()
-
+        val zoneId = ZoneId.systemDefault()
         val grouped = mutableMapOf<Date, Double>()
-        for (dv in volumes) {
-            calendar.time = Date(dv.date)
-            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-            val daysToMonday = when (dayOfWeek) {
-                Calendar.MONDAY -> 0
-                Calendar.SUNDAY -> 6
-                else -> dayOfWeek - Calendar.MONDAY
-            }
-            calendar.add(Calendar.DAY_OF_MONTH, -daysToMonday)
-            val weekStart = Date(calendar.timeInMillis)
 
+        for (dv in volumes) {
+            val mondayInstant = Instant.ofEpochMilli(dv.date)
+                .atZone(zoneId)
+                .with(WeekFields.ISO.dayOfWeek(), 1L)
+                .truncatedTo(ChronoUnit.DAYS)
+                .toInstant()
+            val weekStart = Date.from(mondayInstant)
             grouped[weekStart] = (grouped[weekStart] ?: 0.0) + dv.volume
         }
 
@@ -106,9 +105,9 @@ class AnalyticsRepositoryImpl @Inject constructor(
 
     private fun com.gymcoach.app.data.local.dao.WorkoutWithStats.toDomain() = WorkoutWithStats(
         id = id,
-        date = java.time.Instant.ofEpochMilli(date),
-        startTime = java.time.Instant.ofEpochMilli(startTime),
-        endTime = java.time.Instant.ofEpochMilli(endTime),
+        date = Instant.ofEpochMilli(date),
+        startTime = Instant.ofEpochMilli(startTime),
+        endTime = Instant.ofEpochMilli(endTime),
         duration = duration,
         notes = notes,
         completed = completed,
@@ -120,17 +119,19 @@ class AnalyticsRepositoryImpl @Inject constructor(
     )
 
     override suspend fun getWorkoutCounts(): WorkoutCounts {
-        val now = java.util.Calendar.getInstance()
-        val today = now.timeInMillis
-        now.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
-        val week = now.timeInMillis
-        now.set(java.util.Calendar.DAY_OF_MONTH, 1)
-        val month = now.timeInMillis
+        val zoneId = ZoneId.systemDefault()
+        val nowMs = System.currentTimeMillis()
+        val zdt = Instant.ofEpochMilli(nowMs).atZone(zoneId)
+
+        val todayMs = zdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
+        val weekMs = zdt.with(WeekFields.ISO.dayOfWeek(), 1L).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
+        val monthMs = zdt.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
+
         return WorkoutCounts(
             total = workoutDao.getTotalWorkoutsCount(),
-            today = workoutDao.getWorkoutsTodayCount(today),
-            week = workoutDao.getWorkoutsThisWeekCount(week),
-            month = workoutDao.getWorkoutsThisMonthCount(month)
+            today = workoutDao.getWorkoutsTodayCount(todayMs),
+            week = workoutDao.getWorkoutsThisWeekCount(weekMs),
+            month = workoutDao.getWorkoutsThisMonthCount(monthMs)
         )
     }
 

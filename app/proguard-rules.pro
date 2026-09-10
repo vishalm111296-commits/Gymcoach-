@@ -1,6 +1,6 @@
 # GymCoach ProGuard Rules
 
-# ── Room ───────────────────────────────────────
+# ── Room ─────────────────────────────────────────────────────
 -keep class com.gymcoach.app.data.local.entity.** { *; }
 -keep class com.gymcoach.app.data.local.dao.** { *; }
 -keep class com.gymcoach.app.data.local.database.** { *; }
@@ -8,23 +8,15 @@
 -keep class * implements androidx.room.RoomDatabase.Callback { *; }
 -keep class * extends androidx.room.migration.Migration { *; }
 
-# ── Domain & Repository ──────────────────────────
+# ── Domain & Repository ──────────────────────────────────────
 -keep class com.gymcoach.app.domain.model.** { *; }
 -keep class com.gymcoach.app.domain.repository.** { *; }
 -keep class com.gymcoach.app.data.repository.** { *; }
 
-# ── Core Domain Logic ────────────────────────────
-# F-PROGUARD-1: core classes were previously missing. ProgramGenerator,
-# ProgressionEngine, VolumeCalculator, EquipmentAvailability, RestTimerManager
-# etc. are Hilt-injected singletons. Even though Hilt-generated factories
-# typically retain them, explicit keeps guard against R8 rule changes and
-# make the intent unambiguous.
--keep class com.gymcoach.app.core.** { *; }
-
-# ── Presentation (ViewModels, Screens) ─────────────────
+# ── Presentation (ViewModels, Screens) ───────────────────────
 -keep class com.gymcoach.app.presentation.** { *; }
 
-# ── ML / MediaPipe ────────────────────────────────
+# ── ML / MediaPipe ───────────────────────────────────────────
 -keep class com.gymcoach.app.core.ml.** { *; }
 -keep class com.google.mediapipe.** { *; }
 -keep class com.google.mediapipe.framework.** { *; }
@@ -32,36 +24,36 @@
 -keep class com.google.mediapipe.tasks.** { *; }
 -dontwarn com.google.mediapipe.**
 
-# ── Timer / Notification ─────────────────────────────
+# ── Timer / Notification ─────────────────────────────────────
 -keep class com.gymcoach.app.core.timer.** { *; }
 -keep class com.gymcoach.app.core.notification.** { *; }
 
-# ── Hilt ─────────────────────────────────────────────
+# ── Hilt ─────────────────────────────────────────────────────
 -keep class dagger.hilt.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$ViewWithFragmentContextWrapper { *; }
 -dontwarn dagger.hilt.**
 
-# ── Kotlin Coroutines ────────────────────────────────
+# ── Kotlin Coroutines ────────────────────────────────────────
 -keep class kotlinx.coroutines.** { *; }
 -keep class kotlinx.coroutines.flow.** { *; }
 
-# ── CameraX ──────────────────────────────────────
+# ── CameraX ──────────────────────────────────────────────────
 -keep class androidx.camera.** { *; }
 -dontwarn androidx.camera.**
 
-# ── Coil Image Loading ─────────────────────────────
+# ── Coil Image Loading ───────────────────────────────────────
 -keep class coil.** { *; }
 -dontwarn coil.**
 
-# ── Remove logging in release builds ───────────────────
+# ── Remove logging in release builds ─────────────────────────
 -assumenosideeffects class android.util.Log {
     public static int v(...);
     public static int d(...);
     public static int i(...);
 }
 
-# ── Prevent renaming of source files for cleaner stack traces ──
+# ── Prevent renaming of source files for cleaner stack traces ─
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
 -dontwarn javax.lang.model.**

@@ -105,38 +105,38 @@
 - [x] S2.8.6.a: gh workflow run android-build.yml on phase5-recovery-verified
 - [x] S2.8.6.b: Verify 193+ tests pass (Build + Lint + Unit Tests all GREEN)
 
-## Phase 3 — Design System | status: in_progress
-### M3.1: Design Token Inventory & Intent | status: pending
+## Phase 3 — Design System | status: completed
+### M3.1: Design Token Inventory & Intent | status: completed
 ### T3.1.1: Write docs/design/DESIGN_SYSTEM_20260910.md | agent:Worker
-- [ ] S3.1.1.1: Token inventory + contrast matrix + decisions | size:M
+- [x] S3.1.1.1: Token inventory + contrast matrix + decisions | size:M | verified
 
-### M3.2: Foundation Tokens | status: pending
+### M3.2: Foundation Tokens | status: completed
 ### T3.2.1: Dimens.kt + Shape.kt | agent:Worker
-- [ ] S3.2.1.1: Spacing scale (4/8/12/16/20/24/32) | size:S
-- [ ] S3.2.1.2: Shape scale (small/medium/large) | size:S
+- [x] S3.2.1.1: Spacing scale (4/8/12/16/20/24/32) | size:S | verified
+- [x] S3.2.1.2: Shape scale (small/medium/large) | size:S | verified
 
 ### T3.2.2: Semantic color tokens + ColorScheme wiring | agent:Worker
-- [ ] S3.2.2.1: Color.kt semantic tokens | size:M
-- [ ] S3.2.2.2: Theme.kt ColorScheme roles | size:M
-- [ ] S3.2.2.3: DesignTokenContrastTest (pure JVM WCAG) | size:M
+- [x] S3.2.2.1: Color.kt semantic tokens | size:M | verified
+- [x] S3.2.2.2: Theme.kt ColorScheme roles | size:M | verified
+- [x] S3.2.2.3: DesignTokenContrastTest (pure JVM WCAG) | size:M | verified
 
-### M3.3: Token Migration (committed files only) | status: pending
+### M3.3: Token Migration (committed files only) | status: completed
 ### T3.3.1: Component migration | agent:Worker
-- [ ] S3.3.1.1: SetCompleteButton success token | size:S
-- [ ] S3.3.1.2: BottomNavigation roles | size:M
+- [x] S3.3.1.1: SetCompleteButton success token | size:S | verified
+- [x] S3.3.1.2: BottomNavigation roles | size:M | verified
 
 ### T3.3.2: Screen padding/stat migration | agent:Worker
-- [ ] S3.3.2.1: WorkoutSessionScreen mechanical tokens | size:M
-- [ ] S3.3.2.2: History screens mechanical tokens | size:M
+- [x] S3.3.2.1: WorkoutSessionScreen mechanical tokens | size:M | verified
+- [x] S3.3.2.2: History screens mechanical tokens | size:M | verified
 
-### M3.4: Verification | status: pending
+### M3.4: Verification | status: completed
 ### T3.4.1: CI + preservation gate | agent:Reviewer | depends:M3.3
-- [ ] S3.4.1.1: 7-file byte-preservation assert | size:S
-- [ ] S3.4.1.2: CI green (Build+Lint+UnitTests, 205+) | size:L
+- [x] S3.4.1.1: 7-file byte-preservation assert | size:S | verified
+- [x] S3.4.1.2: CI green (Build+Lint+UnitTests, 216) | size:L | verified: run 34429123454 SUCCESS
 
-### M3.5: Final Gate | status: pending
+### M3.5: Final Gate | status: completed
 ### T3.5.1: Reviewer full-system verification + todo [x] | agent:Reviewer | depends:M3.4
-- [ ] S3.5.1.1: Final evidence report | size:M
+- [x] S3.5.1.1: Final evidence report | size:M | verified
 
 ## Phase 4 — Exercise/Content/Media | status: pending
 ## Phase 5 — Camera/Form | status: pending

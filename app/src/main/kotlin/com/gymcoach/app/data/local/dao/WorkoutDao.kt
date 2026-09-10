@@ -73,9 +73,6 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id")
     abstract fun getWorkoutById(id: Long): Flow<WorkoutEntity?>
 
-    @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
-    abstract suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertWorkout(workout: WorkoutEntity): Long
 
@@ -100,6 +97,15 @@ abstract class WorkoutDao {
 
     @Query("SELECT * FROM workout_exercises WHERE id = :id")
     abstract suspend fun getWorkoutExerciseById(id: Long): WorkoutExerciseEntity?
+
+    @Query("SELECT COALESCE(MAX(orderIndex) + 1, 0) FROM workout_exercises WHERE workoutId = :workoutId")
+    abstract suspend fun getNextOrderIndex(workoutId: Long): Int
+
+    @Transaction
+    open suspend fun addExerciseToWorkoutAtomic(workoutId: Long, exerciseId: Long, requestedOrderIndex: Int = -1): Long {
+        val orderIndex = if (requestedOrderIndex >= 0) requestedOrderIndex else getNextOrderIndex(workoutId)
+        return insertWorkoutExercise(WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exerciseId, orderIndex = orderIndex))
+    }
 
     // WorkoutSets
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId ORDER BY setNumber ASC")

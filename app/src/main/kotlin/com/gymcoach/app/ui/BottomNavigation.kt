@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -28,11 +29,12 @@ import com.gymcoach.app.ui.theme.TextTertiary
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
 
 private val BOTTOM_NAV_ITEMS = listOf(
-    BottomNavItem("home", "Home", Icons.Filled.Home),
-    BottomNavItem("workout", "Workout", Icons.Filled.FitnessCenter),
-    BottomNavItem("program_detail", "Program", Icons.Filled.CalendarMonth),
-    BottomNavItem("progress", "Progress", Icons.AutoMirrored.Filled.TrendingUp),
-    BottomNavItem("profile", "Profile", Icons.Filled.Person)
+    BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
+    BottomNavItem(Routes.WORKOUT_SESSION, "Workout", Icons.Filled.FitnessCenter),
+    BottomNavItem(Routes.PROGRAM_DETAIL, "Program", Icons.Filled.CalendarMonth),
+    BottomNavItem(Routes.EXERCISE_LIST, "Exercises", Icons.AutoMirrored.Filled.List),
+    BottomNavItem(Routes.PROGRESS, "Progress", Icons.AutoMirrored.Filled.TrendingUp),
+    BottomNavItem(Routes.PROFILE, "Profile", Icons.Filled.Person)
 )
 
 /**

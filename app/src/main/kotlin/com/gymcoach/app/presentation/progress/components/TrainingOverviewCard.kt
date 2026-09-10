@@ -74,7 +74,7 @@ fun TrainingOverviewCard(
                 StatCell(value = "%,d".format(totalReps), label = "REPS", modifier = Modifier.weight(1f))
                 StatCell(
                     value = "%,d kg".format(totalVolume.roundToInt()),
-                    label = "VOLUME",
+                    label = "TONNAGE (KG)",
                     modifier = Modifier.weight(1f)
                 )
             }

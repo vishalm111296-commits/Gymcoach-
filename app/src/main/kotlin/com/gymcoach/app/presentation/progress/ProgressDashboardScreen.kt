@@ -270,7 +270,7 @@ fun ProgressDashboardScreen(
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            label = "Avg Volume",
+                            label = "Avg Workout Tonnage",
                             value = "%.1f kg".format(state.averageWorkoutVolume),
                             modifier = Modifier.weight(1f)
                         )
@@ -326,7 +326,7 @@ fun ProgressDashboardScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Muscle Volume Heatmap
-                    SectionHeader("Muscle Volume")
+                    SectionHeader("Muscle Effective Sets")
                     Spacer(Modifier.height(8.dp))
                     if (state.muscleVolume.isNotEmpty()) {
                         state.muscleVolume.forEach { muscle ->
@@ -344,7 +344,7 @@ fun ProgressDashboardScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Volume History Chart
-                    SectionHeader("Volume History")
+                    SectionHeader("Tonnage History (kg)")
                     Spacer(Modifier.height(8.dp))
                     if (state.volumeHistory.isNotEmpty()) {
                         VolumeLineChart(

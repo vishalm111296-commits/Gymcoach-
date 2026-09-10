@@ -114,7 +114,7 @@ class GymCoachClosedLoopIntegrationTest {
             targetRepsMax = 10,
             targetSets = 3,
             previousSets = listOf(sourceSet),
-            currentSets = listOf(sourceSet.copy(reps = 10)) // Hit top of range
+            currentSets = listOf(sourceSet.copy(reps = 10, rpe = 8.0)) // Hit top of range
         )
 
         assertNotNull(recommendation)
@@ -130,7 +130,7 @@ class GymCoachClosedLoopIntegrationTest {
         )
         val muscleAssignments = mapOf(
             100L to listOf(
-                VolumeCalculator.MuscleAssignment("Upper Chest", VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment("Chest", VolumeCalculator.MuscleRole.PRIMARY),
                 VolumeCalculator.MuscleAssignment("Triceps", VolumeCalculator.MuscleRole.SECONDARY)
             )
         )

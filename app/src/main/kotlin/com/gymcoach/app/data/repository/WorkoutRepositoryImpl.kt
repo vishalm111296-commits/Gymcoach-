@@ -72,10 +72,6 @@ class WorkoutRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLatestIncompleteWorkout(): Workout? {
-        return workoutDao.getLatestIncompleteWorkout()?.toDomain()
-    }
-
     override suspend fun createWorkout(workout: Workout): Long {
         return workoutDao.insertWorkout(workout.toEntity())
     }
@@ -90,9 +86,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addExerciseToWorkout(workoutId: Long, exerciseId: Long, orderIndex: Int): Long {
-        return workoutDao.insertWorkoutExercise(
-            WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exerciseId, orderIndex = orderIndex)
-        )
+        return workoutDao.addExerciseToWorkoutAtomic(workoutId = workoutId, exerciseId = exerciseId, requestedOrderIndex = orderIndex)
     }
 
     override suspend fun removeExerciseFromWorkout(workoutExerciseId: Long) {

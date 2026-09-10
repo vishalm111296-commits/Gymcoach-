@@ -53,11 +53,48 @@ class ProgressionEngine @Inject constructor(
         val currentWeight = normalSets.first().weight
         val isBodyweight = currentWeight == 0.0
         val currentReps = normalSets.map { it.reps }
+        val rpes = normalSets.map { it.rpe }
+        val avgRpe = if (rpes.isNotEmpty() && rpes.all { it > 0.0 }) rpes.average() else null
+
         val allHitTop = currentReps.all { it >= targetRepsMax }
         val anyBelowMin = currentReps.any { it < targetRepsMin }
         val isEquipmentLimited = equipmentAvailability.isLimited(exerciseEquipment, equipmentType)
 
+        val isHighRpe = avgRpe != null && avgRpe >= 9.5
+        val isLowRpe = avgRpe != null && avgRpe <= 7.0
+
         return when {
+            allHitTop && !isBodyweight && !isEquipmentLimited -> {
+                if (isHighRpe) {
+                    ProgressionRecommendation(
+                        exerciseId = exerciseId,
+                        exerciseName = exerciseName,
+                        currentWeight = currentWeight,
+                        currentReps = currentReps,
+                        recommendedWeight = currentWeight,
+                        recommendedReps = "$targetRepsMin-$targetRepsMax",
+                        recommendedSets = targetSets,
+                        reason = "Top reps hit, but average RPE (%.1f) was very high. Maintain weight to consolidate form.".format(avgRpe),
+                        confidence = 0.8,
+                        isEquipmentLimited = false
+                    )
+                } else {
+                    val newWeight = calculateIncrease(currentWeight)
+                    val rpeReason = if (isLowRpe) " Average RPE (%.1f) indicates low effort.".format(avgRpe) else ""
+                    ProgressionRecommendation(
+                        exerciseId = exerciseId,
+                        exerciseName = exerciseName,
+                        currentWeight = currentWeight,
+                        currentReps = currentReps,
+                        recommendedWeight = newWeight,
+                        recommendedReps = "$targetRepsMin-$targetRepsMax",
+                        recommendedSets = targetSets,
+                        reason = "All sets reached top of rep range ($targetRepsMax).$rpeReason Increase weight.",
+                        confidence = if (isLowRpe) 0.95 else 0.9,
+                        isEquipmentLimited = false
+                    )
+                }
+            }
             allHitTop && !isBodyweight && !isEquipmentLimited -> {
                 val newWeight = calculateIncrease(currentWeight)
                 ProgressionRecommendation(

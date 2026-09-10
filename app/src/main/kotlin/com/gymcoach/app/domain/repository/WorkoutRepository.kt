@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 interface WorkoutRepository {
     fun getAllWorkouts(): Flow<List<Workout>>
     fun getWorkoutWithDetails(workoutId: Long): Flow<WorkoutWithDetails?>
-    suspend fun getLatestIncompleteWorkout(): Workout?
     suspend fun createWorkout(workout: Workout): Long
     suspend fun updateWorkout(workout: Workout)
     suspend fun deleteWorkout(workoutId: Long)

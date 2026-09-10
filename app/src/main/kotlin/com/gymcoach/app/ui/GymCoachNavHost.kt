@@ -75,6 +75,9 @@ fun GymCoachNavHost(
                 },
                 onNavigateToReadiness = {
                     navController.navigate(Routes.READINESS)
+                },
+                onNavigateToExerciseList = {
+                    navController.navigate(Routes.EXERCISE_LIST)
                 }
             )
         }
@@ -150,7 +153,10 @@ fun GymCoachNavHost(
             val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
-                workoutId = workoutId
+                workoutId = workoutId,
+                onFormCoachingClick = { exerciseType ->
+                    navController.navigate(Routes.camera(exerciseType))
+                }
             )
         }
 

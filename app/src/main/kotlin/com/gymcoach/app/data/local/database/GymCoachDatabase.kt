@@ -266,15 +266,24 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4 -> v5: No-op compatibility migration (F-DB-2).
+         * Schema version bump required for installed databases after entity registration updates.
+         * All tables and columns were established in earlier migrations, so no SQL DDL is needed.
+         */
         val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // No-op: all tables and columns established in MIGRATION_2_3 matching version 8 entities.
+                // Intentionally empty no-op migration for Room database version alignment.
             }
         }
 
+        /**
+         * v5 -> v6: No-op compatibility migration (F-DB-2).
+         * UserProfileEntity schema alignment across release builds. No structural DDL changes needed.
+         */
         val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // v6: UserProfileEntity registered at v5 creation; no structural delta.
+                // Intentionally empty no-op migration for Room database version alignment.
             }
         }
 

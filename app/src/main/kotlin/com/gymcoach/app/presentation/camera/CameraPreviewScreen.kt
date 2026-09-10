@@ -3,6 +3,7 @@ package com.gymcoach.app.presentation.camera
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
 import android.util.Size
 import android.view.ViewGroup
@@ -282,9 +283,15 @@ private fun ModelErrorView(message: String, onRetry: () -> Unit) {
 /**
  * Reuses buffers across frames to avoid per-frame allocations:
  * RGBA_8888 ImageProxy -> ARGB_8888 Bitmap -> rotation-corrected Bitmap.
+ *
+ * The rotated output is cached and redrawn each frame instead of allocating a
+ * new Bitmap per frame (previously `Bitmap.createBitmap(...)` ran at every
+ * frame with nonzero rotation, churning the heap at camera frame rate).
  */
 private class FrameConverter {
     private var sourceBitmap: Bitmap? = null
+    private var rotatedBitmap: Bitmap? = null
+    private var rotatedKey: Triple<Int, Int, Float>? = null
 
     /** Produces an upright bitmap matching natural device orientation. */
     fun toUpright(proxy: ImageProxy): Bitmap {
@@ -300,9 +307,19 @@ private class FrameConverter {
         val rotationDegrees = proxy.imageInfo.rotationDegrees.toFloat()
         if (rotationDegrees == 0f) return src
 
-        val matrix = Matrix().apply { postRotate(rotationDegrees) }
-        // Note: interior joint angles computed downstream are invariant to mirroring,
-        // so no front-camera flip is required for coaching correctness.
-        return Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
+        val key = Triple(src.width, src.height, rotationDegrees)
+        val rotated = rotatedBitmap?.takeIf { rotatedKey == key }
+        if (rotated == null) {
+            // First frame for this (size, rotation): allocate the rotated output.
+            val matrix = Matrix().apply { postRotate(rotationDegrees) }
+            return Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
+                .also { rotatedBitmap = it; rotatedKey = key }
+        }
+
+        // Subsequent frames: redraw the freshest src pixels through the same
+        // rotation matrix into the cached bitmap — no per-frame allocation.
+        val canvas = Canvas(rotated)
+        canvas.drawBitmap(src, Matrix().apply { postRotate(rotationDegrees) }, null)
+        return rotated
     }
 }

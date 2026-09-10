@@ -1,23 +1,27 @@
 # Mission Status
 
 ## Progress
-- Phase 2 (T2.8): COMPLETE — 205 tests GREEN (run 34400290084)
-- Phase 3 (Design System): COMPLETE — 216 tests GREEN (run 34429123454)
-  - DesignTokens.kt: single-source ARGB Longs, 11 WCAG-guaranteed pairs
-  - Color.kt: PrimaryActionContainer (6.1:1), SuccessContainer (4.7:1), ErrorContainerDark (6.0:1), BrandAccentText
-  - Dimens.kt: 4dp spacing scale + ScreenPadding + ShapeCorner tokens
-  - Shape.kt: GymCoachShapes
-  - Theme.kt: surfaceContainer*/disabled/outlineVariant/surfaceTint/scrim/inverse/errorContainer→#B3261E
-  - DesignTokenContrastTest: 11 pure-JVM WCAG tests (all pass, Python cross-verified)
-  - ProgramScreen: default Button → primaryContainer (6.1:1 white on AccentBlueDark)
-  - SetCompleteButton: hardcoded → SuccessContainer token
-  - BottomNavigation: surfaceContainer + onSurfaceVariant (improves inactive contrast)
-  - Accent text 7 sites → BrandAccentText (4.6–5.5:1)
-  - Mechanical Dimens: 6 screen-edge 16.dp → Dimens.ScreenPadding
-  - docs/design/DESIGN_SYSTEM_20260910.md: full inventory + WCAG matrix
-- 7 pre-existing uncommitted UI files: PRESERVED (zero Phase-3 tokens, ` M` only)
-- Deferred: APP-034/043/044 (sign-off), APP-028 (product), APP-020 (device)
-- Main branch: RED (out of scope, no merge to main)
+- .opencode/todo.md: Phase 4 100% [x] (234 tests GREEN, run 34440763410); Phases 5-11 pending
+- Issues: 0 unresolved
+- Workers: 0 active
+- Verification Strategy: CI-as-truth (3 failure cycles caught real bugs: nested KDoc comment, MockK capture scope member, suspend-in-every). Next: Phase 5 Camera/Form.
+- Execution Status: pass (Phase 4)
 
 ## Current Phase
-Phase 3 COMPLETE — awaiting Reviewer gate marks
+Phase 5 — Camera/Form (scoping)
+
+## Phase 4 Deliverables (commits 04b4639, c136237, 8ced5b0, 8913d6b, 38e687c, bcbfee5, 75c53ce, 829d685)
+1. CONTENT: 16 duplicate exercise IDs deduplicated (first-file canonical wins; directive: no dupes re-introduced — strict uniqueness test enforces), 6 dangling alternative refs cleaned; corpus = 123 unique exercises; all 114 substitution refs valid
+2. TEST: ExerciseContentIntegrityTest (8 pure-JVM checks via new org.json testImplementation dep)
+3. REPO: parseRole sanitization (unknown DB roles SKIPPED, no IllegalArgumentException); blank-query search guard (no FTS throw)
+4. TEST: ExerciseRepositoryMappingTest (32-field domain<->entity round-trip, role sanitization, blank/non-blank search)
+5. MEDIA: ExerciseVideoPlayer — infinite while(true){delay(200)} polling REMOVED (listener-driven); onPlayerError -> "Media unavailable"; null/blank URI -> "No media available" placeholder; formatTime clamped; helpers internal
+6. TEST: ExerciseVideoPlayerHelpersTest (5 tests)
+7. CI: run 34440763410 SUCCESS — Build/Lint/UnitTests; 234 tests / 0 failures / 0 errors / 20 suites (XML ground truth)
+8. Zero forbidden files touched (git show --name-only verified); zero test weakenings (only additions + one strengthening: duplicate consistency -> strict uniqueness)
+
+## CI Fix Cycle learnings (worth repeating in future phases)
+- Kotlin block comments NEST: `*.json` inside KDoc opens a nested comment -> "Unclosed comment" at EOF. Avoid glob patterns in comments.
+- MockK `capture()` is a member of the verify/coVerify scope — importing io.mockk.capture is an unresolved reference; use pattern from WorkoutSessionHostileTest.
+- MuscleAssignmentRow etc. top-level classes in DAO files (not nested in interface).
+- Suspend DAO calls need coEvery, never every.

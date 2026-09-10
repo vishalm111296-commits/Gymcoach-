@@ -332,3 +332,32 @@
 - Set type presets (warm-up → working set transition)
 - Volume target tracking per session
 - Better completion summary with PR celebration
+---
+
+## Phase 5 — Camera/Form (delivered)
+
+**Scope honesty statement (per evidence-first engineering requirement):**
+- **Device camera verification is NOT performed and MUST NOT be claimed.** This host is a Termux proot-distro on ARM64 Android (aarch64) with no attached physical/dev camera and no emulator; CameraX bind-to-lifecycle, MediaPipe PoseLandmarker runtime, PreviewView rendering, and permission UX cannot be verified here. Any claim of on-device camera success would be fabricated.
+- What IS verified: pure-JVM logic of `FormAnalyzer` via 2 NEW spec-lock test suites (19 tests added), compile-level CI verification of camera-screen changes, and static audit of committed camera code.
+
+### FormAnalyzer Test Coverage (NEW)
+| Suite | Tests | Locks |
+|-------|-------|-------|
+| FormAnalyzerStateMachineTest | 13 | Rep-cycle semantics (BICEP_CURL/SQUAT/PUSH_UP), 5-frame smoothing window, DOWN->UP transition counting, low-confidence 3-frame reset, INVALID-angle 10-frame reset, first-frame safety, explicit reset(), plank time-based hold/break, feedback strings |
+| FormAnalyzerMathAndConfigTest | 8 | Angle math (90/180/45 deg, degenerate->-1), confidence averaging, visibility threshold boundary, dead-zone phase hold, all-9 default configs boundary sanity |
+
+(2 pre-existing FormAnalyzerTest tests remain, untouched.)
+
+### Camera Code Audits
+- `CameraPreviewScreen.kt` AUDIT: permission flow ✅, model bootstrap with retry ✅, `proxy.close()` in finally ✅ (buffer always released), single-threaded analyzer executor ✅, lifecycle scope bind ✅.
+- IMPROVEMENT (committed): `FrameConverter` previously called `Bitmap.createBitmap(...)` on EVERY analyzed frame when rotation != 0 — real GC churn at camera frame rate. Now the rotated bitmap is cached (keyed by size+rotation) and redrawn per frame; a new allocation happens only on first frame / size change.
+- `AndroidManifest.xml` AUDIT: `CAMERA` runtime permission ✅ present; `uses-feature android.hardware.camera.any` + `front` declared.
+- `PoseDetector.kt` is in the **forbidden-7** read-only list — audited but NOT modified (model bootstrap, single-executor thread-safety, sync detect API).
+
+### Phase 5 Verification Matrix
+| Area | Static | Unit Test (JVM) | Build | CI | Device |
+|------|--------|-----------------|-------|----|--------|
+| FormAnalyzer state machine | ✅ | ✅ 19 tests (CI) | ✅ | ✅ | ❌ NOT CLAIMED |
+| FrameConverter rotation caching | ✅ (code review) | ❌ (android.graphics, not JVM-testable) | ✅ | ✅ | ❌ NOT CLAIMED |
+| Camera bind/permission/lifecycle | ✅ (code review) | ❌ (device-bound) | ✅ | ✅ | ❌ NOT CLAIMED |
+| MediaPipe PoseLandmarker runtime | ❌ NOT VERIFIED | ❌ | ✅ | ✅ | ❌ NOT CLAIMED |

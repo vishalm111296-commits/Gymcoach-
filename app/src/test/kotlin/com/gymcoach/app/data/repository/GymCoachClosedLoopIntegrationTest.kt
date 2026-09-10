@@ -130,7 +130,7 @@ class GymCoachClosedLoopIntegrationTest {
         )
         val muscleAssignments = mapOf(
             100L to listOf(
-                VolumeCalculator.MuscleAssignment("Upper Chest", VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY),
                 VolumeCalculator.MuscleAssignment("Triceps", VolumeCalculator.MuscleRole.SECONDARY)
             )
         )

@@ -90,9 +90,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addExerciseToWorkout(workoutId: Long, exerciseId: Long, orderIndex: Int): Long {
-        return workoutDao.insertWorkoutExercise(
-            WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exerciseId, orderIndex = orderIndex)
-        )
+        return workoutDao.addExerciseToWorkoutAtomic(workoutId, exerciseId)
     }
 
     override suspend fun removeExerciseFromWorkout(workoutExerciseId: Long) {
@@ -101,7 +99,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addSetToExercise(workoutExerciseId: Long, set: WorkoutSet): Long {
-        return workoutDao.insertWorkoutSet(set.toWorkoutSetEntity().copy(workoutExerciseId = workoutExerciseId))
+        return workoutDao.addSetToExerciseAtomic(workoutExerciseId, set.toWorkoutSetEntity().copy(workoutExerciseId = workoutExerciseId))
     }
 
     override suspend fun updateSet(set: WorkoutSet) {

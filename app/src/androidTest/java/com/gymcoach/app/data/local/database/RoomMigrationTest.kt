@@ -371,19 +371,58 @@ class RoomMigrationTest {
     }
 
     @Test
-    fun migrateFullChain1To10_withReadiness() {
+    fun migrateFullChain1To12_withReadinessAndIndices() {
         migrationTestHelper.createDatabase(TEST_DB, 1).close()
 
         val db = migrationTestHelper.runMigrationsAndValidate(
-            TEST_DB, 10, true,
+            TEST_DB, 12, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
+            MIGRATION_10_11, GymCoachDatabase.MIGRATION_11_12
         )
 
         val cursor = db.query("SELECT COUNT(*) FROM readiness")
         assertTrue(cursor.moveToFirst())
         cursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate11To12_addsUniqueIndices() {
+        var db = migrationTestHelper.createDatabase(TEST_DB, 11)
+        db.close()
+
+        db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 12, true,
+            GymCoachDatabase.MIGRATION_11_12
+        )
+
+        val setIndexCursor = db.query("PRAGMA index_list('workout_sets')")
+        var hasSetUniqueIndex = false
+        while (setIndexCursor.moveToNext()) {
+            val name = setIndexCursor.getString(setIndexCursor.getColumnIndexOrThrow("name"))
+            val unique = setIndexCursor.getInt(setIndexCursor.getColumnIndexOrThrow("unique"))
+            if (name == "index_workout_sets_workoutExerciseId_setNumber" && unique == 1) {
+                hasSetUniqueIndex = true
+            }
+        }
+        setIndexCursor.close()
+
+        val exIndexCursor = db.query("PRAGMA index_list('workout_exercises')")
+        var hasExUniqueIndex = false
+        while (exIndexCursor.moveToNext()) {
+            val name = exIndexCursor.getString(exIndexCursor.getColumnIndexOrThrow("name"))
+            val unique = exIndexCursor.getInt(exIndexCursor.getColumnIndexOrThrow("unique"))
+            if (name == "index_workout_exercises_workoutId_orderIndex" && unique == 1) {
+                hasExUniqueIndex = true
+            }
+        }
+        exIndexCursor.close()
+
+        assertTrue("workout_sets must have unique index on (workoutExerciseId, setNumber)", hasSetUniqueIndex)
+        assertTrue("workout_exercises must have unique index on (workoutId, orderIndex)", hasExUniqueIndex)
 
         db.close()
     }

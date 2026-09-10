@@ -68,7 +68,7 @@ class ProgramGenerator @Inject constructor(
         }
         return GeneratedProgram(
             name = "V-Taper $frequency-Day Program",
-            description = "Personalized $frequency-day training program for $goal. Adjusted for readiness score: ${".1f".format(baseReadinessScore)}",
+            description = "Personalized -day training program for . Adjusted for readiness score: " + String.format(java.util.Locale.US, "%.1f", baseReadinessScore),
             goal = goal,
             frequency = frequency,
             days = days

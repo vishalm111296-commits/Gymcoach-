@@ -30,7 +30,7 @@ import com.gymcoach.app.data.local.dao.*
         UserProfileEntity::class,
         ReadinessEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -393,6 +393,16 @@ abstract class GymCoachDatabase : RoomDatabase() {
         /**
          * 10 -> 11: Add preferred_schedule and limitations_preferences to user_profiles table.
          */
+        /**
+         * 11 -> 12: Add unique indices to workout_sets and workout_exercises to prevent race conditions.
+         */
+        val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workout_sets_workoutExerciseId_setNumber` ON `workout_sets` (`workoutExerciseId`, `setNumber`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workout_exercises_workoutId_orderIndex` ON `workout_exercises` (`workoutId`, `orderIndex`)")
+            }
+        }
+
         val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
@@ -409,7 +419,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                    MIGRATION_9_10, MIGRATION_10_11
+                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
                 )
                 .build()
         }

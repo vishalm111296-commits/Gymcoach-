@@ -69,7 +69,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
     @Test
     fun `databaseBackedVolumeCalculationTest calculates real completed sets with primary and secondary credits`() = runTest {
         // 1. Insert Muscles
-        val latId = muscleDao.insert(MuscleEntity(name = "latissimus_dorsi", displayName = "Lats", bodyRegion = "Back"))
+        val latId = muscleDao.insert(MuscleEntity(name = "latissimus_dorsi", displayName = "Back", bodyRegion = "Back"))
         val bicepId = muscleDao.insert(MuscleEntity(name = "biceps", displayName = "Biceps", bodyRegion = "Arms"))
 
         // 2. Insert Exercises
@@ -81,7 +81,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
         )
 
         // 3. Insert ExerciseMuscle relations
-        // Ex A: Lats = PRIMARY (1.0), Biceps = SECONDARY (0.5)
+        // Ex A: Back = PRIMARY (1.0), Biceps = SECONDARY (0.5)
         exerciseMuscleDao.insert(ExerciseMuscleEntity(exerciseId = exAId, muscleId = latId, role = "primary"))
         exerciseMuscleDao.insert(ExerciseMuscleEntity(exerciseId = exAId, muscleId = bicepId, role = "secondary"))
         // Ex B: Biceps = PRIMARY (1.0)
@@ -104,7 +104,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
         // 2 completed sets for Ex B + 1 incomplete set (uncompleted set should be ignored)
         workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 201L, workoutExerciseId = weBId, setNumber = 1, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0))
         workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 202L, workoutExerciseId = weBId, setNumber = 2, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 203L, workoutExerciseId = weBId, setNumber = 3, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = false, setType = 0)) // INCOMPLETE
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 203L, workoutExerciseId = weBId, setNumber = 3, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = false, setType = 0))
 
         // 5. Query real completed sets and exercise muscle details from DB
         val completedSets = repository.getCompletedSetsWithContext().first()
@@ -118,9 +118,10 @@ class RoomDatabaseClosedLoopIntegrationTest {
                     "stabilizer" -> VolumeCalculator.MuscleRole.STABILIZER
                     else -> VolumeCalculator.MuscleRole.PRIMARY
                 }
-                val muscleName = when {
-                    rel.muscleName.contains("lat", ignoreCase = true) -> "Lats"
-                    rel.muscleName.contains("bicep", ignoreCase = true) -> "Biceps"
+                // Fix F-TAXONOMY-1: Use canonical muscle names from VolumeCalculator constants
+                val muscleName = when (rel.muscleName.lowercase()) {
+                    "latissimus_dorsi", "lats", "back" -> VolumeCalculator.MUSCLE_BACK
+                    "biceps" -> VolumeCalculator.MUSCLE_BICEPS
                     else -> rel.muscleName
                 }
                 VolumeCalculator.MuscleAssignment(muscleName, role)
@@ -129,8 +130,8 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
         val balance = volumeCalculator.calculateWeeklyVolume(completedSets, muscleAssignments)
 
-        // 6. Verify real volume credits
-        assertEquals(3, balance.latVolume.directSets) // 3 primary sets
+        // 6. Verify real volume credits (Fixed: use backVolume instead of latVolume)
+        assertEquals(3, balance.backVolume.directSets) // 3 primary sets
         assertEquals(2, balance.bicepsVolume.directSets) // 2 primary sets
         assertEquals(3, balance.bicepsVolume.indirectSets) // 3 secondary sets from Lat Pulldown
     }

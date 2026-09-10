@@ -160,26 +160,27 @@
 ### M4.5: Reviewer Verification Gate | agent:Reviewer | depends:M4.4 | status: completed
 - [x] S4.5.1: Verify diffs (zero forbidden files, zero test weakenings), CI evidence, mark Phase 4 [x], commit final gate | size:M | verified: Reviewer gate — diffs+CI+XML counts; zero forbidden files (git show check); corpus 123 unique
 
-## Phase 5 — Camera/Form | status: in_progress
+## Phase 5 — Camera/Form | status: completed
 
 ### M5.1: FormAnalyzer State-Machine Spec-Lock Tests | agent:Worker
-- [ ] S5.1.1: FormAnalyzerStateMachineTest — rep-cycle spec-lock for BICEP_CURL/SQUAT/PUSH_UP (defaultFor configs): 5xDOWN->1xUP counts rep; down->up->down->up = 2 reps | size:M
-- [ ] S5.1.2: Edge cases: low-confidence x3 -> reset+null; invalid angle x10 -> reset; NaN-safe first frame (no history); reset() zeroes all state | size:M
-- [ ] S5.1.3: Plank time-based: hold >= holdDurationMs increments once (custom short config, currentTimeMs) | size:S
+- [x] S5.1.1: FormAnalyzerStateMachineTest — rep-cycle spec-lock for BICEP_CURL/SQUAT/PUSH_UP (defaultFor configs): 5xDOWN->1xUP counts rep; down->up->down->up = 2 reps | size:M
+- [x] S5.1.2: Edge cases: low-confidence x3 -> reset+null; invalid angle x10 -> reset; NaN-safe first frame (no history); reset() zeroes all state | size:M
+- [x] S5.1.3: Plank time-based: hold >= holdDurationMs increments once (custom short config, currentTimeMs) | size:S
 
 ### M5.2: FormAnalyzer Math + Config Tests | agent:Worker
-- [ ] S5.2.1: Angle math: 90deg right angle, 180deg straight, degenerate vectors -> -1 (INVALID path), visibility/averageConfidence semantics | size:M
-- [ ] S5.2.2: defaultFor() configs sane for all 9 ExerciseTypes (thresholds in 0..180, minConfidence 0..1, plank isTimeBased+holdDuration>0) | size:S
+- [x] S5.2.1: Angle math: 90deg right angle, 180deg straight, degenerate vectors -> -1 (INVALID path), visibility/averageConfidence semantics | size:M
+- [x] S5.2.2: defaultFor() configs sane for all 9 ExerciseTypes (thresholds in 0..180, minConfidence 0..1, plank isTimeBased+holdDuration>0) | size:S
 
 ### M5.3: Camera Screen Audit Fixes (committed files only) | agent:Worker
-- [ ] S5.3.1: FrameConverter: cache rotated Bitmap per rotationDegrees (stop per-frame Bitmap.createBitmap at 30fps); keep buffer-reuse path | size:S
-- [ ] S5.3.2: Document device-camera verification GAP honestly (no physical device on ARM64 proot host) — docs/audit/CURRENT_STATUS.md note, NO fake device/CI claims | size:S
+- [x] S5.3.1: FrameConverter: cache rotated Bitmap per rotationDegrees (stop per-frame Bitmap.createBitmap at 30fps); keep buffer-reuse path | size:S
+- [x] S5.3.2: Document device-camera verification GAP honestly (no physical device on ARM64 proot host) — docs/audit/CURRENT_STATUS.md note, NO fake device/CI claims | size:S
+- [x] S5.3.3: Deep-check fixes (commit 82fd4a7): plank rep-persistence bug; FeedbackTone single-source on AnalysisResult; CameraOverlay tone->semantic colors (kills all-red feedback bug), liveRegion, insets; close button + permission settings deep link | size:M
 
 ### M5.4: CI Gate | agent:Worker
-- [ ] S5.4.1: Commit+push phase5-recovery-verified; dispatch android-build.yml; capture test totals from CI XML | size:M
+- [x] S5.4.1: Commit+push phase5-recovery-verified; dispatch android-build.yml; capture test totals from CI XML | size:M
 
 ### M5.5: Reviewer Verification Gate | agent:Reviewer | depends:M5.4
-- [ ] S5.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence, mark Phase 5 [x], commit final gate | size:M
+- [x] S5.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence, mark Phase 5 [x], commit final gate | size:M
 
 ## Phase 6 — V-Shape Assessment | status: pending
 ## Phase 6 — V-Shape Assessment | status: pending

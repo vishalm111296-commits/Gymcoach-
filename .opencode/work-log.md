@@ -683,3 +683,187 @@ CI run 34447891743 (commit 82fd4a7) — conclusively GREEN.
 | 4. CameraOverlay UI bug fix real | ✅ PASS | FeedbackColors=0 occurrences; tone->color GOOD 0xFF4CAF50/WARN 0xFFFFC107/NEUTRAL White; liveRegion+insets present; feedbackTone wired; ACTION_APPLICATION_DETAILS_SETTINGS deep link; onClose->popBackStack |
 | 5. CI evidence (independent re-parse) | ✅ PASS | run conclusion=success, headSha=82fd4a7; artifact re-download parsed: **263 tests, 0 failures, 0 errors** (22 file-suites) |
 NOTE: Reviewer agent delegation timed out twice (5-min infra limit); gate verified directly via identical `git`/`gh` read-only commands with full evidence trail recorded here.
+
+## Phase 6 Planning — 2026-09-10
+
+Restructured .opencode/todo.md for Phase 6 — V-Shape Assessment (merged duplicate Phase 6 headers into single "## Phase 6 — V-Shape Assessment | status: in_progress" with full task tree M6.1–M6.5).
+
+**Scope (from domain discovery):**
+- **Engine**: app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt (pure Kotlin, NO androidx/android imports)
+  - VShapeLevel (NOT_ENOUGH_DATA/EARLY/BUILDING/DEVELOPING/STRONG), shoulder/waist ratio heuristic
+  - Inputs: shouldersCm/waistCm/hipsCm from BodyMeasurementEntity v11 (already persisted, currently unused by dialog) + training scores from VolumeCalculator.calculateVtaperBalance
+- **Tests**: VShapeAssessmentTest.kt (pure JVM, ASCII test names, JUnit4)
+- **Wiring** (files NOT forbidden): 
+  - MeasurementLogDialog (add Shoulders/Hips fields)
+  - ProgressViewModel (inject ExerciseRepository + VolumeCalculator, compute assessment)
+  - VShapeAssessmentCard (new component)
+  - ProgressDashboardScreen (render under Body Measurements)
+- **Constraints**: 7 forbidden UI files + WorkoutSessionScreen untouched; stage explicit paths only; no git add -A
+
+**Delegated:**
+- Worker task_d670ec31 (ses_f75a8ad68ffeZD8Tghxh4o25PU): Implement VShapeAssessment engine + tests (M6.1 + M6.2)
+- Planner task_befbd16f (ses_f75ac7865ffeKIvWdHv4jISHtk): todo.md restructure (completed - verified in current todo.md)
+
+**Verification Strategy:**
+- Pure-JVM engine verified offline via kotlinc 1.9.22 + JUnit (proven Phase 5 recipe)
+- Progress-tab UI wiring verified via CI (android-build.yml on phase5-recovery-verified)
+- Final gate executes read-only git/gh evidence directly (Reviewer delegations time out ~5min in this env)
+
+Timestamp: 2026-09-10T11:15
+
+## Phase 6 — V-Shape Assessment (session continuation)
+
+**Unity evidence — engine+test (S6.1.1, S6.2.1) VERIFIED OFFLINE:**
+- File: app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt
+  - Final state after Commander smart-cast fix (delegated Workers failed x3: no-op -> invalid `!` bang -> NPE-prone unconditional `!!` before NOT_ENOUGH_DATA guard)
+  - Level block: smart-cast via `shoulderWaistRatio == null` guard, no bang operator
+- File: app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt (18 JUnit4 tests, ASCII names)
+- Command: java -cp kotlin-compiler-embeddable... K2JVMCompiler -d /tmp/opencode/vshape_out <engine> <test>
+- Result: COMPILE_EXIT=0
+- Command: java -cp vshape_out:kotlin-stdlib:junit:hamcrest org.junit.runner.JUnitCore com.gymcoach.app.core.assessment.VShapeAssessmentTest
+- Result: OK (18 tests)
+- Test-spec fixes applied (additive, no weakening): split testCombinedInsightOrdering (asserts 2 insights for dual-underload 1.0/1.2) + added testCombinedInsightMiddleBandOrdering (1 insight); corrected testZeroGuardsShouldersZero to assert waistHipRatio=40/90 (waist&hips>0 -> ratio computed even when shoulders missing / NOT_ENOUGH_DATA); added DELTA const
+- md5: engine a3b61f9f… (recompute in gate), test c5f29d… (recompute in gate)
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt | CREATE | done | com-verif | pass (18/18) | 2026-09-10T11:19 | - |
+| app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt | CREATE | done | com-verif | pass (18/18) | 2026-09-10T11:19 | - |
+
+**Next:** M6.3 wiring (MeasurementLogDialog, ProgressViewModel, VShapeAssessmentCard, ProgressDashboardScreen) -> M6.4 CI gate -> M6.5 verification gate.
+
+## Phase 6 — VShapeAssessment Core Engine (M6.1 + M6.2)
+
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt | CREATE | done | ses_vshape6 | pass | 2026-09-10T11:25 | - |
+| app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt | CREATE | done | ses_vshape6 | pass | 2026-09-10T11:25 | - |
+
+
+## Phase 6 M6.1 + M6.2 VERIFICATION — 2026-09-10
+
+**VERIFYING:** VShapeAssessment pure-JVM core engine (M6.1) + VShapeAssessmentTest (M6.2)
+
+**Evidence verified:**
+
+1. **Files created (both NEW, no repo file modified):**
+   - /root/gymcoach/Gymcoach-/app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt (6744 bytes)
+   - /root/gymcoach/Gymcoach-/app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt (6407 bytes)
+
+2. **Offline compilation (kotlinc 1.9.22 + JUnit 4.13.2):**
+   - COMPILE_EXIT=0 (clean compile, no errors)
+
+3. **JUnit test execution:**
+   - OK (18 tests) — all pass
+   - Test coverage includes:
+     - Ratio math (shoulderWaistRatio=1.5, waistHipRatio=40/90, delta=1e-9)
+     - Zero guards: (0,0,0), (60,0,90), (0,40,90) → NOT_ENOUGH_DATA, null ratios, hasMeasurements=false, single insight
+     - Level boundaries: 1.29→EARLY, 1.30→BUILDING, 1.44→BUILDING, 1.45→DEVELOPING, 1.59→DEVELOPING, 1.60→STRONG
+     - Training insights: primary<2.0, secondary<2.0, both>=3.0, middle-band keep-balanced
+     - Combined ordering: insights[0]="Add lateral delt...", insights[1]="Upper chest...", size=2
+     - Label strings: all 5 VShapeLevel labels ASCII
+     - formatRatio: Locale.US formatting (1.50, 1.33, "—" for null)
+
+4. **API contract compliance:**
+   - PURE Kotlin: NO androidx, NO android, NO repository imports
+   - VShapeLevel enum with 5 values and String labels
+   - VShapeMorphology data class with nullable ratios + hasMeasurements Boolean
+   - VShapeAssessment data class with all required fields
+   - VShapeAssessmentCalculator.assess() with exact signature
+   - Ratio computation: shoulders/waist when both > 0 else null; waist/hips when both > 0 else null
+   - Level thresholds exactly as specified
+   - Insights in declared order, ASCII strings, never empty
+   - Locale.US formatting for all ratio string output
+   - Full KDoc documenting thresholds as PRODUCT HEURISTICS (not clinical claims)
+
+5. **Todo marks already applied:**
+   - S6.1.1: [x] (M6.1 header: status: completed)
+   - S6.2.1: [x] (M6.2 header: status: completed)
+
+**RESULT: PASS** — M6.1 engine + M6.2 tests verified complete. Ready for M6.3 wiring.
+
+Timestamp: 2026-09-10T11:27
+
+
+## Phase 6 — M6.3 wiring (Command-verified, LSP clean)
+
+**Files (non-forbidden, verified LSP clean via lsp_diagnostics):**
+- app/src/main/kotlin/com/gymcoach/app/presentation/progress/components/VShapeAssessmentCard.kt — NEW (Card, DarkSurface, ASCII, product-heuristic disclaimer in KDoc)
+- app/src/main/kotlin/com/gymcoach/app/presentation/progress/components/MeasurementLogDialog.kt — +latestShoulders/latestHips fields, +Shoulders/Hips input, onSave 7-arg
+- app/src/main/kotlin/com/gymcoach/app/presentation/progress/ProgressViewModel.kt — inject ExerciseRepository+VolumeCalculator; UiState +latestShoulders/latestHips/vShapeAssessment/vtaperBalanceText; saveMeasurement extended; load() computes VShapeAssessmentCalculator.assess from latest measurements + calculateWeeklyVolume()->calculateVtaperBalance() scores
+- app/src/main/kotlin/com/gymcoach/app/presentation/progress/ProgressDashboardScreen.kt — dialog call updated, VShapeAssessmentCard rendered under Body Measurements
+
+**Cross-refs verified:** Workout.date:Instant->toEpochMilli; Exercise.id:Long; WorkoutSet.toEntity(); SetWithContext(set,exerciseId,workoutDate); getMuscleAssignmentsWithRoles(). **Engine re-verified after comment cleanup: COMPILE_EXIT=0, OK (18 tests).**
+**Scope:** git shows only the 3 modified + new card + assessment/ dirs; forbidden-7 + WorkoutSessionScreen mtimes pre-session (4:55/9:41/5:15), untouched.
+
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| app/src/main/kotlin/com/gymcoach/app/presentation/progress/components/VShapeAssessmentCard.kt | CREATE | done | com-wire | pending-CI | 2026-09-10T11:30 | - |
+| app/src/main/kotlin/com/gymcoach/app/presentation/progress/components/MeasurementLogDialog.kt | MODIFY | done | com-wire | pending-CI | 2026-09-10T11:30 | - |
+| app/src/main/kotlin/com/gymcoach/app/presentation/progress/ProgressViewModel.kt | MODIFY | done | com-wire | pending-CI | 2026-09-10T11:30 | - |
+| app/src/main/kotlin/com/gymcoach/app/presentation/progress/ProgressDashboardScreen.kt | MODIFY | done | com-wire | pending-CI | 2026-09-10T11:30 | - |
+
+**Next:** S6.4.1 CI gate: stage explicit paths, verify zero forbidden, commit phase5-recovery-verified, push, gh workflow run android-build.yml.
+
+## Phase 6 — V-Shape Assessment Verification (2026-09-10)
+
+**VERIFICATION RESULT: PASS** — M6.1 (engine) + M6.2 (tests) verified offline.
+
+### Evidence Verified
+
+| Check | Command | Result |
+|-------|---------|--------|
+| **File existence** | `ls app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt` | ✅ Both files present |
+| **Offline compilation** | `kotlinc 1.9.22 + JUnit4 classpath` | ✅ COMPILE_EXIT=0 |
+| **Unit tests (JUnit4)** | `java -cp ... org.junit.runner.JUnitCore com.gymcoach.app.core.assessment.VShapeAssessmentTest` | ✅ OK (18 tests) |
+| **API contract match** | Spec inspection | ✅ All required types, functions, thresholds present |
+| **Pure JVM (no Android)** | `grep -r "androidx\|android\." app/src/main/kotlin/com/gymcoach/app/core/assessment/` | ✅ Zero Android imports |
+
+### Test Coverage (18 JUnit4 tests, ASCII names)
+
+| Test | Spec Requirement |
+|------|------------------|
+| testRatioMath | shoulders=60, waist=40, hips=90 → ratio=1.5, waistHipRatio=40/90 |
+| testZeroGuardsAllZero | (0,0,0) → NOT_ENOUGH_DATA, both ratios null, insights size=1 |
+| testZeroGuardsWaistZero | (60,0,90) → NOT_ENOUGH_DATA |
+| testZeroGuardsShouldersZero | (0,40,90) → NOT_ENOUGH_DATA, waistHipRatio computed |
+| testLevelBoundaryEarly | ratio 1.29 → EARLY |
+| testLevelBoundaryBuildingLower | ratio 1.30 → BUILDING |
+| testLevelBoundaryBuildingUpper | ratio 1.44 → BUILDING |
+| testLevelBoundaryDevelopingLower | ratio 1.45 → DEVELOPING |
+| testLevelBoundaryDevelopingUpper | ratio 1.59 → DEVELOPING |
+| testLevelBoundaryStrong | ratio 1.60 → STRONG |
+| testTrainingInsightPrimaryUnderloaded | primary<2.0 → "Add lateral delt..." |
+| testTrainingInsightSecondaryUnderloaded | secondary<2.0 → "Upper chest..." |
+| testTrainingInsightBothExcellent | both≥3.0 → "Excellent V-taper..." + no underload |
+| testTrainingInsightBalanced | 2.5/2.5 → "Keep training balanced..." |
+| testCombinedInsightOrdering | (1.0,1.2) → 2 insights, ordered [primary, secondary] |
+| testCombinedInsightMiddleBandOrdering | (2.5,2.5) → 1 insight "Keep training balanced..." |
+| testLevelLabelStrings | All enum labels ASCII |
+| testFormatRatio | formatRatio uses Locale.US, null → "—" |
+
+### Spec Compliance
+
+- **VShapeLevel enum**: NOT_ENOUGH_DATA/EARLY/BUILDING/DEVELOPING/STRONG with labels ✅
+- **VShapeMorphology**: shoulderWaistRatio?, waistHipRatio?, hasMeasurements Boolean ✅
+- **VShapeAssessment**: morphology, trainingPrimaryScore, trainingSecondaryScore, level, insights ✅
+- **VShapeAssessmentCalculator.assess()**: 5 params, returns VShapeAssessment ✅
+- **Ratio computation**: null when either input ≤ 0 ✅
+- **Level thresholds**: ≤0→NOT_ENOUGH_DATA, <1.30→EARLY, <1.45→BUILDING, <1.60→DEVELOPING, ≥1.60→STRONG ✅
+- **Insights**: ordered, never empty, all 5 branches covered ✅
+- **formatRatio**: Locale.US formatting ✅
+- **KDoc**: thresholds documented as product heuristics, NOT clinical claims ✅
+- **Pure Kotlin**: Zero androidx/android imports ✅
+- **Test names**: ASCII only, JUnit4 (org.junit.Test + org.junit.Assert.*) ✅
+
+### Files Verified
+- `app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt` (md5: fc9313bcbf96ab175855370275c74c81)
+- `app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt` (md5: 16454438ef2fcd1942fe3da9cc51f92b)
+
+### TODO Status
+- S6.1.1: [x] (verified)
+- S6.2.1: [x] (verified)
+- M6.1: status: completed
+- M6.2: status: completed | depends: M6.1
+
+**Next**: M6.3 wiring (MeasurementLogDialog, ProgressViewModel, VShapeAssessmentCard, ProgressDashboardScreen) → M6.4 CI gate → M6.5 verification gate.
+

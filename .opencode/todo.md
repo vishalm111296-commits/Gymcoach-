@@ -182,8 +182,26 @@
 ### M5.5: Reviewer Verification Gate | agent:Reviewer | depends:M5.4
 - [x] S5.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence, mark Phase 5 [x], commit final gate | size:M
 
-## Phase 6 — V-Shape Assessment | status: pending
-## Phase 6 — V-Shape Assessment | status: pending
+## Phase 6 — V-Shape Assessment | status: in_progress
+
+### M6.1: VShapeAssessment pure-JVM core engine | agent:Worker | status: completed
+- [x] S6.1.1: Create app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt — VShapeLevel enum (NOT_ENOUGH_DATA/EARLY/BUILDING/DEVELOPING/STRONG), VShapeMorphology (shoulderWaistRatio: Double?, waistHipRatio: Double?, hasMeasurements: Boolean), VShapeAssessment (morphology, trainingPrimaryScore, trainingSecondaryScore, level, insights), object VShapeAssessmentCalculator.assess(shouldersCm, waistCm, hipsCm, trainingPrimaryScore, trainingSecondaryScore). Ratio = shoulders/waist when both > 0 else null; level thresholds <1.30 EARLY / <1.45 BUILDING / <1.60 DEVELOPING / >=1.60 STRONG / any <=0 -> NOT_ENOUGH_DATA; insights ASCII + Locale.US formatting, documented as product heuristics not clinical claims | size:M
+
+### M6.2: VShapeAssessmentTest (pure JVM) | agent:Worker | depends:M6.1 | status: completed
+- [x] S6.2.1: Create app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt — JUnit4 ASCII test names: ratio math, 0.0 guards -> NOT_ENOUGH_DATA + null ratios, level boundaries (1.29/1.30/1.44/1.45/1.59/1.60), every insight branch incl. both>=3.0 combo + order, no-data single insight | size:M
+
+### M6.3: Progress tab wiring (committed files only — none forbidden) | agent:Worker | depends:M6.2
+- [x] S6.3.1: MeasurementLogDialog.kt — add Shoulders (cm) + Hips (cm) OutlinedTextFields (decimal keyboard, prefill latest), extend onSave signature with shouldersCm/hipsCm | size:S
+- [x] S6.3.2: ProgressViewModel.kt — inject ExerciseRepository + VolumeCalculator; add latestShoulders/latestHips to ProgressUiState (takeIf > 0); extend saveMeasurement(weight, waist, chest, bodyFat, shoulders, hips, notes); compute VShapeAssessmentCalculator.assess from latest measurement + calculateWeeklyVolume(getCompletedWorkoutsWithDetails -> SetWithContext, getMuscleAssignmentsWithRoles) -> calculateVtaperBalance scores; add vShapeAssessment field to state | size:M
+- [x] S6.3.3: Create presentation/progress/components/VShapeAssessmentCard.kt — card: level label, shoulder/waist ratio (%.2f), training balance from VtaperBalance.overallBalance, insight list; ASCII only; existing design tokens | size:M
+- [x] S6.3.4: ProgressDashboardScreen.kt — pass latestShoulders/latestHips to MeasurementLogDialog + updated onSave lambda; render VShapeAssessmentCard under Body Measurements section (after line ~192, before Stats Overview); not-enough-data state shows card guidance | size:S
+
+### M6.4: CI Gate | agent:Worker | depends:M6.3
+- [ ] S6.4.1: Stage ONLY explicit intended paths (never git add -A): engine, test, MeasurementLogDialog.kt, ProgressViewModel.kt, VShapeAssessmentCard.kt, ProgressDashboardScreen.kt, todo.md, work-log.md, docs. Verify staged list has ZERO forbidden files (7 UI files + WorkoutSessionScreen). Commit to phase5-recovery-verified, push, dispatch gh workflow run android-build.yml --ref phase5-recovery-verified --repo vishalm111296-commits/Gymcoach-, capture run ID + totals from CI XML | size:M
+
+### M6.5: Verification Gate | agent:Reviewer | depends:M6.4
+- [ ] S6.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence (run ID + totals), mark Phase 6 [x], commit final gate | size:M
+
 ## Phase 7 — Adaptive Programming | status: pending
 ## Phase 8 — Measurement → Outcome → Adaptation | status: pending
 ## Phase 9 — Physique Analytics | status: pending

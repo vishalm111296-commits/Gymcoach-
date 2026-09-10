@@ -31,13 +31,17 @@ fun MeasurementLogDialog(
     latestWaist: Double?,
     latestChest: Double?,
     latestBodyFat: Double?,
+    latestShoulders: Double?,
+    latestHips: Double?,
     onDismiss: () -> Unit,
-    onSave: (weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) -> Unit
+    onSave: (weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, shouldersCm: Double?, hipsCm: Double?, notes: String) -> Unit
 ) {
     var weight by remember { mutableStateOf(latestWeight?.let { "%.1f".format(it) } ?: "") }
     var waist by remember { mutableStateOf(latestWaist?.let { "%.1f".format(it) } ?: "") }
     var chest by remember { mutableStateOf(latestChest?.let { "%.1f".format(it) } ?: "") }
     var bodyFat by remember { mutableStateOf(latestBodyFat?.let { "%.1f".format(it) } ?: "") }
+    var shoulders by remember { mutableStateOf(latestShoulders?.let { "%.1f".format(it) } ?: "") }
+    var hips by remember { mutableStateOf(latestHips?.let { "%.1f".format(it) } ?: "") }
     var notes by remember { mutableStateOf("") }
 
     AlertDialog(
@@ -78,6 +82,22 @@ fun MeasurementLogDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    value = shoulders,
+                    onValueChange = { shoulders = it },
+                    label = { Text("Shoulders (cm)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = hips,
+                    onValueChange = { hips = it },
+                    label = { Text("Hips (cm)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Notes (optional)") },
@@ -92,7 +112,9 @@ fun MeasurementLogDialog(
                     val waistVal = waist.toDoubleOrNull()
                     val chestVal = chest.toDoubleOrNull()
                     val bf = bodyFat.toDoubleOrNull()
-                    onSave(w, waistVal, chestVal, bf, notes)
+                    val shouldersVal = shoulders.toDoubleOrNull()
+                    val hipsVal = hips.toDoubleOrNull()
+                    onSave(w, waistVal, chestVal, bf, shouldersVal, hipsVal, notes)
                 },
                 enabled = weight.toDoubleOrNull() != null && (weight.toDoubleOrNull() ?: 0.0) > 0
             ) {

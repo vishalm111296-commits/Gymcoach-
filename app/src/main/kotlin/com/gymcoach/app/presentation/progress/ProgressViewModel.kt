@@ -2,10 +2,14 @@ package com.gymcoach.app.presentation.progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.assessment.VShapeAssessment
+import com.gymcoach.app.core.assessment.VShapeAssessmentCalculator
+import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.MuscleGroupStats
 import com.gymcoach.app.domain.repository.PersonalRecord
 import com.gymcoach.app.domain.repository.WorkoutCounts
@@ -68,6 +72,10 @@ data class ProgressUiState(
     val latestWaist: Double? = null,
     val latestChest: Double? = null,
     val latestBodyFat: Double? = null,
+    val latestShoulders: Double? = null,
+    val latestHips: Double? = null,
+    val vShapeAssessment: VShapeAssessment? = null,
+    val vtaperBalanceText: String = "",
     val showMeasurementDialog: Boolean = false
 )
 
@@ -75,7 +83,9 @@ data class ProgressUiState(
 class ProgressViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val workoutRepository: WorkoutRepository,
-    private val bodyMeasurementDao: BodyMeasurementDao
+    private val bodyMeasurementDao: BodyMeasurementDao,
+    private val exerciseRepository: ExerciseRepository,
+    private val volumeCalculator: VolumeCalculator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProgressUiState())
@@ -105,7 +115,15 @@ class ProgressViewModel @Inject constructor(
         _uiState.update { it.copy(showMeasurementDialog = false) }
     }
 
-    fun saveMeasurement(weightKg: Double, waistCm: Double?, chestCm: Double?, bodyFatPct: Double?, notes: String) {
+    fun saveMeasurement(
+        weightKg: Double,
+        waistCm: Double?,
+        chestCm: Double?,
+        bodyFatPct: Double?,
+        shouldersCm: Double?,
+        hipsCm: Double?,
+        notes: String
+    ) {
         viewModelScope.launch {
             bodyMeasurementDao.insert(
                 BodyMeasurementEntity(
@@ -115,6 +133,8 @@ class ProgressViewModel @Inject constructor(
                     waistCm = waistCm ?: 0.0,
                     chestCm = chestCm ?: 0.0,
                     bodyFatPct = bodyFatPct ?: 0.0,
+                    shouldersCm = shouldersCm ?: 0.0,
+                    hipsCm = hipsCm ?: 0.0,
                     notes = notes
                 )
             )
@@ -209,6 +229,32 @@ class ProgressViewModel @Inject constructor(
                 val latestWaist = latest?.waistCm?.takeIf { it > 0 }
                 val latestChest = latest?.chestCm?.takeIf { it > 0 }
                 val latestBodyFat = latest?.bodyFatPct?.takeIf { it > 0 }
+                val latestShoulders = latest?.shouldersCm?.takeIf { it > 0 }
+                val latestHips = latest?.hipsCm?.takeIf { it > 0 }
+
+                // --- V-Shape Assessment: morphology (latest measurements) + training balance ---
+                val completedSets = detailsById.values.flatMap { details ->
+                    details.exercises.flatMap { entry ->
+                        entry.sets.map { set ->
+                            VolumeCalculator.SetWithContext(
+                                set = set.toEntity(),
+                                exerciseId = entry.exercise.id,
+                                workoutDate = details.workout.date.toEpochMilli()
+                            )
+                        }
+                    }
+                }
+                val muscleMap = exerciseRepository.getMuscleAssignmentsWithRoles()
+                val vtaper = volumeCalculator.calculateVtaperBalance(
+                    volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap)
+                )
+                val vShapeAssessment = VShapeAssessmentCalculator.assess(
+                    shouldersCm = latestShoulders ?: 0.0,
+                    waistCm = latestWaist ?: 0.0,
+                    hipsCm = latestHips ?: 0.0,
+                    trainingPrimaryScore = vtaper.primaryScore,
+                    trainingSecondaryScore = vtaper.secondaryScore
+                )
 
                 val volumeHistory = analyticsRepository.getVolumeHistory()
                 val weekly = analyticsRepository.getWeeklySummary()
@@ -260,7 +306,11 @@ class ProgressViewModel @Inject constructor(
                     latestWeight = latestWeight,
                     latestWaist = latestWaist,
                     latestChest = latestChest,
-                    latestBodyFat = latestBodyFat
+                    latestBodyFat = latestBodyFat,
+                    latestShoulders = latestShoulders,
+                    latestHips = latestHips,
+                    vShapeAssessment = vShapeAssessment,
+                    vtaperBalanceText = vtaper.overallBalance
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),

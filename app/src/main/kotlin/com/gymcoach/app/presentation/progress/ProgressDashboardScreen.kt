@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.history.formatDuration
 import com.gymcoach.app.presentation.progress.components.BodyMeasurementTrend
 import com.gymcoach.app.presentation.progress.components.MeasurementLogDialog
+import com.gymcoach.app.presentation.progress.components.VShapeAssessmentCard
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
@@ -76,9 +77,11 @@ fun ProgressDashboardScreen(
             latestWaist = state.latestWaist,
             latestChest = state.latestChest,
             latestBodyFat = state.latestBodyFat,
+            latestShoulders = state.latestShoulders,
+            latestHips = state.latestHips,
             onDismiss = { viewModel.hideMeasurementDialog() },
-            onSave = { weight, waist, chest, bodyFat, notes ->
-                viewModel.saveMeasurement(weight, waist, chest, bodyFat, notes)
+            onSave = { weight, waist, chest, bodyFat, shoulders, hips, notes ->
+                viewModel.saveMeasurement(weight, waist, chest, bodyFat, shoulders, hips, notes)
             }
         )
     }
@@ -189,6 +192,17 @@ fun ProgressDashboardScreen(
                         }
                     } else {
                         EmptyPlaceholder("Log your first measurement to see trends")
+                    }
+
+                    // V-Shape Assessment (morphology + training balance)
+                    state.vShapeAssessment?.let { assessment ->
+                        Spacer(Modifier.height(16.dp))
+                        VShapeAssessmentCard(
+                            morphology = assessment.morphology,
+                            level = assessment.level,
+                            insights = assessment.insights,
+                            overallBalance = state.vtaperBalanceText
+                        )
                     }
 
                     Spacer(Modifier.height(16.dp))

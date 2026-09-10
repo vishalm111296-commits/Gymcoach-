@@ -1,4 +1,4 @@
-# GymCoach Current State Matrix — Phase 1 P0 Stabilization COMPLETE + Phase 2 Hardening + Phase 6 V-Shape Assessment IN PROGRESS
+# GymCoach Current State Matrix — Phases 1–7 COMPLETE (Phase 7 = Adaptive Programming)
 **Generated:** 2026-09-10  
 **Repository:** vishalm111296-commits/Gymcoach-  
 **Branch:** phase5-recovery-verified  
@@ -378,21 +378,36 @@
 
 ---
 
-## Phase 6 — V-Shape Assessment (IN PROGRESS, M6.1–M6.3 code-complete, CI gate pending)
+## Phase 6 — V-Shape Assessment ✅ COMPLETE
 
 **Scope (evidence-first):** pure-JVM assessment engine + exhaustive spec-lock tests + Progress-tab wiring. V-shape thresholds are **product heuristics** (fitness tracking guidance), explicitly NOT clinical diagnoses — stated in engine KDoc and card docs.
 
-### Delivered (local verification evidence)
-| Artifact | Local Verification |
-|----------|--------------------|
-| `core/assessment/VShapeAssessment.kt` (NEW) | ✅ kotlinc 1.9.22 offline: **COMPILE_EXIT=0**; engine pairs morphology (shoulder/waist ≥1.30/1.45/1.60 → EARLY/BUILDING/DEVELOPING/STRONG) with V-taper training balance; insights ASCII + Locale.US; NOT_ENOUGH_DATA guards never NPE (smart-cast, no bang) |
-| `core/assessment/VShapeAssessmentTest.kt` (NEW, 18 tests) | ✅ JUnit 4.13.2 offline: **OK (18 tests)** — ratio math, 0.0 guards, 6 level boundaries, 4 training-insight branches, combined ordering (2 insights), middle band (1 insight), labels, formatRatio |
-| `progress/components/VShapeAssessmentCard.kt` (NEW) | ✅ LSP clean; ASCII; uses DarkSurface/AccentBlue/TextPrimary tokens |
-| `progress/components/MeasurementLogDialog.kt` | ✅ LSP clean; Shoulders/Hips cm fields, onSave extended (7-arg) |
-| `progress/ProgressViewModel.kt` | ✅ LSP clean; injects ExerciseRepository+VolumeCalculator; UiState +latestShoulders/latestHips/vShapeAssessment/vtaperBalanceText; assessment = assess(latest measurements, calculateWeeklyVolume→calculateVtaperBalance scores) |
-| `progress/ProgressDashboardScreen.kt` | ✅ LSP clean; card rendered under Body Measurements; dialog call updated |
+| Artifact | Local Verification | CI Evidence |
+|----------|--------------------|-------------|
+| `core/assessment/VShapeAssessment.kt` (NEW) | ✅ kotlinc 1.9.22 offline: **COMPILE_EXIT=0** | Commit b3df9a6 → CI run 34456011222 |
+| `core/assessment/VShapeAssessmentTest.kt` (NEW, 18 tests) | ✅ JUnit 4.13.2 offline: **OK (18 tests)** | 18/18 in XML |
+| `progress/components/VShapeAssessmentCard.kt` (NEW) | ✅ LSP clean | LSP clean |
+| `progress/components/MeasurementLogDialog.kt` | ✅ LSP clean | LSP clean |
+| `progress/ProgressViewModel.kt` | ✅ LSP clean | LSP clean |
+| `progress/ProgressDashboardScreen.kt` | ✅ LSP clean | LSP clean |
 
-**CI Status for Phase 6 HEAD:** ⏹ PENDING — dispatched after commit to `phase5-recovery-verified`.
+**CI Run 34456011222:** ✅ SUCCESS — 281 tests, 0 failures, 0 errors (263 prior + 18 new). Commit b3df9a6, pushed phase5-recovery-verified. SYNC-1 (false-positive forbidden-file claim) resolved with commit-scope diff proof (commit ede942c).
+
+---
+
+## Phase 7 — Adaptive Programming ✅ COMPLETE
+
+**Scope (evidence-first):** pure-JVM adaptive program engine + exhaustive tests + Progress tab wiring. Engine consumes `VShapeAssessment` + `TrainingBalance` (5 V-taper muscle volumes) + `stallWeeks` and outputs ordered, deterministic program actions (VOLUME_SHIFT / DELOAD / LOAD_BUMP / VARIATION / BALANCED). Rules are **product heuristics** (training suggestions, not medical advice) — documented in engine KDoc.
+
+| Artifact | Local Verification | CI Evidence |
+|----------|--------------------|-------------|
+| `core/program/AdaptiveProgramEngine.kt` (NEW) | ✅ kotlinc 1.9.22 offline: **COMPILE_EXIT=0** (stub for VolumeCalculator nested types; real types via CI) | Commit 721914d → CI run 34461106777 |
+| `core/program/AdaptiveProgramEngineTest.kt` (NEW, 16 tests) | ✅ JUnit 4.13.2 offline: **OK (16 tests, 0.138s)** — all-muscles-insufficient, single-muscle, rear-delt/lat-excessive, optimal-scores+loadBump, nearOptimal-noBump, stall=3-variation, stall=2-no-variation, perfect-balanced, NOT_ENOUGH_DATA-not-suppressed, ordering, shift-suppresses-loadBump, nan-volume, negative-volume, locale-LS formatting, negative-stallWeeks-IAE | 16/16 in XML |
+| `progress/components/AdaptivePlanCard.kt` (NEW) | ✅ LSP clean; ASCII; DarkSurface/AccentBlue tokens | LSP clean |
+| `progress/ProgressViewModel.kt` | ✅ LSP clean; `trainingBalance` kept for engine; `adaptiveActions` in UiState; `stallWeeks=0` (Phase 8 wires real detection) | LSP clean |
+| `progress/ProgressDashboardScreen.kt` | ✅ LSP clean; `AdaptivePlanCard` rendered after `VShapeAssessmentCard` | LSP clean |
+
+**CI Run 34461106777:** ✅ SUCCESS — **297 tests, 0 failures, 0 errors** (281 prior + 16 new). Commit 721914d, pushed phase5-recovery-verified. Commit-scope diff verified: zero forbidden files in staged set. 7 pre-existing uncommitted UI files preserved untouched (still ` M` unstaged).
 
 **Device Testing:** NOT AVAILABLE (camera/device claims never fabricated — see scope honesty statement above).
 

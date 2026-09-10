@@ -3,22 +3,34 @@ package com.gymcoach.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Deep charcoal backgrounds
-val DarkBackground = Color(0xFF1A1A2E)
-val DarkSurface = Color(0xFF16213E)
-val DarkSurfaceVariant = Color(0xFF1F2B45)
-val DarkCard = Color(0xFF252A41)
+val DarkBackground = Color(DesignTokens.DarkBackground)
+val DarkSurface = Color(DesignTokens.DarkSurface)
+val DarkSurfaceVariant = Color(DesignTokens.DarkSurfaceVariant)
+val DarkCard = Color(DesignTokens.DarkCard)
 
 // Warm white primary text
-val TextPrimary = Color(0xFFF5F5F0)
-val TextSecondary = Color(0xFFB8B5AD)
-val TextTertiary = Color(0xFF7A7770)
+val TextPrimary = Color(DesignTokens.TextPrimary)
+val TextSecondary = Color(DesignTokens.TextSecondary)
+val TextTertiary = Color(DesignTokens.TextTertiary)
 
 // Restrained blue/violet accent
-val AccentBlue = Color(0xFF6C63FF)
-val AccentBlueLight = Color(0xFF8B83FF)
-val AccentBlueDark = Color(0xFF4A42E0)
+val AccentBlue = Color(DesignTokens.AccentBlue)
+val AccentBlueLight = Color(DesignTokens.AccentBlueLight)
+val AccentBlueDark = Color(DesignTokens.AccentBlueDark)
 
-// State colors
+// Semantic color tokens (derived from DesignTokens — single source of truth)
+/** Primary action button container — white text achieves 6.10:1 contrast */
+val PrimaryActionContainer = Color(DesignTokens.PrimaryActionContainer)
+/** Success state container — white text achieves 4.70:1 contrast (fixes APP-021) */
+val SuccessContainer = Color(DesignTokens.SuccessContainer)
+/** Error state container — white text achieves 6.53:1 contrast (vs ErrorRed 3.9:1) */
+val ErrorContainerDark = Color(DesignTokens.ErrorContainerDark)
+/** Brand accent text for on-dark use — achieves 5.5:1 on DarkBackground */
+val BrandAccentText = AccentBlueLight
+/** Surface container token for elevation layering */
+val SurfaceContainerToken = DarkCard
+
+// State colors (legacy — kept for backward compatibility)
 val SuccessGreen = Color(0xFF4CAF50)
 val WarningAmber = Color(0xFFFFB300)
 val ErrorRed = Color(0xFFFF5252)

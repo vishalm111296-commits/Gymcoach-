@@ -424,3 +424,41 @@ Timestamp: 2026-09-09T23:01
 - 7 pre-existing uncommitted UI files preserved unstaged/untouched by fix commits (pose/lists/home files).
 - Deferred (documented in docs/audit/UX_AUDIT_20260909.md): APP-020 (device screen-size verify), APP-028 (dead components, product sign-off), APP-031 (uncommitted file), APP-032/033/034/035 (uncommitted files), APP-043/044 (design).
 - OBSERVED (out of scope): main is RED — PR #98 merged 2026-09-09T19:11:32Z, CI run 34393583510 FAILED (Unresolved reference: latVolume in HomeViewModel.kt:175).
+
+## FINAL GATE T2.8 — 2026-09-09T23:33
+
+FINAL GATE T2.8 — run 34400290084 @ 56c3cf4+ SUCCESS (Build/Lint/UnitTests); 205 tests 0 failures 0 errors 0 skipped (XML artifact /tmp/opencode/art34400290084); 12 new tests added; 7 uncommitted UI files preserved; no merge to main.
+
+Evidence verified:
+- CI run 34400290084 conclusion: SUCCESS (gh api)
+- XML totals: TOTAL_TESTS=205 FAILURES=0 ERRORS=0 SKIPPED=0 (16 suites; WorkoutHistoryViewModelTest=8, WorkoutHistoryDetailViewModelTest=4 new)
+- Fix commits: 56c3cf4 (fix round 1), c1efaef (smart-cast), 1d5b783 (DeleteState), 40fa828 (status), 264a378 (final gate evidence)
+- 7 pre-existing uncommitted UI files still unstaged: PoseDetector.kt, ExerciseItemCard.kt, ExerciseDetailScreen.kt, HomeDashboardScreen.kt, HomeViewModel.kt, TodayWorkoutCard.kt, ExerciseListScreen.kt (git status --short confirms ' M' for all 7)
+- No merge to main performed; main branch RED (PR #98 merged 19:11Z, latVolume error) — out of scope
+- Deferred items documented in UX_AUDIT_20260909.md: APP-020 (device verify), APP-028 (dead components), APP-031/032/033/034/035 (uncommitted files), APP-043/044 (design choice)
+
+Todo updates applied:
+- T2.8.5.a/b/c/d → [x]
+- T2.8.6.a/b → [x]
+- T2.8 heading → status:completed
+- Phase 2 heading → status:completed
+
+## Phase 3 planning — todo.md breakdown created (2026-09-10T04:44)
+- Phase 3 — Design System block appended to .opencode/todo.md (M3.1–M3.5, 16 subtasks)
+- Hard constraints preserved: 7 pre-existing uncommitted UI files untouched; evidence-first WCAG tests; no main merge; deferred items documented
+- Scope: token inventory (Color/Type/Theme), Dimens/Shape tokens, semantic ColorScheme wiring, DesignTokenContrastTest, mechanical token migration for committed components/screens only
+
+## Phase 3 Worker Verification — 2026-09-10T04:58
+**VERIFICATION FAIL** — Both Phase 3 Worker tasks completed with NO output and NO file changes.
+
+**Task 1: task_f2be73f7 (M3.1+M3.2 foundation)** — session `ses_f76f85467ffejchaMt7cEz6vT1`
+- Expected deliverables: DESIGN_SYSTEM_20260910.md, DesignTokens.kt, Color.kt edits, Theme.kt edits, Dimens.kt, Shape.kt, DesignTokenContrastTest.kt
+- Actual: ZERO files created/modified. docs/design/ dir exists but empty. No new files in theme/ or test/
+
+**Task 2: task_e7b5726a (M3.3 token migration)** — session `ses_f76f8147effe6m8VOokqEQrmqs`
+- Expected deliverables: edits to 8 committed screen/component files (SetCompleteButton, ProgramScreen, BottomNavigation, ProgressDashboardScreen, ProfileScreen, WorkoutHistoryDetailScreen, WorkoutSessionScreen, WorkoutHistoryScreen)
+- Actual: ZERO files modified. Only the 7 pre-existing uncommitted UI files show in git status (which are OUT OF SCOPE)
+
+**Both workers returned [DONE] with no output — silent no-op failure.**
+
+**ACTION REQUIRED:** Commander must re-dispatch BOTH workers with same scope. Do NOT mark any M3.x tasks as [x].

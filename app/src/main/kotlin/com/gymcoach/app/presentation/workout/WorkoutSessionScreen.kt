@@ -82,6 +82,7 @@ import com.gymcoach.app.presentation.history.formatDuration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.gymcoach.app.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,7 +139,7 @@ fun WorkoutSessionScreen(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(32.dp)
+                modifier = Modifier.padding(Dimens.Spacing2xl)
             ) {
                 Text(
                     text = "Workout Complete!",
@@ -351,7 +352,7 @@ fun WorkoutSessionScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Dimens.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentWorkout?.let { workout ->
@@ -403,7 +404,7 @@ fun WorkoutSessionScreen(
                             OutlinedTextField(
                                 value = workout.workout.notes,
                                 onValueChange = { newText: String -> viewModel.updateNotes(newText) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = Dimens.ScreenPadding),
                                 label = { Text("Workout Notes") },
                                 maxLines = 4
                             )
@@ -569,7 +570,7 @@ private fun RestTimerCard(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ScreenPadding)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -679,7 +680,7 @@ private fun ExerciseSetCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Dimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
@@ -747,7 +748,7 @@ private fun ExerciseSetCard(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                                     )
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(modifier = Modifier.padding(Dimens.ScreenPadding)) {
                                         Text("Instructions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                         Text(instructions, style = MaterialTheme.typography.bodyMedium)
                                     }

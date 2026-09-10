@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
+import com.gymcoach.app.ui.theme.BrandAccentText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -703,7 +704,7 @@ private fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        color = BrandAccentText
     )
 }
 
@@ -750,7 +751,7 @@ private fun SummaryRow(label: String, value: String) {
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                color = BrandAccentText
             )
         }
     }

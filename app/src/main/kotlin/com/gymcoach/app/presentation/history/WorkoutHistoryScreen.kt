@@ -65,6 +65,7 @@ import com.gymcoach.app.domain.model.WorkoutWithStats
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.gymcoach.app.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,7 +173,7 @@ fun WorkoutHistoryScreen(
                 ) {
                     Button(
                         onClick = { onResumeWorkout(workout.id) },
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(Dimens.ScreenPadding)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -189,7 +190,7 @@ fun WorkoutHistoryScreen(
             // Workout list
             if (workouts.isEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(Dimens.ScreenPadding),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -290,7 +291,7 @@ private fun HistoryWorkoutCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween

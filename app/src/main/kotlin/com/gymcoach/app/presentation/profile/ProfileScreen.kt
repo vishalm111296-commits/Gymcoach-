@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.gymcoach.app.ui.theme.BrandAccentText
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -143,7 +144,7 @@ fun ProfileScreen(
                         text = "Your Profile",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = BrandAccentText
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -228,7 +229,7 @@ private fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        color = BrandAccentText
     )
 }
 

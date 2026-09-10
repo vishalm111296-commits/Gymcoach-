@@ -154,9 +154,12 @@ private fun EmptyProgramState(onBackClick: () -> Unit) {
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
-            androidx.compose.material3.Button(
+            Button(
                 onClick = onBackClick,
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             ) {
                 Text("BACK TO HOME", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
@@ -475,10 +478,13 @@ private fun ExerciseRow(
 
 @Composable
 private fun StartWorkoutButton(onClick: () -> Unit) {
-    androidx.compose.material3.Button(
+    Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(56.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -489,7 +495,7 @@ private fun StartWorkoutButton(onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Filled.FitnessCenter,
                 contentDescription = null,
-                tint = WarmWhite,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(8.dp))

@@ -73,6 +73,7 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import com.gymcoach.app.ui.theme.BrandAccentText
 
 @HiltViewModel
 class WorkoutHistoryDetailViewModel @Inject constructor(
@@ -542,11 +543,11 @@ private fun MuscleGroupRow(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(0.2f)
             )
-            Text(
+Text(
                 text = "%.0f kg".format(totalVolume),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
+                color = BrandAccentText,
                 modifier = Modifier.weight(0.2f)
             )
         }
@@ -684,11 +685,11 @@ fun SetRow(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.15f)
         )
-        if (completed) {
+if (completed) {
             Text(
                 text = "✓",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = BrandAccentText,
                 modifier = Modifier.width(24.dp)
             )
         } else {
@@ -711,7 +712,7 @@ fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        color = BrandAccentText
     )
 }
 

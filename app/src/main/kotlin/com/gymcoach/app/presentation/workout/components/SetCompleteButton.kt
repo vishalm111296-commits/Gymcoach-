@@ -13,8 +13,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gymcoach.app.ui.theme.SuccessContainer
 
-private val SuccessGreen = Color(0xFF2E7D32) // WCAG AA: 4.9:1 with white (was 2.78:1 with 0xFF4CAF50)
+private val SuccessGreen = SuccessContainer // WCAG AA: 4.9:1 with white (was 2.78:1 with 0xFF4CAF50)
 
 @Composable
 fun SetCompleteButton(

@@ -106,6 +106,38 @@
 - [x] S2.8.6.b: Verify 193+ tests pass (Build + Lint + Unit Tests all GREEN)
 
 ## Phase 3 — Design System | status: pending
+### M3.1: Design Token Inventory & Intent | status: pending
+### T3.1.1: Write docs/design/DESIGN_SYSTEM_20260910.md | agent:Worker
+- [ ] S3.1.1.1: Token inventory + contrast matrix + decisions | size:M
+
+### M3.2: Foundation Tokens | status: pending
+### T3.2.1: Dimens.kt + Shape.kt | agent:Worker
+- [ ] S3.2.1.1: Spacing scale (4/8/12/16/20/24/32) | size:S
+- [ ] S3.2.1.2: Shape scale (small/medium/large) | size:S
+
+### T3.2.2: Semantic color tokens + ColorScheme wiring | agent:Worker
+- [ ] S3.2.2.1: Color.kt semantic tokens | size:M
+- [ ] S3.2.2.2: Theme.kt ColorScheme roles | size:M
+- [ ] S3.2.2.3: DesignTokenContrastTest (pure JVM WCAG) | size:M
+
+### M3.3: Token Migration (committed files only) | status: pending
+### T3.3.1: Component migration | agent:Worker
+- [ ] S3.3.1.1: SetCompleteButton success token | size:S
+- [ ] S3.3.1.2: BottomNavigation roles | size:M
+
+### T3.3.2: Screen padding/stat migration | agent:Worker
+- [ ] S3.3.2.1: WorkoutSessionScreen mechanical tokens | size:M
+- [ ] S3.3.2.2: History screens mechanical tokens | size:M
+
+### M3.4: Verification | status: pending
+### T3.4.1: CI + preservation gate | agent:Reviewer | depends:M3.3
+- [ ] S3.4.1.1: 7-file byte-preservation assert | size:S
+- [ ] S3.4.1.2: CI green (Build+Lint+UnitTests, 205+) | size:L
+
+### M3.5: Final Gate | status: pending
+### T3.5.1: Reviewer full-system verification + todo [x] | agent:Reviewer | depends:M3.4
+- [ ] S3.5.1.1: Final evidence report | size:M
+
 ## Phase 4 — Exercise/Content/Media | status: pending
 ## Phase 5 — Camera/Form | status: pending
 ## Phase 6 — V-Shape Assessment | status: pending

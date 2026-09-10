@@ -172,7 +172,7 @@ class HomeViewModel @Inject constructor(
         val trainingBalance = volumeCalculator.calculateWeeklyVolume(currentWeekSets, muscleAssignments)
 
         val bars = listOf(
-            VtaperMuscleData(label = "Lats", current = trainingBalance.latVolume.weeklySets, target = TARGET_WEEKLY_SETS),
+            VtaperMuscleData(label = "Lats", current = trainingBalance.backVolume.weeklySets, target = TARGET_WEEKLY_SETS),
             VtaperMuscleData(label = "Lateral Delts", current = trainingBalance.lateralDeltVolume.weeklySets, target = TARGET_WEEKLY_SETS),
             VtaperMuscleData(label = "Chest", current = trainingBalance.upperChestVolume.weeklySets, target = TARGET_WEEKLY_SETS),
             VtaperMuscleData(

@@ -119,7 +119,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
                     else -> VolumeCalculator.MuscleRole.PRIMARY
                 }
                 val muscleName = when {
-                    rel.muscleName.contains("lat", ignoreCase = true) -> "Lats"
+                    rel.muscleName.contains("lat", ignoreCase = true) -> "Back"
                     rel.muscleName.contains("bicep", ignoreCase = true) -> "Biceps"
                     else -> rel.muscleName
                 }
@@ -130,7 +130,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
         val balance = volumeCalculator.calculateWeeklyVolume(completedSets, muscleAssignments)
 
         // 6. Verify real volume credits
-        assertEquals(3, balance.latVolume.directSets) // 3 primary sets
+        assertEquals(3, balance.backVolume.directSets) // 3 primary sets
         assertEquals(2, balance.bicepsVolume.directSets) // 2 primary sets
         assertEquals(3, balance.bicepsVolume.indirectSets) // 3 secondary sets from Lat Pulldown
     }

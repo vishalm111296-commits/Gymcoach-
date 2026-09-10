@@ -25,8 +25,17 @@ class VolumeCalculator @Inject constructor() {
         EXCESSIVE("Very high", 4)
     }
 
+    /**
+     * Weekly training balance across all major muscle groups.
+     *
+     * NOTE: `backVolume` tracks exercises whose muscleGroup = "Back" in the
+     * ExerciseEntity/seed data (the canonical string used by ProgramGenerator).
+     * VolumeStatus thresholds are heuristic guidance values based on common
+     * evidence-informed ranges (10–20 sets/week), NOT physiologically validated.
+     * They provide direction, not precision.
+     */
     data class TrainingBalance(
-        val latVolume: MuscleVolume,
+        val backVolume: MuscleVolume,          // replaces former "Lats" — canonical name is "Back"
         val lateralDeltVolume: MuscleVolume,
         val rearDeltVolume: MuscleVolume,
         val upperChestVolume: MuscleVolume,
@@ -40,7 +49,7 @@ class VolumeCalculator @Inject constructor() {
         val coreVolume: MuscleVolume
     ) {
         fun asList(): List<MuscleVolume> = listOf(
-            latVolume, lateralDeltVolume, rearDeltVolume, upperChestVolume,
+            backVolume, lateralDeltVolume, rearDeltVolume, upperChestVolume,
             upperBackVolume, bicepsVolume, tricepsVolume, quadricepsVolume,
             hamstringsVolume, glutesVolume, calvesVolume, coreVolume
         )
@@ -63,6 +72,23 @@ class VolumeCalculator @Inject constructor() {
         val exerciseId: Long,
         val workoutDate: Long
     )
+
+    // Canonical muscle name constants, matching ExerciseEntity.muscleGroup seed values
+    // and ProgramGenerator slot names. Keep in sync with both.
+    companion object {
+        const val MUSCLE_BACK = "Back"
+        const val MUSCLE_LATERAL_DELT = "Lateral Deltoid"
+        const val MUSCLE_REAR_DELT = "Rear Deltoid"
+        const val MUSCLE_CHEST = "Chest"
+        const val MUSCLE_UPPER_BACK = "Upper Back"
+        const val MUSCLE_BICEPS = "Biceps"
+        const val MUSCLE_TRICEPS = "Triceps"
+        const val MUSCLE_QUADRICEPS = "Quadriceps"
+        const val MUSCLE_HAMSTRINGS = "Hamstrings"
+        const val MUSCLE_GLUTES = "Glutes"
+        const val MUSCLE_CALVES = "Calves"
+        const val MUSCLE_CORE = "Core"
+    }
 
     fun calculateWeeklyVolume(
         completedSets: List<SetWithContext>,
@@ -121,19 +147,42 @@ class VolumeCalculator @Inject constructor() {
             status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
         )
 
+        // Fix F-TAXONOMY-1: use "Back" (canonical muscleGroup name from seed data and
+        // ProgramGenerator) — not "Lats" which never appears in the exercise database.
         return TrainingBalance(
-            latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
-            rearDeltVolume = vol("Rear Deltoid"), upperChestVolume = vol("Upper Chest"),
-            upperBackVolume = vol("Upper Back"), bicepsVolume = vol("Biceps"),
-            tricepsVolume = vol("Triceps"), quadricepsVolume = vol("Quadriceps"),
-            hamstringsVolume = vol("Hamstrings"), glutesVolume = vol("Glutes"),
-            calvesVolume = vol("Calves"), coreVolume = vol("Core")
+            backVolume = vol(MUSCLE_BACK),
+            lateralDeltVolume = vol(MUSCLE_LATERAL_DELT),
+            rearDeltVolume = vol(MUSCLE_REAR_DELT),
+            upperChestVolume = vol(MUSCLE_CHEST),
+            upperBackVolume = vol(MUSCLE_UPPER_BACK),
+            bicepsVolume = vol(MUSCLE_BICEPS),
+            tricepsVolume = vol(MUSCLE_TRICEPS),
+            quadricepsVolume = vol(MUSCLE_QUADRICEPS),
+            hamstringsVolume = vol(MUSCLE_HAMSTRINGS),
+            glutesVolume = vol(MUSCLE_GLUTES),
+            calvesVolume = vol(MUSCLE_CALVES),
+            coreVolume = vol(MUSCLE_CORE)
         )
     }
 
+    /**
+     * Compute a V-taper balance indicator.
+     *
+     * Primary score = average VolumeStatus level for Back + Lateral Deltoid (the two
+     * muscles most responsible for the V shape).
+     * Secondary score = average for Rear Deltoid + Chest + Upper Back.
+     *
+     * Uses explicit numeric mapping rather than enum ordinals to guard against
+     * future enum reordering silently breaking the formula (F-VTAPER-2).
+     */
     fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
-        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
+        fun statusScore(s: VolumeStatus): Double = s.level.toDouble()
+        val primary = (statusScore(balance.backVolume.status) + statusScore(balance.lateralDeltVolume.status)) / 2.0
+        val secondary = (
+            statusScore(balance.rearDeltVolume.status) +
+            statusScore(balance.upperChestVolume.status) +
+            statusScore(balance.upperBackVolume.status)
+        ) / 3.0
         val text = when {
             primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
             primary >= 2.0 -> "Moderate V-taper focus"
@@ -143,6 +192,10 @@ class VolumeCalculator @Inject constructor() {
     }
 
     private fun classify(sets: Int): VolumeStatus {
+        // Heuristic thresholds. Roughly aligned with evidence-based
+        // minimum effective volume (10 sets/week) and maximum adaptive
+        // volume (~20 sets/week) from current sports science literature.
+        // Not validated as precise clinical values.
         return when {
             sets < 10 -> VolumeStatus.INSUFFICIENT
             sets < 14 -> VolumeStatus.MODERATE

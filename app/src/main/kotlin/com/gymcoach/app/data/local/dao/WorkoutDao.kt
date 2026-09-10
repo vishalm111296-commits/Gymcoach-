@@ -311,10 +311,10 @@ abstract class WorkoutDao {
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE w.status = 'COMPLETED' AND ws.completed = 1 AND ws.setType = 0
+        WHERE w.status = 'COMPLETED' AND ws.completed = 1 AND ws.setType != 1 AND w.date >= :startDate
         ORDER BY w.date DESC
     """)
-    abstract fun getCompletedSetsWithContext(): Flow<List<WorkoutSetWithContext>>
+    abstract fun getCompletedSetsWithContext(startDate: Long = 0L): Flow<List<WorkoutSetWithContext>>
 
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date DESC")
     abstract fun getCompletedWorkouts(): Flow<List<WorkoutEntity>>

@@ -1,7 +1,10 @@
 package com.gymcoach.app.core.program
 
-import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
+import com.gymcoach.app.domain.model.CompletedSetContext
+import com.gymcoach.app.domain.model.SetType
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.WeekFields
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,33 +12,44 @@ import javax.inject.Singleton
 @Singleton
 class VolumeCalculator @Inject constructor() {
 
+    /**
+     * Domain representation of a muscle's training volume.
+     *
+     * @param muscleName Display/category name of the muscle.
+     * @param weeklyEffectiveSets Effective weighted volume (PRIMARY=1.0, SECONDARY=0.5, STABILIZER=0.25).
+     * @param rawDirectSets Count of completed direct (PRIMARY) sets.
+     * @param rawIndirectSets Count of completed indirect (SECONDARY + STABILIZER) sets.
+     * @param status Volume coaching classification band based on effective weighted sets.
+     */
     data class MuscleVolume(
         val muscleName: String,
-        val weeklySets: Int,
-        val directSets: Int,
-        val indirectSets: Int,
+        val weeklyEffectiveSets: Double,
+        val rawDirectSets: Int,
+        val rawIndirectSets: Int,
         val status: VolumeStatus
-    )
+    ) {
+        /** Alias for weeklyEffectiveSets enforcing EFFECTIVE_WEIGHTED_SETS semantics. */
+        val weeklySets: Double get() = weeklyEffectiveSets
 
-    enum class VolumeStatus(val label: String, val level: Int) {
-        INSUFFICIENT("Too low", 0),
-        MODERATE("Moderate", 1),
-        HIGH("High", 2),
-        OPTIMAL("Optimal", 3),
-        EXCESSIVE("Very high", 4)
+        /** Raw unweighted sum of direct and indirect completed sets. */
+        val rawTotalSets: Int get() = rawDirectSets + rawIndirectSets
+
+        /** Backward compatibility aliases for raw direct/indirect set counts. */
+        val directSets: Int get() = rawDirectSets
+        val indirectSets: Int get() = rawIndirectSets
     }
 
-    /**
-     * Weekly training balance across all major muscle groups.
-     *
-     * NOTE: `backVolume` tracks exercises whose muscleGroup = "Back" in the
-     * ExerciseEntity/seed data (the canonical string used by ProgramGenerator).
-     * VolumeStatus thresholds are heuristic guidance values based on common
-     * evidence-informed ranges (10–20 sets/week), NOT physiologically validated.
-     * They provide direction, not precision.
-     */
+    /** Volume status bands presented as evidence-informed coaching guidance. */
+    enum class VolumeStatus(val label: String, val level: Int) {
+        INSUFFICIENT("Below target guidance", 0),
+        MODERATE("Moderate guidance", 1),
+        HIGH("High guidance range", 2),
+        OPTIMAL("Target guidance range", 3),
+        EXCESSIVE("Above target guidance", 4)
+    }
+
     data class TrainingBalance(
-        val backVolume: MuscleVolume,          // replaces former "Lats" — canonical name is "Back"
+        val latVolume: MuscleVolume,
         val lateralDeltVolume: MuscleVolume,
         val rearDeltVolume: MuscleVolume,
         val upperChestVolume: MuscleVolume,
@@ -49,7 +63,7 @@ class VolumeCalculator @Inject constructor() {
         val coreVolume: MuscleVolume
     ) {
         fun asList(): List<MuscleVolume> = listOf(
-            backVolume, lateralDeltVolume, rearDeltVolume, upperChestVolume,
+            latVolume, lateralDeltVolume, rearDeltVolume, upperChestVolume,
             upperBackVolume, bicepsVolume, tricepsVolume, quadricepsVolume,
             hamstringsVolume, glutesVolume, calvesVolume, coreVolume
         )
@@ -67,36 +81,30 @@ class VolumeCalculator @Inject constructor() {
 
     data class MuscleAssignment(val muscleName: String, val role: MuscleRole)
 
-    data class SetWithContext(
-        val set: WorkoutSetEntity,
-        val exerciseId: Long,
-        val workoutDate: Long
-    )
-
-    // Canonical muscle name constants, matching ExerciseEntity.muscleGroup seed values
-    // and ProgramGenerator slot names. Keep in sync with both.
-    companion object {
-        const val MUSCLE_BACK = "Back"
-        const val MUSCLE_LATERAL_DELT = "Lateral Deltoid"
-        const val MUSCLE_REAR_DELT = "Rear Deltoid"
-        const val MUSCLE_CHEST = "Chest"
-        const val MUSCLE_UPPER_BACK = "Upper Back"
-        const val MUSCLE_BICEPS = "Biceps"
-        const val MUSCLE_TRICEPS = "Triceps"
-        const val MUSCLE_QUADRICEPS = "Quadriceps"
-        const val MUSCLE_HAMSTRINGS = "Hamstrings"
-        const val MUSCLE_GLUTES = "Glutes"
-        const val MUSCLE_CALVES = "Calves"
-        const val MUSCLE_CORE = "Core"
-    }
-
+    /**
+     * Calculates weekly volume for completed hypertrophy sets (excluding warmups and incomplete sets).
+     *
+     * Set-Type Contract:
+     * - NORMAL (0), DROP (2), and FAILURE (3) completed sets deliver effective working stimulus
+     *   and are INCLUDED in hypertrophy volume calculations.
+     * - WARMUP (1) sets are submaximal preparation sets and are EXCLUDED.
+     * - Incomplete sets (completed = false) are EXCLUDED.
+     *
+     * Volume credits per completed working set:
+     * - Primary muscle: 1.0 effective set
+     * - Secondary muscle: 0.5 effective set
+     * - Stabilizer muscle: 0.25 effective set
+     */
     fun calculateWeeklyVolume(
-        completedSets: List<SetWithContext>,
+        completedSets: List<CompletedSetContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+        // Filter: ONLY completed hypertrophy working sets (completed == true AND setType != SetType.WARMUP)
+        val validSets = completedSets.filter { it.isHypertrophyWorkingSet }
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+        val weekBuckets = mutableMapOf<String, MutableMap<String, Double>>()
+
+        for (ctx in validSets) {
             val weekKey = isoWeekKey(ctx.workoutDate)
             val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
 
@@ -107,20 +115,19 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        val avgWeekly = mutableMapOf<String, Double>()
-        for ((_, weekMap) in weekBuckets) {
-            for ((muscle, credits) in weekMap) {
-                avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
-            }
-        }
+        val avgWeeklyEffectiveSets = mutableMapOf<String, Double>()
         if (weekBuckets.isNotEmpty()) {
-            for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+            for ((_, weekMap) in weekBuckets) {
+                for ((muscle, credits) in weekMap) {
+                    avgWeeklyEffectiveSets[muscle] = (avgWeeklyEffectiveSets[muscle] ?: 0.0) + credits
+                }
+            }
+            for ((muscle, total) in avgWeeklyEffectiveSets) {
+                avgWeeklyEffectiveSets[muscle] = total / weekBuckets.size.toDouble()
             }
         }
 
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val directSetsByMuscle = validSets
             .flatMap { ctx ->
                 (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role == MuscleRole.PRIMARY }
@@ -129,8 +136,7 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
+        val indirectSetsByMuscle = validSets
             .flatMap { ctx ->
                 (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
                     .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
@@ -139,50 +145,32 @@ class VolumeCalculator @Inject constructor() {
             .groupBy { it }
             .mapValues { (_, v) -> v.size }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
+        fun vol(muscle: String): MuscleVolume {
+            val effective = avgWeeklyEffectiveSets[muscle] ?: 0.0
+            val direct = directSetsByMuscle[muscle] ?: 0
+            val indirect = indirectSetsByMuscle[muscle] ?: 0
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklyEffectiveSets = effective,
+                rawDirectSets = direct,
+                rawIndirectSets = indirect,
+                status = classify(effective)
+            )
+        }
 
-        // Fix F-TAXONOMY-1: use "Back" (canonical muscleGroup name from seed data and
-        // ProgramGenerator) — not "Lats" which never appears in the exercise database.
         return TrainingBalance(
-            backVolume = vol(MUSCLE_BACK),
-            lateralDeltVolume = vol(MUSCLE_LATERAL_DELT),
-            rearDeltVolume = vol(MUSCLE_REAR_DELT),
-            upperChestVolume = vol(MUSCLE_CHEST),
-            upperBackVolume = vol(MUSCLE_UPPER_BACK),
-            bicepsVolume = vol(MUSCLE_BICEPS),
-            tricepsVolume = vol(MUSCLE_TRICEPS),
-            quadricepsVolume = vol(MUSCLE_QUADRICEPS),
-            hamstringsVolume = vol(MUSCLE_HAMSTRINGS),
-            glutesVolume = vol(MUSCLE_GLUTES),
-            calvesVolume = vol(MUSCLE_CALVES),
-            coreVolume = vol(MUSCLE_CORE)
+            latVolume = vol("Lats"), lateralDeltVolume = vol("Lateral Deltoid"),
+            rearDeltVolume = vol("Rear Deltoid"), upperChestVolume = vol("Upper Chest"),
+            upperBackVolume = vol("Upper Back"), bicepsVolume = vol("Biceps"),
+            tricepsVolume = vol("Triceps"), quadricepsVolume = vol("Quadriceps"),
+            hamstringsVolume = vol("Hamstrings"), glutesVolume = vol("Glutes"),
+            calvesVolume = vol("Calves"), coreVolume = vol("Core")
         )
     }
 
-    /**
-     * Compute a V-taper balance indicator.
-     *
-     * Primary score = average VolumeStatus level for Back + Lateral Deltoid (the two
-     * muscles most responsible for the V shape).
-     * Secondary score = average for Rear Deltoid + Chest + Upper Back.
-     *
-     * Uses explicit numeric mapping rather than enum ordinals to guard against
-     * future enum reordering silently breaking the formula (F-VTAPER-2).
-     */
     fun calculateVtaperBalance(balance: TrainingBalance): VtaperBalance {
-        fun statusScore(s: VolumeStatus): Double = s.level.toDouble()
-        val primary = (statusScore(balance.backVolume.status) + statusScore(balance.lateralDeltVolume.status)) / 2.0
-        val secondary = (
-            statusScore(balance.rearDeltVolume.status) +
-            statusScore(balance.upperChestVolume.status) +
-            statusScore(balance.upperBackVolume.status)
-        ) / 3.0
+        val primary = (balance.latVolume.status.ordinal + balance.lateralDeltVolume.status.ordinal) / 2.0
+        val secondary = (balance.rearDeltVolume.status.ordinal + balance.upperChestVolume.status.ordinal + balance.upperBackVolume.status.ordinal) / 3.0
         val text = when {
             primary >= 3.0 && secondary >= 2.0 -> "Good V-taper volume distribution"
             primary >= 2.0 -> "Moderate V-taper focus"
@@ -191,25 +179,27 @@ class VolumeCalculator @Inject constructor() {
         return VtaperBalance(primary, secondary, text)
     }
 
-    private fun classify(sets: Int): VolumeStatus {
-        // Heuristic thresholds. Roughly aligned with evidence-based
-        // minimum effective volume (10 sets/week) and maximum adaptive
-        // volume (~20 sets/week) from current sports science literature.
-        // Not validated as precise clinical values.
+    private fun classify(effectiveSets: Double): VolumeStatus {
         return when {
-            sets < 10 -> VolumeStatus.INSUFFICIENT
-            sets < 14 -> VolumeStatus.MODERATE
-            sets < 18 -> VolumeStatus.OPTIMAL
-            sets < 22 -> VolumeStatus.HIGH
+            effectiveSets < 10.0 -> VolumeStatus.INSUFFICIENT
+            effectiveSets < 14.0 -> VolumeStatus.MODERATE
+            effectiveSets < 18.0 -> VolumeStatus.OPTIMAL
+            effectiveSets < 22.0 -> VolumeStatus.HIGH
             else -> VolumeStatus.EXCESSIVE
         }
     }
 
-    private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+    fun isoWeekKey(dateMs: Long, zoneId: ZoneId = ZoneId.systemDefault()): String {
+        val zdt = Instant.ofEpochMilli(dateMs).atZone(zoneId)
+        val weekFields = WeekFields.ISO
+        val weekOfYear = zdt.get(weekFields.weekOfWeekBasedYear())
+        val year = zdt.get(weekFields.weekBasedYear())
+        return "%04d-W%02d".format(Locale.US, year, weekOfYear)
+    }
+
+    companion object {
+        /** Explicit predicate determining whether a set context represents a completed working set for hypertrophy volume. */
+        val CompletedSetContext.isHypertrophyWorkingSet: Boolean
+            get() = completed && setType != SetType.WARMUP.ordinal
     }
 }

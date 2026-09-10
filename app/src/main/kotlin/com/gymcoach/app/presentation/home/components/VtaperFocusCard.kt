@@ -27,11 +27,12 @@ import com.gymcoach.app.ui.theme.MuscleRest
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 import com.gymcoach.app.ui.theme.WarmWhite
+import java.util.Locale
 
-/** Transparent volume metric - no composite "score". */
+/** Transparent effective weighted volume metric (EFFECTIVE_WEIGHTED_SETS). */
 data class VtaperMuscleData(
     val label: String,
-    val current: Int, // planned sets this week
+    val current: Double, // effective weighted sets this week
     val target: Int
 )
 
@@ -58,7 +59,7 @@ fun VtaperFocusCard(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Planned weekly sets vs optimal band ($TARGET_SETS_LABEL)",
+                text = "Effective weekly sets vs target band ($TARGET_SETS_LABEL)",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextTertiary,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -91,7 +92,7 @@ fun VtaperFocusCard(
                             .clip(RoundedCornerShape(4.dp))
                     )
                     Text(
-                        text = "${data.current}/${data.target}",
+                        text = "${formatSets(data.current)}/${data.target}",
                         style = MaterialTheme.typography.labelSmall,
                         color = WarmWhite,
                         modifier = Modifier.width(44.dp)
@@ -99,6 +100,14 @@ fun VtaperFocusCard(
                 }
             }
         }
+    }
+}
+
+private fun formatSets(sets: Double): String {
+    return if (sets % 1.0 == 0.0) {
+        sets.toInt().toString()
+    } else {
+        "%.1f".format(Locale.US, sets)
     }
 }
 

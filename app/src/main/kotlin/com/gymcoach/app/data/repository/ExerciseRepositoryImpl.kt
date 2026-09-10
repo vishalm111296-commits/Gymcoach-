@@ -2,9 +2,9 @@ package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
-import com.gymcoach.app.data.local.dao.ExerciseMuscleWithDetails
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
+import com.gymcoach.app.domain.model.ExerciseMuscleAssignment
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,29 +16,33 @@ class ExerciseRepositoryImpl @Inject constructor(
 ) : ExerciseRepository {
 
     override fun getAllExercises(): Flow<List<Exercise>> {
-        return exerciseDao.getAll().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return exerciseDao.getAll().mapList { it.toDomain() }
     }
 
-    override fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<Exercise>> {
-        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).map { entities ->
-            entities.map { it.toDomain() }
-        }
+    override fun getFilteredExercises(
+        muscle: String?,
+        difficulty: String?,
+        equipment: String?
+    ): Flow<List<Exercise>> {
+        return exerciseDao.getFilteredExercises(muscle, difficulty, equipment).mapList { it.toDomain() }
     }
 
     override fun searchExercises(query: String): Flow<List<Exercise>> {
-        return exerciseDao.searchExercises(query).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        return exerciseDao.searchExercises(query).mapList { it.toDomain() }
     }
 
     override fun getExerciseById(id: Long): Flow<Exercise?> {
         return exerciseDao.getById(id).map { it?.toDomain() }
     }
 
-    override fun getAllExerciseMuscleDetails(): Flow<List<ExerciseMuscleWithDetails>> {
-        return exerciseMuscleDao.getAllWithDetails()
+    override fun getAllExerciseMuscleDetails(): Flow<List<ExerciseMuscleAssignment>> {
+        return exerciseMuscleDao.getAllWithDetails().mapList {
+            ExerciseMuscleAssignment(
+                exerciseId = it.exerciseId,
+                muscleName = it.muscleName,
+                role = it.role
+            )
+        }
     }
 
     override suspend fun addExercise(exercise: Exercise) {
@@ -67,25 +71,16 @@ class ExerciseRepositoryImpl @Inject constructor(
         safetyNotes = safetyNotes,
         recommendedRepRange = recommendedRepRange,
         recommendedRestTime = recommendedRestTime,
-        estimatedCalories = estimatedCalories,
         category = category,
         tags = tags,
-        isFavorite = isFavorite,
-        lastViewed = lastViewed,
-        vtaperLat = vtaperLat,
-        vtaperLateralDelt = vtaperLateralDelt,
-        vtaperUpperChest = vtaperUpperChest,
-        vtaperRearDelt = vtaperRearDelt,
         movementPattern = movementPattern,
-        imageUrl = imageUrl,
-        videoUrl = videoUrl,
-        animationUrl = animationUrl,
         setupInstructions = setupInstructions,
         executionInstructions = executionInstructions,
         breathingInstructions = breathingInstructions,
-        tempoGuidance = tempoGuidance,
-        beginnerVariantId = beginnerVariantId,
-        advancedVariantId = advancedVariantId
+        vtaperLat = vtaperLat,
+        vtaperLateralDelt = vtaperLateralDelt,
+        vtaperUpperChest = vtaperUpperChest,
+        vtaperRearDelt = vtaperRearDelt
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -102,24 +97,15 @@ class ExerciseRepositoryImpl @Inject constructor(
         safetyNotes = safetyNotes,
         recommendedRepRange = recommendedRepRange,
         recommendedRestTime = recommendedRestTime,
-        estimatedCalories = estimatedCalories,
         category = category,
         tags = tags,
-        isFavorite = isFavorite,
-        lastViewed = lastViewed,
-        vtaperLat = vtaperLat,
-        vtaperLateralDelt = vtaperLateralDelt,
-        vtaperUpperChest = vtaperUpperChest,
-        vtaperRearDelt = vtaperRearDelt,
         movementPattern = movementPattern,
-        imageUrl = imageUrl,
-        videoUrl = videoUrl,
-        animationUrl = animationUrl,
         setupInstructions = setupInstructions,
         executionInstructions = executionInstructions,
         breathingInstructions = breathingInstructions,
-        tempoGuidance = tempoGuidance,
-        beginnerVariantId = beginnerVariantId,
-        advancedVariantId = advancedVariantId
+        vtaperLat = vtaperLat,
+        vtaperLateralDelt = vtaperLateralDelt,
+        vtaperUpperChest = vtaperUpperChest,
+        vtaperRearDelt = vtaperRearDelt
     )
 }

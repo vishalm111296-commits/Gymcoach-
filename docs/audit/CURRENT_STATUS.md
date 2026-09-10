@@ -343,10 +343,24 @@
 ### FormAnalyzer Test Coverage (NEW)
 | Suite | Tests | Locks |
 |-------|-------|-------|
-| FormAnalyzerStateMachineTest | 13 | Rep-cycle semantics (BICEP_CURL/SQUAT/PUSH_UP), 5-frame smoothing window, DOWN->UP transition counting, low-confidence 3-frame reset, INVALID-angle 10-frame reset, first-frame safety, explicit reset(), plank time-based hold/break, feedback strings |
+| FormAnalyzerStateMachineTest | 16 | Rep-cycle semantics (BICEP_CURL/SQUAT/PUSH_UP), 5-frame smoothing window, DOWN->UP transition counting, low-confidence 3-frame reset, INVALID-angle 10-frame reset, first-frame safety, explicit reset(), plank time-based hold/break, feedback strings, **feedback-tone mapping (GOOD/WARN/NEUTRAL)** |
 | FormAnalyzerMathAndConfigTest | 8 | Angle math (90/180/45 deg, degenerate->-1), confidence averaging, visibility threshold boundary, dead-zone phase hold, all-9 default configs boundary sanity |
 
 (2 pre-existing FormAnalyzerTest tests remain, untouched.)
+
+### Phase 5 CI Failure -> Fix Cycle (evidence-first)
+- **Run 34443356215 (commit eb535af): Unit Tests FAILED — 2 failures**, both in the NEW FormAnalyzerStateMachineTest. Root-caused by READING the analyzer code, not by weakening tests:
+  1. `plank_holdsForDuration_countsOneRep` — my test fed `currentTimeMs = 0/600/1000`, but `plankHoldStartMs == 0L` is the "not started" sentinel; production feeds real epoch millis (never 0), so every frame re-armed the timer and elapsed stayed 0 ("Hold for 1s" instead of "Hold for 0s"). **Test-side bug:** switched to realistic base timestamps (`100_000L`+).
+  2. `squat_standingThenDepth_countsRepAtBottom` — my pose builder placed ARM landmarks (12/14/16), but SQUAT measures hip-knee-ankle (24/26/28); all-zero anchors produced degenerate angle -1 → INVALID path → 10-frame reset → 0 reps. **Test-side bug:** added a squat-specific joint builder (`squatPose`).
+- **The same spec-lock test caught a REAL product bug:** `updatePlankState` returned `repCount + 1` on the completion frame but never incremented the stored counter — the completed rep flickered back to 0 on the very next frame. Fixed: `repCount++` committed on completion + steady-state "Plank hold complete" (no re-time / no negative seconds). Locked by the strengthened r3 assertion (count persists with GOOD tone).
+- **Verified locally before CI:** formAnalyzer + 3 core/ml test suites (31 tests) compiled and executed GREEN with kotlinc 1.9.22 + JUnit 4.13.2 (offline, Gradle AAPT2-blocked); Python mirror of the state machine replayed all fixed scenarios.
+
+### Camera Deep-Check Fixes (ui-ux-pro-max checklist)
+- **REAL UI BUG fixed:** `FeedbackColors.forText` keyword-matched phrases the analyzer never emits (e.g. "good form", "go deeper"), so EVERY cue — including "Good rep" — rendered error-red via the else branch. Replaced with single-source-of-truth `FeedbackTone` on `AnalysisResult` (mapped where the cue string is authored in FormAnalyzer), consumed by the overlay as semantic color (GOOD=green, WARN=amber, NEUTRAL=white). Color is additive; the cue text carries the message.
+- RepCountDisplay now announces contextually to screen readers (`liveRegion = Polite`, announces "Reps: N").
+- Overlay respects system insets (statusBars/navigationBars padding) instead of fixed 48dp/80dp offsets.
+- Camera screen gains an explicit close affordance (material3 IconButton, 48dp target) wired to `popBackStack()` in GymCoachNavHost — full-screen camera is no longer exit-only-via-system-back.
+- Permission permanently-denied (Android 11+ policy) now surfaces an explanatory state + "Open settings" deep link (ACTION_APPLICATION_DETAILS_SETTINGS) instead of a dead "Grant camera access" button.
 
 ### Camera Code Audits
 - `CameraPreviewScreen.kt` AUDIT: permission flow ✅, model bootstrap with retry ✅, `proxy.close()` in finally ✅ (buffer always released), single-threaded analyzer executor ✅, lifecycle scope bind ✅.

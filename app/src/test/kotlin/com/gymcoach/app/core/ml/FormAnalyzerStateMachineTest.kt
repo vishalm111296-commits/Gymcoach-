@@ -48,10 +48,29 @@ class FormAnalyzerStateMachineTest {
         return Pose(landmarks, List(33) { visibilityValue })
     }
 
+    /** Squat measures hip(24)-knee(26)-ankle(28), NOT the arm joints. */
+    private fun squatPose(angle: Double, visibilityValue: Float = 1.0f): Pose {
+        val rad = Math.toRadians(180 - angle)
+        val landmarks = List(33) { NormalizedLandmark(0f, 0f, 0f) }.toMutableList()
+        landmarks[24] = NormalizedLandmark(0f, 0f, 0f)
+        landmarks[26] = NormalizedLandmark(0f, 1f, 0f)
+        landmarks[28] = NormalizedLandmark(
+            Math.sin(rad).toFloat(), 1f + Math.cos(rad).toFloat(), 0f
+        )
+        return Pose(landmarks, List(33) { visibilityValue })
+    }
+
     /** Feeds `frames` of the same angle and returns the last AnalysisResult. */
     private fun feed(analyzer: FormAnalyzer, angle: Double, frames: Int): AnalysisResult? {
         var result: AnalysisResult? = null
         repeat(frames) { result = analyzer.analyze(poseAtAngle(angle)) }
+        return result
+    }
+
+    /** Feeds `frames` of a squat(hip-knee-ankle) pose and returns the last result. */
+    private fun feedSquat(analyzer: FormAnalyzer, angle: Double, frames: Int): AnalysisResult? {
+        var result: AnalysisResult? = null
+        repeat(frames) { result = analyzer.analyze(squatPose(angle)) }
         return result
     }
 
@@ -94,8 +113,8 @@ class FormAnalyzerStateMachineTest {
     @Test
     fun squat_standingThenDepth_countsRepAtBottom() {
         val analyzer = analyzerFor(ExerciseType.SQUAT)
-        feed(analyzer, 180.0, 5)   // standing, knee ~180 -> DOWN
-        val result = feed(analyzer, 80.0, 5)  // bottom -> UP transition
+        feedSquat(analyzer, 180.0, 5)   // standing, knee ~180 -> DOWN
+        val result = feedSquat(analyzer, 80.0, 5)  // bottom -> UP transition
         assertNotNull(result)
         assertEquals(1, result!!.repCount)
     }
@@ -229,22 +248,30 @@ class FormAnalyzerStateMachineTest {
         )
         val analyzer = FormAnalyzer(ExerciseType.PLANK, config)
         val hold = plankPose(175.0)  // in-position plank line
+        // Production feeds real epoch-millis timestamps; the 0L sentinel only
+        // disambiguates correctly against non-zero currentTimeMs values.
+        val base = 100_000L
 
-        val r0 = analyzer.analyze(hold, currentTimeMs = 0L)!!
+        val r0 = analyzer.analyze(hold, currentTimeMs = base)!!
         assertEquals(0, r0.repCount)
         assertEquals("Hold for 1s", r0.formFeedback)
+        assertEquals(FeedbackTone.NEUTRAL, r0.feedbackTone)
 
-        val r1 = analyzer.analyze(hold, currentTimeMs = 600L)!!
+        val r1 = analyzer.analyze(hold, currentTimeMs = base + 600L)!!
         assertEquals(0, r1.repCount)
         assertEquals("Hold for 0s", r1.formFeedback)
+        assertEquals(FeedbackTone.NEUTRAL, r1.feedbackTone)
 
-        val r2 = analyzer.analyze(hold, currentTimeMs = 1000L)!!
+        val r2 = analyzer.analyze(hold, currentTimeMs = base + 1000L)!!
         assertEquals(1, r2.repCount)
         assertEquals("Plank hold complete", r2.formFeedback)
+        assertEquals(FeedbackTone.GOOD, r2.feedbackTone)
 
-        // Still holding: stays at completed count, no double count.
-        val r3 = analyzer.analyze(hold, currentTimeMs = 1500L)!!
+        // The completed count and cue persist on later frames (no flicker to 0).
+        val r3 = analyzer.analyze(hold, currentTimeMs = base + 1500L)!!
         assertEquals(1, r3.repCount)
+        assertEquals("Plank hold complete", r3.formFeedback)
+        assertEquals(FeedbackTone.GOOD, r3.feedbackTone)
     }
 
     @Test
@@ -259,18 +286,21 @@ class FormAnalyzerStateMachineTest {
         val analyzer = FormAnalyzer(ExerciseType.PLANK, config)
         val hold = plankPose(175.0)
         val sag = plankPose(150.0)  // hips dropped out of position
+        val base = 200_000L
 
-        analyzer.analyze(hold, currentTimeMs = 0L)
-        analyzer.analyze(hold, currentTimeMs = 600L)
-        val broken = analyzer.analyze(sag, currentTimeMs = 700L)!!
+        analyzer.analyze(hold, currentTimeMs = base)
+        analyzer.analyze(hold, currentTimeMs = base + 600L)
+        val broken = analyzer.analyze(sag, currentTimeMs = base + 700L)!!
         assertEquals("Get into plank position", broken.formFeedback)
+        assertEquals(FeedbackTone.WARN, broken.feedbackTone)
         assertEquals(0, broken.repCount)
 
         // Full hold again from new start -> completes a rep.
-        analyzer.analyze(hold, currentTimeMs = 1000L)
-        val completed = analyzer.analyze(hold, currentTimeMs = 2000L)!!
+        analyzer.analyze(hold, currentTimeMs = base + 1000L)
+        val completed = analyzer.analyze(hold, currentTimeMs = base + 2000L)!!
         assertEquals(1, completed.repCount)
         assertEquals("Plank hold complete", completed.formFeedback)
+        assertEquals(FeedbackTone.GOOD, completed.feedbackTone)
     }
 
     // ── Feedback strings (hard-coded per exercise) ─────────────────────────
@@ -283,5 +313,45 @@ class FormAnalyzerStateMachineTest {
         assertTrue(extended.formFeedback.isNotEmpty())
         val curled = feed(analyzer, 20.0, 5)!!
         assertEquals("Full range of motion", curled.formFeedback)
+    }
+
+    // ── Feedback tone mapping (single source of truth in FormAnalyzer) ────
+
+    @Test
+    fun feedbackTone_goodWarnNeutral_mapsPerExercise() {
+        // BICEP_CURL: WARN when over-extended, GOOD at full range / mid-cycle.
+        val analyzer = analyzerFor(ExerciseType.BICEP_CURL)
+        feed(analyzer, 160.0, 5)
+        val over = feed(analyzer, 175.0, 5)!!
+        assertEquals("Extend arm more", over.formFeedback)
+        assertEquals(FeedbackTone.WARN, over.feedbackTone)
+        val fullRange = feed(analyzer, 20.0, 5)!!
+        assertEquals("Full range of motion", fullRange.formFeedback)
+        assertEquals(FeedbackTone.GOOD, fullRange.feedbackTone)
+        val midCycle = feed(analyzer, 90.0, 5)!!
+        assertEquals("Good rep", midCycle.formFeedback)
+        assertEquals(FeedbackTone.GOOD, midCycle.feedbackTone)
+
+        // SQUAT: GOOD at depth, WARN mid-descent, NEUTRAL at start.
+        val squat = analyzerFor(ExerciseType.SQUAT)
+        feedSquat(squat, 180.0, 5)
+        val depth = feedSquat(squat, 80.0, 5)!!
+        assertEquals("Good depth", depth.formFeedback)
+        assertEquals(FeedbackTone.GOOD, depth.feedbackTone)
+        val mid = feedSquat(squat, 110.0, 5)!!
+        assertEquals("Go lower", mid.formFeedback)
+        assertEquals(FeedbackTone.WARN, mid.feedbackTone)
+        val top = feedSquat(squat, 180.0, 5)!!
+        assertEquals("Start squat", top.formFeedback)
+        assertEquals(FeedbackTone.NEUTRAL, top.feedbackTone)
+
+        // Invalid joints: neutral system cue (not an error color).
+        val degenerate = Pose(
+            List(33) { NormalizedLandmark(0f, 0f, 0f) },
+            List(33) { 1.0f }
+        )
+        val invalid = analyzer.analyze(degenerate)!!
+        assertEquals("Landmarks not detected", invalid.formFeedback)
+        assertEquals(FeedbackTone.NEUTRAL, invalid.feedbackTone)
     }
 }

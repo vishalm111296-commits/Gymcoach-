@@ -1,10 +1,14 @@
 package com.gymcoach.app.presentation.camera
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.net.Uri
+import android.provider.Settings
 import android.util.Size
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,8 +27,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -46,6 +52,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.gymcoach.app.core.ml.ExerciseConfig
 import com.gymcoach.app.core.ml.ExerciseType
+import com.gymcoach.app.core.ml.FeedbackTone
 import com.gymcoach.app.core.ml.FormAnalyzer
 import com.gymcoach.app.core.ml.PoseDetector
 import java.util.concurrent.ExecutorService
@@ -68,10 +75,12 @@ private sealed interface ModelState {
  */
 @Composable
 fun CameraPreviewScreen(
-    exerciseType: ExerciseType = ExerciseType.BICEP_CURL
+    exerciseType: ExerciseType = ExerciseType.BICEP_CURL,
+    onClose: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val activity = context as? Activity
 
     // ── Camera permission ────────────────────────────────────
     var hasPermission by remember {
@@ -80,12 +89,29 @@ fun CameraPreviewScreen(
                 PackageManager.PERMISSION_GRANTED
         )
     }
+    var userDenied by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { granted -> hasPermission = granted }
+    ) { granted ->
+        hasPermission = granted
+        if (!granted) userDenied = true
+    }
 
     LaunchedEffect(Unit) {
         if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    // After an explicit denial the system may stop showing the rationale
+    // dialog (Android 11+ "don't ask again"); deep-link to app settings.
+    val permanentlyDenied = userDenied && !hasPermission &&
+        activity?.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) == false
+    val openAppSettings = {
+        context.startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null)
+            )
+        )
     }
 
     // ── Pose model bootstrap (download on first launch) ─────
@@ -114,6 +140,7 @@ fun CameraPreviewScreen(
     }
     var repCount by remember { mutableIntStateOf(0) }
     var formFeedback by remember { mutableStateOf<String?>(null) }
+    var feedbackTone by remember { mutableStateOf(FeedbackTone.NEUTRAL) }
 
     // Single-threaded executor serializes frame inference off the main thread.
     val analyzerExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
@@ -143,12 +170,15 @@ fun CameraPreviewScreen(
                 if (result != null) {
                     repCount = result.repCount
                     formFeedback = result.formFeedback
+                    feedbackTone = result.feedbackTone
                 } else {
                     // Person visible but tracked joints occluded: hold reps, hide stale cue.
                     formFeedback = null
+                    feedbackTone = FeedbackTone.NEUTRAL
                 }
             } else {
                 formFeedback = null
+                feedbackTone = FeedbackTone.NEUTRAL
             }
         } catch (t: Throwable) {
             // Never let a bad frame crash the session; surface as missing feedback.
@@ -159,91 +189,112 @@ fun CameraPreviewScreen(
     }
 
     // ── UI ──────────────────────────────────────────────────
-    when {
-        !hasPermission -> PermissionRationale(
-            onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) }
-        )
-        modelState is ModelState.Error -> ModelErrorView(
-            message = (modelState as ModelState.Error).message,
-            onRetry = { retryKey++ }
-        )
-        else -> Box(modifier = Modifier.fillMaxSize()) {
-            if (modelState == ModelState.Ready) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        PreviewView(ctx).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
-                        }.also { previewView ->
-                            val providerFuture = ProcessCameraProvider.getInstance(ctx)
-                            providerFuture.addListener({
-                                val cameraProvider = providerFuture.get()
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            !hasPermission -> PermissionRationale(
+                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                permanentlyDenied = permanentlyDenied,
+                onOpenSettings = openAppSettings
+            )
+            modelState is ModelState.Error -> ModelErrorView(
+                message = (modelState as ModelState.Error).message,
+                onRetry = { retryKey++ }
+            )
+            else -> Box(modifier = Modifier.fillMaxSize()) {
+                if (modelState == ModelState.Ready) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { ctx ->
+                            PreviewView(ctx).apply {
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                scaleType = PreviewView.ScaleType.FILL_CENTER
+                            }.also { previewView ->
+                                val providerFuture = ProcessCameraProvider.getInstance(ctx)
+                                providerFuture.addListener({
+                                    val cameraProvider = providerFuture.get()
 
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
-                                }
-
-                                val imageAnalysis = ImageAnalysis.Builder()
-                                    .setResolutionSelector(
-                                        ResolutionSelector.Builder()
-                                            .setResolutionStrategy(
-                                                ResolutionStrategy(
-                                                    Size(640, 480),
-                                                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                                                )
-                                            )
-                                            .build()
-                                    )
-                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                                    .build()
-                                    .also { analysis ->
-                                        analysis.setAnalyzer(analyzerExecutor) { proxy ->
-                                            processFrame(proxy)
-                                        }
+                                    val preview = Preview.Builder().build().also {
+                                        it.setSurfaceProvider(previewView.surfaceProvider)
                                     }
 
-                                val selector = CameraSelector.Builder()
-                                    .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                                    .build()
+                                    val imageAnalysis = ImageAnalysis.Builder()
+                                        .setResolutionSelector(
+                                            ResolutionSelector.Builder()
+                                                .setResolutionStrategy(
+                                                    ResolutionStrategy(
+                                                        Size(640, 480),
+                                                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                                                    )
+                                                )
+                                                .build()
+                                        )
+                                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                                        .build()
+                                        .also { analysis ->
+                                            analysis.setAnalyzer(analyzerExecutor) { proxy ->
+                                                processFrame(proxy)
+                                            }
+                                        }
 
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    selector,
-                                    preview,
-                                    imageAnalysis
-                                )
-                            }, ContextCompat.getMainExecutor(ctx))
+                                    val selector = CameraSelector.Builder()
+                                        .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
+                                        .build()
+
+                                    cameraProvider.unbindAll()
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        selector,
+                                        preview,
+                                        imageAnalysis
+                                    )
+                                }, ContextCompat.getMainExecutor(ctx))
+                            }
                         }
+                    )
+                    CameraOverlay(
+                        repCount = repCount,
+                        formFeedback = formFeedback,
+                        feedbackTone = feedbackTone
+                    )
+                } else {
+                    // Model still downloading/initializing.
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = "Preparing AI coach\u2026")
                     }
-                )
-                CameraOverlay(
-                    repCount = repCount,
-                    formFeedback = formFeedback
-                )
-            } else {
-                // Model still downloading/initializing.
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "Preparing AI coach\u2026")
                 }
             }
+        }
+
+        // Explicit close affordance: camera is a full-screen surface and
+        // users expect a visible way back, not just the system back gesture.
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(8.dp)
+        ) {
+            Text(text = "\u2715", fontSize = 26.sp)
         }
     }
 }
 
 @Composable
-private fun PermissionRationale(onRequest: () -> Unit) {
+private fun PermissionRationale(
+    onRequest: () -> Unit,
+    permanentlyDenied: Boolean,
+    onOpenSettings: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -257,7 +308,19 @@ private fun PermissionRationale(onRequest: () -> Unit) {
             fontSize = 18.sp
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRequest) { Text(text = "Grant camera access") }
+        if (permanentlyDenied) {
+            // The system dialog will no longer appear; the only way forward is
+            // the OS app-settings screen (Android 11+ denial policy).
+            Text(
+                text = "Camera access is turned off. You can enable it in system settings.",
+                textAlign = TextAlign.Center,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onOpenSettings) { Text(text = "Open settings") }
+        } else {
+            Button(onClick = onRequest) { Text(text = "Grant camera access") }
+        }
     }
 }
 

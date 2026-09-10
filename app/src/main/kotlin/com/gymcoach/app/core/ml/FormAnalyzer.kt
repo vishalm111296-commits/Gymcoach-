@@ -12,8 +12,12 @@ data class AnalysisResult(
     val formFeedback: String,
     val angle: Double,
     val currentPhase: RepPhase,
-    val confidence: Double
+    val confidence: Double,
+    val feedbackTone: FeedbackTone = FeedbackTone.NEUTRAL
 )
+
+/** Coaching-cue tone used by the camera overlay to colorize feedback. */
+enum class FeedbackTone { GOOD, WARN, NEUTRAL }
 
 enum class RepPhase { UP, DOWN, HOLD }
 
@@ -46,7 +50,8 @@ enum class MovementState { VALID, INVALID, RECOVERING }
 
 data class MovementValidation(
     val state: MovementState,
-    val feedback: String
+    val feedback: String,
+    val tone: FeedbackTone = FeedbackTone.NEUTRAL
 )
 
 // ── Analyzer ─────────────────────────────────────────────
@@ -206,59 +211,59 @@ class FormAnalyzer(
     private fun validateMovement(angle: Double): MovementValidation {
         val inRange = angle in config.validAngleRange
         return when {
-            angle < 0 -> MovementValidation(MovementState.INVALID, "Landmarks not detected")
-            !inRange -> MovementValidation(MovementState.INVALID, "Angle out of expected range")
+            angle < 0 -> MovementValidation(MovementState.INVALID, "Landmarks not detected", FeedbackTone.NEUTRAL)
+            !inRange -> MovementValidation(MovementState.INVALID, "Angle out of expected range", FeedbackTone.WARN)
             else -> MovementValidation(MovementState.VALID, "")
         }
     }
 
-    // ── Feedback per exercise ────────────────────────────
+    // ── Feedback per exercise (single source of truth for cue + tone) ─────
 
-    private fun getFeedback(angle: Double, type: ExerciseType): String = when (type) {
+    private fun getFeedback(angle: Double, type: ExerciseType): Pair<String, FeedbackTone> = when (type) {
         ExerciseType.BICEP_CURL -> when {
-            angle > 170 -> "Extend arm more"
-            angle < 30  -> "Full range of motion"
-            else        -> "Good rep"
+            angle > 170 -> "Extend arm more" to FeedbackTone.WARN
+            angle < 30  -> "Full range of motion" to FeedbackTone.GOOD
+            else        -> "Good rep" to FeedbackTone.GOOD
         }
         ExerciseType.SQUAT -> when {
-            angle < 90  -> "Good depth"
-            angle < 120 -> "Go lower"
-            else        -> "Start squat"
+            angle < 90  -> "Good depth" to FeedbackTone.GOOD
+            angle < 120 -> "Go lower" to FeedbackTone.WARN
+            else        -> "Start squat" to FeedbackTone.NEUTRAL
         }
         ExerciseType.PUSH_UP -> when {
-            angle < 90  -> "Good depth"
-            angle < 150 -> "Lower your chest"
-            else        -> "Keep body straight"
+            angle < 90  -> "Good depth" to FeedbackTone.GOOD
+            angle < 150 -> "Lower your chest" to FeedbackTone.WARN
+            else        -> "Keep body straight" to FeedbackTone.WARN
         }
         ExerciseType.SHOULDER_PRESS -> when {
-            angle < 90  -> "Press weight up"
-            angle < 150 -> "Almost there"
-            else        -> "Start press"
+            angle < 90  -> "Press weight up" to FeedbackTone.WARN
+            angle < 150 -> "Almost there" to FeedbackTone.GOOD
+            else        -> "Start press" to FeedbackTone.NEUTRAL
         }
         ExerciseType.LATERAL_RAISE -> when {
-            angle < 90  -> "Raise arms to shoulder height"
-            angle < 150 -> "Lower with control"
-            else        -> "Start lateral raise"
+            angle < 90  -> "Raise arms to shoulder height" to FeedbackTone.WARN
+            angle < 150 -> "Lower with control" to FeedbackTone.WARN
+            else        -> "Start lateral raise" to FeedbackTone.NEUTRAL
         }
         ExerciseType.BENT_OVER_ROW -> when {
-            angle < 90  -> "Pull to your torso"
-            angle < 150 -> "Extend arms forward"
-            else        -> "Start bent-over row"
+            angle < 90  -> "Pull to your torso" to FeedbackTone.WARN
+            angle < 150 -> "Extend arms forward" to FeedbackTone.NEUTRAL
+            else        -> "Start bent-over row" to FeedbackTone.NEUTRAL
         }
         ExerciseType.PLANK -> when {
-            angle > 175 -> "Good plank position"
-            angle > 160 -> "Squeeze core, keep straight"
-            else        -> "Lower hips or raise up"
+            angle > 175 -> "Good plank position" to FeedbackTone.GOOD
+            angle > 160 -> "Squeeze core, keep straight" to FeedbackTone.WARN
+            else        -> "Lower hips or raise up" to FeedbackTone.WARN
         }
         ExerciseType.DEADLIFT -> when {
-            angle < 90  -> "Good hinge position"
-            angle < 130 -> "Push hips back"
-            else        -> "Start deadlift"
+            angle < 90  -> "Good hinge position" to FeedbackTone.GOOD
+            angle < 130 -> "Push hips back" to FeedbackTone.WARN
+            else        -> "Start deadlift" to FeedbackTone.NEUTRAL
         }
         ExerciseType.BENCH_PRESS -> when {
-            angle < 90  -> "Lower the bar"
-            angle < 150 -> "Press up"
-            else        -> "Start bench press"
+            angle < 90  -> "Lower the bar" to FeedbackTone.WARN
+            angle < 150 -> "Press up" to FeedbackTone.WARN
+            else        -> "Start bench press" to FeedbackTone.NEUTRAL
         }
     }
 
@@ -278,7 +283,7 @@ class FormAnalyzer(
 
     // ── Plank time-based logic ───────────────────────────
 
-    private fun updatePlankState(angle: Double, currentTimeMs: Long): Pair<Int, String> {
+    private fun updatePlankState(angle: Double, currentTimeMs: Long): Triple<Int, String, FeedbackTone> {
         val inPosition = angle > config.downThreshold
         if (inPosition) {
             if (plankHoldStartMs == 0L) {
@@ -288,13 +293,18 @@ class FormAnalyzer(
             if (elapsed >= config.holdDurationMs && !plankHoldCompleted) {
                 plankHoldCompleted = true
                 plankHoldStartMs = 0L
-                return Pair(repCount + 1, "Plank hold complete")
+                repCount++  // commit the count so it persists on later frames
+                return Triple(repCount, "Plank hold complete", FeedbackTone.GOOD)
+            }
+            if (plankHoldCompleted) {
+                // Stay steady after completing: do not re-time or show negative seconds.
+                return Triple(repCount, "Plank hold complete", FeedbackTone.GOOD)
             }
             val secondsRemaining = (config.holdDurationMs - elapsed) / 1000
-            return Pair(repCount, "Hold for ${secondsRemaining}s")
+            return Triple(repCount, "Hold for ${secondsRemaining}s", FeedbackTone.NEUTRAL)
         } else {
             plankHoldStartMs = 0L
-            return Pair(repCount, "Get into plank position")
+            return Triple(repCount, "Get into plank position", FeedbackTone.WARN)
         }
     }
 
@@ -335,7 +345,8 @@ class FormAnalyzer(
                 formFeedback = validation.feedback,
                 angle = rawAngle,
                 currentPhase = lastPhase ?: RepPhase.UP,
-                confidence = averageConfidence(pose, requiredLandmarks)
+                confidence = averageConfidence(pose, requiredLandmarks),
+                feedbackTone = validation.tone
             )
         }
         consecutiveInvalidCount = 0
@@ -346,13 +357,14 @@ class FormAnalyzer(
 
         // Plank time-based handling
         if (config.isTimeBased && exerciseType == ExerciseType.PLANK) {
-            val (count, feedback) = updatePlankState(rawAngle, currentTimeMs)
+            val (count, feedback, tone) = updatePlankState(rawAngle, currentTimeMs)
             return AnalysisResult(
                 repCount = count,
                 formFeedback = feedback,
                 angle = rawAngle,
                 currentPhase = RepPhase.HOLD,
-                confidence = confidence
+                confidence = confidence,
+                feedbackTone = tone
             )
         }
 
@@ -372,14 +384,15 @@ class FormAnalyzer(
         lastPhase = phase
         lastAngle = smoothed
 
-        val feedback = getFeedback(rawAngle, exerciseType)
+        val (feedback, tone) = getFeedback(rawAngle, exerciseType)
 
         return AnalysisResult(
             repCount = repCount,
             formFeedback = feedback,
             angle = smoothed,
             currentPhase = phase,
-            confidence = confidence
+            confidence = confidence,
+            feedbackTone = tone
         )
     }
 

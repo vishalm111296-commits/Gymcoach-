@@ -192,7 +192,10 @@ fun GymCoachNavHost(
                 ?: ExerciseType.BICEP_CURL.name
             val exerciseType = ExerciseType.entries.firstOrNull { it.name == rawType }
                 ?: ExerciseType.BICEP_CURL
-            CameraPreviewScreen(exerciseType = exerciseType)
+            CameraPreviewScreen(
+                exerciseType = exerciseType,
+                onClose = { navController.popBackStack() }
+            )
         }
     }
 }

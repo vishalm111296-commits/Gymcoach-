@@ -27,8 +27,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -98,6 +96,9 @@ class WorkoutLoggingViewModel @Inject constructor(
      * computed atomically relative to the previous insert. Without this mutex,
      * two rapid taps launch two coroutines that both read the same in-memory
      * maxSetNumber before either DB write returns, creating duplicate setNumbers.
+     *
+     * F-WORKOUT-3: the same Mutex is used for addExerciseToWorkout to serialise
+     * orderIndex computation for the same reason.
      */
     private val addSetMutex = Mutex()
 
@@ -250,25 +251,44 @@ class WorkoutLoggingViewModel @Inject constructor(
         _showExercisePicker.value = false
     }
 
+    /**
+     * Add an exercise to the current workout.
+     *
+     * F-WORKOUT-3 fix: nextOrder is now computed inside the coroutine from the
+     * latest in-memory state at the time of execution, not from a snapshot
+     * captured before the coroutine launches.
+     *
+     * Previously `nextOrder` was computed on the calling thread then captured by
+     * the lambda. Two rapid addExercise calls could both read the same
+     * maxOrderIndex before either DB insert completed, producing duplicate
+     * orderIndex values that cause exercises to render in non-deterministic order.
+     *
+     * The serialisation via addSetMutex ensures the two DB inserts happen
+     * sequentially and each sees the updated in-memory maxOrderIndex left by
+     * the preceding insert's Flow update.
+     */
     fun addExerciseToWorkout(exercise: Exercise) {
-        val workout = _currentWorkout.value ?: return
-        val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
         viewModelScope.launch {
-            workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
-            _showExercisePicker.value = false
-            // Load previous performance for newly added exercise
-            val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
-            if (lastSets.isNotEmpty()) {
-                _previousPerformance.value = _previousPerformance.value + (exercise.id to lastSets)
-            }
-            val lastPerf = workoutRepository.getLastPerformanceForExercise(exercise.id)
-            if (lastPerf != null) {
-                _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
-            }
-            // Calculate progression for new exercise
-            val refreshed = _currentWorkout.value
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
+            addSetMutex.withLock {
+                // Re-read inside the lock for the same reason as addSet
+                val workout = _currentWorkout.value ?: return@withLock
+                val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
+                workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
+                _showExercisePicker.value = false
+                // Load previous performance for newly added exercise
+                val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
+                if (lastSets.isNotEmpty()) {
+                    _previousPerformance.value = _previousPerformance.value + (exercise.id to lastSets)
+                }
+                val lastPerf = workoutRepository.getLastPerformanceForExercise(exercise.id)
+                if (lastPerf != null) {
+                    _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
+                }
+                // Calculate progression for new exercise
+                val refreshed = _currentWorkout.value
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
             }
         }
     }
@@ -277,12 +297,6 @@ class WorkoutLoggingViewModel @Inject constructor(
      * Add a new set, serialised via [addSetMutex] to prevent duplicate setNumber
      * assignment when two taps arrive before the first DB write completes
      * (F-WORKOUT-1).
-     *
-     * The set number is now computed inside the mutex so it reflects the latest
-     * in-memory view of sets that have been added in this call sequence. For
-     * true DB-authoritative safety a future improvement could use a
-     * MAX(setNumber)+1 query in the DAO, but the mutex eliminates the race
-     * condition in the common case without requiring a schema change.
      */
     fun addSet(exerciseIndex: Int) {
         val workout = _currentWorkout.value ?: return

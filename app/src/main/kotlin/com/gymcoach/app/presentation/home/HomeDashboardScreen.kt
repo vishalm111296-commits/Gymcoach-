@@ -48,6 +48,8 @@ fun HomeDashboardScreen(
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToReadiness: () -> Unit = {},
+    // F-NAV-1: wire the new Exercises bottom tab to caller navigation
+    onNavigateToExercises: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +62,7 @@ fun HomeDashboardScreen(
                 onNavigate = { route ->
                     when (route) {
                         "workout" -> onStartWorkout()
+                        "exercise_list" -> onNavigateToExercises()
                         "program_detail" -> onViewProgram()
                         "progress" -> onNavigateToProgress()
                         "profile" -> onNavigateToProfile()
@@ -135,7 +138,7 @@ fun HomeDashboardScreen(
                         )
                     }
                     Text(
-                        text = "→",
+                        text = "\u2192",
                         style = MaterialTheme.typography.headlineMedium,
                         color = AccentBlue
                     )

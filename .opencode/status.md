@@ -1,14 +1,18 @@
 # Mission Status
 
 ## Progress
-- .opencode/todo.md (repo): T2.8 block 100% [x] — audit, registry, fixes, final CI all completed (Reviewer-marked).
-- CI run 34400290084 @ phase5-recovery-verified: SUCCESS — Build PASS, Lint PASS, Unit Tests PASS.
-- Tests: 205 total, 0 failures, 0 errors, 0 skipped (XML evidence /tmp/opencode/art34400290084) — baseline 193 retained, +12 new (APP-037/038/041 VM coverage).
-- Fix commits on branch: 56c3cf4 (round 1) + smart-cast/DeleteState-objects/imports compile fixes; pushed.
-- 7 pre-existing uncommitted UI files preserved unstaged (not in fix commits).
-- Deferred (documented): APP-020 (device verify), APP-028 (product sign-off), APP-031/032/033/034/035 (uncommitted files), APP-043/044 (design).
-- OBSERVED out-of-scope: main branch RED — PR #98 merged 2026-09-09T19:11:32Z, CI 34393583510 FAILED (Unresolved reference: latVolume in HomeViewModel.kt:175). No action taken (no merge/main access policy).
-- No merge to main performed by this mission.
+- Phase 2 (T2.8): COMPLETE — 205 tests GREEN (run 34400290084)
+- Phase 3 (Design System): IN PROGRESS
+  - M3.1 (doc): DONE — docs/design/DESIGN_SYSTEM_20260910.md committed
+  - M3.2 (foundation): DONE — DesignTokens/Dimens/Shape/Color/Theme + DesignTokenContrastTest
+  - M3.3 (migration): DONE — SetCompleteButton, ProgramScreen, BottomNav, accent-text swaps, Dimens
+  - M3.4 (CI gate): IN PROGRESS — run 34428614681 dispatched
+  - M3.5 (reviewer): PENDING (depends M3.4)
+- In-scope files touched: 11 (theme dir, components, 4 screens, bottom nav, doc)
+- 7 pre-existing uncommitted UI files: STAGED=NO, IDENTICAL-CONTENT VERIFIED
+- Python cross-check: ALL 11 WCAG pairs PASS their thresholds
+- Deferred: APP-034/043/044 (sign-off needed), APP-028 (product), APP-020 (device)
+- Main branch: RED (out of scope, no merge to main)
 
 ## Current Phase
-T2.8 COMPLETE — Mission concluded (verification evidence secured).
+M3.4 — CI gate (run 34428614681 in progress)

@@ -105,7 +105,7 @@
 - [x] S2.8.6.a: gh workflow run android-build.yml on phase5-recovery-verified
 - [x] S2.8.6.b: Verify 193+ tests pass (Build + Lint + Unit Tests all GREEN)
 
-## Phase 3 — Design System | status: pending
+## Phase 3 — Design System | status: in_progress
 ### M3.1: Design Token Inventory & Intent | status: pending
 ### T3.1.1: Write docs/design/DESIGN_SYSTEM_20260910.md | agent:Worker
 - [ ] S3.1.1.1: Token inventory + contrast matrix + decisions | size:M

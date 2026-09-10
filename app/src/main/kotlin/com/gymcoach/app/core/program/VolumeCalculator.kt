@@ -85,9 +85,9 @@ class VolumeCalculator @Inject constructor() {
      * Calculates weekly volume for completed hypertrophy sets (excluding warmups and incomplete sets).
      *
      * Set-Type Contract:
-     * - NORMAL (0), DROP (2), and FAILURE (3) completed sets deliver effective working stimulus
-     *   and are INCLUDED in hypertrophy volume calculations.
-     * - WARMUP (1) sets are submaximal preparation sets and are EXCLUDED.
+     * - NORMAL, DROP, and FAILURE completed working sets deliver effective hypertrophy stimulus
+     *   and are INCLUDED in volume calculations.
+     * - WARMUP sets are submaximal preparation sets and are EXCLUDED.
      * - Incomplete sets (completed = false) are EXCLUDED.
      *
      * Volume credits per completed working set:
@@ -99,7 +99,7 @@ class VolumeCalculator @Inject constructor() {
         completedSets: List<CompletedSetContext>,
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
-        // Filter: ONLY completed hypertrophy working sets (completed == true AND setType != SetType.WARMUP)
+        // Filter: ONLY completed hypertrophy working sets (completed == true AND domainSetType != SetType.WARMUP)
         val validSets = completedSets.filter { it.isHypertrophyWorkingSet }
 
         val weekBuckets = mutableMapOf<String, MutableMap<String, Double>>()
@@ -198,8 +198,8 @@ class VolumeCalculator @Inject constructor() {
     }
 
     companion object {
-        /** Explicit predicate determining whether a set context represents a completed working set for hypertrophy volume. */
+        /** Explicit predicate determining whether a set context represents a completed working set for hypertrophy volume using SetType domain enum semantics. */
         val CompletedSetContext.isHypertrophyWorkingSet: Boolean
-            get() = completed && setType != SetType.WARMUP.ordinal
+            get() = completed && domainSetType != SetType.WARMUP
     }
 }

@@ -18,6 +18,7 @@ import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.CanonicalMuscle
+import com.gymcoach.app.domain.model.SetType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -67,11 +68,9 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
     @Test
     fun `databaseBackedVolumeCalculationTest calculates exact weighted credits from real database rows`() = runTest {
-        // 1. Insert Muscle entities into real Room DB
         val latId = muscleDao.insert(MuscleEntity(name = "latissimus_dorsi", displayName = "Lats", bodyRegion = "Back"))
         val bicepId = muscleDao.insert(MuscleEntity(name = "biceps", displayName = "Biceps", bodyRegion = "Arms"))
 
-        // 2. Insert Exercise entities
         val exAId = exerciseDao.insert(
             ExerciseEntity(name = "Lat Pulldown", description = "Back exercise", muscleGroup = "Lats", equipment = "cable", difficulty = "Beginner")
         )
@@ -79,14 +78,10 @@ class RoomDatabaseClosedLoopIntegrationTest {
             ExerciseEntity(name = "Bicep Curl", description = "Arm exercise", muscleGroup = "Biceps", equipment = "dumbbell", difficulty = "Beginner")
         )
 
-        // 3. Insert ExerciseMuscle relations
-        // Ex A: Lats = PRIMARY (1.0), Biceps = SECONDARY (0.5)
         exerciseMuscleDao.insert(ExerciseMuscleEntity(exerciseId = exAId, muscleId = latId, role = "primary"))
         exerciseMuscleDao.insert(ExerciseMuscleEntity(exerciseId = exAId, muscleId = bicepId, role = "secondary"))
-        // Ex B: Biceps = PRIMARY (1.0)
         exerciseMuscleDao.insert(ExerciseMuscleEntity(exerciseId = exBId, muscleId = bicepId, role = "primary"))
 
-        // 4. Insert Workout A (COMPLETED) with 3 completed sets for Ex A and 2 completed sets for Ex B + 1 incomplete set
         val now = System.currentTimeMillis()
         val workoutId = workoutDao.insertWorkout(
             WorkoutEntity(date = now, startTime = now - 3600000, endTime = now, duration = 3600, notes = "Pull Day", completed = true, status = "COMPLETED")
@@ -95,17 +90,14 @@ class RoomDatabaseClosedLoopIntegrationTest {
         val weAId = workoutDao.insertWorkoutExercise(WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exAId, orderIndex = 0))
         val weBId = workoutDao.insertWorkoutExercise(WorkoutExerciseEntity(workoutId = workoutId, exerciseId = exBId, orderIndex = 1))
 
-        // 3 completed sets for Ex A
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 101L, workoutExerciseId = weAId, setNumber = 1, weight = 60.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 102L, workoutExerciseId = weAId, setNumber = 2, weight = 60.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 103L, workoutExerciseId = weAId, setNumber = 3, weight = 60.0, reps = 10, rpe = 8.5, restSeconds = 90, completed = true, setType = 0))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 101L, workoutExerciseId = weAId, setNumber = 1, weight = 60.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = SetType.NORMAL.ordinal))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 102L, workoutExerciseId = weAId, setNumber = 2, weight = 60.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = SetType.NORMAL.ordinal))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 103L, workoutExerciseId = weAId, setNumber = 3, weight = 60.0, reps = 10, rpe = 8.5, restSeconds = 90, completed = true, setType = SetType.NORMAL.ordinal))
 
-        // 2 completed sets for Ex B + 1 incomplete set (uncompleted set should be ignored)
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 201L, workoutExerciseId = weBId, setNumber = 1, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 202L, workoutExerciseId = weBId, setNumber = 2, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 203L, workoutExerciseId = weBId, setNumber = 3, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = false, setType = 0)) // INCOMPLETE
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 201L, workoutExerciseId = weBId, setNumber = 1, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = SetType.NORMAL.ordinal))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 202L, workoutExerciseId = weBId, setNumber = 2, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = SetType.NORMAL.ordinal))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(id = 203L, workoutExerciseId = weBId, setNumber = 3, weight = 15.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = false, setType = SetType.NORMAL.ordinal))
 
-        // 5. Query real completed sets and exercise muscle details from DB
         val completedSets = repository.getCompletedSetsWithContext().first()
         val muscleDetails = exerciseMuscleDao.getAllWithDetails().first()
 
@@ -125,9 +117,6 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
         val balance = volumeCalculator.calculateWeeklyVolume(completedSets, muscleAssignments)
 
-        // 6. Verify exact effective volume calculations:
-        // Lats: 3 primary sets = 3.0 effective sets
-        // Biceps: 2 primary sets (2.0) + 3 secondary sets from Lat Pulldown (3 * 0.5 = 1.5) = 3.5 effective sets
         assertEquals(3, balance.latVolume.rawDirectSets)
         assertEquals(2, balance.bicepsVolume.rawDirectSets)
         assertEquals(3, balance.bicepsVolume.rawIndirectSets)
@@ -146,52 +135,45 @@ class RoomDatabaseClosedLoopIntegrationTest {
             WorkoutEntity(date = now - 86400000, startTime = now - 86400000, endTime = now - 82800000, duration = 3600, notes = "Leg Day A", completed = true, status = "COMPLETED")
         )
         val weAId = workoutDao.insertWorkoutExercise(WorkoutExerciseEntity(workoutId = workoutAId, exerciseId = exId, orderIndex = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 180, completed = true, setType = 0))
-        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 2, weight = 100.0, reps = 5, rpe = 8.5, restSeconds = 180, completed = true, setType = 0))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 180, completed = true, setType = SetType.NORMAL.ordinal))
+        workoutDao.insertWorkoutSet(WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 2, weight = 100.0, reps = 5, rpe = 8.5, restSeconds = 180, completed = true, setType = SetType.NORMAL.ordinal))
 
-        // Trigger Perform Again
         val workoutBId = repository.createWorkoutFromHistory(workoutAId)
         assertNotNull(workoutBId)
         assertNotEquals(workoutAId, workoutBId)
 
-        // Verify Workout A remains untouched in DB
         val workoutAInDb = workoutDao.getWorkoutById(workoutAId).first()
         assertNotNull(workoutAInDb)
         assertEquals("COMPLETED", workoutAInDb!!.status)
         assertTrue(workoutAInDb.completed)
         assertEquals("Leg Day A", workoutAInDb.notes)
 
-        // Verify Workout B created as ACTIVE in DB
         val workoutBInDb = workoutDao.getWorkoutById(workoutBId!!).first()
         assertNotNull(workoutBInDb)
         assertEquals("ACTIVE", workoutBInDb!!.status)
         assertFalse(workoutBInDb.completed)
         assertEquals(0L, workoutBInDb.duration)
 
-        // Verify sets in Workout B are incomplete and assigned to Workout B's exercise entity
         val exercisesB = workoutDao.getExercisesForWorkout(workoutBId).first()
         assertEquals(1, exercisesB.size)
         val setsB = workoutDao.getSetsForExercise(exercisesB[0].id).first()
         assertEquals(2, setsB.size)
         assertTrue("Copied sets must be incomplete for new session", setsB.all { !it.completed })
 
-        // Complete Workout B
         workoutDao.updateWorkout(workoutBInDb.copy(completed = true, status = "COMPLETED", duration = 3000))
 
-        // Trigger Perform Again from Workout A a second time -> Workout C
         val workoutCId = repository.createWorkoutFromHistory(workoutAId)
         assertNotNull(workoutCId)
         assertNotEquals(workoutAId, workoutCId)
         assertNotEquals(workoutBId, workoutCId)
 
-        // Verify all 3 workouts exist independently in DB
         val completedWorkouts = repository.getCompletedWorkouts().first()
-        assertEquals(2, completedWorkouts.size) // A and B completed
+        assertEquals(2, completedWorkouts.size)
     }
 
     @Test
-    fun `databaseBackedClosedLoopTest verifies complete cycle Workout A to B to C`() = runTest {
-        // 1. Create & Complete Workout A
+    fun `progressionLoopIntegrationTestCalculatesWeightIncreaseFromPersistedPerformance`() = runTest {
+        // 1. Create & Complete Workout A in real Room database
         val exId = exerciseDao.insert(
             ExerciseEntity(name = "Bench Press", description = "Chest", muscleGroup = "Chest", equipment = "barbell", difficulty = "Intermediate")
         )
@@ -200,10 +182,10 @@ class RoomDatabaseClosedLoopIntegrationTest {
             WorkoutEntity(date = now - 86400000, startTime = now - 86400000, endTime = now - 82800000, duration = 3600, notes = "Push Day A", completed = true, status = "COMPLETED")
         )
         val weAId = workoutDao.insertWorkoutExercise(WorkoutExerciseEntity(workoutId = workoutAId, exerciseId = exId, orderIndex = 0))
-        val setA = WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 1, weight = 80.0, reps = 8, rpe = 8.0, restSeconds = 120, completed = true, setType = 0)
+        val setA = WorkoutSetEntity(workoutExerciseId = weAId, setNumber = 1, weight = 80.0, reps = 8, rpe = 8.0, restSeconds = 120, completed = true, setType = SetType.NORMAL.ordinal)
         workoutDao.insertWorkoutSet(setA)
 
-        // 2. Perform Again -> Creates Workout B
+        // 2. Perform Again -> Creates Workout B in real Room DB
         val workoutBId = repository.createWorkoutFromHistory(workoutAId)!!
 
         // 3. Log completed set in B (80kg x 12 reps - top of range)
@@ -216,11 +198,14 @@ class RoomDatabaseClosedLoopIntegrationTest {
         val workoutBEntity = workoutDao.getWorkoutById(workoutBId).first()!!
         workoutDao.updateWorkout(workoutBEntity.copy(completed = true, status = "COMPLETED", duration = 3200))
 
-        // 4. Query history -> contains A and B
-        val completedList = repository.getCompletedWorkouts().first()
-        assertEquals(2, completedList.size)
+        // 4. Retrieve actual persisted sets from Room DB via WorkoutDao path
+        val exercisesInA = workoutDao.getExercisesForWorkout(workoutAId).first()
+        val exercisesInB = workoutDao.getExercisesForWorkout(workoutBId).first()
 
-        // 5. Query ProgressionEngine with persisted sets from A and B for a gym environment
+        val retrievedSetsA = workoutDao.getSetsForExercise(exercisesInA[0].id).first()
+        val retrievedSetsB = workoutDao.getSetsForExercise(exercisesInB[0].id).first()
+
+        // 5. Query ProgressionEngine with persisted sets retrieved from DAO path
         val recommendation = progressionEngine.calculateProgression(
             exerciseId = exId,
             exerciseName = "Bench Press",
@@ -228,20 +213,12 @@ class RoomDatabaseClosedLoopIntegrationTest {
             targetRepsMin = 8,
             targetRepsMax = 12,
             targetSets = 3,
-            previousSets = listOf(setA),
-            currentSets = listOf(updatedSetB),
+            previousSets = retrievedSetsA,
+            currentSets = retrievedSetsB,
             equipmentType = "gym"
         )
-        assertEquals(85.0, recommendation.recommendedWeight, 0.01) // 80kg + 5kg -> 85kg
 
-        // 6. Perform Again from A second time -> Workout C
-        val workoutCId = repository.createWorkoutFromHistory(workoutAId)!!
-        assertNotEquals(workoutAId, workoutCId)
-        assertNotEquals(workoutBId, workoutCId)
-
-        // Verify Workout C is ACTIVE
-        val workoutCEntity = workoutDao.getWorkoutById(workoutCId).first()!!
-        assertEquals("ACTIVE", workoutCEntity.status)
-        assertFalse(workoutCEntity.completed)
+        // 6. Assert progressive weight increase calculated strictly from DB-persisted data
+        assertEquals("Progression engine must recommend weight increase to 85.0kg", 85.0, recommendation.recommendedWeight, 0.01)
     }
 }

@@ -9,4 +9,8 @@ data class CompletedSetContext(
     val rpe: Float?,
     val completed: Boolean,
     val setType: Int
-)
+) {
+    /** Map raw ordinal to domain SetType enum safely. */
+    val domainSetType: SetType
+        get() = SetType.entries.getOrNull(setType) ?: SetType.NORMAL
+}

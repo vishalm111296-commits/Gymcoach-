@@ -15,8 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -179,7 +178,7 @@ fun WorkoutSessionScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentWorkout?.let { workout ->
@@ -200,7 +199,7 @@ fun WorkoutSessionScreen(
                         }
                     }
 
-                    item { Spacer(Modifier.height(16.dp)) }
+                    item { Spacer(Modifier.height(8.dp)) }
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
@@ -208,22 +207,22 @@ fun WorkoutSessionScreen(
                             val lastPerf = lastPerformanceSummary[we.exercise.id]
 
                             ExerciseSetCard(
-                               exerciseName = we.exercise.name,
-                               muscleGroup = we.exercise.muscleGroup,
-                               sets = we.sets,
-                               previousSets = lastSets,
-                               lastPerformance = lastPerf,
-                               instructions = we.exercise.instructions,
-                               recommendation = progressionRecommendations[we.exercise.id],
-                               onAddSet = { viewModel.addSet(exIdx) },
-                               onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
-                               onRemoveExercise = { viewModel.removeExercise(exIdx) },
-                               onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
-                               onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
-                               onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
-                               onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
-                               onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
+                                exerciseName = we.exercise.name,
+                                muscleGroup = we.exercise.muscleGroup,
+                                sets = we.sets,
+                                previousSets = lastSets,
+                                lastPerformance = lastPerf,
+                                instructions = we.exercise.instructions,
+                                recommendation = progressionRecommendations[we.exercise.id],
+                                onAddSet = { viewModel.addSet(exIdx) },
+                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
+                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
+                                onRepsChange = { setIdx, reps -> viewModel.updateSetReps(exIdx, setIdx, reps) },
+                                onWeightChange = { setIdx, weight -> viewModel.updateSetWeight(exIdx, setIdx, weight) },
+                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
+                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
+                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
+                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
                             )
                         }
 
@@ -231,7 +230,7 @@ fun WorkoutSessionScreen(
                             OutlinedTextField(
                                 value = workout.workout.notes,
                                 onValueChange = { newText: String -> viewModel.updateNotes(newText) },
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                 label = { Text("Workout Notes") },
                                 maxLines = 4
                             )
@@ -240,19 +239,22 @@ fun WorkoutSessionScreen(
                 }
             }
 
+            // P3 FIX: Responsive button layout for tablets
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
                     onClick = { viewModel.showExercisePicker() },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Exercise")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add")
                 }
 
                 Button(
@@ -260,11 +262,13 @@ fun WorkoutSessionScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Complete Workout")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Complete")
                 }
             }
         }
@@ -344,12 +348,12 @@ private fun RestTimerCard(
     onPresetTap: (Int) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -366,18 +370,18 @@ private fun RestTimerCard(
                     )
                 }
                 Row {
-                    IconButton(onClick = onPauseResume) {
+                    IconButton(onClick = onPauseResume, modifier = Modifier.size(36.dp)) {
                         Icon(
                             if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                             contentDescription = "Pause/Resume"
                         )
                     }
-                    IconButton(onClick = onSkip) {
+                    IconButton(onClick = onSkip, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.SkipNext, contentDescription = "Skip")
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             LinearProgressIndicator(
                 progress = {
                     if (totalDuration > 0) timeRemaining.toFloat() / totalDuration else 0f
@@ -387,17 +391,17 @@ private fun RestTimerCard(
                 trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             )
 
-            // Quick-select rest duration presets
-            Spacer(Modifier.height(12.dp))
+            // P3 FIX: Horizontal scroll for presets on tablets
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "Adjust rest:",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
-            Spacer(Modifier.height(6.dp))
-            Row(
+            Spacer(Modifier.height(4.dp))
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 val presets = listOf(
                     "30s" to RestPresets.SHORT,
@@ -406,7 +410,8 @@ private fun RestTimerCard(
                     "120s" to RestPresets.LONG,
                     "180s" to RestPresets.VERY_LONG
                 )
-                presets.forEach { (label, seconds) ->
+                items(presets.size) { idx ->
+                    val (label, seconds) = presets[idx]
                     FilterChip(
                         selected = totalDuration == seconds,
                         onClick = { onPresetTap(seconds) },
@@ -420,8 +425,7 @@ private fun RestTimerCard(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        modifier = Modifier.weight(1f)
+                        )
                     )
                 }
             }
@@ -457,8 +461,8 @@ private fun ExerciseSetCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -477,8 +481,8 @@ private fun ExerciseSetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onRemoveExercise) {
-                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                IconButton(onClick = onRemoveExercise, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise", modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -490,7 +494,7 @@ private fun ExerciseSetCard(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
                         Text(
                             text = "Next session target",
                             style = MaterialTheme.typography.labelSmall,
@@ -513,25 +517,25 @@ private fun ExerciseSetCard(
             }
 
             // Instructions
-                        if (instructions.isNotEmpty()) {
-                            TextButton(onClick = { showInstructions = !showInstructions }) {
-                                Text(if (showInstructions) "Hide Instructions" else "View Instructions")
-                            }
-                
-                            if (showInstructions) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("Instructions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                        Text(instructions, style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                }
-                            }
+            if (instructions.isNotEmpty()) {
+                TextButton(onClick = { showInstructions = !showInstructions }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (showInstructions) "Hide Instructions" else "View Instructions")
+                }
+
+                if (showInstructions) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Instructions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(instructions, style = MaterialTheme.typography.bodySmall)
                         }
+                    }
+                }
+            }
 
             // Previous performance indicator
             if (lastPerformance != null) {
@@ -549,7 +553,7 @@ private fun ExerciseSetCard(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
                         Text(
                             text = "Last time ($lastDate)",
                             style = MaterialTheme.typography.labelSmall,
@@ -573,17 +577,17 @@ private fun ExerciseSetCard(
                 }
             }
 
-            // Set labels
+            // Set labels - P3 FIX: Responsive column widths
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Spacer(modifier = Modifier.width(40.dp)) // Checkbox + Delete
+                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.12f))
+                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.18f))
+                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.18f))
+                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.12f))
+                Text("Rest", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.12f))
+                Spacer(modifier = Modifier.width(28.dp)) // Checkbox + Delete
             }
 
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
@@ -608,11 +612,11 @@ private fun ExerciseSetCard(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(color)
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 12.dp),
                             contentAlignment = Alignment.CenterEnd
                         ) {
                             if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -635,8 +639,8 @@ private fun ExerciseSetCard(
                 }
             }
 
-            TextButton(onClick = onAddSet) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            TextButton(onClick = onAddSet, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Add Set")
             }
@@ -667,7 +671,7 @@ private fun SetRow(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Set Number & Type Indicator
@@ -684,12 +688,12 @@ private fun SetRow(
             else -> "${index + 1}"
         }
         Box(
-            modifier = Modifier.width(24.dp),
+            modifier = Modifier.width(20.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = setTypeText,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = setTypeColor,
                 fontWeight = FontWeight.Bold
             )
@@ -701,10 +705,10 @@ private fun SetRow(
                 weightText = v
                 v.toDoubleOrNull()?.let { onWeightChange(it) }
             },
-            modifier = Modifier.weight(0.18f),
+            modifier = Modifier.weight(0.16f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodySmall
         )
 
         OutlinedTextField(
@@ -713,10 +717,10 @@ private fun SetRow(
                 repsText = v
                 v.toIntOrNull()?.let { onRepsChange(it) }
             },
-            modifier = Modifier.weight(0.18f),
+            modifier = Modifier.weight(0.16f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodySmall
         )
 
         OutlinedTextField(
@@ -725,10 +729,10 @@ private fun SetRow(
                 rpeText = v
                 v.toDoubleOrNull()?.let { onRpeChange(it) }
             },
-            modifier = Modifier.weight(0.13f),
+            modifier = Modifier.weight(0.11f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodySmall
         )
 
         OutlinedTextField(
@@ -737,14 +741,14 @@ private fun SetRow(
                 restText = v
                 v.toIntOrNull()?.let { onRestSecondsChange(it) }
             },
-            modifier = Modifier.weight(0.13f),
+            modifier = Modifier.weight(0.11f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodySmall
         )
 
         Row(
-            modifier = Modifier.width(56.dp),
+            modifier = Modifier.width(44.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -755,7 +759,7 @@ private fun SetRow(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggleComplete()
                 },
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(18.dp)
             )
             IconButton(
                 onClick = { 
@@ -767,12 +771,12 @@ private fun SetRow(
                     }
                     onSetTypeChange(nextType)
                 },
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             ) {
                 Icon(
                     Icons.Default.Star,
                     contentDescription = "Cycle Set Type",
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(12.dp),
                     tint = setTypeColor
                 )
             }

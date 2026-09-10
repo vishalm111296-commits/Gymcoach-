@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.assessment.VShapeAssessment
 import com.gymcoach.app.core.assessment.VShapeAssessmentCalculator
+import com.gymcoach.app.core.program.AdaptiveProgramEngine
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
@@ -76,6 +77,8 @@ data class ProgressUiState(
     val latestHips: Double? = null,
     val vShapeAssessment: VShapeAssessment? = null,
     val vtaperBalanceText: String = "",
+    /** Adaptive program actions derived from assessment + training balance (Phase 7). */
+    val adaptiveActions: List<AdaptiveProgramEngine.AdaptiveProgramAction> = emptyList(),
     val showMeasurementDialog: Boolean = false
 )
 
@@ -245,15 +248,22 @@ class ProgressViewModel @Inject constructor(
                     }
                 }
                 val muscleMap = exerciseRepository.getMuscleAssignmentsWithRoles()
-                val vtaper = volumeCalculator.calculateVtaperBalance(
-                    volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap)
-                )
+                val trainingBalance = volumeCalculator.calculateWeeklyVolume(completedSets, muscleMap)
+                val vtaper = volumeCalculator.calculateVtaperBalance(trainingBalance)
                 val vShapeAssessment = VShapeAssessmentCalculator.assess(
                     shouldersCm = latestShoulders ?: 0.0,
                     waistCm = latestWaist ?: 0.0,
                     hipsCm = latestHips ?: 0.0,
                     trainingPrimaryScore = vtaper.primaryScore,
                     trainingSecondaryScore = vtaper.secondaryScore
+                )
+
+                // Adaptive program actions (Phase 7): pure-JVM engine, no Android deps.
+                // stallWeeks=0 until Phase 8 wires real progression tracking.
+                val adaptiveActions = AdaptiveProgramEngine().adapt(
+                    assessment = vShapeAssessment,
+                    balance = trainingBalance,
+                    stallWeeks = 0
                 )
 
                 val volumeHistory = analyticsRepository.getVolumeHistory()
@@ -310,7 +320,8 @@ class ProgressViewModel @Inject constructor(
                     latestShoulders = latestShoulders,
                     latestHips = latestHips,
                     vShapeAssessment = vShapeAssessment,
-                    vtaperBalanceText = vtaper.overallBalance
+                    vtaperBalanceText = vtaper.overallBalance,
+                    adaptiveActions = adaptiveActions
                 )
                 _uiState.value = state.copy(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),

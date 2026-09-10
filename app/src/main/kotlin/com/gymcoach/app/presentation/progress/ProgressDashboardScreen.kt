@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.presentation.history.formatDuration
 import com.gymcoach.app.presentation.progress.components.BodyMeasurementTrend
 import com.gymcoach.app.presentation.progress.components.MeasurementLogDialog
+import com.gymcoach.app.presentation.progress.components.AdaptivePlanCard
 import com.gymcoach.app.presentation.progress.components.VShapeAssessmentCard
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -203,6 +204,12 @@ fun ProgressDashboardScreen(
                             insights = assessment.insights,
                             overallBalance = state.vtaperBalanceText
                         )
+                    }
+
+                    // Adaptive Program Plan (Phase 7)
+                    if (state.adaptiveActions.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        AdaptivePlanCard(actions = state.adaptiveActions)
                     }
 
                     Spacer(Modifier.height(16.dp))

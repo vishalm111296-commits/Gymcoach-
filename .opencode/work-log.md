@@ -914,3 +914,57 @@ DEFINITIVE COUNTER-EVIDENCE (commit-scope):
 - CI 34456011222 on b3df9a6: success — 281 tests 0 failures, lint pass.
 
 Verdict: SYNC-1 FALSE. Closed; sync-issues.md cleared (resolution note retained).
+
+## Phase 6 — VShapeAssessment Core Engine (M6.1 + M6.2) — FINAL VERIFICATION
+
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| app/src/main/kotlin/com/gymcoach/app/core/assessment/VShapeAssessment.kt | CREATE | done | ses_vshape6 | pass | 2026-09-10T11:52 | - |
+| app/src/test/kotlin/com/gymcoach/app/core/assessment/VShapeAssessmentTest.kt | CREATE | done | ses_vshape6 | pass | 2026-09-10T11:52 | - |
+
+
+## Phase 6 — M6.5 FINAL GATE PASS (2026-09-10T11:59)
+
+**All 4 evidence checks PASSED:**
+
+| Check | Command | Result |
+|-------|---------|--------|
+| **1. GIT DIFF SCOPE** (commit-scope: `git show b3df9a6 --name-only`) | `git show b3df9a6 --name-only --format=""` | **PASS** — EXACTLY 9 intended paths, ZERO forbidden-7 + ZERO WorkoutSessionScreen |
+| **2. NO TEST WEAKENING** | `git show b3df9a6 --stat -- app/src/test/` | **PASS** — ONLY VShapeAssessmentTest.kt created (+154 lines); zero pre-existing test files modified |
+| **3. CI EVIDENCE** | `gh run view 34456011222` + CI XML artifact | **PASS** — Build ✓, Lint ✓, Unit Tests ✓; 281 tests (263 prior + 18 new), 0 failures; VShapeAssessmentTest: 18/18 |
+| **4. OFFLINE ENGINE EVIDENCE** | kotlinc 1.9.22 + JUnit4 offline | **PASS** — COMPILE_EXIT=0, JUnit OK (18 tests) |
+
+**Forbidden files clarification:** The 8 forbidden files (PoseDetector, ExerciseItemCard, ExerciseDetailScreen, HomeDashboardScreen, HomeViewModel, TodayWorkoutCard, ExerciseListScreen, WorkoutSessionScreen) appear in `git diff HEAD~1 --name-only` (working-tree vs HEAD~1) because they have PRE-EXISTING UNSTAGED user edits (mtimes 04:55/09:41/05:15 — predating Phase 6). They are NOT in the Phase 6 commit b3df9a6 (confirmed by `git show b3df9a6 --name-only`). They were last committed in Phase 5 (ccdddc9).
+
+**RESULT: PHASE 6 VERIFIED COMPLETE. No sync issues.**
+
+---
+
+## Phase 7 — Adaptive Programming (2026-09-10)
+
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| app/src/main/kotlin/.../core/program/AdaptiveProgramEngine.kt | CREATE | done | ses_p7engine | - | 2026-09-10T12:13 | M7.1 |
+| app/src/test/kotlin/.../core/program/AdaptiveProgramEngineTest.kt | CREATE | done | ses_p7tests | pass (16/16) | 2026-09-10T12:22 | M7.2 |
+
+**M7.1 evidence:** ENGINE_COMPILE_EXIT=0 (offline stub for VolumeCalculator nested types; authoritative gate = CI against real Room-backed VolumeCalculator.kt). WARNING: "parameter 'assessment' is never used" — carried for Phase 8 outcome coupling, documented in engine KDoc.
+
+**M7.2 evidence:** JUnit OK (16 tests, 0 failures, 0.138s offline):
+- all-muscles-insufficient → 5 VOLUME_SHIFT
+- single-muscle-insufficient → only Lats shift
+- rear-delt / lat excessive → DELOAD only
+- optimalScores + inBandVolumes → LOAD_BUMP
+- nearOptimal (primary 2.0) → no load bump → BALANCED
+- stall=3 → VARIATION appended
+- stall=2 → no variation
+- perfect-program → single BALANCED
+- NOT_ENOUGH_DATA assessment still yields program actions (not suppressed)
+- ordering: VOLUME_SHIFT before DELOAD before VARIATION
+- shift-present suppresses LOAD_BUMP
+- NaN volume → no crash, proceeds to BALANCED
+- negative volume → treated as insufficient → VOLUME_SHIFT
+- Locale.US formatting — decimal uses point, not comma
+- negative stallWeeks → IllegalArgumentException
+
+**Offline compile methodology:** kotlinc 1.9.22 via `java -cp`. VolumeCalculator nested types (TrainingBalance, MuscleVolume, VolumeStatus) live in `VolumeCalculator.kt` which imports `androidx.room` (uncompilable offline). A shape-matching stub in `/tmp/opencode/kt/VolumeStub.kt` provides identical nested types for offline verification; the real types are exercised by CI. VShapeAssessment.kt compiled from source (self-contained, only java.util.Locale). JUnit 4.13.2 + hamcrest-core 1.3 downloaded to /tmp/opencode/kt/.
+

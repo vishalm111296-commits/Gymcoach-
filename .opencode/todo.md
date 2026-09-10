@@ -138,7 +138,29 @@
 ### T3.5.1: Reviewer full-system verification + todo [x] | agent:Reviewer | depends:M3.4
 - [x] S3.5.1.1: Final evidence report | size:M | verified
 
-## Phase 4 — Exercise/Content/Media | status: pending
+## Phase 4 — Exercise/Content/Media | status: in_progress
+
+### M4.1: Content Corpus Integrity Audit | agent:Worker
+- [ ] S4.1.1: ExerciseContentIntegrityTest: parse 16 assets/*.json; asserts parse-ability, >=130 exercises, unique ids (16 known dupes must be field-consistent), required fields non-blank, difficulty enum, v_taper ranges 0-10, muscle ids subset of taxonomy, alternatives referential integrity | size:L
+- [ ] S4.1.2: Test green locally via ./gradlew test + included in CI test totals | size:S
+
+### M4.2: Repository Robustness | agent:Worker
+- [ ] S4.2.1: Fix ExerciseRepositoryImpl.getMuscleAssignmentsWithRoles unknown-role crash (sanitize, never throw) | size:S
+- [ ] S4.2.2: Search blank-query guard at repository level (blank -> empty list flow) | size:S
+- [ ] S4.2.3: Repository tests: domain<->entity round-trip ALL fields, unknown-role sanitization, blank-query behavior | size:M
+
+### M4.3: Media Player Robustness (ExerciseVideoPlayer.kt) | agent:Worker
+- [ ] S4.3.1: Replace infinite while(true){delay} polling loop with listener-driven position updates | size:M
+- [ ] S4.3.2: onPlayerError -> "Media unavailable" state; empty-URI (Uri.EMPTY) -> "No media available" placeholder | size:M
+- [ ] S4.3.3: Extract internal pure helpers (formatTime) + JVM tests | size:S
+
+### M4.4: CI Gate | agent:Worker
+- [ ] S4.4.1: Commit+push phase5-recovery-verified; dispatch android-build.yml; capture test totals from CI XML (content-integrity + repository + media tests) | size:M
+
+### M4.5: Reviewer Verification Gate | agent:Reviewer | depends:M4.4
+- [ ] S4.5.1: Verify diffs (zero forbidden files, zero test weakenings), CI evidence, mark Phase 4 [x], commit final gate | size:M
+
+## Phase 5 — Camera/Form | status: pending
 ## Phase 5 — Camera/Form | status: pending
 ## Phase 6 — V-Shape Assessment | status: pending
 ## Phase 7 — Adaptive Programming | status: pending

@@ -185,6 +185,8 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
+    // Pure-JVM JSON for content-integrity tests (real parser; the android.jar stub is "not mocked")
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.espresso.core)
 }

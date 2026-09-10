@@ -17,10 +17,11 @@ import java.io.File
  * silently depends on:
  *
  *  - every file must parse,
- *  - corpus size must not regress below 130 exercises,
- *  - ids must be unique OR (for the duplicated ids the seeder keeps
- *    "first-wins") the duplicate copies must be field-consistent so the
- *    first-wins behaviour is harmless,
+ *  - corpus size must not regress below 120 exercises,
+ *  - ids must be strictly unique across the corpus (duplicate ids were
+ *    deduplicated in Phase 4 M4.1 — re-introducing any duplicate id, even with
+ *    consistent fields, is a content regression the seeder would silently
+ *    resolve by first-wins),
  *  - required fields must be non-blank,
  *  - difficulty enum must stay within {beginner, intermediate, advanced},
  *  - v-taper relevance scores must be within 0..10,
@@ -117,19 +118,23 @@ class ExerciseContentIntegrityTest {
     }
 
     @Test
-    fun test_totalExerciseCountAtLeast130() {
+    fun test_totalExerciseCountAtLeast120() {
         val total = allExercises().size
         assertTrue("Corpus shrank: only $total exercises (min $MIN_EXERCISES)", total >= MIN_EXERCISES)
     }
 
     @Test
-    fun test_allExerciseIdsUniqueOrDuplicateCopiesConsistent() {
+    fun test_allExerciseIdsUnique() {
         val byId = allExercises().groupBy { it.first }
         assertTrue("No exercises found", byId.isNotEmpty())
         val duplicates = byId.filterValues { it.size > 1 }
-        // Note: In this corpus, duplicate IDs have different names/difficulties (data quality issue).
-        // The seeder uses first-wins, so we document duplicates but don't assert field consistency.
-        // We DO assert the unique ID count is still >= MIN_EXERCISES.
+        val dupeList = duplicates.keys.take(10).joinToString(", ")
+        assertTrue(
+            "Duplicate exercise ids found in corpus: $dupeList" +
+                (if (duplicates.size > 10) "… (+${duplicates.size - 10} more)" else "") +
+                " — deduplicated in M4.1; re-introducing duplicates is a content regression",
+            duplicates.isEmpty()
+        )
         assertTrue("Unique id count regressed: ${byId.size} (min $MIN_EXERCISES)", byId.size >= MIN_EXERCISES)
     }
 

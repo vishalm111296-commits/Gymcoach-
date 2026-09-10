@@ -260,6 +260,9 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 3 -> 4: Add setType column to workout_sets table.
+         */
         val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `workout_sets` ADD COLUMN `setType` INTEGER NOT NULL DEFAULT 0")

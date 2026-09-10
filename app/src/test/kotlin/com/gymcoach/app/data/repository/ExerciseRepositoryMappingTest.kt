@@ -3,8 +3,8 @@ package com.gymcoach.app.data.repository
 import com.gymcoach.app.core.program.VolumeCalculator.MuscleRole
 import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
+import com.gymcoach.app.data.local.dao.MuscleAssignmentRow
 import com.gymcoach.app.domain.model.Exercise
-import io.mockk.capture
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -151,12 +150,12 @@ class ExerciseRepositoryMappingTest {
 
     @Test
     fun test_unknownRoleSkippedNotThrown() = runTest {
-        val validRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val validRow = MuscleAssignmentRow(
             exerciseId = 1L,
             muscleName = "biceps",
             role = "primary"
         )
-        val unknownRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val unknownRow = MuscleAssignmentRow(
             exerciseId = 1L,
             muscleName = "mystery_muscle",
             role = "mystery_role"
@@ -174,22 +173,22 @@ class ExerciseRepositoryMappingTest {
 
     @Test
     fun test_knownRolesParsedCorrectly() = runTest {
-        val primaryRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val primaryRow = MuscleAssignmentRow(
             exerciseId = 1L,
             muscleName = "biceps",
             role = "primary"
         )
-        val secondaryRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val secondaryRow = MuscleAssignmentRow(
             exerciseId = 2L,
             muscleName = "triceps",
             role = "secondary"
         )
-        val stabilizerRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val stabilizerRow = MuscleAssignmentRow(
             exerciseId = 3L,
             muscleName = "core",
             role = "stabilizer"
         )
-        val mixedCaseRow = com.gymcoach.app.data.local.dao.ExerciseDao.MuscleAssignmentRow(
+        val mixedCaseRow = MuscleAssignmentRow(
             exerciseId = 4L,
             muscleName = "forearms",
             role = "PrImArY"

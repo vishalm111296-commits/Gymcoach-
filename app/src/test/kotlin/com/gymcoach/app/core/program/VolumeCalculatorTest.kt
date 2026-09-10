@@ -89,4 +89,65 @@ class VolumeCalculatorTest {
         val vtaper = volumeCalculator.calculateVtaperBalance(balance)
         assertEquals("Low V-taper volume", vtaper.overallBalance)
     }
+
+    @Test
+    fun `direct and indirect sets across primary secondary stabilizer roles are correctly counted`() {
+        val completedSet1 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 1, workoutExerciseId = 10, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+            exerciseId = 100,
+            workoutDate = 1700000000000L
+        )
+        val completedSet2 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 2, workoutExerciseId = 10, setNumber = 2, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+            exerciseId = 100,
+            workoutDate = 1700000000000L
+        )
+        val muscleMap = mapOf(
+            100L to listOf(
+                VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment("Biceps", VolumeCalculator.MuscleRole.SECONDARY),
+                VolumeCalculator.MuscleAssignment("Core", VolumeCalculator.MuscleRole.STABILIZER)
+            )
+        )
+
+        val balance = volumeCalculator.calculateWeeklyVolume(listOf(completedSet1, completedSet2), muscleMap)
+        assertEquals("Lats direct sets should be 2", 2, balance.latVolume.directSets)
+        assertEquals("Lats indirect sets should be 0", 0, balance.latVolume.indirectSets)
+        assertEquals("Biceps direct sets should be 0", 0, balance.bicepsVolume.directSets)
+        assertEquals("Biceps indirect sets should be 2", 2, balance.bicepsVolume.indirectSets)
+        assertEquals("Core direct sets should be 0", 0, balance.coreVolume.directSets)
+        assertEquals("Core indirect sets should be 2", 2, balance.coreVolume.indirectSets)
+    }
+
+    @Test
+    fun `multi week set contexts correctly aggregate weekly volume averages`() {
+        val week1Date = 1700000000000L
+        val week2Date = week1Date + (7 * 24 * 60 * 60 * 1000L)
+
+        val setWeek1 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 1, workoutExerciseId = 10, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+            exerciseId = 100,
+            workoutDate = week1Date
+        )
+        val set1Week2 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 2, workoutExerciseId = 20, setNumber = 1, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+            exerciseId = 100,
+            workoutDate = week2Date
+        )
+        val set2Week2 = VolumeCalculator.SetWithContext(
+            set = WorkoutSetEntity(id = 3, workoutExerciseId = 20, setNumber = 2, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+            exerciseId = 100,
+            workoutDate = week2Date
+        )
+        val muscleMap = mapOf(
+            100L to listOf(
+                VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY)
+            )
+        )
+
+        val balance = volumeCalculator.calculateWeeklyVolume(listOf(setWeek1, set1Week2, set2Week2), muscleMap)
+        assertEquals("Lats total direct sets across weeks", 3, balance.latVolume.directSets)
+        assertEquals("Lats total indirect sets across weeks", 0, balance.latVolume.indirectSets)
+        assertEquals("Lats weekly sets total", 3, balance.latVolume.weeklySets)
+    }
 }

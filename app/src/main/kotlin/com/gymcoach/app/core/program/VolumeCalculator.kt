@@ -95,15 +95,27 @@ class VolumeCalculator @Inject constructor() {
         exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
+        val directSetsByMuscle = mutableMapOf<String, Int>()
+        val indirectSetsByMuscle = mutableMapOf<String, Int>()
 
-        for (ctx in completedSets.filter { it.set.completed && it.set.setType == 0 }) {
+        for (ctx in completedSets) {
+            if (!ctx.set.completed || ctx.set.setType != 0) continue
+
             val weekKey = isoWeekKey(ctx.workoutDate)
-            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: emptyList()
+            val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: continue
 
             for (assignment in muscleAssignments) {
-                val credits = assignment.role.credit
                 val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
-                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + credits
+                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + assignment.role.credit
+
+                when (assignment.role) {
+                    MuscleRole.PRIMARY -> {
+                        directSetsByMuscle[assignment.muscleName] = (directSetsByMuscle[assignment.muscleName] ?: 0) + 1
+                    }
+                    MuscleRole.SECONDARY, MuscleRole.STABILIZER -> {
+                        indirectSetsByMuscle[assignment.muscleName] = (indirectSetsByMuscle[assignment.muscleName] ?: 0) + 1
+                    }
+                }
             }
         }
 
@@ -118,26 +130,6 @@ class VolumeCalculator @Inject constructor() {
                 avgWeekly[muscle] = total / weekBuckets.size.toDouble()
             }
         }
-
-        val directSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .flatMap { ctx ->
-                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
-                    .filter { it.role == MuscleRole.PRIMARY }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
-
-        val indirectSetsByMuscle = completedSets
-            .filter { it.set.completed && it.set.setType == 0 }
-            .flatMap { ctx ->
-                (exerciseMuscleMap[ctx.exerciseId] ?: emptyList())
-                    .filter { it.role in setOf(MuscleRole.SECONDARY, MuscleRole.STABILIZER) }
-                    .map { it.muscleName }
-            }
-            .groupBy { it }
-            .mapValues { (_, v) -> v.size }
 
         fun vol(muscle: String) = MuscleVolume(
             muscleName = muscle,

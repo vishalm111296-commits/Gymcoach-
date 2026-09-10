@@ -7,6 +7,7 @@ import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -27,6 +28,7 @@ class ExerciseRepositoryImpl @Inject constructor(
     }
 
     override fun searchExercises(query: String): Flow<List<Exercise>> {
+        if (query.isBlank()) return flowOf(emptyList())
         return exerciseDao.searchExercises(query).map { entities ->
             entities.map { it.toDomain() }
         }
@@ -53,13 +55,24 @@ class ExerciseRepositoryImpl @Inject constructor(
         return rows
             .groupBy { it.exerciseId }
             .mapValues { (_, assignments) ->
-                assignments.map { row ->
-                    MuscleAssignment(
-                        muscleName = row.muscleName,
-                        role = MuscleRole.valueOf(row.role.uppercase())
-                    )
-                }
+                assignments
+                    .mapNotNull { row ->
+                        parseRole(row.role)?.let { role ->
+                            MuscleAssignment(
+                                muscleName = row.muscleName,
+                                role = role
+                            )
+                        }
+                    }
             }
+    }
+
+    /**
+     * Safely parses a role string to MuscleRole enum.
+     * Returns null for unknown roles instead of throwing IllegalArgumentException.
+     */
+    private fun parseRole(raw: String): MuscleRole? {
+        return MuscleRole.entries.firstOrNull { it.name.equals(raw.uppercase(), ignoreCase = true) }
     }
 
     private fun ExerciseEntity.toDomain() = Exercise(

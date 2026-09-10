@@ -601,3 +601,54 @@ All Phase 3 subtasks (S3.1.1.1 through S3.5.1.1) marked `[x]` in `.opencode/todo
 | app/src/main/.../presentation/components/ExerciseVideoPlayer.kt | FIX | done | ses_phase4c | pass | 2026-09-10T08:30 | - |
 | app/src/test/.../presentation/components/ExerciseVideoPlayerHelpersTest.kt | CREATE | done | ses_phase4c | pass (5) | 2026-09-10T08:30 | - |
 | app/src/main/assets/exercises/*.json (16 files) | FIX | done | Commander | pass | 2026-09-10T08:30 | - |
+
+
+## Reviewer Summary — Phase 4 Verification Gate (2026-09-10)
+
+VERIFYING: Phase 4 Exercise/Content/Media integrity — all 3 milestones M4.1, M4.2, M4.3 implemented, CI run 34440763410 dispatched.
+
+**EVIDENCE VERIFIED:**
+
+### 1. Forbidden Files Check — PASS
+`git show --name-only --format= 8ced5b0 c136237 04b4639 8913d6b 38e687c bcbfee5 75c53ce | grep -E 'PoseDetector|ExerciseItemCard|ExerciseDetailScreen|HomeDashboard|HomeViewModel|TodayWorkout|ExerciseListScreen|WorkoutSession'` => **EMPTY** (zero forbidden files touched)
+
+### 2. Commit Scope — PASS
+- 75c53ce: 2 test files, 3 insertions/4 deletions (unused imports + coEvery fix)
+- bcbfee5: 1 test file, 7 insertions/8 deletions (MockK capture + MuscleAssignmentRow path)
+- 8913d6b: 18 files, 3233 insertions/451 deletions (corpus dedup + test + build config + ImageVector fix)
+- 8ced5b0: 1 new test file (ExerciseContentIntegrityTest.kt, 205 lines, 8 tests)
+- c136237: 2 files, 256 insertions/6 deletions (RepositoryImpl + MappingTest)
+- 04b4639: ExerciseVideoPlayer.kt + ExerciseVideoPlayerHelpersTest.kt
+
+**NO source-file deletions, NO test deletions — only additions and fixes.**
+
+### 3. Corpus Dedup Verification — PASS
+`python3 -c "import json,glob; ids={e['id'] for f in glob.glob('app/src/main/assets/exercises/*.json') if 'taxonomy' not in f and 'substitution' not in f for e in json.load(open(f))}; print(len(ids))"` => **123** unique exercises (from 139 with 16 duplicate IDs + 6 dangling alternative refs)
+
+### 4. CI Run 34440763410 — PASS (ALL JOBS GREEN)
+```
+gh run view 34440763410 --json jobs --jq '.jobs[] | {name, conclusion}'
+{"conclusion":"success","name":"Build and Test"}
+{"conclusion":"success","name":"Unit Tests"}
+{"conclusion":"success","name":"Android Lint"}
+{"conclusion":"skipped","name":"Create Release (Optional)"}
+```
+
+### 5. Test Totals (XML Artifact Ground Truth) — PASS
+Artifact 10137960625 (unit-test-reports) extracted:
+- **TOTAL: 468 tests, 0 failures, 0 errors, 0 skipped | suites: 20**
+- Phase 4 NEW suites:
+  - ExerciseContentIntegrityTest: 8 tests
+  - ExerciseRepositoryMappingTest: 5 tests
+  - ExerciseVideoPlayerHelpersTest: 5 tests
+- All 20 suites green.
+
+### 6. LSP Diagnostics — CLEAN
+- ExerciseVideoPlayer.kt: clean
+- ExerciseVideoPlayerHelpersTest.kt: clean
+- ExerciseContentIntegrityTest.kt: clean
+- ExerciseRepositoryMappingTest.kt: clean
+
+**RESULT: PASS** — Phase 4 complete. All milestones verified with independent CI + diff + count evidence. Ready to mark Phase 4 [x] and commit final gate.
+
+Timestamp: 2026-09-10T08:40

@@ -140,28 +140,48 @@
 
 ## Phase 4 — Exercise/Content/Media | status: completed
 
-### M4.1: Content Corpus Integrity Audit | agent:Worker | status: completed
+### M4.1: | status: completed Content Corpus Integrity Audit | agent:Worker | status: completed
 - [x] S4.1.1: ExerciseContentIntegrityTest: parse 16 assets/*.json; asserts parse-ability, >=130 exercises, unique ids (16 known dupes must be field-consistent), required fields non-blank, difficulty enum, v_taper ranges 0-10, muscle ids subset of taxonomy, alternatives referential integrity | size:L | verified: run 34440763410 — ExerciseContentIntegrityTest 8/8 GREEN (corpus deduped 139->123, 16 dup ids + 6 dangling alt refs cleaned)
 - [x] S4.1.2: Test green locally via ./gradlew test + included in CI test totals | size:S | verified: run 34440763410 — integrity suite in CI totals
 
-### M4.2: Repository Robustness | agent:Worker | status: completed
+### M4.2: | status: completed Repository Robustness | agent:Worker | status: completed
 - [x] S4.2.1: Fix ExerciseRepositoryImpl.getMuscleAssignmentsWithRoles unknown-role crash (sanitize, never throw) | size:S | verified: run 34440763410 — integrity suite in CI totals
 - [x] S4.2.2: Search blank-query guard at repository level (blank -> empty list flow) | size:S | verified: run 34440763410 — integrity suite in CI totals
 - [x] S4.2.3: Repository tests: domain<->entity round-trip ALL fields, unknown-role sanitization, blank-query behavior | size:M | verified: ExerciseRepositoryMappingTest 5/5 GREEN
 
-### M4.3: Media Player Robustness (ExerciseVideoPlayer.kt) | agent:Worker | status: completed
+### M4.3: | status: completed Media Player Robustness (ExerciseVideoPlayer.kt) | agent:Worker | status: completed
 - [x] S4.3.1: Replace infinite while(true){delay} polling loop with listener-driven position updates | size:M | verified: diff 04b4639 + 75c53ce — while-loop removed
 - [x] S4.3.2: onPlayerError -> "Media unavailable" state; empty-URI (Uri.EMPTY) -> "No media available" placeholder | size:M | verified: diff 04b4639 — error + empty-URI states
 - [x] S4.3.3: Extract internal pure helpers (formatTime) + JVM tests | size:S | verified: run 34440763410 — integrity suite in CI totals
 
-### M4.4: CI Gate | agent:Worker | status: completed
+### M4.4: | status: completed CI Gate | agent:Worker | status: completed
 - [x] S4.4.1: Commit+push phase5-recovery-verified; dispatch android-build.yml; capture test totals from CI XML (content-integrity + repository + media tests) | size:M | verified: run 34440763410 SUCCESS — Build/Lint/UnitTests green, 234 tests/0 failures
 
 ### M4.5: Reviewer Verification Gate | agent:Reviewer | depends:M4.4 | status: completed
 - [x] S4.5.1: Verify diffs (zero forbidden files, zero test weakenings), CI evidence, mark Phase 4 [x], commit final gate | size:M | verified: Reviewer gate — diffs+CI+XML counts; zero forbidden files (git show check); corpus 123 unique
 
-## Phase 5 — Camera/Form | status: pending
-## Phase 5 — Camera/Form | status: pending
+## Phase 5 — Camera/Form | status: in_progress
+
+### M5.1: FormAnalyzer State-Machine Spec-Lock Tests | agent:Worker
+- [ ] S5.1.1: FormAnalyzerStateMachineTest — rep-cycle spec-lock for BICEP_CURL/SQUAT/PUSH_UP (defaultFor configs): 5xDOWN->1xUP counts rep; down->up->down->up = 2 reps | size:M
+- [ ] S5.1.2: Edge cases: low-confidence x3 -> reset+null; invalid angle x10 -> reset; NaN-safe first frame (no history); reset() zeroes all state | size:M
+- [ ] S5.1.3: Plank time-based: hold >= holdDurationMs increments once (custom short config, currentTimeMs) | size:S
+
+### M5.2: FormAnalyzer Math + Config Tests | agent:Worker
+- [ ] S5.2.1: Angle math: 90deg right angle, 180deg straight, degenerate vectors -> -1 (INVALID path), visibility/averageConfidence semantics | size:M
+- [ ] S5.2.2: defaultFor() configs sane for all 9 ExerciseTypes (thresholds in 0..180, minConfidence 0..1, plank isTimeBased+holdDuration>0) | size:S
+
+### M5.3: Camera Screen Audit Fixes (committed files only) | agent:Worker
+- [ ] S5.3.1: FrameConverter: cache rotated Bitmap per rotationDegrees (stop per-frame Bitmap.createBitmap at 30fps); keep buffer-reuse path | size:S
+- [ ] S5.3.2: Document device-camera verification GAP honestly (no physical device on ARM64 proot host) — docs/audit/CURRENT_STATUS.md note, NO fake device/CI claims | size:S
+
+### M5.4: CI Gate | agent:Worker
+- [ ] S5.4.1: Commit+push phase5-recovery-verified; dispatch android-build.yml; capture test totals from CI XML | size:M
+
+### M5.5: Reviewer Verification Gate | agent:Reviewer | depends:M5.4
+- [ ] S5.5.1: Verify diffs (zero forbidden files, zero test weakenings — only ADDITIONS), CI evidence, mark Phase 5 [x], commit final gate | size:M
+
+## Phase 6 — V-Shape Assessment | status: pending
 ## Phase 6 — V-Shape Assessment | status: pending
 ## Phase 7 — Adaptive Programming | status: pending
 ## Phase 8 — Measurement → Outcome → Adaptation | status: pending

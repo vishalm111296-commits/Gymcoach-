@@ -7,6 +7,7 @@ import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -94,5 +95,46 @@ class WorkoutDataExporterTest {
         assertTrue(json.contains("\"exerciseName\": \"Barbell Squat\""))
         assertTrue(json.contains("\"weight\": 120"))
         assertTrue(json.contains("\"reps\": 5"))
+    }
+
+    @Test
+    fun `exportToStrongCsv produces exact Strong application header and format`() {
+        val exercise = Exercise(
+            id = 1L,
+            name = "Barbell Bench Press",
+            description = "",
+            muscleGroup = "Chest",
+            equipment = "barbell",
+            difficulty = "Intermediate"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 10L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(3600),
+            duration = 3600L,
+            notes = "",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(id = 1, workoutExerciseId = 5, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.5, restSeconds = 90, completed = true, setType = SetType.NORMAL)
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 5, workoutId = 10, exerciseId = 1, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val csv = exporter.exportToStrongCsv(listOf(workoutWithDetails))
+        val lines = csv.trim().lines()
+        assertEquals(
+            "Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE",
+            lines[0]
+        )
+        assertTrue(lines[1].contains("Workout"))
+        assertTrue(lines[1].contains("Barbell Bench Press"))
+        assertTrue(lines[1].contains("100.0, 5, 0, 0, , , 8.5"))
     }
 }

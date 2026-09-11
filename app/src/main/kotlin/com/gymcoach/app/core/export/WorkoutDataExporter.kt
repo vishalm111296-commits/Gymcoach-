@@ -102,4 +102,45 @@ class WorkoutDataExporter @Inject constructor() {
         }
         return str
     }
+
+    /**
+     * Exports workouts in exact Strong app CSV format.
+     * Header: Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE
+     */
+    fun exportToStrongCsv(workouts: List<WorkoutWithDetails>): String {
+        val sb = StringBuilder()
+        sb.append("Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE\n")
+
+        for (workout in workouts) {
+            val dateStr = dateFormatter.format(workout.workout.startTime)
+            val workoutName = "Workout"
+            val durationMin = (workout.workout.duration / 60).coerceAtLeast(1)
+            val durationStr = "${durationMin}m"
+            val workoutNotes = escapeCsv(workout.workout.notes)
+
+            for (we in workout.exercises) {
+                val exerciseName = escapeCsv(we.exercise.name)
+                for (set in we.sets) {
+                    val weight = set.weight
+                    val reps = set.reps
+                    val rpe = if (set.rpe > 0) set.rpe.toString() else ""
+
+                    sb.append(dateStr).append(", ")
+                        .append(workoutName).append(", ")
+                        .append(durationStr).append(", ")
+                        .append(exerciseName).append(", ")
+                        .append(set.setNumber).append(", ")
+                        .append(weight).append(", ")
+                        .append(reps).append(", ")
+                        .append("0").append(", ")
+                        .append("0").append(", ")
+                        .append("").append(", ")
+                        .append(workoutNotes).append(", ")
+                        .append(rpe).append('\n')
+                }
+            }
+        }
+
+        return sb.toString()
+    }
 }

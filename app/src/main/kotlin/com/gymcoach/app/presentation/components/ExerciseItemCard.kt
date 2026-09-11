@@ -96,7 +96,7 @@ fun ExerciseItemCard(
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
-                                    text = "3D Form",
+                                    text = "Form Animation",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary

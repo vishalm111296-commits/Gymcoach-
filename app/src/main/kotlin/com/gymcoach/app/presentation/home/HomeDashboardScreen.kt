@@ -113,12 +113,13 @@ fun HomeDashboardScreen(
             // Readiness quick link & dynamic score card
             Spacer(Modifier.height(16.dp))
             val readiness = state.latestReadiness
+            val isToday = readiness?.isRecordedToday == true
             Card(
                 onClick = onNavigateToReadiness,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (readiness?.isRestDayRecommended == true)
+                    containerColor = if (isToday && readiness?.isRestDayRecommended == true)
                         Color(0xFF2C1B1B) else DarkSurface
                 )
             ) {
@@ -138,7 +139,7 @@ fun HomeDashboardScreen(
                                 letterSpacing = 1.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            if (readiness != null) {
+                            if (readiness != null && isToday) {
                                 Spacer(Modifier.width(8.dp))
                                 val score = readiness.readinessScore
                                 val badgeColor = when {
@@ -163,7 +164,11 @@ fun HomeDashboardScreen(
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = readiness?.trainingRecommendation ?: "Log how you're feeling today to calibrate training",
+                            text = if (readiness != null && isToday) {
+                                readiness.trainingRecommendation
+                            } else {
+                                "Log how you're feeling today to calibrate training"
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )

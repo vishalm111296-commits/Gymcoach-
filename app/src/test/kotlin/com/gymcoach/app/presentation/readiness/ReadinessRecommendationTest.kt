@@ -96,4 +96,25 @@ class ReadinessRecommendationTest {
         assertEquals("Rest day recommended. Listen to your body.", entry.trainingRecommendation)
         assertTrue(entry.isRestDayRecommended)
     }
+
+    @Test
+    fun `freshness check correctly identifies today vs past records`() {
+        val todayEntry = ReadinessEntity(
+            recordedAt = System.currentTimeMillis(),
+            sleepQuality = 4,
+            soreness = 4,
+            energy = 4,
+            motivation = 4
+        )
+        assertTrue(todayEntry.isRecordedToday)
+
+        val pastEntry = ReadinessEntity(
+            recordedAt = System.currentTimeMillis() - (48 * 60 * 60 * 1000L), // 2 days ago
+            sleepQuality = 1,
+            soreness = 1,
+            energy = 1,
+            motivation = 1
+        )
+        assertFalse(pastEntry.isRecordedToday)
+    }
 }

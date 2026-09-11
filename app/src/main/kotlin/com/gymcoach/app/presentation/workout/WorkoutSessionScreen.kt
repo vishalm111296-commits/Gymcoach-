@@ -196,9 +196,9 @@ fun WorkoutSessionScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentWorkout?.let { workout ->
-                    // Recovery & Readiness advisory banner
+                    // Recovery & Readiness advisory banner (only active if logged today)
                     val readiness = latestReadiness
-                    if (readiness != null && readiness.readinessScore < 3.0 && !dismissReadinessAdvisory) {
+                    if (readiness != null && readiness.isRecordedToday && readiness.readinessScore < 3.0 && !dismissReadinessAdvisory) {
                         item {
                             RecoveryAdvisoryBanner(
                                 readiness = readiness,

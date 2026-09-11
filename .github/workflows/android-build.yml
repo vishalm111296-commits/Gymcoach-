@@ -168,8 +168,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-        with:
-          android-sdk-version: ${{ env.ANDROID_SDK_VERSION }}
 
       - name: Run Android Lint
         run: |
@@ -201,8 +199,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-        with:
-          android-sdk-version: ${{ env.ANDROID_SDK_VERSION }}
 
       - name: Run Unit Tests
         run: |

@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ExportFormat { CSV, JSON }
+enum class ExportFormat { CSV_SPREADSHEET, CSV_STRONG, JSON }
 
 data class ExportResult(
     val content: String,
@@ -231,14 +231,19 @@ class WorkoutHistoryViewModel @Inject constructor(
                 }
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 val result = when (format) {
-                    ExportFormat.CSV -> ExportResult(
+                    ExportFormat.CSV_SPREADSHEET -> ExportResult(
                         content = workoutDataExporter.exportToCsv(detailsList),
                         filename = "gymcoach_workouts_$timestamp.csv",
                         mimeType = "text/csv"
                     )
+                    ExportFormat.CSV_STRONG -> ExportResult(
+                        content = workoutDataExporter.exportToStrongCsv(detailsList),
+                        filename = "strong_workouts_$timestamp.csv",
+                        mimeType = "text/csv"
+                    )
                     ExportFormat.JSON -> ExportResult(
                         content = workoutDataExporter.exportToJson(detailsList),
-                        filename = "gymcoach_backup_$timestamp.json",
+                        filename = "gymcoach_workouts_$timestamp.json",
                         mimeType = "application/json"
                     )
                 }

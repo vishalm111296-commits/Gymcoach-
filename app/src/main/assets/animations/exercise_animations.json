@@ -2248,7 +2248,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Raise arms in scapular plane to parallel (~90 degrees), lead with elbows",
         "joints": {
           "head": [
@@ -2477,7 +2477,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Fly dumbbells wide in transverse plane, squeeze rear delts without shrugging",
         "joints": {
           "head": [
@@ -2642,7 +2642,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Flex elbows upward, keep upper arm stationary, full peak contraction",
         "joints": {
           "head": [
@@ -3161,7 +3161,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Extend knees to horizontal, hold peak contraction on quads for 1 second",
         "joints": {
           "head": [
@@ -3326,7 +3326,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Curl heels toward glutes, squeeze hamstrings without lifting hips off bench",
         "joints": {
           "head": [
@@ -3485,7 +3485,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Rise high on big toes, flex calves hard at peak contraction",
         "joints": {
           "head": [
@@ -3638,7 +3638,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Drive through heels into full hip extension, ribs down, chin tucked",
         "joints": {
           "head": [
@@ -3950,7 +3950,7 @@
       },
       {
         "progress": 0.5,
-        "phase": "BOTTOM",
+        "phase": "CONCENTRIC",
         "cue": "Pull chest toward bar, drive elbows down, chin clears the bar cleanly",
         "joints": {
           "head": [

@@ -117,10 +117,10 @@ class WorkoutHistoryViewModelTest {
     }
 
     @Test
-    fun `exportData CSV generates valid csv result`() = runTest {
+    fun `exportData CSV_SPREADSHEET generates valid csv result`() = runTest {
         viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
 
-        viewModel.exportData(ExportFormat.CSV)
+        viewModel.exportData(ExportFormat.CSV_SPREADSHEET)
 
         val result = viewModel.exportResult.value
         assertNotNull(result)
@@ -132,7 +132,23 @@ class WorkoutHistoryViewModelTest {
     }
 
     @Test
-    fun `exportData JSON generates valid json result`() = runTest {
+    fun `exportData CSV_STRONG generates exact Strong app compatible header and rows`() = runTest {
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        viewModel.exportData(ExportFormat.CSV_STRONG)
+
+        val result = viewModel.exportResult.value
+        assertNotNull(result)
+        assertEquals("text/csv", result!!.mimeType)
+        assertTrue(result.filename.startsWith("strong_workouts_"))
+        assertTrue(result.filename.endsWith(".csv"))
+        assertTrue(result.content.startsWith("Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE\n"))
+        assertTrue(result.content.contains("Barbell Squat"))
+        assertTrue(result.content.contains("100.0, 5, 0, 0, , Great leg session, 8.0"))
+    }
+
+    @Test
+    fun `exportData JSON generates valid json result with non-backup filename`() = runTest {
         viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
 
         viewModel.exportData(ExportFormat.JSON)
@@ -140,7 +156,7 @@ class WorkoutHistoryViewModelTest {
         val result = viewModel.exportResult.value
         assertNotNull(result)
         assertEquals("application/json", result!!.mimeType)
-        assertTrue(result.filename.startsWith("gymcoach_backup_"))
+        assertTrue(result.filename.startsWith("gymcoach_workouts_"))
         assertTrue(result.filename.endsWith(".json"))
         assertTrue(result.content.contains("exerciseName"))
         assertTrue(result.content.contains("Barbell Squat"))
@@ -150,7 +166,7 @@ class WorkoutHistoryViewModelTest {
     @Test
     fun `clearExportResult resets state to null`() = runTest {
         viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
-        viewModel.exportData(ExportFormat.CSV)
+        viewModel.exportData(ExportFormat.CSV_SPREADSHEET)
         assertNotNull(viewModel.exportResult.value)
 
         viewModel.clearExportResult()

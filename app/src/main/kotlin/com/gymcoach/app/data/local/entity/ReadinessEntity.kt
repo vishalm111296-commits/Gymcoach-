@@ -66,4 +66,16 @@ data class ReadinessEntity(
     
     val isRestDayRecommended: Boolean
         get() = readinessScore < 2.5
+
+    /**
+     * Freshness check: ensures readiness score is from the current calendar day.
+     * Prevents stale past records from triggering false recovery advisories.
+     */
+    val isRecordedToday: Boolean
+        get() {
+            val now = java.util.Calendar.getInstance()
+            val recorded = java.util.Calendar.getInstance().apply { timeInMillis = recordedAt }
+            return now.get(java.util.Calendar.YEAR) == recorded.get(java.util.Calendar.YEAR) &&
+                   now.get(java.util.Calendar.DAY_OF_YEAR) == recorded.get(java.util.Calendar.DAY_OF_YEAR)
+        }
 }

@@ -94,16 +94,43 @@ fun WorkoutHistoryScreen(
 
     LaunchedEffect(exportResult) {
         exportResult?.let { result ->
-            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                type = result.mimeType
-                putExtra(Intent.EXTRA_TEXT, result.content)
-                putExtra(Intent.EXTRA_SUBJECT, result.filename)
-                putExtra(Intent.EXTRA_TITLE, result.filename)
+            try {
+                val exportDir = java.io.File(context.cacheDir, "exports").apply { mkdirs() }
+                val exportFile = java.io.File(exportDir, result.filename)
+                exportFile.writeText(result.content, Charsets.UTF_8)
+
+                val contentUri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    exportFile
+                )
+
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = result.mimeType
+                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                    putExtra(Intent.EXTRA_SUBJECT, result.filename)
+                    clipData = android.content.ClipData.newUri(context.contentResolver, result.filename, contentUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                val chooser = Intent.createChooser(sendIntent, "Share Workout Data").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(chooser)
+            } catch (e: Exception) {
+                // Fallback to direct text share if file creation fails
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = result.mimeType
+                    putExtra(Intent.EXTRA_TEXT, result.content)
+                    putExtra(Intent.EXTRA_SUBJECT, result.filename)
+                }
+                val chooser = Intent.createChooser(sendIntent, "Share Workout Data").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
+            } finally {
+                viewModel.clearExportResult()
             }
-            val chooser = Intent.createChooser(sendIntent, "Export Workout Data")
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(chooser)
-            viewModel.clearExportResult()
         }
     }
 
@@ -136,14 +163,21 @@ fun WorkoutHistoryScreen(
                             onDismissRequest = { showExportMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Export CSV (Strong/Hevy)") },
+                                text = { Text("Strong CSV (Strong app import)") },
                                 onClick = {
                                     showExportMenu = false
-                                    viewModel.exportData(ExportFormat.CSV)
+                                    viewModel.exportData(ExportFormat.CSV_STRONG)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Export Backup (JSON)") },
+                                text = { Text("Spreadsheet CSV (Excel / Sheets)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportData(ExportFormat.CSV_SPREADSHEET)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Workout History (JSON)") },
                                 onClick = {
                                     showExportMenu = false
                                     viewModel.exportData(ExportFormat.JSON)

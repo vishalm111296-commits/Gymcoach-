@@ -78,6 +78,7 @@ data class ProgressUiState(
     val latestShoulderToWaistRatio: Double? = null,
     val latestChestToWaistRatio: Double? = null,
     val shoulderToWaistChange: Double? = null,
+    val insights: List<TrainingInsight> = emptyList(),
     val showMeasurementDialog: Boolean = false
 )
 
@@ -361,4 +362,67 @@ class ProgressViewModel @Inject constructor(
     private companion object {
         const val HEATMAP_WEEKS = 12
     }
+
+    private fun generateInsights(
+        weeklyTrend: Double,
+        recentPRs: List<PersonalRecordItem>,
+        muscleVolume: List<MuscleVolumeData>,
+        adherence: Float,
+        workoutsThisWeek: Int
+    ): List<TrainingInsight> {
+        val list = mutableListOf<TrainingInsight>()
+
+        if (recentPRs.isNotEmpty()) {
+            list.add(
+                TrainingInsight(
+                    type = InsightType.ACHIEVEMENT,
+                    title = "Personal Records",
+                    description = "You achieved ${recentPRs.size} new PR(s) in this training cycle, including ${recentPRs.first().exerciseName} (${recentPRs.first().achievement})."
+                )
+            )
+        }
+
+        if (weeklyTrend > 5.0) {
+            list.add(
+                TrainingInsight(
+                    type = InsightType.VOLUME_PROGRESSION,
+                    title = "Progressive Overload Active",
+                    description = "Training volume is up +${weeklyTrend.toInt()}% compared to the prior baseline period."
+                )
+            )
+        } else if (weeklyTrend < -10.0) {
+            list.add(
+                TrainingInsight(
+                    type = InsightType.FATIGUE_WARNING,
+                    title = "Volume Reduction / Deload",
+                    description = "Volume dropped by ${weeklyTrend.toInt().unaryMinus()}%. Good for systemic recovery if intentional."
+                )
+            )
+        }
+
+        val underTrained = muscleVolume.filter { it.currentSets in 1 until it.targetMin }
+        if (underTrained.isNotEmpty()) {
+            val names = underTrained.take(2).joinToString(", ") { it.muscleName }
+            list.add(
+                TrainingInsight(
+                    type = InsightType.ANATOMY_BALANCE,
+                    title = "Under-Stimulated Muscle Groups",
+                    description = "$names are below the minimum hypertrophy threshold. Consider adding 2-3 direct working sets."
+                )
+            )
+        }
+
+        if (workoutsThisWeek >= 4 || adherence >= 0.8f) {
+            list.add(
+                TrainingInsight(
+                    type = InsightType.CONSISTENCY_STREAK,
+                    title = "High Adherence",
+                    description = "Strong workout consistency (${workoutsThisWeek} sessions this week). High correlation with strength retention."
+                )
+            )
+        }
+
+        return list
+    }
+
 }

@@ -26,3 +26,18 @@ enum class ProgressDateRange(val weeks: Int, val label: String) {
     EIGHT_WEEKS(8, "8W"),
     TWELVE_WEEKS(12, "12W")
 }
+
+data class TrainingInsight(
+    val type: InsightType,
+    val title: String,
+    val description: String,
+    val actionText: String? = null
+)
+
+enum class InsightType {
+    ACHIEVEMENT,
+    VOLUME_PROGRESSION,
+    FATIGUE_WARNING,
+    CONSISTENCY_STREAK,
+    ANATOMY_BALANCE
+}

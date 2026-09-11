@@ -1,5 +1,7 @@
 package com.gymcoach.app.presentation.progress
 
+import com.gymcoach.app.presentation.progress.components.TrainingInsightsCard
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -163,6 +165,11 @@ fun ProgressDashboardScreen(
                         targetSessionsPerWeek = 4,
                         adherence = state.adherence
                     )
+
+                    if (state.insights.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        TrainingInsightsCard(insights = state.insights)
+                    }
 
                     Spacer(Modifier.height(16.dp))
 

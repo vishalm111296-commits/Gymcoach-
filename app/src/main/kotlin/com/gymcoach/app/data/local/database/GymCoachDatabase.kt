@@ -163,17 +163,18 @@ abstract class GymCoachDatabase : RoomDatabase() {
                         `user_id` INTEGER NOT NULL DEFAULT 1,
                         `recorded_at` INTEGER NOT NULL,
                         `weight_kg` REAL NOT NULL DEFAULT 0.0,
-                        `body_fat_pct` REAL,
-                        `chest_cm` REAL,
-                        `waist_cm` REAL,
-                        `shoulders_cm` REAL,
-                        `left_arm_cm` REAL,
-                        `right_arm_cm` REAL,
-                        `left_thigh_cm` REAL,
-                        `right_thigh_cm` REAL,
-                        `left_calf_cm` REAL,
-                        `right_calf_cm` REAL,
-                        `notes` TEXT NOT NULL
+                        `body_fat_pct` REAL NOT NULL DEFAULT 0.0,
+                        `chest_cm` REAL NOT NULL DEFAULT 0.0,
+                        `waist_cm` REAL NOT NULL DEFAULT 0.0,
+                        `hips_cm` REAL NOT NULL DEFAULT 0.0,
+                        `shoulders_cm` REAL NOT NULL DEFAULT 0.0,
+                        `left_arm_cm` REAL NOT NULL DEFAULT 0.0,
+                        `right_arm_cm` REAL NOT NULL DEFAULT 0.0,
+                        `left_thigh_cm` REAL NOT NULL DEFAULT 0.0,
+                        `right_thigh_cm` REAL NOT NULL DEFAULT 0.0,
+                        `left_calf_cm` REAL NOT NULL DEFAULT 0.0,
+                        `right_calf_cm` REAL NOT NULL DEFAULT 0.0,
+                        `notes` TEXT NOT NULL DEFAULT ''
                     )
                 """)
 

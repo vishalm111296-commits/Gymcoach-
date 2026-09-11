@@ -214,7 +214,7 @@ class RoomMigrationTest {
         }
         // Insert an exercise so the ACTIVE backfill condition is satisfied and foreign key exists
         v7Db.execSQL(
-            "INSERT INTO exercises (id, name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed) VALUES (1, 'Bench Press', '', 'Chest', 'Barbell', 'Intermediate', '', '', '', '', '', '8-12', '90', 10, 'Strength', '', 0, 0)"
+            "INSERT INTO exercises (id, name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed, vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt, movement_pattern, setup_instructions, execution_instructions, breathing_instructions, tempo_guidance) VALUES (1, 'Bench Press', '', 'Chest', 'Barbell', 'Intermediate', '', '', '', '', '', '8-12', '90', 10, 'Strength', '', 0, 0, 0, 0, 0, 0, 'horizontal_push', '', '', '', '')"
         )
         v7Db.execSQL(
             "INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES ($activeWorkoutId, 1, 0)"

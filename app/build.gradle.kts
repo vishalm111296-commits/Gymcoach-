@@ -113,6 +113,10 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     // NOTE: no `room { schemaDirectory = ... }` block here. Applying it
     // requires the androidx.room Gradle plugin, which is not present in
     // gradle/libs.versions.toml [plugins]. Schema export is handled by the

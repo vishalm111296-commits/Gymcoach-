@@ -98,7 +98,7 @@ class WorkoutDataExporterTest {
     }
 
     @Test
-    fun `exportToStrongCsv produces exact Strong application header and format`() {
+    fun `exportToStrongCsv uses strict 12-column Strong schema`() {
         val exercise = Exercise(
             id = 1L,
             name = "Barbell Bench Press",
@@ -128,13 +128,25 @@ class WorkoutDataExporterTest {
         val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
 
         val csv = exporter.exportToStrongCsv(listOf(workoutWithDetails))
-        val lines = csv.trim().lines()
+        val lines = csv.trimEnd().lines()
         assertEquals(
-            "Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE",
+            "Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE",
             lines[0]
         )
-        assertTrue(lines[1].contains("Workout"))
-        assertTrue(lines[1].contains("Barbell Bench Press"))
-        assertTrue(lines[1].contains("100.0, 5, 0, 0, , , 8.5"))
+
+        val fields = lines[1].split(",", ignoreCase = false, limit = -1)
+        assertEquals(12, fields.size)
+        assertEquals("Workout", fields[1])
+        assertEquals("1m", fields[2])
+        assertEquals("Barbell Bench Press", fields[3])
+        assertEquals("1", fields[4])
+        assertEquals("100.0", fields[5])
+        assertEquals("5", fields[6])
+        assertEquals("0", fields[7])
+        assertEquals("0", fields[8])
+        assertEquals("", fields[9])
+        assertEquals("", fields[10])
+        assertEquals("8.5", fields[11])
+        assertTrue(fields.none { it.startsWith(" ") })
     }
 }

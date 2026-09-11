@@ -1,100 +1,93 @@
-# GymCoach V1 Final Release Audit
+# GymCoach Final Release Audit — 2026-09-11
 
-## Repository
-- Main SHA: 12b081368d1cd34b5c5b2369c97c5bcc6c475943
-- Final branch SHA: 1871a5454cb29269061bb85ec094351ae6eb0ebc
-- PR number: N/A (Awaiting PR execution via action loop)
-- Final commit SHA: 1871a5454cb29269061bb85ec094351ae6eb0ebc
+## Canonical repository state
 
-## Build Gates
-- Debug build: PASS
-- Unit tests: PASS (148/148)
-- Android test compilation: PASS
-- Instrumentation execution: BLOCKED (No suitable device/emulator available)
-- Lint: PASS
-- Check: PASS
-- Release build: PASS
-- CI: UNVERIFIED
+- Repository: `vishalm111296-commits/Gymcoach-`
+- Branch: `main`
+- Current audited HEAD at report time: `48bba430a497cc9db160810c00a5c8b4a2393d78`
+- Previous audited feature commit: `75098e96971692ceb53a140a9a88354b3769e895`
+- Room schema: v12
 
-## Feature Matrix
+## Executive verdict
 
-| Feature | Implemented | Automated Tested | Runtime Verified | Production Quality | Remaining Issue |
-| --- | --- | --- | --- | --- | --- |
-| Splash | YES | YES | YES | YES | None |
-| Onboarding | YES | YES | YES | YES | None |
-| Profile | YES | YES | YES | YES | None |
-| Readiness | YES | YES | YES | YES | None |
-| Program generation | YES | YES | YES | YES | None |
-| Home dashboard | YES | YES | YES | YES | None |
-| Exercise library | YES | YES | YES | NO | Lacks instructional media |
-| Exercise search/filter | YES | YES | YES | YES | None |
-| Exercise detail | YES | YES | YES | NO | Lacks instructional media |
-| Workout session | YES | YES | YES | YES | None |
-| Set logging | YES | YES | YES | YES | None |
-| Rest timer | YES | YES | YES | YES | None |
-| Workout completion | YES | YES | YES | YES | None |
-| Workout history | YES | YES | YES | YES | None |
-| Workout history detail | YES | YES | YES | YES | None |
-| Analytics | YES | YES | YES | YES | None |
-| Body measurements | YES | YES | YES | YES | None |
-| PR detection | YES | YES | YES | YES | None |
-| Progression engine | YES | YES | YES | YES | None |
-| Camera permissions | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Camera preview | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Frame conversion | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Pose detection | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Form analysis | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Rep counting | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| AI feedback | YES | YES | UNVERIFIED | YES | Blocked by hardware |
-| Profile editing | YES | YES | YES | YES | None |
-| Settings | YES | YES | YES | YES | None |
-| Navigation | YES | YES | YES | YES | None |
-| Persistence | YES | YES | YES | YES | None |
-| Database migrations | YES | YES | YES | YES | None |
-| Security | YES | YES | YES | YES | None |
-| Release build | YES | YES | YES | YES | None |
+**RELEASE CANDIDATE — NOT YET A PRODUCTION SIGN-OFF**
 
-## Product/UI Status
-- Architecture: 100% (Clean Architecture, Hilt, MVVM correctly maintained natively).
-- Database: 100% (Room safely bounded, CTEs handling nested arrays, No destructive migrations fallback detected natively).
-- Business Logic: 100% (Proper abstractions bounding generators independently).
-- Feature Functionality: 100% (Offline configurations function autonomously).
-- UI Completeness: 95% (Full interactions bounding native Compose boundaries).
-- Visual Polish: 90% (Smooth transitions, Adaptive Icons, beautiful typography bounded placeholder UI).
-- UX Quality: 90% (Appropriate large physical touch targets spanning Workout Session structures mapping natively).
-- Exercise Library: 30% (Visually clean through typography-based placeholders, but lacks actual instructional video/GIF assets. Functionally a major product gap).
-- Workout Experience: 100% (Thumb-friendly numeric steppers, clear rest timers, polished celebration summaries).
-- Analytics: 100% (Accurate PR and volume charts mapping bounded offline Room aggregations safely).
-- Camera/AI UX: 80% (Architected flawlessly spanning lifecycle, blocked strictly by environmental constraints testing camera physical inputs natively).
-- Accessibility: 90% (Native sizing logic followed spanning custom composables).
-- Release Engineering: 100% (ProGuard bounded cleanly alongside isolated debug environments natively).
+The codebase has a broad, functioning feature set and the latest GitHub Actions pipeline has been configured to build debug and release variants. However, two release-gate facts prevent an honest `PRODUCTION READY` verdict:
 
-## Remaining Work
+1. **Production signing is not verified.** `app/build.gradle.kts` intentionally falls back to the debug signing configuration when `keystore/release.jks` (or the CI `KEYSTORE_PATH`) is absent. The repository's CI workflow does not provision a production keystore. Therefore a successful `assembleRelease` run is not evidence of a production-signed APK.
+2. **Physical-device validation remains incomplete.** Camera / MediaPipe behavior, export sharing with real receiving applications, and performance under real hardware conditions require device validation. Unit tests and CI cannot establish those runtime properties.
 
-### P0
-- **Exercise Instructional Media:** The typography-based visual placeholders are clean UI assets, but they do NOT substitute real instructional videos or anatomy diagrams. A user cannot learn a new exercise with a placeholder. A robust set of legally sourced assets must be deployed. (Effort: High. Blocker: YES).
+Do not describe the current release artifact as production-signed until the CI signing path is backed by a real release keystore supplied through secure GitHub secrets or an equivalent secure signing service.
 
-### P1
-- **Physical Device Camera Testing:** Cannot be faked. Requires deployment onto Android phones with varied processing power (Snapdragon vs Exynos) to ensure the 5-frame heuristic handles 30fps FormAnalysis lag gracefully. (Effort: Medium. Blocker: YES).
+## Verified findings
 
-### P2
-- **Tablet / Foldable Dual-pane:** The layouts rely on `Modifier.fillMaxWidth()` which spreads out heavily on tablets. Navigation rails should be adapted alongside Master-Detail views spanning the HomeDashboard. (Effort: Medium. Optional).
+### Animation
 
-### P3
-- **Light Theme Support:** V1 operates solely in Deep Charcoal contexts. Adapting daylight structures. (Effort: Low. Optional).
+The exercise demonstration system is a **2D normalized skeletal/vector animation system**, not a 3D mesh engine. It uses x/y joint coordinates and Jetpack Compose `DrawScope` primitives. UI terminology was corrected to `Form Animation` rather than `3D Form`.
 
-## Known Limitations
-Explicitly blocked by the lack of physical hardware integration test availability within the secure sandbox pipeline, meaning real-time camera rotations/lag cannot be definitively signed off. Additionally blocked by lack of real exercise assets in repository forcing the reliance on fallback typography elements.
+The current animation asset contains a finite subset of exercises; it should not be described as full exercise-library animation coverage.
 
-## Final Verdict
-**B. RELEASE CANDIDATE — PHYSICAL DEVICE VALIDATION REMAINING**
+Eight animation phase labels were corrected in the 2026-09-11 audit. The actual implementation uses the existing `CONCENTRIC` enum phase for the relevant peak-effort keyframes; there is no `TOP`/`PEAK` enum in the current animation model.
 
-## Direct Answer
-"If I install the current release APK on my Android phone today, can I realistically use GymCoach as the fitness application we originally intended to build?"
+### Export
 
-**YES — usable with specific limitations**
+The export flow now writes CSV/JSON files under the application cache and shares them through AndroidX `FileProvider` using `EXTRA_STREAM` and URI read permission.
 
-The app is functionally and structurally superb. A user can reliably configure a profile, receive a highly optimized V-Taper program, execute the workouts, log details seamlessly with beautiful UX, and view deep offline analytics safely saved over sessions natively. However, the app assumes the user already knows how to perform the exercises since there are currently only UI typography placeholders instead of actual instructional media/videos. Without physical hardware tests natively signed off, the AI Camera features must be used with caution expecting potential unhandled lag.
+The Strong export now emits a strict 12-column header and no whitespace padding after commas. Automated tests assert the 12-column row shape and reject accidental leading spaces.
 
-**WHAT SHOULD I DO NEXT?**
-Implement a legally clear, lightweight bundle of instructional looping WebM/GIF visuals spanning the `ExerciseSeeder` and deploy physical device Android tests across varied camera inputs natively.
+The Strong exporter should be described as **Strong-schema compatible** unless a real Strong-export fixture has been imported successfully into a real Strong/Hevy installation. Schema matching alone is not a certification of third-party interoperability.
+
+The JSON output is a **Workout History export**, not a complete restorable database backup. It currently contains workout-level, exercise-level, and set-level history but does not constitute a full export/import system for every Room entity.
+
+### Readiness
+
+Readiness remains a subjective user-reported model. Current workout advisories are gated to a record from the current local calendar day, preventing old readiness entries from triggering stale session warnings.
+
+### Database
+
+Room remains at schema v12. The v11→v12 migration uses deterministic renumbering before creating unique indices rather than deleting duplicate parent rows, reducing the risk of cascading loss of workout-set history.
+
+Migration coverage exists in `RoomMigrationTest`, including duplicate-row migration coverage.
+
+## CI status
+
+The latest push for `48bba430a497cc9db160810c00a5c8b4a2393d78` has a GitHub Actions run in progress at the time this document was written.
+
+The previous verified CI run for `75098e96971692ceb53a140a9a88354b3769e895` completed successfully for build/test, lint, and unit-test jobs and produced debug/release APK artifacts.
+
+A green CI run proves compilation and automated checks only. It does not prove production signing or physical-device correctness.
+
+## Release engineering requirements before final production approval
+
+### P0 — Production signing
+
+Configure a real release keystore through secure CI secrets or an equivalent signing service. Do not commit the keystore or passwords. The CI release gate must fail rather than silently fall back to debug signing for a production release.
+
+The release artifact should then be verified with Android signing tooling and its certificate/fingerprint should be recorded in the release evidence.
+
+### P1 — Physical-device validation
+
+Validate at minimum:
+
+- cold launch and navigation
+- workout creation and persistence
+- set logging and timer lifecycle
+- haptic rest completion
+- FileProvider export to a real receiving app
+- CSV/JSON file readability
+- CameraX preview and lifecycle
+- MediaPipe form analysis and rep counting
+- rotation/background/foreground transitions
+- memory and performance behavior
+
+### P1 — Instructional media
+
+The current vector animations are useful demonstrations but do not replace a comprehensive instructional-media library. Any future media must be legally sourced and accurately mapped to the corresponding exercise.
+
+### P2 — CI maintenance
+
+Migrate deprecated GitHub Actions versions when practical, remove remaining Kotlin/compiler warnings, and consider protecting `main` with required CI checks.
+
+## Important documentation rule
+
+Historical audit reports must not be used as current evidence. This file is the canonical release-status snapshot and should be updated whenever the release gate changes.

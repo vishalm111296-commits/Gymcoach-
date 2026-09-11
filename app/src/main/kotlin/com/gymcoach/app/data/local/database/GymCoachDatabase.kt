@@ -117,7 +117,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                         `program_id` INTEGER NOT NULL,
                         `day_number` INTEGER NOT NULL,
                         `name` TEXT NOT NULL DEFAULT '',
-                        `focus` TEXT NOT NULL DEFAULT '',
+                        `target_muscles` TEXT NOT NULL DEFAULT '',
                         `is_rest_day` INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY(`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE
                     )

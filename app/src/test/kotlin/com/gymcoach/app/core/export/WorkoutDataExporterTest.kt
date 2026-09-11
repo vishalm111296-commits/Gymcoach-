@@ -134,10 +134,10 @@ class WorkoutDataExporterTest {
             lines[0]
         )
 
-        val fields = lines[1].split(",", ignoreCase = false, limit = -1)
+        val fields = lines[1].split(",")
         assertEquals(12, fields.size)
         assertEquals("Workout", fields[1])
-        assertEquals("1m", fields[2])
+        assertEquals("60m", fields[2])
         assertEquals("Barbell Bench Press", fields[3])
         assertEquals("1", fields[4])
         assertEquals("100.0", fields[5])

@@ -142,9 +142,9 @@ class WorkoutHistoryViewModelTest {
         assertEquals("text/csv", result!!.mimeType)
         assertTrue(result.filename.startsWith("strong_workouts_"))
         assertTrue(result.filename.endsWith(".csv"))
-        assertTrue(result.content.startsWith("Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE\n"))
+        assertTrue(result.content.startsWith("Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE\n"))
         assertTrue(result.content.contains("Barbell Squat"))
-        assertTrue(result.content.contains("100.0, 5, 0, 0, , Great leg session, 8.0"))
+        assertTrue(result.content.contains("100.0,5,0,0,,Great leg session,8.0"))
     }
 
     @Test

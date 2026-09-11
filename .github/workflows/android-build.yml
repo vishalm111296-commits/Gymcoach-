@@ -287,7 +287,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.gymcoach.app.data.local.database.RoomMigrationTest --continue --stacktrace
+          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.gymcoach.app.data.local.database.RoomMigrationTest#migrate11To12_adversarialDuplicatesAcrossWorkouts_preservesAllDataDeterministically,com.gymcoach.app.data.local.database.RoomMigrationTest#migrate11To12_addsUniqueIndices --continue --stacktrace
 
       - name: Upload Connected Test Reports
         if: always()

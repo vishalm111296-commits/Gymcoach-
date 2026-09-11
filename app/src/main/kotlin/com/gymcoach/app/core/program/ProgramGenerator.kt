@@ -68,7 +68,7 @@ class ProgramGenerator @Inject constructor(
         }
         return GeneratedProgram(
             name = "V-Taper $frequency-Day Program",
-            description = "Personalized -day training program for . Adjusted for readiness score: " + String.format(java.util.Locale.US, "%.1f", baseReadinessScore),
+            description = "Personalized $frequency-day training program for ${goal.lowercase().replace('_', ' ')}. Adjusted for readiness score: " + String.format(java.util.Locale.US, "%.1f", baseReadinessScore),
             goal = goal,
             frequency = frequency,
             days = days
@@ -179,7 +179,7 @@ class ProgramGenerator @Inject constructor(
             if (selected.size >= maxExercises) break
 
             val candidates = allExercises
-                .filter { it.muscleGroup.equals(muscle, ignoreCase = true) || it.secondaryMuscles.contains(muscle, ignoreCase = true) }
+                .filter { matchesMuscle(it, muscle) }
                 .filter { it.id !in usedExerciseIds }
                 .sortedWith(
                     compareByDescending<ExerciseEntity> { relevantVtaperScore(it, muscle) }
@@ -217,12 +217,67 @@ class ProgramGenerator @Inject constructor(
         return ProgramDay(dayNum, name, muscles, selected)
     }
 
+    private fun matchesMuscle(ex: ExerciseEntity, muscle: String): Boolean {
+        val m = muscle.trim().lowercase()
+        val name = ex.name.lowercase()
+        val cat = ex.muscleGroup.lowercase()
+        val mov = ex.movementPattern.lowercase()
+        val sec = ex.secondaryMuscles.lowercase()
+
+        // Exact, substring, or space-separated match on muscleGroup or secondaryMuscles
+        if (cat.equals(m) || sec.contains(m) || cat.replace("_", " ").equals(m) || sec.replace("_", " ").contains(m)) {
+            return true
+        }
+
+        val vLat = ex.vtaperLat
+        val vLdelt = ex.vtaperLateralDelt
+        val vUchest = ex.vtaperUpperChest
+        val vRdelt = ex.vtaperRearDelt
+
+        return when (m) {
+            "lateral deltoid", "lateral_deltoid" -> {
+                (cat == "shoulders" && (vLdelt >= 4 || mov == "shoulder_abduction" || name.contains("lateral"))) || vLdelt >= 6
+            }
+            "rear deltoid", "rear_deltoid" -> {
+                vRdelt >= 4 || mov == "horizontal_abduction" || name.contains("reverse fly") || name.contains("face pull") || name.contains("rear")
+            }
+            "back", "lats" -> {
+                cat == "back" || vLat >= 5
+            }
+            "chest", "upper chest" -> {
+                cat == "chest" || vUchest >= 5
+            }
+            "quadriceps", "quads" -> {
+                (cat == "legs" && (mov in listOf("squat", "lunge", "step_up", "leg_extension") || name.contains("squat") || name.contains("lunge"))) || (mov == "squat" && cat != "core")
+            }
+            "hamstrings" -> {
+                (cat == "legs" && (mov == "hip_hinge" || name.contains("deadlift") || name.contains("rdl") || name.contains("leg curl") || name.contains("curl"))) || name.contains("deadlift") || name.contains("rdl")
+            }
+            "glutes" -> {
+                (cat == "legs" && (name.contains("thrust") || name.contains("bridge") || name.contains("glute") || mov in listOf("hip_thrust", "lunge"))) || name.contains("hip thrust") || name.contains("glute bridge")
+            }
+            "calves" -> {
+                (cat == "legs" && (mov == "plantar_flexion" || name.contains("calf"))) || name.contains("calf")
+            }
+            "biceps" -> {
+                (cat == "arms" && (name.contains("curl") || mov == "elbow_flexion")) || name.contains("bicep")
+            }
+            "triceps" -> {
+                (cat == "arms" && (name.contains("tricep") || name.contains("dip") || mov == "elbow_extension")) || name.contains("tricep")
+            }
+            "core" -> {
+                cat == "core" || name.contains("plank") || name.contains("crunch")
+            }
+            else -> false
+        }
+    }
+
     private fun relevantVtaperScore(exercise: ExerciseEntity, muscle: String): Int = when {
-        muscle.equals("Back", ignoreCase = true) -> exercise.vtaperLat
+        muscle.equals("Back", ignoreCase = true) || muscle.equals("Lats", ignoreCase = true) -> exercise.vtaperLat
         muscle.equals("Lateral Deltoid", ignoreCase = true) -> exercise.vtaperLateralDelt
-        muscle.equals("Chest", ignoreCase = true) -> exercise.vtaperUpperChest
+        muscle.equals("Chest", ignoreCase = true) || muscle.equals("Upper Chest", ignoreCase = true) -> exercise.vtaperUpperChest
         muscle.equals("Rear Deltoid", ignoreCase = true) -> exercise.vtaperRearDelt
-        else -> exercise.vtaperLat + exercise.vtaperLateralDelt + exercise.vtaperUpperChest + exercise.vtaperRearDelt
+        else -> 0
     }
 
     private fun difficultyOrder(difficulty: String): Int = when {

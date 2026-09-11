@@ -176,6 +176,7 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     fun confirmDelete() {
         _deleteTarget.value?.let { workoutId ->
+            _deleteTarget.value = null
             viewModelScope.launch {
                 workoutRepository.deleteWorkout(workoutId)
             }
@@ -188,10 +189,5 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     fun getIncompleteWorkout(): Workout? {
         return _incompleteWorkout.value
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        restTimer.stop()
     }
 }

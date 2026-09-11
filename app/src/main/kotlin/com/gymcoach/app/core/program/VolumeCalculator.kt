@@ -131,13 +131,21 @@ class VolumeCalculator @Inject constructor() {
             }
         }
 
-        fun vol(muscle: String) = MuscleVolume(
-            muscleName = muscle,
-            weeklySets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0),
-            directSets = directSetsByMuscle[muscle] ?: 0,
-            indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-            status = classify((directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0))
-        )
+        fun vol(muscle: String): MuscleVolume {
+            val totalSets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0)
+            val weeklyRate = if (weekBuckets.size > 1) {
+                Math.round(avgWeekly[muscle] ?: 0.0).toInt()
+            } else {
+                totalSets
+            }
+            return MuscleVolume(
+                muscleName = muscle,
+                weeklySets = totalSets,
+                directSets = directSetsByMuscle[muscle] ?: 0,
+                indirectSets = indirectSetsByMuscle[muscle] ?: 0,
+                status = classify(weeklyRate)
+            )
+        }
 
         // Fix F-TAXONOMY-1: use "Back" (canonical muscleGroup name from seed data and
         // ProgramGenerator) — not "Lats" which never appears in the exercise database.

@@ -398,6 +398,56 @@ abstract class GymCoachDatabase : RoomDatabase() {
          */
         val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Non-destructive normalization: renumber duplicate orderIndex sequentially per workout
+                // to preserve all exercises and prevent cascade-deleting child sets
+                db.execSQL("DROP TABLE IF EXISTS `_ranked_exercises`")
+                db.execSQL("""
+                    CREATE TEMP TABLE `_ranked_exercises` AS
+                    SELECT `id`, (
+                        SELECT COUNT(*)
+                        FROM `workout_exercises` w2
+                        WHERE w2.`workoutId` = w1.`workoutId`
+                          AND (w2.`orderIndex` < w1.`orderIndex`
+                               OR (w2.`orderIndex` = w1.`orderIndex` AND w2.`id` < w1.`id`))
+                    ) AS `newOrderIndex`
+                    FROM `workout_exercises` w1
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE `workout_exercises`
+                    SET `orderIndex` = (
+                        SELECT `newOrderIndex`
+                        FROM `_ranked_exercises`
+                        WHERE `_ranked_exercises`.`id` = `workout_exercises`.`id`
+                    )
+                    WHERE `id` IN (SELECT `id` FROM `_ranked_exercises`)
+                """.trimIndent())
+                db.execSQL("DROP TABLE IF EXISTS `_ranked_exercises`")
+
+                // Non-destructive normalization: renumber duplicate setNumber sequentially per exercise
+                // to preserve all logged set history
+                db.execSQL("DROP TABLE IF EXISTS `_ranked_sets`")
+                db.execSQL("""
+                    CREATE TEMP TABLE `_ranked_sets` AS
+                    SELECT `id`, 1 + (
+                        SELECT COUNT(*)
+                        FROM `workout_sets` s2
+                        WHERE s2.`workoutExerciseId` = s1.`workoutExerciseId`
+                          AND (s2.`setNumber` < s1.`setNumber`
+                               OR (s2.`setNumber` = s1.`setNumber` AND s2.`id` < s1.`id`))
+                    ) AS `newSetNumber`
+                    FROM `workout_sets` s1
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE `workout_sets`
+                    SET `setNumber` = (
+                        SELECT `newSetNumber`
+                        FROM `_ranked_sets`
+                        WHERE `_ranked_sets`.`id` = `workout_sets`.`id`
+                    )
+                    WHERE `id` IN (SELECT `id` FROM `_ranked_sets`)
+                """.trimIndent())
+                db.execSQL("DROP TABLE IF EXISTS `_ranked_sets`")
+
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workout_sets_workoutExerciseId_setNumber` ON `workout_sets` (`workoutExerciseId`, `setNumber`)")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workout_exercises_workoutId_orderIndex` ON `workout_exercises` (`workoutId`, `orderIndex`)")
             }

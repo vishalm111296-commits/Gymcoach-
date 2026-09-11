@@ -99,7 +99,7 @@ class FormAnalyzer(
                 downThreshold = 80.0, upThreshold = 170.0, minConfidence = 0.5
             )
             ExerciseType.LATERAL_RAISE -> ExerciseConfig(
-                downThreshold = 80.0, upThreshold = 160.0, minConfidence = 0.5
+                downThreshold = 35.0, upThreshold = 80.0, minConfidence = 0.5
             )
             ExerciseType.BENT_OVER_ROW -> ExerciseConfig(
                 downThreshold = 90.0, upThreshold = 160.0, minConfidence = 0.5
@@ -167,7 +167,12 @@ class FormAnalyzer(
 
     private fun shoulderPressElbowAngle(pose: Pose): Double = elbowAngle(pose)
 
-    private fun lateralRaiseElbowAngle(pose: Pose): Double = elbowAngle(pose)
+    private fun lateralRaiseShoulderAngle(pose: Pose): Double {
+        val hip      = safeLandmark(pose, 24)
+        val shoulder = safeLandmark(pose, 12)
+        val elbow    = safeLandmark(pose, 14)
+        return angle(hip, shoulder, elbow)
+    }
 
     private fun bentOverRowElbowAngle(pose: Pose): Double = elbowAngle(pose)
 
@@ -236,9 +241,9 @@ class FormAnalyzer(
             else        -> "Start press"
         }
         ExerciseType.LATERAL_RAISE -> when {
-            angle < 90  -> "Raise arms to shoulder height"
-            angle < 150 -> "Lower with control"
-            else        -> "Start lateral raise"
+            angle < 45  -> "Raise arms to shoulder height"
+            angle > 80  -> "Good height, lower with control"
+            else        -> "Keep raising"
         }
         ExerciseType.BENT_OVER_ROW -> when {
             angle < 90  -> "Pull to your torso"
@@ -269,7 +274,7 @@ class FormAnalyzer(
         ExerciseType.SQUAT          -> hipKneeAnkleAngle(pose)
         ExerciseType.PUSH_UP        -> pushUpAngle(pose)
         ExerciseType.SHOULDER_PRESS -> shoulderPressElbowAngle(pose)
-        ExerciseType.LATERAL_RAISE  -> lateralRaiseElbowAngle(pose)
+        ExerciseType.LATERAL_RAISE  -> lateralRaiseShoulderAngle(pose)
         ExerciseType.BENT_OVER_ROW  -> bentOverRowElbowAngle(pose)
         ExerciseType.PLANK          -> plankBodyAngle(pose)
         ExerciseType.DEADLIFT       -> deadliftHipKneeAnkle(pose)
@@ -304,8 +309,9 @@ class FormAnalyzer(
         // Landmark visibility check
         val requiredLandmarks = when (exerciseType) {
             ExerciseType.BICEP_CURL, ExerciseType.SHOULDER_PRESS,
-            ExerciseType.LATERAL_RAISE, ExerciseType.BENT_OVER_ROW,
+            ExerciseType.BENT_OVER_ROW,
             ExerciseType.PUSH_UP, ExerciseType.BENCH_PRESS -> listOf(12, 14, 16)
+            ExerciseType.LATERAL_RAISE -> listOf(12, 14, 24)
             ExerciseType.SQUAT, ExerciseType.DEADLIFT -> listOf(24, 26, 28)
             ExerciseType.PLANK -> listOf(12, 24, 28)
         }
@@ -361,9 +367,15 @@ class FormAnalyzer(
         if (history.size > 5) history.removeFirst()
         val smoothed = history.average()
 
-        val phase = if (smoothed < config.upThreshold) RepPhase.UP
-                     else if (smoothed > config.downThreshold) RepPhase.DOWN
-                     else lastPhase ?: RepPhase.DOWN
+        val phase = if (config.upThreshold > config.downThreshold) {
+            if (smoothed > config.upThreshold) RepPhase.UP
+            else if (smoothed < config.downThreshold) RepPhase.DOWN
+            else lastPhase ?: if (exerciseType == ExerciseType.LATERAL_RAISE) RepPhase.DOWN else RepPhase.UP
+        } else {
+            if (smoothed < config.upThreshold) RepPhase.UP
+            else if (smoothed > config.downThreshold) RepPhase.DOWN
+            else lastPhase ?: RepPhase.DOWN
+        }
 
         if (lastPhase == RepPhase.DOWN && phase == RepPhase.UP) {
             repCount++

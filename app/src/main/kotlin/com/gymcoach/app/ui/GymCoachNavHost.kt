@@ -158,6 +158,13 @@ fun GymCoachNavHost(
             )
         }
 
+        composable("workout") {
+            WorkoutSessionScreen(
+                onBackClick = { navController.popBackStack() },
+                workoutId = null
+            )
+        }
+
         composable(Routes.PROGRESS) {
             ProgressDashboardScreen(
                 onBackClick = { navController.popBackStack() }

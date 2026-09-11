@@ -98,6 +98,21 @@ class PoseDetector private constructor(
             val target = File(context.filesDir, MODEL_FILE_NAME)
             if (target.exists() && target.length() >= MIN_VALID_MODEL_BYTES) return target
 
+            // Check if model file is pre-packaged in app assets for offline support
+            try {
+                context.assets.open(MODEL_FILE_NAME).use { input ->
+                    val tmp = File(context.filesDir, "$MODEL_FILE_NAME.asset.tmp")
+                    tmp.outputStream().use { output -> input.copyTo(output) }
+                    if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
+                        if (target.exists()) target.delete()
+                        if (tmp.renameTo(target)) return target
+                    }
+                    tmp.delete()
+                }
+            } catch (_: Exception) {
+                // Not bundled in assets; proceed to network download
+            }
+
             val tmp = File(context.filesDir, "$MODEL_FILE_NAME.tmp")
             var connection: HttpURLConnection? = null
             try {

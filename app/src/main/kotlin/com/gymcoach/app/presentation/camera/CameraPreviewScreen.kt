@@ -3,7 +3,9 @@ package com.gymcoach.app.presentation.camera
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.Paint
 import android.util.Size
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -206,17 +208,27 @@ fun CameraPreviewScreen(
                                         }
                                     }
 
-                                val selector = CameraSelector.Builder()
-                                    .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                                    .build()
+                                val selector = when {
+                                    cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ->
+                                        CameraSelector.DEFAULT_FRONT_CAMERA
+                                    cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ->
+                                        CameraSelector.DEFAULT_BACK_CAMERA
+                                    else -> CameraSelector.DEFAULT_FRONT_CAMERA
+                                }
 
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    selector,
-                                    preview,
-                                    imageAnalysis
-                                )
+                                try {
+                                    cameraProvider.unbindAll()
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        selector,
+                                        preview,
+                                        imageAnalysis
+                                    )
+                                } catch (e: Exception) {
+                                    modelState = ModelState.Error(
+                                        e.message ?: "Failed to bind camera"
+                                    )
+                                }
                             }, ContextCompat.getMainExecutor(ctx))
                         }
                     }
@@ -285,6 +297,10 @@ private fun ModelErrorView(message: String, onRetry: () -> Unit) {
  */
 private class FrameConverter {
     private var sourceBitmap: Bitmap? = null
+    private var rotatedBitmap: Bitmap? = null
+    private var canvas: Canvas? = null
+    private val matrix = Matrix()
+    private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     /** Produces an upright bitmap matching natural device orientation. */
     fun toUpright(proxy: ImageProxy): Bitmap {
@@ -300,9 +316,24 @@ private class FrameConverter {
         val rotationDegrees = proxy.imageInfo.rotationDegrees.toFloat()
         if (rotationDegrees == 0f) return src
 
-        val matrix = Matrix().apply { postRotate(rotationDegrees) }
-        // Note: interior joint angles computed downstream are invariant to mirroring,
-        // so no front-camera flip is required for coaching correctness.
-        return Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
+        val targetWidth = if (rotationDegrees.toInt() % 180 != 0) src.height else src.width
+        val targetHeight = if (rotationDegrees.toInt() % 180 != 0) src.width else src.height
+
+        val out = rotatedBitmap
+            ?.takeIf { it.width == targetWidth && it.height == targetHeight }
+            ?: Bitmap.createBitmap(
+                targetWidth, targetHeight, Bitmap.Config.ARGB_8888
+            ).also {
+                rotatedBitmap = it
+                canvas = Canvas(it)
+            }
+
+        matrix.reset()
+        matrix.postTranslate(-src.width / 2f, -src.height / 2f)
+        matrix.postRotate(rotationDegrees)
+        matrix.postTranslate(targetWidth / 2f, targetHeight / 2f)
+
+        canvas?.drawBitmap(src, matrix, paint)
+        return out
     }
 }

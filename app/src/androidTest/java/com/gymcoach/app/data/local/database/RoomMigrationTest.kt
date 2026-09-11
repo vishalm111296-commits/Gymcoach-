@@ -392,6 +392,11 @@ class RoomMigrationTest {
     @Test
     fun migrate11To12_addsUniqueIndices() {
         var db = migrationTestHelper.createDatabase(TEST_DB, 11)
+        // Pre-populate with duplicate rows to verify deduplication handling
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (1, 10, 1, 50.0, 10, 8.0, 90, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (2, 10, 1, 55.0, 10, 8.0, 90, 1, 0)")
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (1, 5, 100, 0)")
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (2, 5, 101, 0)")
         db.close()
 
         db = migrationTestHelper.runMigrationsAndValidate(
@@ -423,6 +428,17 @@ class RoomMigrationTest {
 
         assertTrue("workout_sets must have unique index on (workoutExerciseId, setNumber)", hasSetUniqueIndex)
         assertTrue("workout_exercises must have unique index on (workoutId, orderIndex)", hasExUniqueIndex)
+
+        // Verify zero data loss: both exercises and both sets are preserved with renumbered non-colliding indices
+        val exCountCursor = db.query("SELECT COUNT(*) FROM workout_exercises")
+        assertTrue(exCountCursor.moveToFirst())
+        assertEquals("Both workout_exercises must be preserved without cascade deletion", 2, exCountCursor.getInt(0))
+        exCountCursor.close()
+
+        val setCountCursor = db.query("SELECT COUNT(*) FROM workout_sets")
+        assertTrue(setCountCursor.moveToFirst())
+        assertEquals("Both workout_sets must be preserved", 2, setCountCursor.getInt(0))
+        setCountCursor.close()
 
         db.close()
     }

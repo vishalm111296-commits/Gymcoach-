@@ -110,7 +110,7 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex ASC")
     abstract fun getExercisesForWorkout(workoutId: Long): Flow<List<WorkoutExerciseEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertWorkoutExercise(exercise: WorkoutExerciseEntity): Long
 
     @Update
@@ -126,7 +126,7 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId ORDER BY setNumber ASC")
     abstract fun getSetsForExercise(workoutExerciseId: Long): Flow<List<WorkoutSetEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertWorkoutSet(set: WorkoutSetEntity): Long
 
     @Update

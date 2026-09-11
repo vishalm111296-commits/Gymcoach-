@@ -224,6 +224,9 @@ class WorkoutLoggingViewModel @Inject constructor(
         workoutCollectorJob = viewModelScope.launch {
             workoutRepository.getWorkoutWithDetails(id).collect {
                 _currentWorkout.value = it
+                loadPreviousPerformanceForExercises(it?.exercises ?: emptyList())
+                calculateSessionVolume(it)
+                startWorkoutTimer()
             }
         }
     }
@@ -269,26 +272,30 @@ class WorkoutLoggingViewModel @Inject constructor(
      */
     fun addExerciseToWorkout(exercise: Exercise) {
         viewModelScope.launch {
-            addSetMutex.withLock {
-                // Re-read inside the lock for the same reason as addSet
-                val workout = _currentWorkout.value ?: return@withLock
-                val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
-                workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
-                _showExercisePicker.value = false
-                // Load previous performance for newly added exercise
-                val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
-                if (lastSets.isNotEmpty()) {
-                    _previousPerformance.value = _previousPerformance.value + (exercise.id to lastSets)
+            try {
+                addSetMutex.withLock {
+                    // Re-read inside the lock for the same reason as addSet
+                    val workout = _currentWorkout.value ?: return@withLock
+                    val nextOrder = (workout.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1) + 1
+                    workoutRepository.addExerciseToWorkout(workout.workout.id, exercise.id, nextOrder)
+                    _showExercisePicker.value = false
+                    // Load previous performance for newly added exercise
+                    val lastSets = workoutRepository.getLastSetsForExercise(exercise.id)
+                    if (lastSets.isNotEmpty()) {
+                        _previousPerformance.value = _previousPerformance.value + (exercise.id to lastSets)
+                    }
+                    val lastPerf = workoutRepository.getLastPerformanceForExercise(exercise.id)
+                    if (lastPerf != null) {
+                        _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
+                    }
+                    // Calculate progression for new exercise
+                    val refreshed = _currentWorkout.value
+                    if (refreshed != null) {
+                        calculateProgressionRecommendations(refreshed.exercises)
+                    }
                 }
-                val lastPerf = workoutRepository.getLastPerformanceForExercise(exercise.id)
-                if (lastPerf != null) {
-                    _lastPerformanceSummary.value = _lastPerformanceSummary.value + (exercise.id to lastPerf)
-                }
-                // Calculate progression for new exercise
-                val refreshed = _currentWorkout.value
-                if (refreshed != null) {
-                    calculateProgressionRecommendations(refreshed.exercises)
-                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to add exercise"
             }
         }
     }
@@ -305,40 +312,44 @@ class WorkoutLoggingViewModel @Inject constructor(
         val exerciseId = we.exercise.id
 
         viewModelScope.launch {
-            addSetMutex.withLock {
-                // Re-read currentWorkout inside the lock so we see any sets added
-                // by a concurrent tap that acquired the lock before us.
-                val latestWorkout = _currentWorkout.value ?: return@withLock
-                val latestWe = latestWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
-                val nextSetNumber = (latestWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
+            try {
+                addSetMutex.withLock {
+                    // Re-read currentWorkout inside the lock so we see any sets added
+                    // by a concurrent tap that acquired the lock before us.
+                    val latestWorkout = _currentWorkout.value ?: return@withLock
+                    val latestWe = latestWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                    val nextSetNumber = (latestWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
 
-                // Auto-populate from previous session if available
-                val lastSets = _previousPerformance.value[exerciseId]
-                val prefilledWeight: Double
-                val prefilledReps: Int
-                val prefilledRest: Int
+                    // Auto-populate from previous session if available
+                    val lastSets = _previousPerformance.value[exerciseId]
+                    val prefilledWeight: Double
+                    val prefilledReps: Int
+                    val prefilledRest: Int
 
-                if (lastSets != null && lastSets.isNotEmpty()) {
-                    val lastSet = lastSets.last()
-                    prefilledWeight = lastSet.weight
-                    prefilledReps = lastSet.reps
-                    prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
-                } else {
-                    prefilledWeight = 0.0
-                    prefilledReps = 0
-                    prefilledRest = defaultRestSeconds
+                    if (lastSets != null && lastSets.isNotEmpty()) {
+                        val lastSet = lastSets.last()
+                        prefilledWeight = lastSet.weight
+                        prefilledReps = lastSet.reps
+                        prefilledRest = lastSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
+                    } else {
+                        prefilledWeight = 0.0
+                        prefilledReps = 0
+                        prefilledRest = defaultRestSeconds
+                    }
+
+                    val newSet = WorkoutSet(
+                        workoutExerciseId = latestWe.workoutExercise.id,
+                        setNumber = nextSetNumber,
+                        weight = prefilledWeight,
+                        reps = prefilledReps,
+                        rpe = 0.0,
+                        restSeconds = prefilledRest,
+                        completed = false
+                    )
+                    workoutRepository.addSetToExercise(latestWe.workoutExercise.id, newSet)
                 }
-
-                val newSet = WorkoutSet(
-                    workoutExerciseId = latestWe.workoutExercise.id,
-                    setNumber = nextSetNumber,
-                    weight = prefilledWeight,
-                    reps = prefilledReps,
-                    rpe = 0.0,
-                    restSeconds = prefilledRest,
-                    completed = false
-                )
-                workoutRepository.addSetToExercise(latestWe.workoutExercise.id, newSet)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to add set"
             }
         }
     }
@@ -366,7 +377,11 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (setIndex !in we.sets.indices) return
         val set = we.sets[setIndex]
         viewModelScope.launch {
-            workoutRepository.deleteSet(set.id)
+            try {
+                workoutRepository.deleteSet(set.id)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to remove set"
+            }
         }
     }
 
@@ -375,9 +390,13 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
         viewModelScope.launch {
-            workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
-            val updated = _progressionRecommendations.value - we.exercise.id
-            _progressionRecommendations.value = updated
+            try {
+                workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
+                val updated = _progressionRecommendations.value - we.exercise.id
+                _progressionRecommendations.value = updated
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to remove exercise"
+            }
         }
     }
 
@@ -389,11 +408,15 @@ class WorkoutLoggingViewModel @Inject constructor(
         val set = we.sets[setIndex]
         val updated = set.copy(completed = !set.completed)
         viewModelScope.launch {
-            workoutRepository.updateSet(updated)
-            val refreshed = _currentWorkout.value
-            calculateSessionVolume(refreshed)
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
+            try {
+                workoutRepository.updateSet(updated)
+                val refreshed = _currentWorkout.value
+                calculateSessionVolume(refreshed)
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update set"
             }
         }
         if (updated.completed) {
@@ -427,8 +450,12 @@ class WorkoutLoggingViewModel @Inject constructor(
             status = "COMPLETED"
         )
         viewModelScope.launch {
-            workoutRepository.updateWorkout(updated)
-            _completed.value = true
+            try {
+                workoutRepository.updateWorkout(updated)
+                _completed.value = true
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to complete workout"
+            }
         }
     }
 
@@ -478,11 +505,15 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (setIndex !in we.sets.indices) return
         val updated = transform(we.sets[setIndex])
         viewModelScope.launch {
-            workoutRepository.updateSet(updated)
-            calculateSessionVolume(_currentWorkout.value)
-            val refreshed = _currentWorkout.value
-            if (refreshed != null) {
-                calculateProgressionRecommendations(refreshed.exercises)
+            try {
+                workoutRepository.updateSet(updated)
+                calculateSessionVolume(_currentWorkout.value)
+                val refreshed = _currentWorkout.value
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update set"
             }
         }
     }

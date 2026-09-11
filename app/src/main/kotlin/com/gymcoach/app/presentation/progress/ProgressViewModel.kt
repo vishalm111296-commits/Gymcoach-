@@ -272,9 +272,11 @@ class ProgressViewModel @Inject constructor(
                     muscleVolume = muscleSets.entries
                         .sortedByDescending { it.value }
                         .map {
+                            val activeWeeks = maxOf(1, workoutDays.map { day -> day.with(DayOfWeek.MONDAY) }.distinct().size)
+                            val weeklyVolume = Math.round(it.value.toDouble() / activeWeeks).toInt()
                             MuscleVolumeData(
                                 muscleName = it.key,
-                                currentSets = it.value,
+                                currentSets = weeklyVolume,
                                 targetMin = DEFAULT_MUSCLE_MIN_SETS,
                                 targetMax = DEFAULT_MUSCLE_MAX_SETS
                             )

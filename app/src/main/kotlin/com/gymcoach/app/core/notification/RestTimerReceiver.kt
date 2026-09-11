@@ -22,9 +22,13 @@ class RestTimerReceiver : BroadcastReceiver() {
             RestTimerNotificationService.ACTION_CANCEL
         )
         if (action in supported) {
-            context.startService(
-                Intent(context, RestTimerNotificationService::class.java).setAction(action)
-            )
+            try {
+                context.startService(
+                    Intent(context, RestTimerNotificationService::class.java).setAction(action)
+                )
+            } catch (_: Exception) {
+                // Service may have already completed or background start was restricted
+            }
         }
     }
 }

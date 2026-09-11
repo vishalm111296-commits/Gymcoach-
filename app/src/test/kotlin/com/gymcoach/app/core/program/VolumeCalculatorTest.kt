@@ -111,8 +111,10 @@ class VolumeCalculatorTest {
         )
 
         val balance = volumeCalculator.calculateWeeklyVolume(listOf(completedSet1, completedSet2), muscleMap)
-        assertEquals("Lats direct sets should be 2", 2, balance.latVolume.directSets)
-        assertEquals("Lats indirect sets should be 0", 0, balance.latVolume.indirectSets)
+        assertEquals("Back direct sets should be 2", 2, balance.backVolume.directSets)
+        assertEquals("Back indirect sets should be 0", 0, balance.backVolume.indirectSets)
+        assertEquals("Lats alias direct sets should be 2", 2, balance.latVolume.directSets)
+        assertEquals("Lats alias indirect sets should be 0", 0, balance.latVolume.indirectSets)
         assertEquals("Biceps direct sets should be 0", 0, balance.bicepsVolume.directSets)
         assertEquals("Biceps indirect sets should be 2", 2, balance.bicepsVolume.indirectSets)
         assertEquals("Core direct sets should be 0", 0, balance.coreVolume.directSets)
@@ -146,8 +148,11 @@ class VolumeCalculatorTest {
         )
 
         val balance = volumeCalculator.calculateWeeklyVolume(listOf(setWeek1, set1Week2, set2Week2), muscleMap)
-        assertEquals("Lats total direct sets across weeks", 3, balance.latVolume.directSets)
-        assertEquals("Lats total indirect sets across weeks", 0, balance.latVolume.indirectSets)
-        assertEquals("Lats weekly sets total", 3, balance.latVolume.weeklySets)
+        assertEquals("Back total direct sets across weeks", 3, balance.backVolume.directSets)
+        assertEquals("Back total indirect sets across weeks", 0, balance.backVolume.indirectSets)
+        assertEquals("Back weekly sets total", 3, balance.backVolume.weeklySets)
+        assertEquals("Lats alias total direct sets across weeks", 3, balance.latVolume.directSets)
+        assertEquals("Lats alias total indirect sets across weeks", 0, balance.latVolume.indirectSets)
+        assertEquals("Lats alias weekly sets total", 3, balance.latVolume.weeklySets)
     }
 }

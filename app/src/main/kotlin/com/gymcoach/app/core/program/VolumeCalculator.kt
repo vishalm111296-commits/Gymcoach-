@@ -48,6 +48,8 @@ class VolumeCalculator @Inject constructor() {
         val calvesVolume: MuscleVolume,
         val coreVolume: MuscleVolume
     ) {
+        val latVolume: MuscleVolume get() = backVolume
+
         fun asList(): List<MuscleVolume> = listOf(
             backVolume, lateralDeltVolume, rearDeltVolume, upperChestVolume,
             upperBackVolume, bicepsVolume, tricepsVolume, quadricepsVolume,
@@ -105,15 +107,16 @@ class VolumeCalculator @Inject constructor() {
             val muscleAssignments = exerciseMuscleMap[ctx.exerciseId] ?: continue
 
             for (assignment in muscleAssignments) {
+                val muscle = if (assignment.muscleName.equals("Lats", ignoreCase = true)) MUSCLE_BACK else assignment.muscleName
                 val weekMap = weekBuckets.getOrPut(weekKey) { mutableMapOf() }
-                weekMap[assignment.muscleName] = (weekMap[assignment.muscleName] ?: 0.0) + assignment.role.credit
+                weekMap[muscle] = (weekMap[muscle] ?: 0.0) + assignment.role.credit
 
                 when (assignment.role) {
                     MuscleRole.PRIMARY -> {
-                        directSetsByMuscle[assignment.muscleName] = (directSetsByMuscle[assignment.muscleName] ?: 0) + 1
+                        directSetsByMuscle[muscle] = (directSetsByMuscle[muscle] ?: 0) + 1
                     }
                     MuscleRole.SECONDARY, MuscleRole.STABILIZER -> {
-                        indirectSetsByMuscle[assignment.muscleName] = (indirectSetsByMuscle[assignment.muscleName] ?: 0) + 1
+                        indirectSetsByMuscle[muscle] = (indirectSetsByMuscle[muscle] ?: 0) + 1
                     }
                 }
             }

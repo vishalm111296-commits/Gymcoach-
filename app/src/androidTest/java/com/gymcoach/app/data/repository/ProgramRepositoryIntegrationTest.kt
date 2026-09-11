@@ -20,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.first
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -61,6 +62,11 @@ class ProgramRepositoryIntegrationTest {
         val readinessRepository = ReadinessRepositoryImpl(db.readinessDao())
         programGenerator = ProgramGenerator(exerciseDao, equipmentAvailability, readinessRepository)
         programRepository = ProgramRepositoryImpl(programDao, programDayDao, programExerciseDao)
+    }
+
+    @After
+    fun tearDown() {
+        db.close()
     }
 
     @Test
@@ -144,6 +150,9 @@ class ProgramRepositoryIntegrationTest {
 
     @Test
     fun ProgramRepository_save_and_retrieve_program() = runTest {
+        exerciseDao.insert(exercise(1, "Exercise 1", "Chest", "dumbbell", "Beginner"))
+        exerciseDao.insert(exercise(2, "Exercise 2", "Back", "dumbbell", "Beginner"))
+
         val program = ProgramEntity(
             userId = 1,
             name = "Test Program",

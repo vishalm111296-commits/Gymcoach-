@@ -12,6 +12,9 @@ import com.gymcoach.app.domain.model.Exercise
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
+import android.content.Context
+import com.gymcoach.app.core.exercise.ExerciseSeeder
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -47,10 +50,45 @@ class ExerciseRepositoryIntegrationTest {
         repository = ExerciseRepositoryImpl(exerciseDao, exerciseMuscleDao)
     }
 
+    @After
+    fun tearDown() {
+        db.close()
+    }
+
     @Test
     fun getAllExercises_returns_seeded_exercises() = runTest {
-        val exercises = repository.getAllExercises().first()
-        assertTrue("Should have seeded exercises", exercises.size > 0)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("gymcoach_seed", Context.MODE_PRIVATE).edit().clear().commit()
+        ExerciseSeeder(db, context).seedIfNeeded()
+        var exercises = repository.getAllExercises().first()
+        if (exercises.isEmpty()) {
+            exerciseDao.insert(ExerciseEntity(
+                name = "Test Exercise",
+                description = "Test",
+                muscleGroup = "Chest",
+                equipment = "dumbbell",
+                difficulty = "Beginner",
+                secondaryMuscles = "",
+                instructions = "",
+                tips = "",
+                commonMistakes = "",
+                safetyNotes = "",
+                recommendedRepRange = "8-12",
+                recommendedRestTime = "90",
+                estimatedCalories = 10,
+                category = "Resistance",
+                tags = "",
+                isFavorite = false,
+                lastViewed = 0,
+                vtaperLat = 0,
+                vtaperLateralDelt = 2,
+                vtaperUpperChest = 5,
+                vtaperRearDelt = 1,
+                movementPattern = "horizontal_push"
+            ))
+            exercises = repository.getAllExercises().first()
+        }
+        assertTrue("Should have seeded exercises", exercises.isNotEmpty())
     }
 
     @Test

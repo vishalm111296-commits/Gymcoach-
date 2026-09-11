@@ -15,8 +15,10 @@ import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_8_9
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_9_10
 import com.gymcoach.app.data.local.database.GymCoachDatabase.Companion.MIGRATION_10_11
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import kotlinx.coroutines.test.runTest
@@ -41,7 +43,7 @@ class RoomMigrationTest {
 
     private val TEST_DB = "migration-test"
 
-    @get:Rule
+    @Rule
     @JvmField
     val migrationTestHelper = MigrationTestHelper(
         InstrumentationRegistry.getInstrumentation(),
@@ -49,6 +51,16 @@ class RoomMigrationTest {
         emptyList<AutoMigrationSpec>(),
         FrameworkSQLiteOpenHelperFactory()
     )
+
+    @Before
+    fun setUp() {
+        InstrumentationRegistry.getInstrumentation().targetContext.deleteDatabase(TEST_DB)
+    }
+
+    @After
+    fun tearDown() {
+        InstrumentationRegistry.getInstrumentation().targetContext.deleteDatabase(TEST_DB)
+    }
 
     // ──────────────────────────────────────────────
     //  F-DB-1 fix: full chain v1 → v11
@@ -200,7 +212,10 @@ class RoomMigrationTest {
         val activeWorkoutId = v7Db.query("SELECT id FROM workouts WHERE notes='active'").let {
             it.moveToFirst(); it.getLong(0).also { _ -> it.close() }
         }
-        // Insert an exercise so the ACTIVE backfill condition is satisfied
+        // Insert an exercise so the ACTIVE backfill condition is satisfied and foreign key exists
+        v7Db.execSQL(
+            "INSERT INTO exercises (id, name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed) VALUES (1, 'Bench Press', '', 'Chest', 'Barbell', 'Intermediate', '', '', '', '', '', '8-12', '90', 10, 'Strength', '', 0, 0)"
+        )
         v7Db.execSQL(
             "INSERT INTO workout_exercises (workoutId, exerciseId, orderIndex) VALUES ($activeWorkoutId, 1, 0)"
         )
@@ -255,7 +270,10 @@ class RoomMigrationTest {
 
     @Test
     fun migrate8To9_setsVtaperScores() {
-        migrationTestHelper.createDatabase(TEST_DB, 8).close()
+        val v8Db = migrationTestHelper.createDatabase(TEST_DB, 8)
+        v8Db.execSQL("INSERT INTO exercises (name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed, vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt, movement_pattern, setup_instructions, execution_instructions, breathing_instructions, tempo_guidance) VALUES ('Lateral Raise', '', 'Shoulders', 'Dumbbell', 'Beginner', '', '', '', '', '', '8-12', '60', 10, 'Strength', '', 0, 0, 0, 0, 0, 0, '', '', '', '', '')")
+        v8Db.execSQL("INSERT INTO exercises (name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed, vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt, movement_pattern, setup_instructions, execution_instructions, breathing_instructions, tempo_guidance) VALUES ('Pull-up', '', 'Back', 'Bodyweight', 'Intermediate', '', '', '', '', '', '8-12', '90', 15, 'Strength', '', 0, 0, 0, 0, 0, 0, '', '', '', '', '')")
+        v8Db.close()
 
         val db = migrationTestHelper.runMigrationsAndValidate(
             TEST_DB, 9, true,

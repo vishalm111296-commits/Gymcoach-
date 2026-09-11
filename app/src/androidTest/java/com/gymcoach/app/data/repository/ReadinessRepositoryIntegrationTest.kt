@@ -10,9 +10,8 @@ import com.gymcoach.app.data.local.entity.ReadinessEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
+import org.junit.After
 import org.junit.Assert.assertEquals
-import kotlinx.coroutines.flow.first
-
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -42,6 +41,11 @@ class ReadinessRepositoryIntegrationTest {
         ).allowMainThreadQueries().build()
         readinessDao = db.readinessDao()
         repository = ReadinessRepositoryImpl(readinessDao)
+    }
+
+    @After
+    fun tearDown() {
+        db.close()
     }
 
     @Test
@@ -76,8 +80,9 @@ class ReadinessRepositoryIntegrationTest {
                 soreness = 3,
                 energy = 3,
                 motivation = 3,
-                notes = "Day $i"
-            ).also { it.copy(recordedAt = now - i * dayMs) }
+                notes = "Day $i",
+                recordedAt = now - i * dayMs
+            )
             repository.saveReadiness(readiness)
         }
 
@@ -103,19 +108,19 @@ class ReadinessRepositoryIntegrationTest {
     fun training_recommendation_based_on_score() = runTest {
         // High readiness
         val high = ReadinessEntity(sleepQuality = 5, soreness = 5, energy = 5, motivation = 5)
-        assertEquals("Full intensity", high.trainingRecommendation)
+        assertEquals("Full intensity session recommended", high.trainingRecommendation)
 
         // Moderate readiness
         val moderate = ReadinessEntity(sleepQuality = 3, soreness = 3, energy = 3, motivation = 3)
-        assertEquals("Moderate session", moderate.trainingRecommendation)
+        assertEquals("Moderate session recommended", moderate.trainingRecommendation)
 
         // Low readiness
         val low = ReadinessEntity(sleepQuality = 2, soreness = 2, energy = 2, motivation = 2)
-        assertEquals("Light session", low.trainingRecommendation)
+        assertEquals("Light session or active recovery recommended", low.trainingRecommendation)
 
         // Very low readiness
         val veryLow = ReadinessEntity(sleepQuality = 1, soreness = 1, energy = 1, motivation = 1)
-        assertEquals("Rest day", veryLow.trainingRecommendation)
+        assertEquals("Rest day recommended. Listen to your body.", veryLow.trainingRecommendation)
     }
 
     @Test

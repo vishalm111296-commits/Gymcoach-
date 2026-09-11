@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.repository.AnalyticsRepositoryImpl
+import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutEntity
 import com.gymcoach.app.data.local.entity.WorkoutExerciseEntity
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
@@ -18,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.first
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -54,6 +55,42 @@ class WorkoutRepositoryIntegrationTest {
         ).allowMainThreadQueries().build()
         workoutDao = db.workoutDao()
         repository = WorkoutRepositoryImpl(workoutDao, db.exerciseDao())
+        analyticsRepo = AnalyticsRepositoryImpl(workoutDao)
+
+        // Seed exercise id 1 so child workout_exercises foreign keys are satisfied
+        val exercise = ExerciseEntity(
+            id = 1L,
+            name = "Bench Press",
+            description = "Test",
+            muscleGroup = "Chest",
+            equipment = "barbell",
+            difficulty = "Intermediate",
+            secondaryMuscles = "",
+            instructions = "",
+            tips = "",
+            commonMistakes = "",
+            safetyNotes = "",
+            recommendedRepRange = "8-12",
+            recommendedRestTime = "90",
+            estimatedCalories = 10,
+            category = "Resistance",
+            tags = "",
+            isFavorite = false,
+            lastViewed = 0,
+            vtaperLat = 0,
+            vtaperLateralDelt = 2,
+            vtaperUpperChest = 5,
+            vtaperRearDelt = 1,
+            movementPattern = "horizontal_push"
+        )
+        kotlinx.coroutines.runBlocking {
+            db.exerciseDao().insert(exercise)
+        }
+    }
+
+    @After
+    fun tearDown() {
+        db.close()
     }
 
     @Test

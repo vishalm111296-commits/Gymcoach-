@@ -129,17 +129,38 @@ jobs:
               exit 1
             fi
             echo "✅ Release APK signature verified successfully."
+
+            CERT_SHA256=$(echo "$SIGN_INFO" | grep -i "SHA-256 digest:" | head -n 1 | awk '{print $NF}')
+            echo "Release APK Certificate SHA-256: $CERT_SHA256"
           else
             if [ "$IS_TAG" = "true" ]; then
               echo "FATAL: Tagged build requires signed app-release.apk, but file was not produced!"
               exit 1
             fi
+            echo "Certificate identity gate BLOCKED — production certificate not provisioned"
             echo "Non-tagged build: app-release.apk not generated (expected when KEYSTORE_BASE64 secret is not provisioned)."
           fi
 
           if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
             echo "Found release AAB:"
             ls -lh ./app/build/outputs/bundle/release/app-release.aab
+
+            echo "=== Verifying Release AAB Structure ==="
+            unzip -l ./app/build/outputs/bundle/release/app-release.aab > /tmp/aab_contents.txt
+
+            if grep -q "base/dex/classes.dex" /tmp/aab_contents.txt; then
+              echo "✅ AAB contains base/dex/classes.dex"
+            else
+              echo "FATAL: AAB missing base/dex/classes.dex!"
+              exit 1
+            fi
+
+            if grep -q "base/manifest/AndroidManifest.xml" /tmp/aab_contents.txt; then
+              echo "✅ AAB contains base/manifest/AndroidManifest.xml"
+            else
+              echo "FATAL: AAB missing base/manifest/AndroidManifest.xml!"
+              exit 1
+            fi
           fi
 
       - name: Upload Debug Artifacts
@@ -153,7 +174,7 @@ jobs:
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gymcoach-release-apk
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && 'gymcoach-release-apk' || 'gymcoach-release-unsigned-apk' }}
           path: ./app/build/outputs/apk/release/
           retention-days: 7
           if-no-files-found: warn
@@ -161,7 +182,7 @@ jobs:
       - name: Upload Release Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: gymcoach-release-bundle
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && 'gymcoach-release-aab' || 'gymcoach-release-unsigned-aab' }}
           path: ./app/build/outputs/bundle/release/
           retention-days: 7
           if-no-files-found: warn
@@ -280,14 +301,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run RoomMigrationTest on Android Emulator
+      - name: Run Connected Instrumentation Tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.gymcoach.app.data.local.database.RoomMigrationTest#migrate11To12_adversarialDuplicatesAcrossWorkouts_preservesAllDataDeterministically,com.gymcoach.app.data.local.database.RoomMigrationTest#migrate11To12_addsUniqueIndices --continue --stacktrace
+          script: ./gradlew connectedDebugAndroidTest --continue --stacktrace
 
       - name: Upload Connected Test Reports
         if: always()

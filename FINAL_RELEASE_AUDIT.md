@@ -4,7 +4,8 @@
 
 - Repository: `vishalm111296-commits/Gymcoach-`
 - Branch: `main`
-- Baseline verified HEAD: `2b3d9991a35bd5500acfc0bc4cdf320e1e97c501`
+- Audited release commit: `4cc4e02432736547e4d4d70045f5cd6e03d55bdb`
+- Baseline starting HEAD: `2b3d9991a35bd5500acfc0bc4cdf320e1e97c501`
 - Compile SDK: `36`
 - Target SDK: `36`
 - Min SDK: `26`
@@ -14,12 +15,27 @@
 
 **RELEASE CANDIDATE — PRODUCTION SIGN-OFF BLOCKED**
 
-All code-level production-release blockers across SDK 36 upgrade, release signing architecture, rest timer foreground service lifecycle, adversarial database migration, skeletal animation evaluation, atomic seeding, and CI validation have been resolved and verified by automated unit tests and build passes.
+All code-level production-release blockers across SDK 36 upgrade, release signing architecture, rest timer foreground service lifecycle, adversarial database migration, skeletal animation evaluation, atomic seeding, Android Lint, and CI validation have been resolved and verified with 100% passing automated test suites and remote CI pipeline jobs.
 
 However, formal production release sign-off remains **BLOCKED** on two external release gates:
 
 1. **Production signing key provisioning**: The silent fallback to debug signing has been completely eliminated from `app/build.gradle.kts`. Release builds without credentials now produce unsigned artifacts (`signingConfig = null`). Production deployment requires provisioning `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` as GitHub repository secrets.
 2. **Physical-device QA validation**: Runtime validation on physical Android hardware is required for CameraX / MediaPipe form tracking, background foreground service transitions under OEM battery optimization, and AndroidX FileProvider share sheet handling with external applications.
+
+---
+
+## Verified CI Pipeline Evidence
+
+The canonical CI run for release commit `4cc4e02432736547e4d4d70045f5cd6e03d55bdb` ([Run #34603557175](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34603557175)) completed with 100% success across all pipeline jobs:
+- **Build and Test**: PASSED in 2m8s (ID 103276453278)
+- **Android Lint**: PASSED in 2m0s (ID 103277120024)
+- **Unit Tests**: PASSED in 1m46s (ID 103277120097)
+- **Generated Artifacts**:
+  - `gymcoach-release-apk` (Release APK)
+  - `gymcoach-release-bundle` (Release Android App Bundle `.aab`)
+  - `gymcoach-debug-apk` (Debug APK)
+  - `unit-test-reports` (HTML & XML JUnit test execution reports)
+  - `android-lint-reports` (Android Lint inspection reports)
 
 ---
 
@@ -38,7 +54,7 @@ However, formal production release sign-off remains **BLOCKED** on two external 
 ### 3. Rest timer foreground service architecture (Phase 3)
 - **Problem**: Previously used Android 14 `shortService`, which imposes a strict 3-minute hard ceiling. Resting beyond 3 minutes (or tapping +15s on heavy compound lifts) resulted in `ForegroundServiceTimeoutException` and app crashes.
 - **Fix**: Replaced with official `health` foreground service architecture:
-  - Manifest: Declared `<uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />` and `<uses-permission android:name="android.permission.VIBRATE" />`.
+  - Manifest: Declared `<uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />`, `<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />`, and `<uses-permission android:name="android.permission.VIBRATE" />`.
   - Service: Configured `android:foregroundServiceType="health"`. On API 34+, invokes `startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)`.
   - Companion state flows: Exposed `remainingSeconds: StateFlow<Int>`, `isPaused: StateFlow<Boolean>`, and `isRunning: StateFlow<Boolean>`.
   - Controls: Implemented `start()`, `pause()`, `resume()`, `adjust()`, and `cancel()` companion helpers.
@@ -97,10 +113,11 @@ The progression algorithm implemented in `ProgressionEngine.kt` uses a double-pr
 - [x] Progression engine weight-tier logic documented and verified by tests
 - [x] Atomic exercise database seeding implemented with transaction rollback
 - [x] GitHub Actions CI workflow updated with test reports and release forensics
+- [x] Android Lint passing on SDK 36 with `ACTIVITY_RECOGNITION` & `health` FGS permissions
 - [ ] **Release Gate 1**: Provision production keystore in GitHub repository secrets
 - [ ] **Release Gate 2**: Physical device QA validation:
   - Cold start and navigation
   - Room workout session persistence and set logging
   - Background rest timer execution with screen off for >3 minutes
   - FileProvider CSV/JSON export sharing to Google Drive / Gmail / Files
-  - CameraX and MediaPipe pose tracking performance under thermal throttling\n
+  - CameraX and MediaPipe pose tracking performance under thermal throttling

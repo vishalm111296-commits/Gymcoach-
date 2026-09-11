@@ -144,4 +144,42 @@ class ProgressionEngine @Inject constructor(
         val prevReps = normalPrev.map { it.reps }
         return prevReps.all { it < targetMin }
     }
+
+    companion object {
+        fun parseRepRange(repRangeStr: String, defaultMin: Int = 8, defaultMax: Int = 12): Pair<Int, Int> {
+            if (repRangeStr.isBlank()) return Pair(defaultMin, defaultMax)
+            val parts = repRangeStr.split("-", "–", "to")
+                .map { it.trim().filter { c -> c.isDigit() } }
+                .filter { it.isNotBlank() }
+            return when (parts.size) {
+                2 -> Pair(parts[0].toIntOrNull() ?: defaultMin, parts[1].toIntOrNull() ?: defaultMax)
+                1 -> {
+                    val v = parts[0].toIntOrNull() ?: defaultMin
+                    Pair((v - 2).coerceAtLeast(1), v)
+                }
+                else -> Pair(defaultMin, defaultMax)
+            }
+        }
+    }
+
+    fun calculateProgressionForExercise(
+        exercise: com.gymcoach.app.domain.model.Exercise,
+        previousSets: List<WorkoutSetEntity>,
+        currentSets: List<WorkoutSetEntity>,
+        equipmentType: String = "home"
+    ): ProgressionRecommendation {
+        val (minReps, maxReps) = parseRepRange(exercise.recommendedRepRange, 8, 12)
+        return calculateProgression(
+            exerciseId = exercise.id,
+            exerciseName = exercise.name,
+            exerciseEquipment = exercise.equipment,
+            targetRepsMin = minReps,
+            targetRepsMax = maxReps,
+            targetSets = 3,
+            previousSets = previousSets,
+            currentSets = currentSets,
+            equipmentType = equipmentType
+        )
+    }
+
 }

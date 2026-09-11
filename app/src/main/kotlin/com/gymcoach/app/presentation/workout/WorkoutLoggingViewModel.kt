@@ -320,13 +320,18 @@ class WorkoutLoggingViewModel @Inject constructor(
                     val latestWe = latestWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
                     val nextSetNumber = (latestWe.sets.maxOfOrNull { it.setNumber } ?: 0) + 1
 
-                    // Auto-populate from previous session if available
+                    // Auto-populate from previous set in current session, or previous session if available
+                    val precedingSet = latestWe.sets.lastOrNull()
                     val lastSets = _previousPerformance.value[exerciseId]
                     val prefilledWeight: Double
                     val prefilledReps: Int
                     val prefilledRest: Int
 
-                    if (lastSets != null && lastSets.isNotEmpty()) {
+                    if (precedingSet != null && precedingSet.weight > 0) {
+                        prefilledWeight = precedingSet.weight
+                        prefilledReps = precedingSet.reps
+                        prefilledRest = precedingSet.restSeconds.takeIf { it > 0 } ?: defaultRestSeconds
+                    } else if (lastSets != null && lastSets.isNotEmpty()) {
                         val lastSet = lastSets.last()
                         prefilledWeight = lastSet.weight
                         prefilledReps = lastSet.reps
@@ -469,13 +474,8 @@ class WorkoutLoggingViewModel @Inject constructor(
                 val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
                 if (normalSets.isNotEmpty()) {
                     val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
-                    val recommendation = progressionEngine.calculateProgression(
-                        exerciseId = exercise.id,
-                        exerciseName = exercise.name,
-                        exerciseEquipment = exercise.equipment,
-                        targetRepsMin = 8,
-                        targetRepsMax = 12,
-                        targetSets = 3,
+                    val recommendation = progressionEngine.calculateProgressionForExercise(
+                        exercise = exercise,
                         previousSets = lastSets.map {
                             WorkoutSetEntity(
                                 workoutExerciseId = 0, setNumber = 0,

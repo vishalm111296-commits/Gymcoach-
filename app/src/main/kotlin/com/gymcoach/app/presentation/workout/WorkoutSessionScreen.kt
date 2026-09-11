@@ -1,5 +1,9 @@
 package com.gymcoach.app.presentation.workout
 
+import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
+
+import androidx.compose.material.icons.filled.FitnessCenter
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,6 +98,7 @@ fun WorkoutSessionScreen(
     val sessionVolume by viewModel.sessionVolume.collectAsState()
     val progressionRecommendations by viewModel.progressionRecommendations.collectAsState()
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
 
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(restTimerState.isRunning) {
@@ -223,7 +228,8 @@ fun WorkoutSessionScreen(
                                onRpeChange = { setIdx, rpe -> viewModel.updateSetRpe(exIdx, setIdx, rpe) },
                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
-                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) }
+                               onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
+                               onOpenPlateCalculator = { w -> plateCalcWeight = w }
                             )
                         }
 
@@ -268,6 +274,13 @@ fun WorkoutSessionScreen(
                 }
             }
         }
+    }
+
+    if (plateCalcWeight != null) {
+        PlateCalculatorDialog(
+            targetWeight = plateCalcWeight!!,
+            onDismiss = { plateCalcWeight = null }
+        )
     }
 
     if (showFinishDialog) {
@@ -447,7 +460,8 @@ private fun ExerciseSetCard(
     onRpeChange: (Int, Double) -> Unit,
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
-    onToggleComplete: (Int) -> Unit
+    onToggleComplete: (Int) -> Unit,
+    onOpenPlateCalculator: (Double) -> Unit = {}
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     Card(
@@ -477,8 +491,20 @@ private fun ExerciseSetCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onRemoveExercise) {
-                    Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = {
+                        val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
+                        onOpenPlateCalculator(maxWeight)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.FitnessCenter,
+                            contentDescription = "Plate Calculator",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onRemoveExercise) {
+                        Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                    }
                 }
             }
 

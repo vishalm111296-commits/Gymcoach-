@@ -242,10 +242,12 @@ class ProgramGenerator @Inject constructor(
                 vRdelt >= 4 || mov == "horizontal_abduction" || name.contains("reverse fly") || name.contains("face pull") || name.contains("rear")
             }
             "back", "lats" -> {
-                cat == "back" || vLat >= 5
+                cat in listOf("back", "lats", "upper back", "upper_back", "traps") ||
+                mov in listOf("vertical_pull", "horizontal_pull", "pulldown", "row")
             }
             "chest", "upper chest" -> {
-                cat == "chest" || vUchest >= 5
+                cat in listOf("chest", "pecs", "upper chest") ||
+                mov in listOf("horizontal_push", "chest_press", "fly")
             }
             "quadriceps", "quads" -> {
                 (cat == "legs" && (mov in listOf("squat", "lunge", "step_up", "leg_extension") || name.contains("squat") || name.contains("lunge"))) || (mov == "squat" && cat != "core")

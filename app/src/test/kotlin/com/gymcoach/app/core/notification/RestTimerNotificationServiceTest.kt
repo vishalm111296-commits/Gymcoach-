@@ -1,23 +1,10 @@
 package com.gymcoach.app.core.notification
 
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 class RestTimerNotificationServiceTest {
-
-    @Before
-    fun setUp() {
-        RestTimerNotificationService.resetStateForTesting()
-    }
-
-    @After
-    fun tearDown() {
-        RestTimerNotificationService.resetStateForTesting()
-    }
 
     @Test
     fun testFormatSecondsStandardDurations() {
@@ -34,19 +21,6 @@ class RestTimerNotificationServiceTest {
 
     @Test
     fun testCompanionInitialState() {
-        assertEquals(0, RestTimerNotificationService.remainingSeconds.value)
-        assertFalse(RestTimerNotificationService.isPaused.value)
-        assertFalse(RestTimerNotificationService.isRunning.value)
-    }
-
-    @Test
-    fun testCompanionStateMutationAndReset() {
-        RestTimerNotificationService.updateStateForTesting(remaining = 120, paused = true, running = true)
-        assertEquals(120, RestTimerNotificationService.remainingSeconds.value)
-        assertTrue(RestTimerNotificationService.isPaused.value)
-        assertTrue(RestTimerNotificationService.isRunning.value)
-
-        RestTimerNotificationService.resetStateForTesting()
         assertEquals(0, RestTimerNotificationService.remainingSeconds.value)
         assertFalse(RestTimerNotificationService.isPaused.value)
         assertFalse(RestTimerNotificationService.isRunning.value)

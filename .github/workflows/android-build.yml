@@ -12,7 +12,7 @@ env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
   ANDROID_SDK_VERSION: "36"
-  ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
+  ANDROID_BUILD_TOOLS_VERSION: "35.0.0"
   ANDROID_NDK_VERSION: "21.4.7075529"
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager "platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;35.0.0"
           yes | sdkmanager --licenses
 
       - name: Validate Project Configuration
@@ -94,25 +94,47 @@ jobs:
       - name: Release Artifact Forensics & Signing Verification
         run: |
           echo "=== Release Artifact Forensics ==="
+          IS_TAG="${{ startsWith(github.ref, 'refs/tags/v') }}"
+
           if [ -f "./app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
             echo "Found unsigned release APK:"
             ls -lh ./app/build/outputs/apk/release/app-release-unsigned.apk
           fi
+
           if [ -f "./app/build/outputs/apk/release/app-release.apk" ]; then
             echo "Found release APK:"
             ls -lh ./app/build/outputs/apk/release/app-release.apk
 
-            # Signing verification using apksigner
             APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -V | tail -n 1)
-            if [ -n "$APKSIGNER" ]; then
-              echo "Verifying release APK with $APKSIGNER..."
-              SIGN_INFO=$($APKSIGNER verify --verbose ./app/build/outputs/apk/release/app-release.apk 2>&1 || true)
-              echo "$SIGN_INFO"
-              if echo "$SIGN_INFO" | grep -q "CN=Android Debug"; then
-                echo "FATAL: Release APK is signed with Android Debug certificate!"
-                exit 1
-              fi
+            if [ -z "$APKSIGNER" ]; then
+              echo "FATAL: apksigner binary not found in Android SDK build-tools!"
+              exit 1
             fi
+
+            echo "Verifying release APK with $APKSIGNER..."
+            if ! SIGN_INFO=$($APKSIGNER verify --verbose --print-certs ./app/build/outputs/apk/release/app-release.apk 2>&1); then
+              echo "FATAL: apksigner verification failed!"
+              echo "$SIGN_INFO"
+              exit 1
+            fi
+            echo "$SIGN_INFO"
+
+            if echo "$SIGN_INFO" | grep -q "CN=Android Debug"; then
+              echo "FATAL: Release APK is signed with Android Debug certificate!"
+              exit 1
+            fi
+
+            if ! echo "$SIGN_INFO" | grep -q "Verified using v2 scheme (APK Signature Scheme v2): true"; then
+              echo "FATAL: Release APK is not signed with APK Signature Scheme v2!"
+              exit 1
+            fi
+            echo "✅ Release APK signature verified successfully."
+          else
+            if [ "$IS_TAG" = "true" ]; then
+              echo "FATAL: Tagged build requires signed app-release.apk, but file was not produced!"
+              exit 1
+            fi
+            echo "Non-tagged build: app-release.apk not generated (expected when KEYSTORE_BASE64 secret is not provisioned)."
           fi
 
           if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
@@ -175,7 +197,7 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platforms;android-36" "build-tools;34.0.0"
+          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
           yes | sdkmanager --licenses
 
       - name: Run Android Lint
@@ -214,7 +236,7 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platforms;android-36" "build-tools;34.0.0"
+          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
           yes | sdkmanager --licenses
 
       - name: Run Unit Tests
@@ -232,10 +254,56 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  instrumentation-tests:
+    runs-on: ubuntu-latest
+    name: Connected Instrumentation Tests
+    needs: build
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run RoomMigrationTest on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: ./gradlew connectedDebugAndroidTest --continue --stacktrace
+
+      - name: Upload Connected Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: connected-test-reports
+          path: |
+            ./app/build/reports/androidTests/
+            ./app/build/outputs/androidTest-results/
+          retention-days: 7
+          if-no-files-found: warn
+
   create-release:
     runs-on: ubuntu-latest
     name: Create Release
-    needs: [build, test, android-lint]
+    needs: [build, test, android-lint, instrumentation-tests]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write

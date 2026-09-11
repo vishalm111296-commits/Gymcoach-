@@ -3,7 +3,6 @@ package com.gymcoach.app.core.export
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import org.json.JSONArray
 import org.json.JSONObject
-import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -104,12 +103,15 @@ class WorkoutDataExporter @Inject constructor() {
     }
 
     /**
-     * Exports workouts in exact Strong app CSV format.
-     * Header: Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE
+     * Exports workouts in the 12-column Strong CSV schema used by current
+     * Strong-to-Hevy import tooling. One row is emitted per set.
+     *
+     * Header:
+     * Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE
      */
     fun exportToStrongCsv(workouts: List<WorkoutWithDetails>): String {
         val sb = StringBuilder()
-        sb.append("Date, Workout Name, Duration, Exercise Name, Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE\n")
+        sb.append("Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE\n")
 
         for (workout in workouts) {
             val dateStr = dateFormatter.format(workout.workout.startTime)
@@ -125,17 +127,17 @@ class WorkoutDataExporter @Inject constructor() {
                     val reps = set.reps
                     val rpe = if (set.rpe > 0) set.rpe.toString() else ""
 
-                    sb.append(dateStr).append(", ")
-                        .append(workoutName).append(", ")
-                        .append(durationStr).append(", ")
-                        .append(exerciseName).append(", ")
-                        .append(set.setNumber).append(", ")
-                        .append(weight).append(", ")
-                        .append(reps).append(", ")
-                        .append("0").append(", ")
-                        .append("0").append(", ")
-                        .append("").append(", ")
-                        .append(workoutNotes).append(", ")
+                    sb.append(dateStr).append(',')
+                        .append(workoutName).append(',')
+                        .append(durationStr).append(',')
+                        .append(exerciseName).append(',')
+                        .append(set.setNumber).append(',')
+                        .append(weight).append(',')
+                        .append(reps).append(',')
+                        .append('0').append(',')
+                        .append('0').append(',')
+                        .append(',')
+                        .append(workoutNotes).append(',')
                         .append(rpe).append('\n')
                 }
             }

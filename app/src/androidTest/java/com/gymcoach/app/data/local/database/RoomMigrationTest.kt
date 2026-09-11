@@ -442,7 +442,6 @@ class RoomMigrationTest {
 
         db.close()
     }
-}
 
     @Test
     fun migrate11To12_adversarialDuplicatesAcrossWorkouts_preservesAllDataDeterministically() {

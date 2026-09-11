@@ -11,6 +11,7 @@ import com.gymcoach.app.data.local.dao.ExerciseDao
 import com.gymcoach.app.data.local.dao.ProgramDao
 import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramExerciseDao
+import com.gymcoach.app.data.repository.ReadinessRepositoryImpl
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
@@ -57,7 +58,8 @@ class ProgramRepositoryIntegrationTest {
         programDayDao = db.programDayDao()
         programExerciseDao = db.programExerciseDao()
         equipmentAvailability = EquipmentAvailability()
-        programGenerator = ProgramGenerator(exerciseDao, equipmentAvailability)
+        val readinessRepository = ReadinessRepositoryImpl(db.readinessDao())
+        programGenerator = ProgramGenerator(exerciseDao, equipmentAvailability, readinessRepository)
         programRepository = ProgramRepositoryImpl(programDao, programDayDao, programExerciseDao)
     }
 

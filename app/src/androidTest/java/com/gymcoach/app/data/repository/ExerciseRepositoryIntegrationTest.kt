@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
 import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.domain.model.Exercise
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,6 +33,7 @@ class ExerciseRepositoryIntegrationTest {
 
     private lateinit var db: GymCoachDatabase
     private lateinit var exerciseDao: ExerciseDao
+    private lateinit var exerciseMuscleDao: ExerciseMuscleDao
     private lateinit var repository: ExerciseRepositoryImpl
 
     @Before
@@ -41,7 +43,8 @@ class ExerciseRepositoryIntegrationTest {
             GymCoachDatabase::class.java
         ).allowMainThreadQueries().build()
         exerciseDao = db.exerciseDao()
-        repository = ExerciseRepositoryImpl(exerciseDao)
+        exerciseMuscleDao = db.exerciseMuscleDao()
+        repository = ExerciseRepositoryImpl(exerciseDao, exerciseMuscleDao)
     }
 
     @Test

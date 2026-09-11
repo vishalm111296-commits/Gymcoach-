@@ -1,0 +1,4204 @@
+[
+  {
+    "exerciseId": "barbell_squat",
+    "exerciseName": "Barbell Squat",
+    "perspective": "SIDE",
+    "durationMs": 3400,
+    "description": "Fundamental lower-body compound movement training quadriceps, glutes, and adductors.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Set feet shoulder-width, bar firmly rested across traps, brace core",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.46,
+            0.38
+          ],
+          "wrist": [
+            0.48,
+            0.3
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.28
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.35,
+        "phase": "ECCENTRIC",
+        "cue": "Hips back, knees forward, maintain proud chest and neutral spine",
+        "joints": {
+          "head": [
+            0.47,
+            0.3
+          ],
+          "neck": [
+            0.47,
+            0.37
+          ],
+          "shoulder": [
+            0.47,
+            0.42
+          ],
+          "elbow": [
+            0.43,
+            0.52
+          ],
+          "wrist": [
+            0.45,
+            0.44
+          ],
+          "hip": [
+            0.38,
+            0.62
+          ],
+          "knee": [
+            0.53,
+            0.74
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.47,
+              0.42
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Thighs at or below parallel, knees tracking over toes, weight midfoot",
+        "joints": {
+          "head": [
+            0.45,
+            0.44
+          ],
+          "neck": [
+            0.45,
+            0.51
+          ],
+          "shoulder": [
+            0.45,
+            0.56
+          ],
+          "elbow": [
+            0.41,
+            0.66
+          ],
+          "wrist": [
+            0.43,
+            0.58
+          ],
+          "hip": [
+            0.32,
+            0.73
+          ],
+          "knee": [
+            0.54,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.45,
+              0.56
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "CONCENTRIC",
+        "cue": "Drive floor away through midfoot, chest and hips rising together",
+        "joints": {
+          "head": [
+            0.48,
+            0.26
+          ],
+          "neck": [
+            0.48,
+            0.33
+          ],
+          "shoulder": [
+            0.48,
+            0.38
+          ],
+          "elbow": [
+            0.44,
+            0.48
+          ],
+          "wrist": [
+            0.46,
+            0.4
+          ],
+          "hip": [
+            0.44,
+            0.58
+          ],
+          "knee": [
+            0.51,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.48,
+              0.38
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Stand tall into full lockout, reset breath and brace for next rep",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.46,
+            0.38
+          ],
+          "wrist": [
+            0.48,
+            0.3
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.28
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "bench_press",
+    "exerciseName": "Bench Press",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Compound upper-body press targeting pectoralis major, anterior deltoids, and triceps.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Eyes under bar, scapulae retracted and depressed, feet planted firmly",
+        "joints": {
+          "head": [
+            0.28,
+            0.58
+          ],
+          "neck": [
+            0.35,
+            0.58
+          ],
+          "shoulder": [
+            0.42,
+            0.58
+          ],
+          "elbow": [
+            0.42,
+            0.38
+          ],
+          "wrist": [
+            0.42,
+            0.2
+          ],
+          "hip": [
+            0.6,
+            0.58
+          ],
+          "knee": [
+            0.74,
+            0.68
+          ],
+          "ankle": [
+            0.74,
+            0.88
+          ],
+          "foot": [
+            0.8,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.22,
+              0.62
+            ],
+            [
+              0.66,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.45,
+        "phase": "ECCENTRIC",
+        "cue": "Lower bar under control towards sternum, elbows tucked ~45 degrees",
+        "joints": {
+          "head": [
+            0.28,
+            0.58
+          ],
+          "neck": [
+            0.35,
+            0.58
+          ],
+          "shoulder": [
+            0.42,
+            0.58
+          ],
+          "elbow": [
+            0.42,
+            0.66
+          ],
+          "wrist": [
+            0.42,
+            0.5
+          ],
+          "hip": [
+            0.6,
+            0.58
+          ],
+          "knee": [
+            0.74,
+            0.68
+          ],
+          "ankle": [
+            0.74,
+            0.88
+          ],
+          "foot": [
+            0.8,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.22,
+              0.62
+            ],
+            [
+              0.66,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.55,
+        "phase": "BOTTOM",
+        "cue": "Brief light touch at lower chest, maintain full arch and shoulder retraction",
+        "joints": {
+          "head": [
+            0.28,
+            0.58
+          ],
+          "neck": [
+            0.35,
+            0.58
+          ],
+          "shoulder": [
+            0.42,
+            0.58
+          ],
+          "elbow": [
+            0.42,
+            0.68
+          ],
+          "wrist": [
+            0.42,
+            0.52
+          ],
+          "hip": [
+            0.6,
+            0.58
+          ],
+          "knee": [
+            0.74,
+            0.68
+          ],
+          "ankle": [
+            0.74,
+            0.88
+          ],
+          "foot": [
+            0.8,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.22,
+              0.62
+            ],
+            [
+              0.66,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "CONCENTRIC",
+        "cue": "Drive feet into floor, press bar up and slightly back toward rack",
+        "joints": {
+          "head": [
+            0.28,
+            0.58
+          ],
+          "neck": [
+            0.35,
+            0.58
+          ],
+          "shoulder": [
+            0.42,
+            0.58
+          ],
+          "elbow": [
+            0.42,
+            0.42
+          ],
+          "wrist": [
+            0.42,
+            0.28
+          ],
+          "hip": [
+            0.6,
+            0.58
+          ],
+          "knee": [
+            0.74,
+            0.68
+          ],
+          "ankle": [
+            0.74,
+            0.88
+          ],
+          "foot": [
+            0.8,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.22,
+              0.62
+            ],
+            [
+              0.66,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lock out elbows over shoulders, maintain shoulder retraction",
+        "joints": {
+          "head": [
+            0.28,
+            0.58
+          ],
+          "neck": [
+            0.35,
+            0.58
+          ],
+          "shoulder": [
+            0.42,
+            0.58
+          ],
+          "elbow": [
+            0.42,
+            0.38
+          ],
+          "wrist": [
+            0.42,
+            0.2
+          ],
+          "hip": [
+            0.6,
+            0.58
+          ],
+          "knee": [
+            0.74,
+            0.68
+          ],
+          "ankle": [
+            0.74,
+            0.88
+          ],
+          "foot": [
+            0.8,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.22,
+              0.62
+            ],
+            [
+              0.66,
+              0.62
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "deadlift",
+    "exerciseName": "Deadlift",
+    "perspective": "SIDE",
+    "durationMs": 3500,
+    "description": "Full posterior chain pull building glutes, hamstrings, back, and grip.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Shins touching bar, hips hinged back, lats engaged, slack pulled from bar",
+        "joints": {
+          "head": [
+            0.6,
+            0.42
+          ],
+          "neck": [
+            0.55,
+            0.48
+          ],
+          "shoulder": [
+            0.5,
+            0.52
+          ],
+          "elbow": [
+            0.5,
+            0.65
+          ],
+          "wrist": [
+            0.5,
+            0.78
+          ],
+          "hip": [
+            0.34,
+            0.6
+          ],
+          "knee": [
+            0.44,
+            0.75
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.78
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.4,
+        "phase": "CONCENTRIC",
+        "cue": "Push floor away with legs, bar staying close to shins and thighs",
+        "joints": {
+          "head": [
+            0.56,
+            0.28
+          ],
+          "neck": [
+            0.53,
+            0.34
+          ],
+          "shoulder": [
+            0.5,
+            0.38
+          ],
+          "elbow": [
+            0.5,
+            0.54
+          ],
+          "wrist": [
+            0.5,
+            0.68
+          ],
+          "hip": [
+            0.42,
+            0.55
+          ],
+          "knee": [
+            0.48,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.68
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.55,
+        "phase": "END",
+        "cue": "Stand erect, squeeze glutes, shoulders back without hyperextending lower back",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.44
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "ECCENTRIC",
+        "cue": "Hinge at hips, push glutes back, slide bar down thighs and shins",
+        "joints": {
+          "head": [
+            0.58,
+            0.36
+          ],
+          "neck": [
+            0.54,
+            0.42
+          ],
+          "shoulder": [
+            0.5,
+            0.46
+          ],
+          "elbow": [
+            0.5,
+            0.6
+          ],
+          "wrist": [
+            0.5,
+            0.74
+          ],
+          "hip": [
+            0.36,
+            0.58
+          ],
+          "knee": [
+            0.46,
+            0.74
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.74
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "BOTTOM",
+        "cue": "Bar returns to floor, reset intra-abdominal pressure",
+        "joints": {
+          "head": [
+            0.6,
+            0.42
+          ],
+          "neck": [
+            0.55,
+            0.48
+          ],
+          "shoulder": [
+            0.5,
+            0.52
+          ],
+          "elbow": [
+            0.5,
+            0.65
+          ],
+          "wrist": [
+            0.5,
+            0.78
+          ],
+          "hip": [
+            0.34,
+            0.6
+          ],
+          "knee": [
+            0.44,
+            0.75
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.78
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "romanian_deadlift",
+    "exerciseName": "Romanian Deadlift",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Hip hinge focused on eccentric loading of hamstrings and glutes.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Stand tall, soft bend in knees, shoulders retracted over midfoot",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.42
+          ],
+          "wrist": [
+            0.5,
+            0.58
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.58
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.45,
+        "phase": "ECCENTRIC",
+        "cue": "Push hips backwards like closing a car door, bar stays glued to legs",
+        "joints": {
+          "head": [
+            0.62,
+            0.36
+          ],
+          "neck": [
+            0.56,
+            0.42
+          ],
+          "shoulder": [
+            0.5,
+            0.48
+          ],
+          "elbow": [
+            0.5,
+            0.62
+          ],
+          "wrist": [
+            0.5,
+            0.76
+          ],
+          "hip": [
+            0.3,
+            0.56
+          ],
+          "knee": [
+            0.45,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.76
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.55,
+        "phase": "BOTTOM",
+        "cue": "Deep stretch in hamstrings at mid-shin level, spine remains straight",
+        "joints": {
+          "head": [
+            0.65,
+            0.42
+          ],
+          "neck": [
+            0.58,
+            0.48
+          ],
+          "shoulder": [
+            0.5,
+            0.53
+          ],
+          "elbow": [
+            0.5,
+            0.66
+          ],
+          "wrist": [
+            0.5,
+            0.8
+          ],
+          "hip": [
+            0.26,
+            0.58
+          ],
+          "knee": [
+            0.43,
+            0.74
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.8
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "CONCENTRIC",
+        "cue": "Drive hips forward through floor pressure, squeeze glutes at top",
+        "joints": {
+          "head": [
+            0.55,
+            0.24
+          ],
+          "neck": [
+            0.53,
+            0.3
+          ],
+          "shoulder": [
+            0.5,
+            0.35
+          ],
+          "elbow": [
+            0.5,
+            0.48
+          ],
+          "wrist": [
+            0.5,
+            0.64
+          ],
+          "hip": [
+            0.42,
+            0.54
+          ],
+          "knee": [
+            0.48,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.64
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Return to upright lockout without arching lumbar spine",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.42
+          ],
+          "wrist": [
+            0.5,
+            0.58
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.58
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "lat_pulldown",
+    "exerciseName": "Lat Pulldown",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Vertical pulling exercise targeting the latissimus dorsi and biceps for V-taper width.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Arms fully extended overhead, feel stretch in lats, chest lifted slightly",
+        "joints": {
+          "head": [
+            0.5,
+            0.34
+          ],
+          "neck": [
+            0.5,
+            0.41
+          ],
+          "shoulder": [
+            0.5,
+            0.46
+          ],
+          "elbow": [
+            0.5,
+            0.3
+          ],
+          "wrist": [
+            0.5,
+            0.15
+          ],
+          "hip": [
+            0.5,
+            0.7
+          ],
+          "knee": [
+            0.65,
+            0.7
+          ],
+          "ankle": [
+            0.65,
+            0.9
+          ],
+          "foot": [
+            0.72,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.08
+            ],
+            [
+              0.5,
+              0.15
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.45,
+        "phase": "CONCENTRIC",
+        "cue": "Drive elbows down and back, pull bar toward upper clavicle",
+        "joints": {
+          "head": [
+            0.48,
+            0.34
+          ],
+          "neck": [
+            0.48,
+            0.41
+          ],
+          "shoulder": [
+            0.48,
+            0.46
+          ],
+          "elbow": [
+            0.42,
+            0.56
+          ],
+          "wrist": [
+            0.48,
+            0.44
+          ],
+          "hip": [
+            0.5,
+            0.7
+          ],
+          "knee": [
+            0.65,
+            0.7
+          ],
+          "ankle": [
+            0.65,
+            0.9
+          ],
+          "foot": [
+            0.72,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.08
+            ],
+            [
+              0.48,
+              0.44
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.55,
+        "phase": "BOTTOM",
+        "cue": "Full lat contraction, squeeze shoulder blades down, do not lean back excessively",
+        "joints": {
+          "head": [
+            0.47,
+            0.34
+          ],
+          "neck": [
+            0.47,
+            0.41
+          ],
+          "shoulder": [
+            0.47,
+            0.46
+          ],
+          "elbow": [
+            0.4,
+            0.58
+          ],
+          "wrist": [
+            0.47,
+            0.45
+          ],
+          "hip": [
+            0.5,
+            0.7
+          ],
+          "knee": [
+            0.65,
+            0.7
+          ],
+          "ankle": [
+            0.65,
+            0.9
+          ],
+          "foot": [
+            0.72,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.08
+            ],
+            [
+              0.47,
+              0.45
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "ECCENTRIC",
+        "cue": "Control the ascent, resist the weight stack on the way up",
+        "joints": {
+          "head": [
+            0.49,
+            0.34
+          ],
+          "neck": [
+            0.49,
+            0.41
+          ],
+          "shoulder": [
+            0.49,
+            0.46
+          ],
+          "elbow": [
+            0.47,
+            0.36
+          ],
+          "wrist": [
+            0.49,
+            0.24
+          ],
+          "hip": [
+            0.5,
+            0.7
+          ],
+          "knee": [
+            0.65,
+            0.7
+          ],
+          "ankle": [
+            0.65,
+            0.9
+          ],
+          "foot": [
+            0.72,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.08
+            ],
+            [
+              0.49,
+              0.24
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Full lat stretch at the top without shrugging shoulders up to ears",
+        "joints": {
+          "head": [
+            0.5,
+            0.34
+          ],
+          "neck": [
+            0.5,
+            0.41
+          ],
+          "shoulder": [
+            0.5,
+            0.46
+          ],
+          "elbow": [
+            0.5,
+            0.3
+          ],
+          "wrist": [
+            0.5,
+            0.15
+          ],
+          "hip": [
+            0.5,
+            0.7
+          ],
+          "knee": [
+            0.65,
+            0.7
+          ],
+          "ankle": [
+            0.65,
+            0.9
+          ],
+          "foot": [
+            0.72,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.08
+            ],
+            [
+              0.5,
+              0.15
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "barbell_row",
+    "exerciseName": "Barbell Row",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Bent-over compound row for upper back, lat, and posterior deltoid thickness.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Torso hinged ~45 degrees, arms hanging vertical with bar over midfoot",
+        "joints": {
+          "head": [
+            0.65,
+            0.34
+          ],
+          "neck": [
+            0.58,
+            0.4
+          ],
+          "shoulder": [
+            0.5,
+            0.45
+          ],
+          "elbow": [
+            0.5,
+            0.58
+          ],
+          "wrist": [
+            0.5,
+            0.72
+          ],
+          "hip": [
+            0.32,
+            0.54
+          ],
+          "knee": [
+            0.45,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.72
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.45,
+        "phase": "CONCENTRIC",
+        "cue": "Pull elbows toward ceiling, driving bar into lower abdomen",
+        "joints": {
+          "head": [
+            0.65,
+            0.34
+          ],
+          "neck": [
+            0.58,
+            0.4
+          ],
+          "shoulder": [
+            0.5,
+            0.45
+          ],
+          "elbow": [
+            0.38,
+            0.4
+          ],
+          "wrist": [
+            0.46,
+            0.54
+          ],
+          "hip": [
+            0.32,
+            0.54
+          ],
+          "knee": [
+            0.45,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.46,
+              0.54
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.55,
+        "phase": "BOTTOM",
+        "cue": "Peak contraction: retract scapulae without jerking the torso upwards",
+        "joints": {
+          "head": [
+            0.65,
+            0.34
+          ],
+          "neck": [
+            0.58,
+            0.4
+          ],
+          "shoulder": [
+            0.5,
+            0.45
+          ],
+          "elbow": [
+            0.36,
+            0.38
+          ],
+          "wrist": [
+            0.46,
+            0.52
+          ],
+          "hip": [
+            0.32,
+            0.54
+          ],
+          "knee": [
+            0.45,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.46,
+              0.52
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "ECCENTRIC",
+        "cue": "Lower bar under control, feeling stretch across upper back",
+        "joints": {
+          "head": [
+            0.65,
+            0.34
+          ],
+          "neck": [
+            0.58,
+            0.4
+          ],
+          "shoulder": [
+            0.5,
+            0.45
+          ],
+          "elbow": [
+            0.44,
+            0.52
+          ],
+          "wrist": [
+            0.48,
+            0.65
+          ],
+          "hip": [
+            0.32,
+            0.54
+          ],
+          "knee": [
+            0.45,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.48,
+              0.65
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Reset back tension, keep core braced and spine neutral",
+        "joints": {
+          "head": [
+            0.65,
+            0.34
+          ],
+          "neck": [
+            0.58,
+            0.4
+          ],
+          "shoulder": [
+            0.5,
+            0.45
+          ],
+          "elbow": [
+            0.5,
+            0.58
+          ],
+          "wrist": [
+            0.5,
+            0.72
+          ],
+          "hip": [
+            0.32,
+            0.54
+          ],
+          "knee": [
+            0.45,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.72
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "seated_cable_row",
+    "exerciseName": "Seated Cable Row",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Horizontal pull emphasizing middle trapezius, rhomboids, and latissimus dorsi.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Sit upright, knees slightly bent, arms extended feeling back stretch",
+        "joints": {
+          "head": [
+            0.52,
+            0.36
+          ],
+          "neck": [
+            0.52,
+            0.43
+          ],
+          "shoulder": [
+            0.52,
+            0.48
+          ],
+          "elbow": [
+            0.62,
+            0.53
+          ],
+          "wrist": [
+            0.72,
+            0.58
+          ],
+          "hip": [
+            0.48,
+            0.72
+          ],
+          "knee": [
+            0.68,
+            0.72
+          ],
+          "ankle": [
+            0.82,
+            0.72
+          ],
+          "foot": [
+            0.84,
+            0.78
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.9,
+              0.58
+            ],
+            [
+              0.72,
+              0.58
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "CONCENTRIC",
+        "cue": "Pull handle to navel, drive elbows back, squeeze shoulder blades together",
+        "joints": {
+          "head": [
+            0.48,
+            0.36
+          ],
+          "neck": [
+            0.48,
+            0.43
+          ],
+          "shoulder": [
+            0.48,
+            0.48
+          ],
+          "elbow": [
+            0.36,
+            0.54
+          ],
+          "wrist": [
+            0.52,
+            0.58
+          ],
+          "hip": [
+            0.48,
+            0.72
+          ],
+          "knee": [
+            0.68,
+            0.72
+          ],
+          "ankle": [
+            0.82,
+            0.72
+          ],
+          "foot": [
+            0.84,
+            0.78
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.9,
+              0.58
+            ],
+            [
+              0.52,
+              0.58
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.6,
+        "phase": "BOTTOM",
+        "cue": "Full back contraction, chest proud, avoid leaning back past perpendicular",
+        "joints": {
+          "head": [
+            0.48,
+            0.36
+          ],
+          "neck": [
+            0.48,
+            0.43
+          ],
+          "shoulder": [
+            0.48,
+            0.48
+          ],
+          "elbow": [
+            0.35,
+            0.54
+          ],
+          "wrist": [
+            0.52,
+            0.58
+          ],
+          "hip": [
+            0.48,
+            0.72
+          ],
+          "knee": [
+            0.68,
+            0.72
+          ],
+          "ankle": [
+            0.82,
+            0.72
+          ],
+          "foot": [
+            0.84,
+            0.78
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.9,
+              0.58
+            ],
+            [
+              0.52,
+              0.58
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Control the return forward without rounding the lumbar spine",
+        "joints": {
+          "head": [
+            0.52,
+            0.36
+          ],
+          "neck": [
+            0.52,
+            0.43
+          ],
+          "shoulder": [
+            0.52,
+            0.48
+          ],
+          "elbow": [
+            0.62,
+            0.53
+          ],
+          "wrist": [
+            0.72,
+            0.58
+          ],
+          "hip": [
+            0.48,
+            0.72
+          ],
+          "knee": [
+            0.68,
+            0.72
+          ],
+          "ankle": [
+            0.82,
+            0.72
+          ],
+          "foot": [
+            0.84,
+            0.78
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.9,
+              0.58
+            ],
+            [
+              0.72,
+              0.58
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "overhead_press",
+    "exerciseName": "Overhead Press",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Standing vertical press targeting anterior and lateral deltoids, triceps, and core.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Bar resting on anterior deltoids, glutes squeezed, core braced tight",
+        "joints": {
+          "head": [
+            0.49,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.52,
+            0.4
+          ],
+          "wrist": [
+            0.5,
+            0.28
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.28
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.35,
+        "phase": "CONCENTRIC",
+        "cue": "Tuck chin slightly to clear bar path, drive bar vertically in straight line",
+        "joints": {
+          "head": [
+            0.47,
+            0.16
+          ],
+          "neck": [
+            0.48,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.26
+          ],
+          "wrist": [
+            0.5,
+            0.15
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.15
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Lock out overhead, head pushes through window, bar directly over midfoot",
+        "joints": {
+          "head": [
+            0.52,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.18
+          ],
+          "wrist": [
+            0.5,
+            0.07
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.07
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.85,
+        "phase": "ECCENTRIC",
+        "cue": "Lower bar under control, head pulls back as bar passes nose",
+        "joints": {
+          "head": [
+            0.48,
+            0.16
+          ],
+          "neck": [
+            0.49,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.51,
+            0.32
+          ],
+          "wrist": [
+            0.5,
+            0.2
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.2
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Return to front rack position on shoulders, reset breath",
+        "joints": {
+          "head": [
+            0.49,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.52,
+            0.4
+          ],
+          "wrist": [
+            0.5,
+            0.28
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.28
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "lateral_raise",
+    "exerciseName": "Lateral Raise",
+    "perspective": "FRONT",
+    "durationMs": 2800,
+    "description": "Isolation shoulder abduction for lateral deltoid width creating the V-taper silhouette.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Dumbbells resting at sides, slight forward lean, palms facing inward",
+        "joints": {
+          "head": [
+            0.5,
+            0.15
+          ],
+          "neck": [
+            0.5,
+            0.22
+          ],
+          "shoulder_left": [
+            0.4,
+            0.25
+          ],
+          "shoulder_right": [
+            0.6,
+            0.25
+          ],
+          "elbow_left": [
+            0.38,
+            0.38
+          ],
+          "elbow_right": [
+            0.62,
+            0.38
+          ],
+          "wrist_left": [
+            0.37,
+            0.52
+          ],
+          "wrist_right": [
+            0.63,
+            0.52
+          ],
+          "hip_left": [
+            0.44,
+            0.52
+          ],
+          "hip_right": [
+            0.56,
+            0.52
+          ],
+          "knee_left": [
+            0.43,
+            0.72
+          ],
+          "knee_right": [
+            0.57,
+            0.72
+          ],
+          "ankle_left": [
+            0.42,
+            0.9
+          ],
+          "ankle_right": [
+            0.58,
+            0.9
+          ],
+          "foot_left": [
+            0.4,
+            0.92
+          ],
+          "foot_right": [
+            0.6,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.37,
+              0.52
+            ],
+            [
+              0.63,
+              0.52
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Raise arms in scapular plane to parallel (~90 degrees), lead with elbows",
+        "joints": {
+          "head": [
+            0.5,
+            0.15
+          ],
+          "neck": [
+            0.5,
+            0.22
+          ],
+          "shoulder_left": [
+            0.4,
+            0.25
+          ],
+          "shoulder_right": [
+            0.6,
+            0.25
+          ],
+          "elbow_left": [
+            0.24,
+            0.26
+          ],
+          "elbow_right": [
+            0.76,
+            0.26
+          ],
+          "wrist_left": [
+            0.12,
+            0.28
+          ],
+          "wrist_right": [
+            0.88,
+            0.28
+          ],
+          "hip_left": [
+            0.44,
+            0.52
+          ],
+          "hip_right": [
+            0.56,
+            0.52
+          ],
+          "knee_left": [
+            0.43,
+            0.72
+          ],
+          "knee_right": [
+            0.57,
+            0.72
+          ],
+          "ankle_left": [
+            0.42,
+            0.9
+          ],
+          "ankle_right": [
+            0.58,
+            0.9
+          ],
+          "foot_left": [
+            0.4,
+            0.92
+          ],
+          "foot_right": [
+            0.6,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.12,
+              0.28
+            ],
+            [
+              0.88,
+              0.28
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower slowly under control, maintain constant tension at bottom",
+        "joints": {
+          "head": [
+            0.5,
+            0.15
+          ],
+          "neck": [
+            0.5,
+            0.22
+          ],
+          "shoulder_left": [
+            0.4,
+            0.25
+          ],
+          "shoulder_right": [
+            0.6,
+            0.25
+          ],
+          "elbow_left": [
+            0.38,
+            0.38
+          ],
+          "elbow_right": [
+            0.62,
+            0.38
+          ],
+          "wrist_left": [
+            0.37,
+            0.52
+          ],
+          "wrist_right": [
+            0.63,
+            0.52
+          ],
+          "hip_left": [
+            0.44,
+            0.52
+          ],
+          "hip_right": [
+            0.56,
+            0.52
+          ],
+          "knee_left": [
+            0.43,
+            0.72
+          ],
+          "knee_right": [
+            0.57,
+            0.72
+          ],
+          "ankle_left": [
+            0.42,
+            0.9
+          ],
+          "ankle_right": [
+            0.58,
+            0.9
+          ],
+          "foot_left": [
+            0.4,
+            0.92
+          ],
+          "foot_right": [
+            0.6,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.37,
+              0.52
+            ],
+            [
+              0.63,
+              0.52
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "rear_delt_fly",
+    "exerciseName": "Rear Delt Fly",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Horizontal shoulder abduction targeting the posterior deltoid and rhomboids.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Hinged forward at hips, dumbbells hanging beneath chest with soft elbows",
+        "joints": {
+          "head": [
+            0.65,
+            0.38
+          ],
+          "neck": [
+            0.58,
+            0.44
+          ],
+          "shoulder": [
+            0.5,
+            0.48
+          ],
+          "elbow": [
+            0.5,
+            0.6
+          ],
+          "wrist": [
+            0.5,
+            0.72
+          ],
+          "hip": [
+            0.32,
+            0.56
+          ],
+          "knee": [
+            0.44,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.72
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Fly dumbbells wide in transverse plane, squeeze rear delts without shrugging",
+        "joints": {
+          "head": [
+            0.65,
+            0.38
+          ],
+          "neck": [
+            0.58,
+            0.44
+          ],
+          "shoulder": [
+            0.5,
+            0.48
+          ],
+          "elbow": [
+            0.48,
+            0.38
+          ],
+          "wrist": [
+            0.46,
+            0.32
+          ],
+          "hip": [
+            0.32,
+            0.56
+          ],
+          "knee": [
+            0.44,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.46,
+              0.32
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower dumbbells slowly, resisting gravity through eccentric phase",
+        "joints": {
+          "head": [
+            0.65,
+            0.38
+          ],
+          "neck": [
+            0.58,
+            0.44
+          ],
+          "shoulder": [
+            0.5,
+            0.48
+          ],
+          "elbow": [
+            0.5,
+            0.6
+          ],
+          "wrist": [
+            0.5,
+            0.72
+          ],
+          "hip": [
+            0.32,
+            0.56
+          ],
+          "knee": [
+            0.44,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.72
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "biceps_curl",
+    "exerciseName": "Biceps Curl",
+    "perspective": "SIDE",
+    "durationMs": 2600,
+    "description": "Elbow flexion isolation exercise building the biceps brachii and brachialis.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Stand tall, elbows pinned to sides, arms fully extended",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.44
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Flex elbows upward, keep upper arm stationary, full peak contraction",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.44
+          ],
+          "wrist": [
+            0.54,
+            0.28
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.54,
+              0.28
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower under control, fully extending arm at bottom before next rep",
+        "joints": {
+          "head": [
+            0.5,
+            0.16
+          ],
+          "neck": [
+            0.5,
+            0.23
+          ],
+          "shoulder": [
+            0.5,
+            0.28
+          ],
+          "elbow": [
+            0.5,
+            0.44
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ],
+          "hip": [
+            0.5,
+            0.52
+          ],
+          "knee": [
+            0.5,
+            0.72
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "triceps_pushdown",
+    "exerciseName": "Triceps Pushdown",
+    "perspective": "SIDE",
+    "durationMs": 2600,
+    "description": "Cable elbow extension isolating the triceps brachii lateral and medial heads.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Elbows tucked close to ribcage at ~90 degrees, slight forward torso lean",
+        "joints": {
+          "head": [
+            0.53,
+            0.2
+          ],
+          "neck": [
+            0.52,
+            0.27
+          ],
+          "shoulder": [
+            0.5,
+            0.32
+          ],
+          "elbow": [
+            0.5,
+            0.48
+          ],
+          "wrist": [
+            0.58,
+            0.48
+          ],
+          "hip": [
+            0.46,
+            0.56
+          ],
+          "knee": [
+            0.48,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.68,
+              0.1
+            ],
+            [
+              0.58,
+              0.48
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Extend arms down into full lockout, flexing triceps hard at bottom",
+        "joints": {
+          "head": [
+            0.53,
+            0.2
+          ],
+          "neck": [
+            0.52,
+            0.27
+          ],
+          "shoulder": [
+            0.5,
+            0.32
+          ],
+          "elbow": [
+            0.5,
+            0.48
+          ],
+          "wrist": [
+            0.5,
+            0.65
+          ],
+          "hip": [
+            0.46,
+            0.56
+          ],
+          "knee": [
+            0.48,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.68,
+              0.1
+            ],
+            [
+              0.5,
+              0.65
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Controlled return to 90 degrees without letting elbows drift forward",
+        "joints": {
+          "head": [
+            0.53,
+            0.2
+          ],
+          "neck": [
+            0.52,
+            0.27
+          ],
+          "shoulder": [
+            0.5,
+            0.32
+          ],
+          "elbow": [
+            0.5,
+            0.48
+          ],
+          "wrist": [
+            0.58,
+            0.48
+          ],
+          "hip": [
+            0.46,
+            0.56
+          ],
+          "knee": [
+            0.48,
+            0.73
+          ],
+          "ankle": [
+            0.5,
+            0.9
+          ],
+          "foot": [
+            0.56,
+            0.92
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.68,
+              0.1
+            ],
+            [
+              0.58,
+              0.48
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "leg_press",
+    "exerciseName": "Leg Press",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Heavy closed-chain lower body press on 45-degree machine platform.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Seated back flush against pad, feet shoulder-width on sled, knees extended",
+        "joints": {
+          "head": [
+            0.28,
+            0.42
+          ],
+          "neck": [
+            0.34,
+            0.48
+          ],
+          "shoulder": [
+            0.4,
+            0.54
+          ],
+          "elbow": [
+            0.42,
+            0.62
+          ],
+          "wrist": [
+            0.44,
+            0.68
+          ],
+          "hip": [
+            0.48,
+            0.68
+          ],
+          "knee": [
+            0.65,
+            0.48
+          ],
+          "ankle": [
+            0.78,
+            0.32
+          ],
+          "foot": [
+            0.82,
+            0.34
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.76,
+              0.3
+            ],
+            [
+              0.84,
+              0.36
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Lower sled until knees reach 90 degrees, keep lower back firmly on backrest",
+        "joints": {
+          "head": [
+            0.28,
+            0.42
+          ],
+          "neck": [
+            0.34,
+            0.48
+          ],
+          "shoulder": [
+            0.4,
+            0.54
+          ],
+          "elbow": [
+            0.42,
+            0.62
+          ],
+          "wrist": [
+            0.44,
+            0.68
+          ],
+          "hip": [
+            0.48,
+            0.68
+          ],
+          "knee": [
+            0.52,
+            0.52
+          ],
+          "ankle": [
+            0.68,
+            0.42
+          ],
+          "foot": [
+            0.72,
+            0.44
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.66,
+              0.4
+            ],
+            [
+              0.74,
+              0.46
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Press sled away through heels and midfoot, do not harshly lock knees at top",
+        "joints": {
+          "head": [
+            0.28,
+            0.42
+          ],
+          "neck": [
+            0.34,
+            0.48
+          ],
+          "shoulder": [
+            0.4,
+            0.54
+          ],
+          "elbow": [
+            0.42,
+            0.62
+          ],
+          "wrist": [
+            0.44,
+            0.68
+          ],
+          "hip": [
+            0.48,
+            0.68
+          ],
+          "knee": [
+            0.65,
+            0.48
+          ],
+          "ankle": [
+            0.78,
+            0.32
+          ],
+          "foot": [
+            0.82,
+            0.34
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.76,
+              0.3
+            ],
+            [
+              0.84,
+              0.36
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "leg_extension",
+    "exerciseName": "Leg Extension",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Open-chain quadriceps isolation targeting the rectus femoris and vasti.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Back against backrest, knee joint aligned with machine pivot axis",
+        "joints": {
+          "head": [
+            0.4,
+            0.34
+          ],
+          "neck": [
+            0.4,
+            0.42
+          ],
+          "shoulder": [
+            0.4,
+            0.48
+          ],
+          "elbow": [
+            0.42,
+            0.58
+          ],
+          "wrist": [
+            0.44,
+            0.66
+          ],
+          "hip": [
+            0.44,
+            0.68
+          ],
+          "knee": [
+            0.62,
+            0.68
+          ],
+          "ankle": [
+            0.62,
+            0.88
+          ],
+          "foot": [
+            0.68,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.62,
+              0.88
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Extend knees to horizontal, hold peak contraction on quads for 1 second",
+        "joints": {
+          "head": [
+            0.4,
+            0.34
+          ],
+          "neck": [
+            0.4,
+            0.42
+          ],
+          "shoulder": [
+            0.4,
+            0.48
+          ],
+          "elbow": [
+            0.42,
+            0.58
+          ],
+          "wrist": [
+            0.44,
+            0.66
+          ],
+          "hip": [
+            0.44,
+            0.68
+          ],
+          "knee": [
+            0.62,
+            0.68
+          ],
+          "ankle": [
+            0.84,
+            0.68
+          ],
+          "foot": [
+            0.88,
+            0.64
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.84,
+              0.68
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower pad under control, stopping just before weight stack touches",
+        "joints": {
+          "head": [
+            0.4,
+            0.34
+          ],
+          "neck": [
+            0.4,
+            0.42
+          ],
+          "shoulder": [
+            0.4,
+            0.48
+          ],
+          "elbow": [
+            0.42,
+            0.58
+          ],
+          "wrist": [
+            0.44,
+            0.66
+          ],
+          "hip": [
+            0.44,
+            0.68
+          ],
+          "knee": [
+            0.62,
+            0.68
+          ],
+          "ankle": [
+            0.62,
+            0.88
+          ],
+          "foot": [
+            0.68,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.62,
+              0.88
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "leg_curl",
+    "exerciseName": "Leg Curl",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Knee flexion isolation directly targeting the hamstring muscle group.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Lying prone, pad rested above Achilles tendons, hips pressed down",
+        "joints": {
+          "head": [
+            0.24,
+            0.56
+          ],
+          "neck": [
+            0.3,
+            0.58
+          ],
+          "shoulder": [
+            0.36,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.68
+          ],
+          "wrist": [
+            0.36,
+            0.74
+          ],
+          "hip": [
+            0.52,
+            0.6
+          ],
+          "knee": [
+            0.68,
+            0.6
+          ],
+          "ankle": [
+            0.88,
+            0.6
+          ],
+          "foot": [
+            0.92,
+            0.56
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.88,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Curl heels toward glutes, squeeze hamstrings without lifting hips off bench",
+        "joints": {
+          "head": [
+            0.24,
+            0.56
+          ],
+          "neck": [
+            0.3,
+            0.58
+          ],
+          "shoulder": [
+            0.36,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.68
+          ],
+          "wrist": [
+            0.36,
+            0.74
+          ],
+          "hip": [
+            0.52,
+            0.6
+          ],
+          "knee": [
+            0.68,
+            0.6
+          ],
+          "ankle": [
+            0.64,
+            0.42
+          ],
+          "foot": [
+            0.6,
+            0.38
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.64,
+              0.42
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Resist the weight stack on the descent to full knee extension",
+        "joints": {
+          "head": [
+            0.24,
+            0.56
+          ],
+          "neck": [
+            0.3,
+            0.58
+          ],
+          "shoulder": [
+            0.36,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.68
+          ],
+          "wrist": [
+            0.36,
+            0.74
+          ],
+          "hip": [
+            0.52,
+            0.6
+          ],
+          "knee": [
+            0.68,
+            0.6
+          ],
+          "ankle": [
+            0.88,
+            0.6
+          ],
+          "foot": [
+            0.92,
+            0.56
+          ]
+        },
+        "equipment": {
+          "type": "machine",
+          "points": [
+            [
+              0.88,
+              0.6
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "calf_raise",
+    "exerciseName": "Calf Raise",
+    "perspective": "SIDE",
+    "durationMs": 2600,
+    "description": "Ankle plantarflexion isolating the gastrocnemius and soleus.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Balls of feet on step edge, heels hanging below platform feeling stretch",
+        "joints": {
+          "head": [
+            0.5,
+            0.18
+          ],
+          "neck": [
+            0.5,
+            0.25
+          ],
+          "shoulder": [
+            0.5,
+            0.3
+          ],
+          "elbow": [
+            0.5,
+            0.45
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ],
+          "hip": [
+            0.5,
+            0.54
+          ],
+          "knee": [
+            0.5,
+            0.74
+          ],
+          "ankle": [
+            0.5,
+            0.94
+          ],
+          "foot": [
+            0.56,
+            0.88
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Rise high on big toes, flex calves hard at peak contraction",
+        "joints": {
+          "head": [
+            0.5,
+            0.12
+          ],
+          "neck": [
+            0.5,
+            0.19
+          ],
+          "shoulder": [
+            0.5,
+            0.24
+          ],
+          "elbow": [
+            0.5,
+            0.39
+          ],
+          "wrist": [
+            0.5,
+            0.54
+          ],
+          "hip": [
+            0.5,
+            0.48
+          ],
+          "knee": [
+            0.5,
+            0.68
+          ],
+          "ankle": [
+            0.5,
+            0.84
+          ],
+          "foot": [
+            0.56,
+            0.88
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower heels under control beneath step level for a complete stretch",
+        "joints": {
+          "head": [
+            0.5,
+            0.18
+          ],
+          "neck": [
+            0.5,
+            0.25
+          ],
+          "shoulder": [
+            0.5,
+            0.3
+          ],
+          "elbow": [
+            0.5,
+            0.45
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ],
+          "hip": [
+            0.5,
+            0.54
+          ],
+          "knee": [
+            0.5,
+            0.74
+          ],
+          "ankle": [
+            0.5,
+            0.94
+          ],
+          "foot": [
+            0.56,
+            0.88
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "hip_thrust",
+    "exerciseName": "Hip Thrust",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Gluteus maximus builder providing maximum tension at full hip extension.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Upper back on bench edge, hips down near floor, bar padded over hip crease",
+        "joints": {
+          "head": [
+            0.32,
+            0.52
+          ],
+          "neck": [
+            0.36,
+            0.54
+          ],
+          "shoulder": [
+            0.42,
+            0.56
+          ],
+          "elbow": [
+            0.46,
+            0.62
+          ],
+          "wrist": [
+            0.5,
+            0.7
+          ],
+          "hip": [
+            0.48,
+            0.76
+          ],
+          "knee": [
+            0.65,
+            0.68
+          ],
+          "ankle": [
+            0.65,
+            0.88
+          ],
+          "foot": [
+            0.7,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.48,
+              0.76
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Drive through heels into full hip extension, ribs down, chin tucked",
+        "joints": {
+          "head": [
+            0.32,
+            0.52
+          ],
+          "neck": [
+            0.36,
+            0.54
+          ],
+          "shoulder": [
+            0.42,
+            0.56
+          ],
+          "elbow": [
+            0.46,
+            0.56
+          ],
+          "wrist": [
+            0.54,
+            0.56
+          ],
+          "hip": [
+            0.54,
+            0.56
+          ],
+          "knee": [
+            0.68,
+            0.56
+          ],
+          "ankle": [
+            0.68,
+            0.88
+          ],
+          "foot": [
+            0.74,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.54,
+              0.56
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Controlled return to bottom without losing bench positioning",
+        "joints": {
+          "head": [
+            0.32,
+            0.52
+          ],
+          "neck": [
+            0.36,
+            0.54
+          ],
+          "shoulder": [
+            0.42,
+            0.56
+          ],
+          "elbow": [
+            0.46,
+            0.62
+          ],
+          "wrist": [
+            0.5,
+            0.7
+          ],
+          "hip": [
+            0.48,
+            0.76
+          ],
+          "knee": [
+            0.65,
+            0.68
+          ],
+          "ankle": [
+            0.65,
+            0.88
+          ],
+          "foot": [
+            0.7,
+            0.9
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.48,
+              0.76
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "push_up",
+    "exerciseName": "Push-Up",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Bodyweight horizontal press training chest, shoulders, triceps, and anterior core.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "High plank position, hands under shoulders, rigid core from head to heels",
+        "joints": {
+          "head": [
+            0.22,
+            0.44
+          ],
+          "neck": [
+            0.28,
+            0.46
+          ],
+          "shoulder": [
+            0.34,
+            0.48
+          ],
+          "elbow": [
+            0.34,
+            0.62
+          ],
+          "wrist": [
+            0.34,
+            0.76
+          ],
+          "hip": [
+            0.52,
+            0.54
+          ],
+          "knee": [
+            0.68,
+            0.64
+          ],
+          "ankle": [
+            0.82,
+            0.74
+          ],
+          "foot": [
+            0.86,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Lower chest to hover above floor, elbows track back ~45 degrees",
+        "joints": {
+          "head": [
+            0.22,
+            0.62
+          ],
+          "neck": [
+            0.28,
+            0.64
+          ],
+          "shoulder": [
+            0.34,
+            0.66
+          ],
+          "elbow": [
+            0.32,
+            0.54
+          ],
+          "wrist": [
+            0.34,
+            0.76
+          ],
+          "hip": [
+            0.52,
+            0.7
+          ],
+          "knee": [
+            0.68,
+            0.74
+          ],
+          "ankle": [
+            0.82,
+            0.76
+          ],
+          "foot": [
+            0.86,
+            0.78
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Push floor away back into full lockout, protracting shoulder blades at top",
+        "joints": {
+          "head": [
+            0.22,
+            0.44
+          ],
+          "neck": [
+            0.28,
+            0.46
+          ],
+          "shoulder": [
+            0.34,
+            0.48
+          ],
+          "elbow": [
+            0.34,
+            0.62
+          ],
+          "wrist": [
+            0.34,
+            0.76
+          ],
+          "hip": [
+            0.52,
+            0.54
+          ],
+          "knee": [
+            0.68,
+            0.64
+          ],
+          "ankle": [
+            0.82,
+            0.74
+          ],
+          "foot": [
+            0.86,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "pull_up",
+    "exerciseName": "Pull-Up",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Bodyweight vertical pull for supreme upper-body strength and lat development.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Dead hang from bar, overhand grip slightly wider than shoulders",
+        "joints": {
+          "head": [
+            0.5,
+            0.28
+          ],
+          "neck": [
+            0.5,
+            0.35
+          ],
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.24
+          ],
+          "wrist": [
+            0.5,
+            0.1
+          ],
+          "hip": [
+            0.5,
+            0.62
+          ],
+          "knee": [
+            0.5,
+            0.78
+          ],
+          "ankle": [
+            0.5,
+            0.92
+          ],
+          "foot": [
+            0.54,
+            0.94
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.1
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Pull chest toward bar, drive elbows down, chin clears the bar cleanly",
+        "joints": {
+          "head": [
+            0.48,
+            0.1
+          ],
+          "neck": [
+            0.48,
+            0.17
+          ],
+          "shoulder": [
+            0.48,
+            0.22
+          ],
+          "elbow": [
+            0.42,
+            0.32
+          ],
+          "wrist": [
+            0.5,
+            0.1
+          ],
+          "hip": [
+            0.5,
+            0.44
+          ],
+          "knee": [
+            0.5,
+            0.6
+          ],
+          "ankle": [
+            0.5,
+            0.74
+          ],
+          "foot": [
+            0.54,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.1
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lower smoothly under complete control back to full dead hang",
+        "joints": {
+          "head": [
+            0.5,
+            0.28
+          ],
+          "neck": [
+            0.5,
+            0.35
+          ],
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.24
+          ],
+          "wrist": [
+            0.5,
+            0.1
+          ],
+          "hip": [
+            0.5,
+            0.62
+          ],
+          "knee": [
+            0.5,
+            0.78
+          ],
+          "ankle": [
+            0.5,
+            0.92
+          ],
+          "foot": [
+            0.54,
+            0.94
+          ]
+        },
+        "equipment": {
+          "type": "barbell",
+          "points": [
+            [
+              0.5,
+              0.1
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "plank",
+    "exerciseName": "Plank",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Isometric anti-extension core exercise for abdominal wall and spinal stability.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Forearms on floor under shoulders, toes planted, pull belly button to spine",
+        "joints": {
+          "head": [
+            0.22,
+            0.56
+          ],
+          "neck": [
+            0.28,
+            0.58
+          ],
+          "shoulder": [
+            0.34,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.76
+          ],
+          "wrist": [
+            0.44,
+            0.76
+          ],
+          "hip": [
+            0.54,
+            0.62
+          ],
+          "knee": [
+            0.7,
+            0.68
+          ],
+          "ankle": [
+            0.84,
+            0.74
+          ],
+          "foot": [
+            0.88,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Breathe rhythmically, maintain straight line from shoulders to ankles",
+        "joints": {
+          "head": [
+            0.22,
+            0.56
+          ],
+          "neck": [
+            0.28,
+            0.58
+          ],
+          "shoulder": [
+            0.34,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.76
+          ],
+          "wrist": [
+            0.44,
+            0.76
+          ],
+          "hip": [
+            0.54,
+            0.62
+          ],
+          "knee": [
+            0.7,
+            0.68
+          ],
+          "ankle": [
+            0.84,
+            0.74
+          ],
+          "foot": [
+            0.88,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Do not allow hips to sag or hike upwards, complete timed interval",
+        "joints": {
+          "head": [
+            0.22,
+            0.56
+          ],
+          "neck": [
+            0.28,
+            0.58
+          ],
+          "shoulder": [
+            0.34,
+            0.6
+          ],
+          "elbow": [
+            0.34,
+            0.76
+          ],
+          "wrist": [
+            0.44,
+            0.76
+          ],
+          "hip": [
+            0.54,
+            0.62
+          ],
+          "knee": [
+            0.7,
+            0.68
+          ],
+          "ankle": [
+            0.84,
+            0.74
+          ],
+          "foot": [
+            0.88,
+            0.76
+          ]
+        },
+        "equipment": {
+          "type": "none"
+        }
+      }
+    ]
+  }
+]

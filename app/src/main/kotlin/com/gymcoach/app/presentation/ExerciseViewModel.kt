@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.animation.AnimationRepository
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,28 +19,39 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ExerciseViewModel @Inject constructor(
-    private val repository: ExerciseRepository
+    private val repository: ExerciseRepository,
+    private val animationRepository: AnimationRepository
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
     val filterCategory = MutableStateFlow("All")
     val filterDifficulty = MutableStateFlow("All")
     val filterEquipment = MutableStateFlow("All")
+    val filterMovementPattern = MutableStateFlow("All")
+    val showFavoritesOnly = MutableStateFlow(false)
 
     val categories = listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body")
     val difficulties = listOf("All", "Beginner", "Intermediate", "Advanced")
     val equipments = listOf("All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Resistance Band")
+    val movementPatterns = listOf("All", "Squat", "Hinge", "Push", "Pull", "Lunge", "Carry", "Isolation")
+
+    private val filterGroup = combine(
+        filterCategory,
+        filterDifficulty,
+        filterEquipment,
+        filterMovementPattern,
+        showFavoritesOnly
+    ) { cat, diff, equip, pattern, favsOnly ->
+        SubFilters(cat, diff, equip, pattern, favsOnly)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
     val exercises = combine(
         searchQuery.debounce(300),
-        filterCategory,
-        filterDifficulty,
-        filterEquipment
-    ) { q, cat, diff, equip ->
-        FilterState(q, cat, diff, equip)
+        filterGroup
+    ) { q, sub ->
+        FilterState(q, sub.category, sub.difficulty, sub.equipment, sub.movementPattern, sub.favoritesOnly)
     }.flatMapLatest { filters ->
-        // Use FTS4 full-text search for text queries, fall back to filtered list for empty queries
         val baseFlow = if (filters.query.isNotBlank()) {
             repository.searchExercises(filters.query)
         } else {
@@ -49,18 +61,34 @@ class ExerciseViewModel @Inject constructor(
             repository.getFilteredExercises(catFilter, diffFilter, equipFilter)
         }
         
-        // Apply additional filters on top of FTS results when search is active
         baseFlow.map { list ->
             list.filter { exercise ->
                 val matchesCategory = filters.category == "All" || exercise.muscleGroup.equals(filters.category, ignoreCase = true)
                 val matchesDifficulty = filters.difficulty == "All" || exercise.difficulty.equals(filters.difficulty, ignoreCase = true)
                 val matchesEquipment = filters.equipment == "All" || exercise.equipment.contains(filters.equipment, ignoreCase = true)
-                matchesCategory && matchesDifficulty && matchesEquipment
+                val matchesPattern = filters.movementPattern == "All" || exercise.movementPattern.equals(filters.movementPattern, ignoreCase = true)
+                val matchesFav = !filters.favoritesOnly || exercise.isFavorite
+                matchesCategory && matchesDifficulty && matchesEquipment && matchesPattern && matchesFav
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private data class FilterState(val query: String, val category: String, val difficulty: String, val equipment: String)
+    private data class SubFilters(
+        val category: String,
+        val difficulty: String,
+        val equipment: String,
+        val movementPattern: String,
+        val favoritesOnly: Boolean
+    )
+
+    private data class FilterState(
+        val query: String,
+        val category: String,
+        val difficulty: String,
+        val equipment: String,
+        val movementPattern: String,
+        val favoritesOnly: Boolean
+    )
 
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
@@ -76,6 +104,18 @@ class ExerciseViewModel @Inject constructor(
 
     fun onEquipmentSelected(equipment: String) {
         filterEquipment.value = equipment
+    }
+
+    fun onMovementPatternSelected(pattern: String) {
+        filterMovementPattern.value = pattern
+    }
+
+    fun toggleFavoritesOnly() {
+        showFavoritesOnly.value = !showFavoritesOnly.value
+    }
+
+    suspend fun hasAnimation(name: String): Boolean {
+        return animationRepository.hasAnimation(name)
     }
 
     fun addExercise(exercise: Exercise) {

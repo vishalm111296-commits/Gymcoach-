@@ -73,4 +73,51 @@ class ProgramRepositoryImpl @Inject constructor(
         }
         return programId
     }
+
+    override suspend fun saveCustomRoutine(
+        name: String,
+        description: String,
+        goal: String,
+        days: List<com.gymcoach.app.domain.repository.CustomRoutineDay>,
+        setAsActive: Boolean
+    ): Long {
+        if (setAsActive) {
+            programDao.getActiveProgram().firstOrNull()?.let { active ->
+                programDao.update(active.copy(isActive = false))
+            }
+        }
+        val programId = programDao.insert(
+            ProgramEntity(
+                name = name,
+                description = description,
+                goal = goal,
+                daysPerWeek = days.size,
+                isActive = setAsActive
+            )
+        )
+        days.forEach { day ->
+            val dayId = programDayDao.insert(
+                ProgramDayEntity(
+                    programId = programId,
+                    dayNumber = day.dayNumber,
+                    name = day.name,
+                    targetMuscles = day.targetMuscles
+                )
+            )
+            programExerciseDao.insertAll(
+                day.exercises.mapIndexed { index, exercise ->
+                    ProgramExerciseEntity(
+                        programDayId = dayId,
+                        exerciseId = exercise.exerciseId,
+                        orderIndex = index,
+                        sets = exercise.targetSets,
+                        targetReps = exercise.targetReps,
+                        restSeconds = exercise.restSeconds
+                    )
+                }
+            )
+        }
+        return programId
+    }
+
 }

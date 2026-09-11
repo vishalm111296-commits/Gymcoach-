@@ -18,6 +18,8 @@ import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.data.local.entity.ReadinessEntity
+import com.gymcoach.app.domain.repository.ReadinessRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -39,8 +41,36 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     private val restTimer: RestTimerManager,
     private val progressionEngine: ProgressionEngine,
-    private val userProfileRepository: UserProfileRepository
+    private val userProfileRepository: UserProfileRepository,
+    private val readinessRepository: ReadinessRepository
 ) : ViewModel() {
+
+    // Test backward compatibility constructor
+    constructor(
+        workoutRepository: WorkoutRepository,
+        exerciseRepository: ExerciseRepository,
+        restTimer: RestTimerManager,
+        progressionEngine: ProgressionEngine,
+        userProfileRepository: UserProfileRepository
+    ) : this(
+        workoutRepository,
+        exerciseRepository,
+        restTimer,
+        progressionEngine,
+        userProfileRepository,
+        object : ReadinessRepository {
+            override fun getAllReadiness() = kotlinx.coroutines.flow.emptyFlow<List<ReadinessEntity>>()
+            override fun getLatestReadiness() = kotlinx.coroutines.flow.flowOf(null)
+            override fun getReadinessInRange(startTime: Long, endTime: Long) = kotlinx.coroutines.flow.emptyFlow<List<ReadinessEntity>>()
+            override fun getRecentReadiness(since: Long) = kotlinx.coroutines.flow.emptyFlow<List<ReadinessEntity>>()
+            override suspend fun saveReadiness(readiness: ReadinessEntity) = 0L
+            override suspend fun updateReadiness(readiness: ReadinessEntity) {}
+            override suspend fun deleteReadiness(id: Long) {}
+        }
+    )
+
+    val latestReadiness: StateFlow<ReadinessEntity?> = readinessRepository.getLatestReadiness()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private var defaultRestSeconds = 90
 

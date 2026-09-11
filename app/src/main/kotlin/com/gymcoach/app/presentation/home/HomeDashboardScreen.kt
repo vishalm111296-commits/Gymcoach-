@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,13 +110,17 @@ fun HomeDashboardScreen(
             Spacer(Modifier.height(16.dp))
             WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
 
-            // Readiness quick link
+            // Readiness quick link & dynamic score card
             Spacer(Modifier.height(16.dp))
+            val readiness = state.latestReadiness
             Card(
                 onClick = onNavigateToReadiness,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                colors = CardDefaults.cardColors(
+                    containerColor = if (readiness?.isRestDayRecommended == true)
+                        Color(0xFF2C1B1B) else DarkSurface
+                )
             ) {
                 Row(
                     modifier = Modifier
@@ -123,20 +129,46 @@ fun HomeDashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "RECOVERY & READINESS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AccentBlue,
+                                letterSpacing = 1.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (readiness != null) {
+                                Spacer(Modifier.width(8.dp))
+                                val score = readiness.readinessScore
+                                val badgeColor = when {
+                                    score >= 4.0 -> Color(0xFF4CAF50)
+                                    score >= 3.0 -> Color(0xFF2196F3)
+                                    score >= 2.0 -> Color(0xFFFF9800)
+                                    else -> Color(0xFFF44336)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(badgeColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "%.1f / 5.0".format(score),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = badgeColor
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "RECOVERY & READINESS",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AccentBlue,
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Log how you're feeling today",
+                            text = readiness?.trainingRecommendation ?: "Log how you're feeling today to calibrate training",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
                     }
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = "\u2192",
                         style = MaterialTheme.typography.headlineMedium,

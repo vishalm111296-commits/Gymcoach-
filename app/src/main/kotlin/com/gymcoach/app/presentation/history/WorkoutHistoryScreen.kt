@@ -22,6 +22,9 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import android.content.Intent
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -47,6 +50,7 @@ import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,6 +87,25 @@ fun WorkoutHistoryScreen(
     val showDeleteConfirmation = deleteTarget != null
     var showSortOptions by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showExportMenu by remember { mutableStateOf(false) }
+    val exportResult by viewModel.exportResult.collectAsState()
+    val isExporting by viewModel.isExporting.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(exportResult) {
+        exportResult?.let { result ->
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = result.mimeType
+                putExtra(Intent.EXTRA_TEXT, result.content)
+                putExtra(Intent.EXTRA_SUBJECT, result.filename)
+                putExtra(Intent.EXTRA_TITLE, result.filename)
+            }
+            val chooser = Intent.createChooser(sendIntent, "Export Workout Data")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+            viewModel.clearExportResult()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -97,6 +120,37 @@ fun WorkoutHistoryScreen(
                     }
                 },
                 actions = {
+                    Box {
+                        IconButton(onClick = { showExportMenu = true }, enabled = !isExporting) {
+                            if (isExporting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Default.Share, contentDescription = "Export Data")
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showExportMenu,
+                            onDismissRequest = { showExportMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Export CSV (Strong/Hevy)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportData(ExportFormat.CSV)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export Backup (JSON)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    viewModel.exportData(ExportFormat.JSON)
+                                }
+                            )
+                        }
+                    }
                     IconButton(onClick = onNewWorkout) {
                         Icon(Icons.Default.Add, contentDescription = "New Workout")
                     }

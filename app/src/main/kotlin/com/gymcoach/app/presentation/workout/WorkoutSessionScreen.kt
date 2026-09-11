@@ -97,11 +97,19 @@ fun WorkoutSessionScreen(
     val lastPerformanceSummary by viewModel.lastPerformanceSummary.collectAsState()
     val sessionVolume by viewModel.sessionVolume.collectAsState()
     val progressionRecommendations by viewModel.progressionRecommendations.collectAsState()
+    val latestReadiness by viewModel.latestReadiness.collectAsState()
+    var dismissReadinessAdvisory by rememberSaveable { mutableStateOf(false) }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
 
+    val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(restTimerState.isRunning) {
+    var wasTimerRunning by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(restTimerState.isRunning, restTimerState.timeRemaining) {
+        if (wasTimerRunning && !restTimerState.isRunning && restTimerState.timeRemaining == 0) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+        wasTimerRunning = restTimerState.isRunning
         rememberRestTimer.value = restTimerState.isRunning
     }
 
@@ -188,6 +196,17 @@ fun WorkoutSessionScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentWorkout?.let { workout ->
+                    // Recovery & Readiness advisory banner
+                    val readiness = latestReadiness
+                    if (readiness != null && readiness.readinessScore < 3.0 && !dismissReadinessAdvisory) {
+                        item {
+                            RecoveryAdvisoryBanner(
+                                readiness = readiness,
+                                onDismiss = { dismissReadinessAdvisory = true }
+                            )
+                        }
+                    }
+
                     // Rest timer card with preset buttons
                     if (restTimerState.isRunning) {
                         item {
@@ -800,6 +819,54 @@ private fun SetRow(
                     contentDescription = "Cycle Set Type",
                     modifier = Modifier.size(16.dp),
                     tint = setTypeColor
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Recovery Advisory banner informing the lifter of low readiness/high fatigue.
+ */
+@Composable
+private fun RecoveryAdvisoryBanner(
+    readiness: com.gymcoach.app.data.local.entity.ReadinessEntity,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = androidx.compose.ui.graphics.Color(0xFF332014)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "RECOVERY ADVISORY (Readiness: %.1f/5.0)".format(readiness.readinessScore),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = androidx.compose.ui.graphics.Color(0xFFFFB74D),
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${readiness.trainingRecommendation}. Consider autoregulation: keep 1-2 reps in reserve (RIR 2) and avoid forced failure.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.ui.graphics.Color(0xFFFFF3E0)
+                )
+            }
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Dismiss",
+                    tint = androidx.compose.ui.graphics.Color(0xFFFFB74D)
                 )
             }
         }

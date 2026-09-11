@@ -191,6 +191,32 @@ fun ProfileScreen(
 
                     Spacer(Modifier.height(32.dp))
 
+                    // Data & Backup
+                    SectionHeader("Data & Export")
+                    Spacer(Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Workout Data Portability",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Export your completed workouts in standard Strong/Hevy CSV format or complete JSON backup directly from the Workout History screen.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
                     // About
                     SectionHeader("About GymCoach")
                     Spacer(Modifier.height(8.dp))

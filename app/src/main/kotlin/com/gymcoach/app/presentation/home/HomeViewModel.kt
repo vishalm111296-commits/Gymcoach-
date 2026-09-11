@@ -11,6 +11,8 @@ import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.ProgramRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
+import com.gymcoach.app.data.local.entity.ReadinessEntity
+import com.gymcoach.app.domain.repository.ReadinessRepository
 import com.gymcoach.app.presentation.home.components.VtaperMuscleData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
@@ -40,7 +42,8 @@ data class HomeUiState(
     val workoutsThisWeek: Int = 0,
     val targetWorkouts: Int = 0,
     val prCount: Int = 0,
-    val vtaperBars: List<VtaperMuscleData> = emptyList()
+    val vtaperBars: List<VtaperMuscleData> = emptyList(),
+    val latestReadiness: ReadinessEntity? = null
 )
 
 private const val TARGET_WEEKLY_SETS = 14
@@ -60,7 +63,8 @@ class HomeViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
     private val volumeCalculator: VolumeCalculator,
-    analyticsRepository: AnalyticsRepository
+    analyticsRepository: AnalyticsRepository,
+    private val readinessRepository: ReadinessRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -72,6 +76,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { analyticsRepository.getAllPersonalRecords() }
                 .onSuccess { records -> _prCount.value = records.size }
+        }
+        viewModelScope.launch {
+            readinessRepository.getLatestReadiness().collect { latest ->
+                _uiState.value = _uiState.value.copy(latestReadiness = latest)
+            }
         }
         viewModelScope.launch {
             val programFlow = programRepository.getActiveProgram()
@@ -129,7 +138,8 @@ class HomeViewModel @Inject constructor(
                 isLoading = false,
                 hasProgram = false,
                 coachInsight = "Your first session is ready once you set up your plan.",
-                prCount = prCount
+                prCount = prCount,
+                latestReadiness = _uiState.value.latestReadiness
             )
         }
 
@@ -208,7 +218,8 @@ class HomeViewModel @Inject constructor(
             workoutsThisWeek = completedThisWeek,
             targetWorkouts = core.program.daysPerWeek,
             prCount = prCount,
-            vtaperBars = bars
+            vtaperBars = bars,
+            latestReadiness = _uiState.value.latestReadiness
         )
     }
 

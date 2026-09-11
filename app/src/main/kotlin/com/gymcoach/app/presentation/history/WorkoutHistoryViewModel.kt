@@ -3,6 +3,10 @@ package com.gymcoach.app.presentation.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.timer.RestTimerManager
+import com.gymcoach.app.core.export.WorkoutDataExporter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
@@ -14,17 +18,43 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class ExportFormat { CSV, JSON }
+
+data class ExportResult(
+    val content: String,
+    val filename: String,
+    val mimeType: String
+)
+
 @HiltViewModel
 class WorkoutHistoryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val restTimer: RestTimerManager
+    private val restTimer: RestTimerManager,
+    private val workoutDataExporter: WorkoutDataExporter
 ) : ViewModel() {
+
+    // Test backward compatibility constructor
+    constructor(
+        workoutRepository: WorkoutRepository,
+        restTimer: RestTimerManager
+    ) : this(
+        workoutRepository,
+        restTimer,
+        WorkoutDataExporter()
+    )
+
+    private val _exportResult = MutableStateFlow<ExportResult?>(null)
+    val exportResult: StateFlow<ExportResult?> = _exportResult.asStateFlow()
+
+    private val _isExporting = MutableStateFlow(false)
+    val isExporting: StateFlow<Boolean> = _isExporting.asStateFlow()
 
     enum class SortOption { NEWEST, OLDEST, VOLUME_DESC, VOLUME_ASC, DURATION_DESC, DURATION_ASC }
     enum class FilterOption { ALL, TODAY, THIS_WEEK, THIS_MONTH, CUSTOM }
@@ -189,5 +219,37 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     fun getIncompleteWorkout(): Workout? {
         return _incompleteWorkout.value
+    }
+
+    fun exportData(format: ExportFormat) {
+        viewModelScope.launch {
+            _isExporting.value = true
+            try {
+                val completed = workoutRepository.getCompletedWorkouts().first()
+                val detailsList = completed.mapNotNull {
+                    workoutRepository.getWorkoutWithDetails(it.id).first()
+                }
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val result = when (format) {
+                    ExportFormat.CSV -> ExportResult(
+                        content = workoutDataExporter.exportToCsv(detailsList),
+                        filename = "gymcoach_workouts_$timestamp.csv",
+                        mimeType = "text/csv"
+                    )
+                    ExportFormat.JSON -> ExportResult(
+                        content = workoutDataExporter.exportToJson(detailsList),
+                        filename = "gymcoach_backup_$timestamp.json",
+                        mimeType = "application/json"
+                    )
+                }
+                _exportResult.value = result
+            } finally {
+                _isExporting.value = false
+            }
+        }
+    }
+
+    fun clearExportResult() {
+        _exportResult.value = null
     }
 }

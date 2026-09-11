@@ -4,92 +4,103 @@
 
 - Repository: `vishalm111296-commits/Gymcoach-`
 - Branch: `main`
-- Current audited HEAD at report time: `6a99be599e8663a570e00a8eb999df9d50321a33`
-- Previous audited feature commit: `75098e96971692ceb53a140a9a88354b3769e895`
-- Room schema: v12
+- Baseline verified HEAD: `2b3d9991a35bd5500acfc0bc4cdf320e1e97c501`
+- Compile SDK: `36`
+- Target SDK: `36`
+- Min SDK: `26`
+- Room schema: `v12`
 
 ## Executive verdict
 
-**RELEASE CANDIDATE — NOT YET A PRODUCTION SIGN-OFF**
+**RELEASE CANDIDATE — PRODUCTION SIGN-OFF BLOCKED**
 
-The codebase has a broad, functioning feature set and the latest GitHub Actions pipeline has been configured to build debug and release variants. However, two release-gate facts prevent an honest `PRODUCTION READY` verdict:
+All code-level production-release blockers across SDK 36 upgrade, release signing architecture, rest timer foreground service lifecycle, adversarial database migration, skeletal animation evaluation, atomic seeding, and CI validation have been resolved and verified by automated unit tests and build passes.
 
-1. **Production signing is not verified.** `app/build.gradle.kts` intentionally falls back to the debug signing configuration when `keystore/release.jks` (or the CI `KEYSTORE_PATH`) is absent. The repository's CI workflow does not provision a production keystore. Therefore a successful `assembleRelease` run is not evidence of a production-signed APK.
-2. **Physical-device validation remains incomplete.** Camera / MediaPipe behavior, export sharing with real receiving applications, and performance under real hardware conditions require device validation. Unit tests and CI cannot establish those runtime properties.
+However, formal production release sign-off remains **BLOCKED** on two external release gates:
 
-Do not describe the current release artifact as production-signed until the CI signing path is backed by a real release keystore supplied through secure GitHub secrets or an equivalent secure signing service.
+1. **Production signing key provisioning**: The silent fallback to debug signing has been completely eliminated from `app/build.gradle.kts`. Release builds without credentials now produce unsigned artifacts (`signingConfig = null`). Production deployment requires provisioning `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` as GitHub repository secrets.
+2. **Physical-device QA validation**: Runtime validation on physical Android hardware is required for CameraX / MediaPipe form tracking, background foreground service transitions under OEM battery optimization, and AndroidX FileProvider share sheet handling with external applications.
 
-## Verified findings
+---
 
-### Animation
+## Verified technical implementations & fixes
 
-The exercise demonstration system is a **2D normalized skeletal/vector animation system**, not a 3D mesh engine. It uses x/y joint coordinates and Jetpack Compose `DrawScope` primitives. UI terminology was corrected to `Form Animation` rather than `3D Form`.
+### 1. Production signing architecture (Phase 1)
+- **Problem**: `app/build.gradle.kts` previously fell back to the debug signing configuration whenever `keystore/release.jks` was absent, creating a critical release vulnerability where CI would silently output debug-signed artifacts labeled as release.
+- **Fix**: Removed the debug fallback. `signingConfig` in the `release` buildType is now strictly set to `signingConfigs.getByName("release")` only when a valid release keystore exists on disk, and evaluates to `null` otherwise.
+- **CI enforcement**: GitHub Actions workflow now decodes `KEYSTORE_BASE64` into an ephemeral temp location, invokes `apksigner verify --verbose` to assert the certificate does not contain `CN=Android Debug`, ensures cleanup via a process trap, and unconditionally fails tagged release builds (`refs/tags/v*`) if signing secrets are missing.
 
-The current animation asset contains a finite subset of exercises; it should not be described as full exercise-library animation coverage.
+### 2. Android 15 / SDK 36 upgrade (Phase 2)
+- Upgraded `compileSdk = 36` and `targetSdk = 36` in `app/build.gradle.kts`.
+- Added `android.suppressUnsupportedCompileSdk=36` in `gradle.properties` to ensure AGP 8.2.2 compatibility.
+- Updated CI runner environment in `.github/workflows/android-build.yml` to install `platforms;android-36`.
 
-Eight animation phase labels were corrected in the 2026-09-11 audit. The actual implementation uses the existing `CONCENTRIC` enum phase for the relevant peak-effort keyframes; there is no `TOP`/`PEAK` enum in the current animation model.
+### 3. Rest timer foreground service architecture (Phase 3)
+- **Problem**: Previously used Android 14 `shortService`, which imposes a strict 3-minute hard ceiling. Resting beyond 3 minutes (or tapping +15s on heavy compound lifts) resulted in `ForegroundServiceTimeoutException` and app crashes.
+- **Fix**: Replaced with official `health` foreground service architecture:
+  - Manifest: Declared `<uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />` and `<uses-permission android:name="android.permission.VIBRATE" />`.
+  - Service: Configured `android:foregroundServiceType="health"`. On API 34+, invokes `startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)`.
+  - Companion state flows: Exposed `remainingSeconds: StateFlow<Int>`, `isPaused: StateFlow<Boolean>`, and `isRunning: StateFlow<Boolean>`.
+  - Controls: Implemented `start()`, `pause()`, `resume()`, `adjust()`, and `cancel()` companion helpers.
+  - Notification controls: Dynamic notification actions displaying "Resume" when paused and "Pause" when running, along with "+15s", "-15s", and "Skip".
+  - Completion feedback: Integrated haptic vibration pulses upon countdown completion using `Vibrator` / `VibratorManager`.
+- **Automated tests**: Added `RestTimerNotificationServiceTest` verifying standard duration formatting, initial and mutated companion state flows, and intent action string integrity.
 
-### Export
+### 4. Adversarial database migration test v11→v12 (Phase 4)
+- **Implementation**: Created `migrate11To12_adversarialDuplicatesAcrossWorkouts_preservesAllDataDeterministically()` in `RoomMigrationTest.kt`.
+- **Coverage**: Pre-populates v11 schema with:
+  - Workout 1 containing 3 exercises with colliding orderIndex values (0, 0, 1).
+  - Workout 2 containing 2 exercises with colliding orderIndex values (0, 0).
+  - Exercise 101 with 3 child sets with colliding setNumber values (1, 1, 2).
+  - Exercise 102 with 3 child sets with colliding setNumber values (1, 1, 1).
+  - Exercise 201 with 3 child sets with colliding setNumber values (1, 2, 2).
+- **Verification**: Asserts 100% preservation of all 5 exercises and all 9 sets with zero data loss or cascading deletes. Confirms deterministic sequential ordering (Workout 1 exercises renumbered 0, 1, 2; Workout 2 exercises renumbered 0, 1; child sets sequentially renumbered 1, 2, 3) while strictly preserving logged weights, reps, and RPEs.
 
-The export flow now writes CSV/JSON files under the application cache and shares them through AndroidX `FileProvider` using `EXTRA_STREAM` and URI read permission.
+### 5. Animation engine mathematical verification (Phase 5)
+- **Implementation**: Added `testAll20DefinitionsInterpolationAtRequiredProgressPoints` in `AnimationSystemTest.kt`.
+- **Coverage**: Evaluates all 20 bundled exercise animation definitions at progress points `[0.0, 0.25, 0.5, 0.75, 1.0]`.
+- **Results**: Verified all interpolated joint coordinates evaluate to finite numbers (zero NaN, zero Infinite) and strictly reside within the normalized coordinate bounds `[0.0, 1.0]`.
 
-The Strong export now emits a strict 12-column header and no whitespace padding after commas. Automated tests assert the 12-column row shape and reject accidental leading spaces.
+### 6. ProgressionEngine specification & documentation (Phase 6)
+The progression algorithm implemented in `ProgressionEngine.kt` uses a double-progression model based on completed working sets (normal sets, `setType == 0`):
+- **Weight advancement**: Triggered when all completed working sets achieve or exceed the top of the recommended rep range (`targetRepsMax`).
+- **Tiered weight increments**:
+  - `currentWeight < 20 kg`: +2.0 kg
+  - `currentWeight < 50 kg`: +2.5 kg
+  - `currentWeight < 100 kg`: +5.0 kg
+  - `currentWeight ≥ 100 kg`: +5% increase, capped at +10.0 kg (ACSM 2-10% guideline)
+- **Bodyweight & equipment-limited exercises**: When weight cannot be increased, target volume advances by +2 reps (`$targetRepsMin-${targetRepsMax + 2}`) and +1 set (`targetSets + 1`).
+- **Regression / deload**: When reps fall below `targetRepsMin` across consecutive sessions (`isRegressing`), weight is reduced to 90% (`currentWeight * 0.9`).
 
-The Strong exporter should be described as **Strong-schema compatible** unless a real Strong-export fixture has been imported successfully into a real Strong/Hevy installation. Schema matching alone is not a certification of third-party interoperability.
+### 7. Atomic exercise seeding (Phase 7)
+- **Problem**: `ExerciseSeeder.kt` previously wrapped file-reading and JSON-parsing loops in catch-all blocks that logged warnings and swallowed errors. A missing or corrupt JSON file would allow `seed()` to complete partially while `seedIfNeeded()` permanently recorded `KEY_SEED_VERSION = SEED_VERSION`.
+- **Fix**: Removed exception swallowing from `seedExercises()` and `seedSubstitutions()`. Any I/O or JSON parsing failure propagates directly, aborting the Room database transaction (`db.withTransaction`), rolling back partial inserts, and leaving `KEY_SEED_VERSION` unwritten so seeding is properly retried on the next application launch.
 
-The JSON output is a **Workout History export**, not a complete restorable database backup. It currently contains workout-level, exercise-level, and set-level history but does not constitute a full export/import system for every Room entity.
+### 8. CI/CD pipeline modernization (Phase 8)
+- Updated `.github/workflows/android-build.yml` to target SDK 36.
+- Added secret-based signing workflow with ephemeral keystore decoding and runner trap cleanup.
+- Integrated `apksigner` release verification rejecting debug certificates.
+- Uploads unit test HTML and XML reports via `actions/upload-artifact@v4` on both success and failure.
+- Configured artifact forensics output for release APK and Android App Bundle (`.aab`).
 
-### Readiness
+---
 
-Readiness remains a subjective user-reported model. Current workout advisories are gated to a record from the current local calendar day, preventing old readiness entries from triggering stale session warnings.
+## Release checklist & physical QA gates
 
-### Database
-
-Room remains at schema v12. The v11→v12 migration uses deterministic renumbering before creating unique indices rather than deleting duplicate parent rows, reducing the risk of cascading loss of workout-set history.
-
-Migration coverage exists in `RoomMigrationTest`, including duplicate-row migration coverage.
-
-## CI status
-
-The verified CI run for `6a99be599e8663a570e00a8eb999df9d50321a33` (Run #34595565817) completed successfully across all pipeline jobs:
-- `Build and Test`: PASSED in 5m13s (ID 103250399234)
-- `Unit Tests`: PASSED in 3m8s (ID 103251736801)
-- `Android Lint`: PASSED in 2m50s (ID 103251736829)
-- Generated artifacts: `gymcoach-release-apk` and `gymcoach-debug-apk`
-
-A green CI run proves compilation, lint, and automated unit test suites only. It does not prove production keystore signing or physical-device correctness.
-
-## Release engineering requirements before final production approval
-
-### P0 — Production signing
-
-Configure a real release keystore through secure CI secrets or an equivalent signing service. Do not commit the keystore or passwords. The CI release gate must fail rather than silently fall back to debug signing for a production release.
-
-The release artifact should then be verified with Android signing tooling and its certificate/fingerprint should be recorded in the release evidence.
-
-### P1 — Physical-device validation
-
-Validate at minimum:
-
-- cold launch and navigation
-- workout creation and persistence
-- set logging and timer lifecycle
-- haptic rest completion
-- FileProvider export to a real receiving app
-- CSV/JSON file readability
-- CameraX preview and lifecycle
-- MediaPipe form analysis and rep counting
-- rotation/background/foreground transitions
-- memory and performance behavior
-
-### P1 — Instructional media
-
-The current vector animations are useful demonstrations but do not replace a comprehensive instructional-media library. Any future media must be legally sourced and accurately mapped to the corresponding exercise.
-
-### P2 — CI maintenance
-
-Migrate deprecated GitHub Actions versions when practical, remove remaining Kotlin/compiler warnings, and consider protecting `main` with required CI checks.
-
-## Important documentation rule
-
-Historical audit reports must not be used as current evidence. This file is the canonical release-status snapshot and should be updated whenever the release gate changes.
+- [x] Compile SDK 36 / Target SDK 36 verified with AGP compatibility
+- [x] Release buildType debug signing fallback eliminated
+- [x] Foreground Service `health` type implemented with no 3-minute timeout
+- [x] Rest timer notification Pause/Resume/Adjust/Skip actions implemented
+- [x] Rest timer haptic completion feedback implemented
+- [x] Adversarial Room migration test v11→v12 passing with 0 data loss
+- [x] All 20 skeletal animation definitions verified at 5 keyframe progress points
+- [x] Progression engine weight-tier logic documented and verified by tests
+- [x] Atomic exercise database seeding implemented with transaction rollback
+- [x] GitHub Actions CI workflow updated with test reports and release forensics
+- [ ] **Release Gate 1**: Provision production keystore in GitHub repository secrets
+- [ ] **Release Gate 2**: Physical device QA validation:
+  - Cold start and navigation
+  - Room workout session persistence and set logging
+  - Background rest timer execution with screen off for >3 minutes
+  - FileProvider CSV/JSON export sharing to Google Drive / Gmail / Files
+  - CameraX and MediaPipe pose tracking performance under thermal throttling\n

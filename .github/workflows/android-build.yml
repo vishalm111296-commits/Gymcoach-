@@ -2,7 +2,8 @@ name: Android CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -10,7 +11,7 @@ on:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
-  ANDROID_SDK_VERSION: "34"
+  ANDROID_SDK_VERSION: "36"
   ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
   ANDROID_NDK_VERSION: "21.4.7075529"
 
@@ -37,7 +38,7 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager "platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;34.0.0"
           yes | sdkmanager --licenses
 
       - name: Validate Project Configuration
@@ -52,59 +53,72 @@ jobs:
           echo "=== Print Android SDK root ==="
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
-          echo "=== Print project structure ==="
-          find . -name "*.gradle*" -o -name "gradle.properties" -o -name "local.properties" | head -10
-
-      - name: Check for Required Files
+      - name: Setup Keystore and Build APKs and Bundles
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "=== Checking for required files ==="
-          echo "Workflow file exists and is valid"
-          echo "Gradle wrapper available"
-          echo "Android SDK configuration verified"
-
-          if [ ! -f "local.properties" ]; then
-            echo "WARNING: local.properties not found - Android SDK path may need manual setup"
-          else
-            echo "local.properties found"
-          fi
-
-          if [ ! -f "gradle.properties" ]; then
-            echo "WARNING: gradle.properties not found"
-          fi
-
-          if [ ! -f "pubspec.yaml" ]; then
-            echo "INFO: pubspec.yaml not found (not a Flutter project)"
-          fi
-
-      - name: Build APKs
-        run: |
-          echo "=== Building Debug and Release APKs ==="
-          echo "Starting builds..."
+          echo "=== Preparing Build Environment ==="
           chmod +x ./gradlew
-          ./gradlew assembleDebug assembleRelease --stacktrace
-          echo "Builds completed successfully"
 
-      - name: Verify Build Output
-        run: |
-          echo "=== Verifying build outputs ==="
+          TEMP_KEYSTORE_DIR="$RUNNER_TEMP/signing"
+          mkdir -p "$TEMP_KEYSTORE_DIR"
+          KEYSTORE_FILE="$TEMP_KEYSTORE_DIR/release.jks"
 
-          echo "=== Checking for debug APK ==="
-          if [ -f "./app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "✓ Debug APK found: ./app/build/outputs/apk/debug/app-debug.apk"
-            ls -lh ./app/build/outputs/apk/debug/app-debug.apk
+          cleanup() {
+            if [ -d "$TEMP_KEYSTORE_DIR" ]; then
+              echo "Securely removing temporary keystore directory..."
+              rm -rf "$TEMP_KEYSTORE_DIR"
+            fi
+          }
+          trap cleanup EXIT
+
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Production keystore secret detected. Decoding to temporary location..."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+            export KEYSTORE_PATH="$KEYSTORE_FILE"
+            echo "KEYSTORE_PATH set. Running assembleRelease and bundleRelease..."
+            ./gradlew assembleDebug assembleRelease bundleRelease --stacktrace
           else
-            echo "✗ Error: Debug APK not found"
-            exit 1
+            echo "No KEYSTORE_BASE64 secret provided."
+            if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+              echo "FATAL: Tagged release build requires KEYSTORE_BASE64 secret!"
+              exit 1
+            fi
+            echo "Proceeding with assembleDebug, assembleRelease, and bundleRelease (unsigned release)..."
+            ./gradlew assembleDebug assembleRelease bundleRelease --stacktrace
           fi
 
-          echo "=== Checking for build reports ==="
-          if [ -d "./app/build/reports" ]; then
-            echo "Build reports directory found."
+      - name: Release Artifact Forensics & Signing Verification
+        run: |
+          echo "=== Release Artifact Forensics ==="
+          if [ -f "./app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            echo "Found unsigned release APK:"
+            ls -lh ./app/build/outputs/apk/release/app-release-unsigned.apk
+          fi
+          if [ -f "./app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "Found release APK:"
+            ls -lh ./app/build/outputs/apk/release/app-release.apk
+
+            # Signing verification using apksigner
+            APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -V | tail -n 1)
+            if [ -n "$APKSIGNER" ]; then
+              echo "Verifying release APK with $APKSIGNER..."
+              SIGN_INFO=$($APKSIGNER verify --verbose ./app/build/outputs/apk/release/app-release.apk 2>&1 || true)
+              echo "$SIGN_INFO"
+              if echo "$SIGN_INFO" | grep -q "CN=Android Debug"; then
+                echo "FATAL: Release APK is signed with Android Debug certificate!"
+                exit 1
+              fi
+            fi
           fi
 
-          echo "=== Gradle cache status ==="
-          echo "Gradle caches are typically stored in ~/.gradle/caches"
-          echo "This action should benefit from Gradle cache restoration via setup-java"
+          if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
+            echo "Found release AAB:"
+            ls -lh ./app/build/outputs/bundle/release/app-release.aab
+          fi
 
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
@@ -122,33 +136,23 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+      - name: Upload Release Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: gymcoach-release-bundle
+          path: ./app/build/outputs/bundle/release/
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Create Build Summary
         if: success()
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Build Status**: Success" >> $GITHUB_STEP_SUMMARY
-          echo "📱 **APK Location**: ./app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "📱 **Target SDK**: 36 | **Compile SDK**: 36" >> $GITHUB_STEP_SUMMARY
           echo "🕐 **Build Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "🎯 **Workflow**: GitHub Actions CI/CD Pipeline" >> $GITHUB_STEP_SUMMARY
-          echo "📋 **Gradle Version**: $(./gradlew --version | head -1)" >> $GITHUB_STEP_SUMMARY
-          echo "☕ **Java Version**: $(java -version 2>&1 | head -1 | cut -d' ' -f2)" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify if Build Failed
-        if: failure()
-        run: |
-          echo "❌ Build failed. Please check the logs above for details."
-          echo "Common issues:"
-          echo "  - Missing Android SDK setup"
-          echo "  - Gradle wrapper issues"
-          echo "  - Network connectivity to Maven Central"
-          echo "  - Java version compatibility"
-          echo "  - Missing dependencies"
-          echo ""
-          echo "Next steps:"
-          echo "  1. Check GitHub Actions logs for full error trace"
-          echo "  2. Verify internet connectivity"
-          echo "  3. Check if any dependencies are unavailable"
 
   android-lint:
     runs-on: ubuntu-latest
@@ -169,6 +173,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager "platforms;android-36" "build-tools;34.0.0"
+          yes | sdkmanager --licenses
+
       - name: Run Android Lint
         run: |
           echo "=== Running Android Lint ==="
@@ -177,9 +186,12 @@ jobs:
 
       - name: Upload Lint Reports
         if: always()
-        run: |
-          echo "Lint reports are available at ./app/build/reports/lint-results/"
-          ls ./app/build/reports/lint-results/ 2>/dev/null || echo "No lint reports found"
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-reports
+          path: ./app/build/reports/lint-results/
+          retention-days: 7
+          if-no-files-found: warn
 
   test:
     runs-on: ubuntu-latest
@@ -200,27 +212,30 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager "platforms;android-36" "build-tools;34.0.0"
+          yes | sdkmanager --licenses
+
       - name: Run Unit Tests
         run: |
           echo "=== Running Unit Tests ==="
           chmod +x ./gradlew
           ./gradlew testDebugUnitTest --stacktrace
 
-          echo "=== Running Kotlin tests ==="
-          ./gradlew test --stacktrace
-
-          echo "=== Test Results ==="
-          echo "Test execution completed. Check for any test failures above."
-
       - name: Upload Test Reports
         if: always()
-        run: |
-          echo "Test reports would be available in ./app/build/reports/tests/"
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: ./app/build/reports/tests/
+          retention-days: 7
+          if-no-files-found: warn
 
   create-release:
     runs-on: ubuntu-latest
-    name: Create Release (Optional)
-    needs: build
+    name: Create Release
+    needs: [build, test, android-lint]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -237,18 +252,9 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
           files: |
             ./build/artifacts/*.apk
           generate_release_notes: true
           draft: false
           prerelease: false
-
-      - name: Upload Release Assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: gymcoach-release
-          path: |
-            ./build/artifacts/*.apk
-          retention-days: 30

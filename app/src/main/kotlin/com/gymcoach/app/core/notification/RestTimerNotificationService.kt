@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Foreground service that owns the rest timer so it keeps ticking with the screen off.
- * Publishes remaining time via shared StateFlow (companion), consumed by the UI layer.
+ * Uses official FOREGROUND_SERVICE_TYPE_HEALTH on Android 14+ (API 34+) to eliminate
+ * the 3-minute hard ceiling of shortService.
+ * Publishes remaining time, pause state, and running state via companion StateFlows.
  */
 class RestTimerNotificationService : Service() {
 
@@ -46,6 +48,9 @@ class RestTimerNotificationService : Service() {
         private val _isPaused = MutableStateFlow(false)
         val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
 
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
         fun start(context: Context, seconds: Int, nextSet: String = "") {
             val intent = Intent(context, RestTimerNotificationService::class.java)
                 .setAction(ACTION_START)
@@ -54,10 +59,48 @@ class RestTimerNotificationService : Service() {
             context.startForegroundService(intent)
         }
 
+        fun pause(context: Context) {
+            context.startService(
+                Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_PAUSE)
+            )
+        }
+
+        fun resume(context: Context) {
+            context.startService(
+                Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_RESUME)
+            )
+        }
+
+        fun adjust(context: Context, deltaSeconds: Int) {
+            val action = if (deltaSeconds >= 0) ACTION_PLUS_15 else ACTION_MINUS_15
+            context.startService(
+                Intent(context, RestTimerNotificationService::class.java).setAction(action)
+            )
+        }
+
         fun cancel(context: Context) {
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_CANCEL)
             )
+        }
+
+        fun formatSeconds(totalSeconds: Int): String {
+            val safeSec = totalSeconds.coerceAtLeast(0)
+            val minutes = safeSec / 60
+            val seconds = safeSec % 60
+            return "%02d:%02d".format(minutes, seconds)
+        }
+
+        internal fun updateStateForTesting(remaining: Int, paused: Boolean, running: Boolean) {
+            _remainingSeconds.value = remaining
+            _isPaused.value = paused
+            _isRunning.value = running
+        }
+
+        internal fun resetStateForTesting() {
+            _remainingSeconds.value = 0
+            _isPaused.value = false
+            _isRunning.value = false
         }
     }
 
@@ -82,7 +125,8 @@ class RestTimerNotificationService : Service() {
             ACTION_RESUME -> resumeTimer()
             ACTION_PLUS_15 -> adjustTime(15)
             ACTION_MINUS_15 -> adjustTime(-15)
-            ACTION_COMPLETE, ACTION_SKIP, ACTION_CANCEL -> finishTimer()
+            ACTION_COMPLETE, ACTION_SKIP -> finishTimer(isCompleted = true)
+            ACTION_CANCEL -> finishTimer(isCompleted = false)
         }
         return START_NOT_STICKY
     }
@@ -91,6 +135,7 @@ class RestTimerNotificationService : Service() {
         timer?.cancel()
         _remainingSeconds.value = seconds
         _isPaused.value = false
+        _isRunning.value = true
         timer = object : CountDownTimer(seconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 _remainingSeconds.value = (millisUntilFinished / 1000L).toInt()
@@ -98,13 +143,13 @@ class RestTimerNotificationService : Service() {
             }
 
             override fun onFinish() {
-                finishTimer()
+                finishTimer(isCompleted = true)
             }
         }.start()
     }
 
     private fun pauseTimer() {
-        if (_isPaused.value) return
+        if (!_isRunning.value || _isPaused.value) return
         timer?.cancel()
         timer = null
         _isPaused.value = true
@@ -112,14 +157,15 @@ class RestTimerNotificationService : Service() {
     }
 
     private fun resumeTimer() {
-        if (!_isPaused.value) return
+        if (!_isRunning.value || !_isPaused.value) return
         startTimer(_remainingSeconds.value)
     }
 
     private fun adjustTime(deltaSeconds: Int) {
+        if (!_isRunning.value) return
         val newTotal = _remainingSeconds.value + deltaSeconds
         if (newTotal <= 0) {
-            finishTimer()
+            finishTimer(isCompleted = false)
             return
         }
         if (_isPaused.value) {
@@ -131,19 +177,45 @@ class RestTimerNotificationService : Service() {
         }
     }
 
-    private fun finishTimer() {
+    private fun finishTimer(isCompleted: Boolean = false) {
+        if (isCompleted) {
+            triggerCompletionHaptics()
+        }
         timer?.cancel()
         timer = null
         _remainingSeconds.value = 0
         _isPaused.value = false
+        _isRunning.value = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun triggerCompletionHaptics() {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            }
+            if (vibrator?.hasVibrator() == true) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
+                }
+            }
+        } catch (_: Exception) {
+            // Non-critical fallback if vibration is not supported by environment
+        }
     }
 
     private fun promoteToForeground() {
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
@@ -173,26 +245,36 @@ class RestTimerNotificationService : Service() {
         val text = buildString {
             append("REST ")
             append(formatSeconds(_remainingSeconds.value))
+            if (_isPaused.value) {
+                append(" (PAUSED)")
+            }
             if (nextSetLabel.isNotBlank()) {
                 append(" — Next: ")
                 append(nextSetLabel)
             }
         }
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Rest Timer")
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setOnlyAlertOnce(true)
-            .setOngoing(true)
+            .setOngoing(!_isPaused.value)
             .setContentIntent(contentIntent)
-            .addAction(0, "Complete Set", actionPendingIntent(ACTION_COMPLETE, 1))
-            .addAction(0, "Skip", actionPendingIntent(ACTION_SKIP, 2))
-            .addAction(0, "+15s", actionPendingIntent(ACTION_PLUS_15, 3))
-            .addAction(0, "-15s", actionPendingIntent(ACTION_MINUS_15, 4))
-            .build()
+
+        if (_isPaused.value) {
+            builder.addAction(0, "Resume", actionPendingIntent(ACTION_RESUME, 1))
+        } else {
+            builder.addAction(0, "Pause", actionPendingIntent(ACTION_PAUSE, 1))
+        }
+
+        builder.addAction(0, "+15s", actionPendingIntent(ACTION_PLUS_15, 2))
+            .addAction(0, "-15s", actionPendingIntent(ACTION_MINUS_15, 3))
+            .addAction(0, "Skip", actionPendingIntent(ACTION_SKIP, 4))
+
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
@@ -208,9 +290,12 @@ class RestTimerNotificationService : Service() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun formatSeconds(totalSeconds: Int): String {
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return "%02d:%02d".format(minutes, seconds)
+    override fun onDestroy() {
+        super.onDestroy()
+        timer?.cancel()
+        timer = null
+        _remainingSeconds.value = 0
+        _isPaused.value = false
+        _isRunning.value = false
     }
 }

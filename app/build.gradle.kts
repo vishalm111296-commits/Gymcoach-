@@ -26,12 +26,12 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.gymcoach.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.gymcoach.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 2
         versionName = "1.0.0"
 
@@ -49,22 +49,20 @@ android {
 
     signingConfigs {
         create("release") {
-            // Priority: environment variables (CI) > local.properties (dev)
-            // NOTE (F-BUILD-2): Release builds require either KEYSTORE_PATH,
-            // KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD env vars (CI) or
-            // the equivalent entries in local.properties. bundleRelease will
-            // fail with FileNotFoundException if neither source is set and
-            // keystore/release.jks does not exist locally.
-            storeFile = file(
-                System.getenv("KEYSTORE_PATH")
-                    ?: keystoreProperties.getProperty("KEYSTORE_PATH", "keystore/release.jks")
-            )
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-                ?: keystoreProperties.getProperty("KEYSTORE_PASSWORD", "")
-            keyAlias = System.getenv("KEY_ALIAS")
-                ?: keystoreProperties.getProperty("KEY_ALIAS", "gymcoach")
-            keyPassword = System.getenv("KEY_PASSWORD")
-                ?: keystoreProperties.getProperty("KEY_PASSWORD", "")
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+                ?: keystoreProperties.getProperty("KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                val candidate = file(keystorePath)
+                if (candidate.exists()) {
+                    storeFile = candidate
+                    storePassword = System.getenv("KEYSTORE_PASSWORD")
+                        ?: keystoreProperties.getProperty("KEYSTORE_PASSWORD", "")
+                    keyAlias = System.getenv("KEY_ALIAS")
+                        ?: keystoreProperties.getProperty("KEY_ALIAS", "")
+                    keyPassword = System.getenv("KEY_PASSWORD")
+                        ?: keystoreProperties.getProperty("KEY_PASSWORD", "")
+                }
+            }
         }
     }
 
@@ -72,14 +70,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            val releaseKeystore = file(
-                System.getenv("KEYSTORE_PATH")
-                    ?: keystoreProperties.getProperty("KEYSTORE_PATH", "keystore/release.jks")
-            )
-            signingConfig = if (releaseKeystore.exists()) {
-                signingConfigs.getByName("release")
+            val releaseStoreFile = signingConfigs.getByName("release").storeFile
+            if (releaseStoreFile != null && releaseStoreFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                // Explicitly null: never fall back to debug signing for release builds
+                signingConfig = null
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

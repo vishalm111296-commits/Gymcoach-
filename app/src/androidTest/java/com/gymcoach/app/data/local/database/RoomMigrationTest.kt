@@ -443,3 +443,109 @@ class RoomMigrationTest {
         db.close()
     }
 }
+
+    @Test
+    fun migrate11To12_adversarialDuplicatesAcrossWorkouts_preservesAllDataDeterministically() {
+        var db = migrationTestHelper.createDatabase(TEST_DB, 11)
+
+        // Workout 1: 3 exercises with colliding orderIndices
+        // Exercise 101: orderIndex = 0 (colliding)
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (101, 1, 10, 0)")
+        // Exercise 102: orderIndex = 0 (colliding)
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (102, 1, 20, 0)")
+        // Exercise 103: orderIndex = 1
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (103, 1, 30, 1)")
+
+        // Workout 2: 2 exercises with colliding orderIndices
+        // Exercise 201: orderIndex = 0 (colliding)
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (201, 2, 40, 0)")
+        // Exercise 202: orderIndex = 0 (colliding)
+        db.execSQL("INSERT INTO workout_exercises (id, workoutId, exerciseId, orderIndex) VALUES (202, 2, 50, 0)")
+
+        // Exercise 101 child sets: colliding setNumbers (1, 1, 2)
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (1, 101, 1, 60.0, 8, 8.0, 90, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (2, 101, 1, 62.5, 8, 8.5, 90, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (3, 101, 2, 65.0, 7, 9.0, 90, 1, 0)")
+
+        // Exercise 102 child sets: colliding setNumbers (1, 1, 1)
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (4, 102, 1, 80.0, 5, 8.0, 120, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (5, 102, 1, 80.0, 5, 8.5, 120, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (6, 102, 1, 80.0, 4, 9.5, 120, 1, 0)")
+
+        // Exercise 201 child sets: colliding setNumbers (1, 2, 2)
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (7, 201, 1, 100.0, 5, 8.0, 180, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (8, 201, 2, 105.0, 4, 9.0, 180, 1, 0)")
+        db.execSQL("INSERT INTO workout_sets (id, workoutExerciseId, setNumber, weight, reps, rpe, restSeconds, completed, setType) VALUES (9, 201, 2, 105.0, 3, 10.0, 180, 1, 0)")
+
+        db.close()
+
+        db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 12, true,
+            GymCoachDatabase.MIGRATION_11_12
+        )
+
+        // 1. Verify 100% preservation of all 5 exercises
+        val exCountCursor = db.query("SELECT COUNT(*) FROM workout_exercises")
+        assertTrue(exCountCursor.moveToFirst())
+        assertEquals("All 5 workout_exercises must survive migration", 5, exCountCursor.getInt(0))
+        exCountCursor.close()
+
+        // 2. Verify 100% preservation of all 9 sets
+        val setCountCursor = db.query("SELECT COUNT(*) FROM workout_sets")
+        assertTrue(setCountCursor.moveToFirst())
+        assertEquals("All 9 workout_sets must survive migration", 9, setCountCursor.getInt(0))
+        setCountCursor.close()
+
+        // 3. Verify deterministic, sequential orderIndex for Workout 1 (exercises 101, 102, 103)
+        val w1ExCursor = db.query("SELECT id, orderIndex FROM workout_exercises WHERE workoutId = 1 ORDER BY orderIndex ASC")
+        val w1Orders = mutableListOf<Pair<Long, Int>>()
+        while (w1ExCursor.moveToNext()) {
+            w1Orders.add(Pair(w1ExCursor.getLong(0), w1ExCursor.getInt(1)))
+        }
+        w1ExCursor.close()
+        assertEquals(3, w1Orders.size)
+        assertEquals(listOf(101L to 0, 102L to 1, 103L to 2), w1Orders)
+
+        // 4. Verify deterministic, sequential orderIndex for Workout 2 (exercises 201, 202)
+        val w2ExCursor = db.query("SELECT id, orderIndex FROM workout_exercises WHERE workoutId = 2 ORDER BY orderIndex ASC")
+        val w2Orders = mutableListOf<Pair<Long, Int>>()
+        while (w2ExCursor.moveToNext()) {
+            w2Orders.add(Pair(w2ExCursor.getLong(0), w2ExCursor.getInt(1)))
+        }
+        w2ExCursor.close()
+        assertEquals(2, w2Orders.size)
+        assertEquals(listOf(201L to 0, 202L to 1), w2Orders)
+
+        // 5. Verify deterministic, sequential setNumber for Exercise 101 (sets 1, 2, 3)
+        val ex101SetsCursor = db.query("SELECT id, setNumber, weight FROM workout_sets WHERE workoutExerciseId = 101 ORDER BY setNumber ASC")
+        val ex101Sets = mutableListOf<Triple<Long, Int, Double>>()
+        while (ex101SetsCursor.moveToNext()) {
+            ex101Sets.add(Triple(ex101SetsCursor.getLong(0), ex101SetsCursor.getInt(1), ex101SetsCursor.getDouble(2)))
+        }
+        ex101SetsCursor.close()
+        assertEquals(3, ex101Sets.size)
+        assertEquals(listOf(Triple(1L, 1, 60.0), Triple(2L, 2, 62.5), Triple(3L, 3, 65.0)), ex101Sets)
+
+        // 6. Verify deterministic, sequential setNumber for Exercise 102 (sets 4, 5, 6)
+        val ex102SetsCursor = db.query("SELECT id, setNumber, reps FROM workout_sets WHERE workoutExerciseId = 102 ORDER BY setNumber ASC")
+        val ex102Sets = mutableListOf<Triple<Long, Int, Int>>()
+        while (ex102SetsCursor.moveToNext()) {
+            ex102Sets.add(Triple(ex102SetsCursor.getLong(0), ex102SetsCursor.getInt(1), ex102SetsCursor.getInt(2)))
+        }
+        ex102SetsCursor.close()
+        assertEquals(3, ex102Sets.size)
+        assertEquals(listOf(Triple(4L, 1, 5), Triple(5L, 2, 5), Triple(6L, 3, 4)), ex102Sets)
+
+        // 7. Verify deterministic, sequential setNumber for Exercise 201 (sets 7, 8, 9)
+        val ex201SetsCursor = db.query("SELECT id, setNumber, weight FROM workout_sets WHERE workoutExerciseId = 201 ORDER BY setNumber ASC")
+        val ex201Sets = mutableListOf<Triple<Long, Int, Double>>()
+        while (ex201SetsCursor.moveToNext()) {
+            ex201Sets.add(Triple(ex201SetsCursor.getLong(0), ex201SetsCursor.getInt(1), ex201SetsCursor.getDouble(2)))
+        }
+        ex201SetsCursor.close()
+        assertEquals(3, ex201Sets.size)
+        assertEquals(listOf(Triple(7L, 1, 100.0), Triple(8L, 2, 105.0), Triple(9L, 3, 105.0)), ex201Sets)
+
+        db.close()
+    }
+}

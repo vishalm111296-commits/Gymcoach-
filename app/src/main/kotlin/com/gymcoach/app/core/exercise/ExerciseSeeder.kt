@@ -99,74 +99,70 @@ class ExerciseSeeder @Inject constructor(
     ): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
         for (file in ALL_EXERCISE_FILES) {
-            try {
-                val root = JSONArray(asset(file))
-                for (i in 0 until root.length()) {
-                    val e = root.getJSONObject(i)
-                    val id = e.getString("id")
-                    if (id in result) continue
-                    val primary = strings(e.optJSONArray("primary_muscles"))
-                    val secondary = strings(e.optJSONArray("secondary_muscles"))
-                    val scores = e.optJSONObject("vtaper_scores")
-                    val relevance = e.optInt("v_taper_relevance", 0)
-                    fun vtaper(key: String, muscle: String): Int =
-                        scores?.optInt(key, 0)?.takeIf { it > 0 }
-                            ?: if (muscle in primary) relevance else 0
-                    val tags = buildList {
-                        if (e.optBoolean("compound")) add("compound")
-                        if (e.optBoolean("unilateral")) add("unilateral")
-                    }
-                    val equipment = strings(e.optJSONArray("equipment"))
-                    val rowId = db.exerciseDao().insert(
-                        ExerciseEntity(
-                            name = e.getString("name"),
-                            description = e.optString("description"),
-                            muscleGroup = e.getString("category"),
-                            equipment = equipment.joinToString(","),
-                            difficulty = e.getString("difficulty"),
-                            secondaryMuscles = secondary.joinToString(", "),
-                            instructions = e.optString("execution"),
-                            tips = strings(e.optJSONArray("form_cues")).joinToString("; "),
-                            commonMistakes = strings(e.optJSONArray("common_mistakes")).joinToString("; "),
-                            safetyNotes = strings(e.optJSONArray("safety_notes")).joinToString("; "),
-                            recommendedRepRange = e.optString("rep_range"),
-                            recommendedRestTime = "${e.optInt("rest_seconds", 60)}s",
-                            category = e.getString("category"),
-                            tags = tags.joinToString(","),
-                            movementPattern = e.optString("movement_pattern"),
-                            setupInstructions = e.optString("setup"),
-                            executionInstructions = e.optString("execution"),
-                            breathingInstructions = e.optString("breathing"),
-                            vtaperLat = vtaper("lat", "latissimus_dorsi"),
-                            vtaperLateralDelt = vtaper("lateral_delt", "lateral_deltoid"),
-                            vtaperUpperChest = vtaper("upper_chest", "upper_chest"),
-                            vtaperRearDelt = vtaper("rear_delt", "rear_deltoid")
-                        )
-                    )
-                    result[id] = rowId
-                    db.exerciseAliasDao().insertAll(
-                        strings(e.optJSONArray("aliases")).map {
-                            ExerciseAliasEntity(exerciseId = rowId, alias = it.lowercase())
-                        }
-                    )
-                    db.exerciseMuscleDao().insertAll(
-                        (primary.map { it to "primary" } + secondary.map { it to "secondary" })
-                            .mapNotNull { (muscle, role) ->
-                                muscleIds[muscle]?.let {
-                                    ExerciseMuscleEntity(exerciseId = rowId, muscleId = it, role = role)
-                                }
-                            }
-                    )
-                    db.exerciseEquipmentDao().insertAll(
-                        equipment.mapNotNull { eq ->
-                            equipmentIds[eq]?.let {
-                                ExerciseEquipmentEntity(exerciseId = rowId, equipmentId = it)
-                            }
-                        }
-                    )
+            val root = JSONArray(asset(file))
+            for (i in 0 until root.length()) {
+                val e = root.getJSONObject(i)
+                val id = e.getString("id")
+                if (id in result) continue
+                val primary = strings(e.optJSONArray("primary_muscles"))
+                val secondary = strings(e.optJSONArray("secondary_muscles"))
+                val scores = e.optJSONObject("vtaper_scores")
+                val relevance = e.optInt("v_taper_relevance", 0)
+                fun vtaper(key: String, muscle: String): Int =
+                    scores?.optInt(key, 0)?.takeIf { it > 0 }
+                        ?: if (muscle in primary) relevance else 0
+                val tags = buildList {
+                    if (e.optBoolean("compound")) add("compound")
+                    if (e.optBoolean("unilateral")) add("unilateral")
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to seed exercise file $file", e)
+                val equipment = strings(e.optJSONArray("equipment"))
+                val rowId = db.exerciseDao().insert(
+                    ExerciseEntity(
+                        name = e.getString("name"),
+                        description = e.optString("description"),
+                        muscleGroup = e.getString("category"),
+                        equipment = equipment.joinToString(","),
+                        difficulty = e.getString("difficulty"),
+                        secondaryMuscles = secondary.joinToString(", "),
+                        instructions = e.optString("execution"),
+                        tips = strings(e.optJSONArray("form_cues")).joinToString("; "),
+                        commonMistakes = strings(e.optJSONArray("common_mistakes")).joinToString("; "),
+                        safetyNotes = strings(e.optJSONArray("safety_notes")).joinToString("; "),
+                        recommendedRepRange = e.optString("rep_range"),
+                        recommendedRestTime = "${e.optInt("rest_seconds", 60)}s",
+                        category = e.getString("category"),
+                        tags = tags.joinToString(","),
+                        movementPattern = e.optString("movement_pattern"),
+                        setupInstructions = e.optString("setup"),
+                        executionInstructions = e.optString("execution"),
+                        breathingInstructions = e.optString("breathing"),
+                        vtaperLat = vtaper("lat", "latissimus_dorsi"),
+                        vtaperLateralDelt = vtaper("lateral_delt", "lateral_deltoid"),
+                        vtaperUpperChest = vtaper("upper_chest", "upper_chest"),
+                        vtaperRearDelt = vtaper("rear_delt", "rear_deltoid")
+                    )
+                )
+                result[id] = rowId
+                db.exerciseAliasDao().insertAll(
+                    strings(e.optJSONArray("aliases")).map {
+                        ExerciseAliasEntity(exerciseId = rowId, alias = it.lowercase())
+                    }
+                )
+                db.exerciseMuscleDao().insertAll(
+                    (primary.map { it to "primary" } + secondary.map { it to "secondary" })
+                        .mapNotNull { (muscle, role) ->
+                            muscleIds[muscle]?.let {
+                                ExerciseMuscleEntity(exerciseId = rowId, muscleId = it, role = role)
+                            }
+                        }
+                )
+                db.exerciseEquipmentDao().insertAll(
+                    equipment.mapNotNull { eq ->
+                        equipmentIds[eq]?.let {
+                            ExerciseEquipmentEntity(exerciseId = rowId, equipmentId = it)
+                        }
+                    }
+                )
             }
         }
         Log.i(TAG, "Seeded ${result.size} exercises from ${ALL_EXERCISE_FILES.size} asset files")
@@ -174,27 +170,23 @@ class ExerciseSeeder @Inject constructor(
     }
 
     private suspend fun seedSubstitutions(exerciseIds: Map<String, Long>) {
-        try {
-            val root = JSONObject(asset(SUBSTITUTIONS_FILE))
-            val keys = root.keys()
-            while (keys.hasNext()) {
-                val original = keys.next()
-                val originalRow = exerciseIds[original] ?: continue
-                val substitutes = root.getJSONArray(original)
-                for (i in 0 until substitutes.length()) {
-                    val s = substitutes.getJSONObject(i)
-                    val subRow = exerciseIds[s.getString("substitute_id")] ?: continue
-                    db.exerciseSubstitutionDao().insert(
-                        ExerciseSubstitutionEntity(
-                            originalExerciseId = originalRow,
-                            substituteExerciseId = subRow,
-                            reason = s.optString("reason")
-                        )
+        val root = JSONObject(asset(SUBSTITUTIONS_FILE))
+        val keys = root.keys()
+        while (keys.hasNext()) {
+            val original = keys.next()
+            val originalRow = exerciseIds[original] ?: continue
+            val substitutes = root.getJSONArray(original)
+            for (i in 0 until substitutes.length()) {
+                val s = substitutes.getJSONObject(i)
+                val subRow = exerciseIds[s.getString("substitute_id")] ?: continue
+                db.exerciseSubstitutionDao().insert(
+                    ExerciseSubstitutionEntity(
+                        originalExerciseId = originalRow,
+                        substituteExerciseId = subRow,
+                        reason = s.optString("reason")
                     )
-                }
+                )
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to seed substitutions", e)
         }
     }
 

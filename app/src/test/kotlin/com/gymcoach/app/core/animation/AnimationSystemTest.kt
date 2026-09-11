@@ -1,6 +1,7 @@
 package com.gymcoach.app.core.animation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -113,5 +114,31 @@ class AnimationSystemTest {
         assertNotNull(singleDef)
         assertEquals("single_test", singleDef?.exerciseId)
         assertEquals(ViewPerspective.FRONT, singleDef?.perspective)
+    }
+
+    @Test
+    fun testAll20DefinitionsInterpolationAtRequiredProgressPoints() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        assertEquals(20, definitions.size)
+
+        val progressPoints = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)
+
+        for (def in definitions) {
+            for (p in progressPoints) {
+                val interpolated = def.interpolateAt(p)
+                assertNotNull("Interpolated frame must not be null for ${def.exerciseId} at progress $p", interpolated)
+                assertTrue("Interpolated frame joints must not be empty for ${def.exerciseId} at $p", interpolated.joints.isNotEmpty())
+
+                for ((jointName, pt) in interpolated.joints) {
+                    assertFalse("Joint $jointName X must not be NaN for ${def.exerciseId} at $p", pt.x.isNaN())
+                    assertFalse("Joint $jointName Y must not be NaN for ${def.exerciseId} at $p", pt.y.isNaN())
+                    assertFalse("Joint $jointName X must not be Infinite for ${def.exerciseId} at $p", pt.x.isInfinite())
+                    assertFalse("Joint $jointName Y must not be Infinite for ${def.exerciseId} at $p", pt.y.isInfinite())
+                    assertTrue("Joint $jointName X (${pt.x}) must be in [0.0, 1.0] for ${def.exerciseId} at $p", pt.x in 0.0f..1.0f)
+                    assertTrue("Joint $jointName Y (${pt.y}) must be in [0.0, 1.0] for ${def.exerciseId} at $p", pt.y in 0.0f..1.0f)
+                }
+            }
+        }
     }
 }

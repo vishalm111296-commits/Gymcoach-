@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.onboarding
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.ProgramGenerator
@@ -135,9 +136,7 @@ class OnboardingViewModel @Inject constructor(
                 programRepository.saveGeneratedProgram(generated)
                 // Mark onboarding as complete so returning users skip it
                 context.getSharedPreferences("gymcoach_prefs", Context.MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("onboarding_complete", true)
-                    .apply()
+                    .edit { putBoolean("onboarding_complete", true) }
                 _uiState.update { it.copy(step = OnboardingStep.COMPLETE, isGenerating = false) }
                 onComplete()
             } catch (e: Exception) {

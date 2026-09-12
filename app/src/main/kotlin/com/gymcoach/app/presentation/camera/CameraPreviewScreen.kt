@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.util.Size
 import android.view.ViewGroup
+import androidx.core.graphics.createBitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -344,7 +345,7 @@ private class FrameConverter {
     fun toUpright(proxy: ImageProxy): Bitmap {
         val src = sourceBitmap
             ?.takeIf { it.width == proxy.width && it.height == proxy.height }
-            ?: Bitmap.createBitmap(
+            ?: createBitmap(
                 proxy.width, proxy.height, Bitmap.Config.ARGB_8888
             ).also { sourceBitmap = it }
 
@@ -359,7 +360,7 @@ private class FrameConverter {
 
         val out = rotatedBitmap
             ?.takeIf { it.width == targetWidth && it.height == targetHeight }
-            ?: Bitmap.createBitmap(
+            ?: createBitmap(
                 targetWidth, targetHeight, Bitmap.Config.ARGB_8888
             ).also {
                 rotatedBitmap = it

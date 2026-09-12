@@ -2,6 +2,7 @@ package com.gymcoach.app.core.exercise
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import androidx.room.withTransaction
 import com.gymcoach.app.data.local.database.GymCoachDatabase
 import com.gymcoach.app.data.local.entity.EquipmentEntity
@@ -28,7 +29,7 @@ class ExerciseSeeder @Inject constructor(
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (prefs.getInt(KEY_SEED_VERSION, 0) < SEED_VERSION) {
             seed()
-            prefs.edit().putInt(KEY_SEED_VERSION, SEED_VERSION).apply()
+            prefs.edit { putInt(KEY_SEED_VERSION, SEED_VERSION) }
         }
     }
 

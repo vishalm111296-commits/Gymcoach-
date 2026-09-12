@@ -229,9 +229,7 @@ class ProgramGenerator @Inject constructor(
             return true
         }
 
-        val vLat = ex.vtaperLat
         val vLdelt = ex.vtaperLateralDelt
-        val vUchest = ex.vtaperUpperChest
         val vRdelt = ex.vtaperRearDelt
 
         return when (m) {

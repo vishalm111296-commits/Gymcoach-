@@ -108,12 +108,7 @@ class HomeViewModel @Inject constructor(
                 workoutRepository.getCompletedSetsWithContext(),
                 exerciseRepository.getAllExercises(),
                 exerciseRepository.getAllExerciseMuscleDetails()
-            ) { p1, p2, p3, p4, p5 ->
-                val core = p1 as ProgramCore?
-                val workouts = p2 as List<com.gymcoach.app.domain.model.WorkoutWithStats>
-                val completedSets = p3 as List<VolumeCalculator.SetWithContext>
-                val exercises = p4 as List<com.gymcoach.app.domain.model.Exercise>
-                val muscleDetails = p5 as List<ExerciseMuscleWithDetails>
+            ) { core, workouts, completedSets, exercises, muscleDetails ->
                 buildUiState(core, workouts, completedSets, exercises, muscleDetails, _prCount.value)
             }.collect { state -> _uiState.value = state }
         }

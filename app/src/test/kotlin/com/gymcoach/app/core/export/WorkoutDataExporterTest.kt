@@ -7,6 +7,7 @@ import com.gymcoach.app.domain.model.WorkoutExercise
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -189,7 +190,14 @@ class WorkoutDataExporterTest {
 
         val json = exporter.exportToJson(listOf(workoutWithDetails))
         assertTrue(json.contains("Upper Chest 🔥"))
-        assertTrue(json.contains("Incline Press, \\\"Dumbbell\\\" — 45°"))
+        assertTrue(json.contains("Incline Press, \\\"Dumbbell\\\""))
+        val rootObj = JSONObject(json)
+        val restoredName = rootObj.getJSONArray("workouts")
+            .getJSONObject(0)
+            .getJSONArray("exercises")
+            .getJSONObject(0)
+            .getString("exerciseName")
+        assertEquals("Incline Press, \"Dumbbell\" — 45°", restoredName)
     }
 
     @Test

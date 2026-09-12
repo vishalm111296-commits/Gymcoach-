@@ -113,6 +113,13 @@ During this forensic pass, the following defects and hygiene issues were identif
    - Migrated the remaining 5 hardcoded dependency coordinates from `app/build.gradle.kts` into `gradle/libs.versions.toml` (`core-splashscreen`, `arch-core-testing`, `json`, `robolectric`, `androidx-test-core-ktx`).
    - Cleaned up dependency management and eliminated all 5 `UseTomlInstead` Android Lint warnings.
 
+9. **Metric Truthfulness Hardening — Elimination of Fabricated Calorie Multiplier**:
+   - Identified arbitrary heuristic `totalVolume * 0.05` used for "Est. Calories" in `WorkoutHistoryDetailScreen.kt` and `ProgressDashboardScreen.kt`.
+   - Replaced with defensible, empirically verified domain metrics:
+     - In `WorkoutHistoryDetailScreen.kt`: Replaced with `Avg. Reps` (`totalReps / totalSets`).
+     - In `ProgressDashboardScreen.kt`: Replaced with `Avg. Duration` (`totalTrainingTimeMinutes / totalWorkouts`).
+   - Fully eliminated ungrounded metabolic estimations from the presentation analytics layer.
+
 ---
 
 ## 4. FINAL GATE MATRIX

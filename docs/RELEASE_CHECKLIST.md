@@ -24,7 +24,7 @@
 - [x] Rest Timer functions correctly with pure Kotlin state machine and `specialUse` FGS.
 - [x] Camera Preview launches, binds to lifecycle, and includes accessible back navigation.
 - [x] Form Analysis displays real-time feedback with MediaPipe Pose Landmarker.
-- [x] Progress Dashboard displays accurate strength, volume, and body measurement charts.
+- [x] Progress Dashboard displays accurate strength, volume, and body measurement charts (truthful metrics, zero arbitrary calorie multipliers).
 - [x] Navigation works between all 12 core screens without dead-ends, with `Routes.WORKOUT_LEGACY` defensive alias.
 - [x] Source hygiene verified (0 duplicate imports, 0 TODOs/FIXMEs, 0 debug logs).
 - [x] Backup and data extraction rules aligned with `gymcoach.db`.

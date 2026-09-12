@@ -149,4 +149,59 @@ class WorkoutDataExporterTest {
         assertEquals("8.5", fields[11])
         assertTrue(fields.none { it.startsWith(" ") })
     }
+
+    @Test
+    fun testExportToCsvWithCommasQuotesAndUnicode() {
+        val exercise = Exercise(
+            id = 3L,
+            name = "Incline Press, \"Dumbbell\" — 45°",
+            description = "",
+            muscleGroup = "Upper Chest 🔥",
+            equipment = "dumbbell",
+            difficulty = "Intermediate"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 30L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(1800),
+            duration = 1800L,
+            notes = "Felt great,\nsuperset with \"lateral raises\" & curls 🔥",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(id = 15, workoutExerciseId = 22, setNumber = 1, weight = 32.5, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = SetType.NORMAL)
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 22, workoutId = 30, exerciseId = 3, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val csv = exporter.exportToCsv(listOf(workoutWithDetails))
+        assertTrue("Exercise name with comma and quotes must be quoted and quotes doubled",
+            csv.contains("\"Incline Press, \"\"Dumbbell\"\" — 45°\""))
+        assertTrue("Notes with newline, comma and quotes must be properly escaped",
+            csv.contains("\"Felt great,\nsuperset with \"\"lateral raises\"\" & curls 🔥\""))
+        assertTrue("Unicode emoji preserved", csv.contains("🔥"))
+
+        val json = exporter.exportToJson(listOf(workoutWithDetails))
+        assertTrue(json.contains("Upper Chest 🔥"))
+        assertTrue(json.contains("Incline Press, \\\"Dumbbell\\\" — 45°"))
+    }
+
+    @Test
+    fun testExportEmptyWorkoutsList() {
+        val csv = exporter.exportToCsv(emptyList())
+        assertEquals("Date,Workout ID,Exercise Name,Set Order,Weight (kg),Reps,RPE,Set Type,Rest Seconds,Notes\n", csv)
+
+        val strongCsv = exporter.exportToStrongCsv(emptyList())
+        assertEquals("Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE\n", strongCsv)
+
+        val json = exporter.exportToJson(emptyList())
+        assertTrue(json.contains("\"workoutCount\": 0"))
+        assertTrue(json.contains("\"workouts\": []"))
+    }
 }

@@ -1,9 +1,15 @@
 package com.gymcoach.app.core.di
 
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
+import com.gymcoach.app.data.local.dao.EquipmentDao
+import com.gymcoach.app.data.local.dao.ExerciseAliasDao
 import com.gymcoach.app.data.local.dao.ExerciseDao
-import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
+import com.gymcoach.app.data.local.dao.ExerciseEquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseMuscleDao
+import com.gymcoach.app.data.local.dao.ExerciseSubstitutionDao
+import com.gymcoach.app.data.local.dao.FavoriteExerciseDao
+import com.gymcoach.app.data.local.dao.MuscleDao
+import com.gymcoach.app.data.local.dao.PersonalRecordDao
 import com.gymcoach.app.data.local.dao.ProgramDao
 import com.gymcoach.app.data.local.dao.ProgramDayDao
 import com.gymcoach.app.data.local.dao.ProgramExerciseDao
@@ -65,4 +71,28 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBodyMeasurementDao(database: GymCoachDatabase): BodyMeasurementDao = database.bodyMeasurementDao()
+
+    @Provides
+    @Singleton
+    fun providePersonalRecordDao(database: GymCoachDatabase): PersonalRecordDao = database.personalRecordDao()
+
+    @Provides
+    @Singleton
+    fun provideFavoriteExerciseDao(database: GymCoachDatabase): FavoriteExerciseDao = database.favoriteExerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideMuscleDao(database: GymCoachDatabase): MuscleDao = database.muscleDao()
+
+    @Provides
+    @Singleton
+    fun provideEquipmentDao(database: GymCoachDatabase): EquipmentDao = database.equipmentDao()
+
+    @Provides
+    @Singleton
+    fun provideExerciseEquipmentDao(database: GymCoachDatabase): ExerciseEquipmentDao = database.exerciseEquipmentDao()
+
+    @Provides
+    @Singleton
+    fun provideExerciseAliasDao(database: GymCoachDatabase): ExerciseAliasDao = database.exerciseAliasDao()
 }

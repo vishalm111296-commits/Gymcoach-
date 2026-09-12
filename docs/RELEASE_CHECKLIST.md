@@ -13,9 +13,9 @@
 - [x] `./gradlew bundleRelease` succeeds with 0 errors (produces valid AAB with `classes.dex` and `AndroidManifest.xml`).
 
 ## Testing & Verification
-- [x] `./gradlew test` passes — 157 JVM Unit Tests PASS (100% in CI Run 34687069575).
-- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Run 34687069575).
-- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Run 34687069575).
+- [x] `./gradlew test` passes — 157 JVM Unit Tests PASS (100% in CI Run 34689856236).
+- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Run 34689856236).
+- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Run 34689856236).
 - [ ] Manual testing on physical device is complete — BLOCKED (0 connected hardware devices via ADB).
 
 ## Functional Review

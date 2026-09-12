@@ -428,7 +428,8 @@ fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
             ) {
                 SummaryStatItem(label = "Reps", value = "$totalReps")
                 SummaryStatItem(label = "Volume", value = "%.1f kg".format(totalVolume))
-                SummaryStatItem(label = "Est. Calories", value = "%.0f".format(totalVolume * 0.05))
+                val avgRepsPerSet = if (totalSets > 0) "%.1f".format(totalReps.toDouble() / totalSets) else "0"
+                SummaryStatItem(label = "Avg. Reps", value = avgRepsPerSet)
             }
         }
     }

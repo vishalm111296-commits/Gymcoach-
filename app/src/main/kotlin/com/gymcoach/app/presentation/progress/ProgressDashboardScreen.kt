@@ -880,9 +880,10 @@ private fun StatsOverview(
                 value = "${totalTrainingTimeMinutes}m",
                 modifier = Modifier.weight(1f)
             )
+            val avgSessionMinutes = if (totalWorkouts > 0) totalTrainingTimeMinutes / totalWorkouts else 0
             StatCard(
-                label = "Est. Calories",
-                value = "%.0f".format(totalVolume * 0.05),
+                label = "Avg. Duration",
+                value = "${avgSessionMinutes}m",
                 modifier = Modifier.weight(1f)
             )
         }

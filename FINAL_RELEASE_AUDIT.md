@@ -105,6 +105,15 @@
 - **AAB Verification Scope**:
   - AAB verification in CI is structural content validation only (validating `base/dex/classes.dex` and `base/manifest/AndroidManifest.xml` presence via unzip); no cryptographic signature verification is performed on unsigned branch AABs.
 
+### 5. Camera Form-Check Navigation Closure & Route Verification
+- **Navigation Closure**:
+  - Added `onBackClick: () -> Unit = {}` to `CameraPreviewScreen.kt` and wired `onBackClick = { navController.popBackStack() }` in `GymCoachNavHost.kt`.
+  - Implemented high-contrast floating back button (`Icons.AutoMirrored.Filled.ArrowBack` with semi-transparent background and accessible 48dp touch target) on the live camera preview overlay and initial model loading view.
+  - Implemented explicit "Go back" action buttons on `PermissionRationale` and `ModelErrorView` to eliminate dead-end screens when camera permissions are declined or model loading encounters network/IO errors.
+- **Unit Test Coverage Expansion**:
+  - Added `RoutesTest.kt` verifying all 12 navigation route constants and dynamic parameter route generators (`exerciseDetail`, `workoutHistoryDetail`, `workoutSession`, `camera`).
+  - 5/5 new tests passed, expanding the total JVM unit test suite from 152 to 157 tests.
+
 ---
 
 ## REMAINING PRE-RELEASE ACTIONS (HUMAN OPERATOR / RELEASE TEAM)

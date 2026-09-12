@@ -18,15 +18,24 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -69,7 +78,8 @@ private sealed interface ModelState {
  */
 @Composable
 fun CameraPreviewScreen(
-    exerciseType: ExerciseType = ExerciseType.BICEP_CURL
+    exerciseType: ExerciseType = ExerciseType.BICEP_CURL,
+    onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -162,11 +172,13 @@ fun CameraPreviewScreen(
     // ── UI ──────────────────────────────────────────────────
     when {
         !hasPermission -> PermissionRationale(
-            onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) }
+            onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            onBackClick = onBackClick
         )
         modelState is ModelState.Error -> ModelErrorView(
             message = (modelState as ModelState.Error).message,
-            onRetry = { retryKey++ }
+            onRetry = { retryKey++ },
+            onBackClick = onBackClick
         )
         else -> Box(modifier = Modifier.fillMaxSize()) {
             if (modelState == ModelState.Ready) {
@@ -249,12 +261,30 @@ fun CameraPreviewScreen(
                     Text(text = "Preparing AI coach\u2026")
                 }
             }
+
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 24.dp, start = 16.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun PermissionRationale(onRequest: () -> Unit) {
+private fun PermissionRationale(
+    onRequest: () -> Unit,
+    onBackClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -269,11 +299,17 @@ private fun PermissionRationale(onRequest: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onRequest) { Text(text = "Grant camera access") }
+        Spacer(modifier = Modifier.height(12.dp))
+        TextButton(onClick = onBackClick) { Text(text = "Go back") }
     }
 }
 
 @Composable
-private fun ModelErrorView(message: String, onRetry: () -> Unit) {
+private fun ModelErrorView(
+    message: String,
+    onRetry: () -> Unit,
+    onBackClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -288,6 +324,8 @@ private fun ModelErrorView(message: String, onRetry: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onRetry) { Text(text = "Retry") }
+        Spacer(modifier = Modifier.height(12.dp))
+        TextButton(onClick = onBackClick) { Text(text = "Go back") }
     }
 }
 

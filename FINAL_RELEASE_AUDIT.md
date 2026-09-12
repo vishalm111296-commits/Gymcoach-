@@ -2,8 +2,8 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`
 **Branch**: `main`
-**Audited Code RC Commit**: `6c232451032de45c2c6fb59d0840c43b3ae5e0da`
-**Verified CI Pipeline Run**: [`34698081175`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34698081175) (All 4 jobs green: Build, Lint, Unit Tests, Connected Instrumentation Tests)
+**Audited Code RC Commit**: `2c37a5f564aab0cfa31f7166be42197f9fa01342`
+**Verified CI Pipeline Run**: [`34698872693`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34698872693) (All 4 jobs green: Build, Lint, Unit Tests, Connected Instrumentation Tests)
 **Audit Date**: September 12, 2026
 **Auditor**: Antigravity Senior Forensic Engineering Agent
 
@@ -14,7 +14,7 @@
 > [!CAUTION]
 > **OVERALL STATUS: RELEASE CANDIDATE — EXTERNAL PRODUCTION GATES BLOCKED**
 >
-> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (165/165), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Run 34698081175).
+> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (165/165), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Run 34698872693).
 >
 > Release to Google Play Production tracks remains gated by three operational requirements:
 > 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production signing secrets (`KEYSTORE_BASE64`, passphrases) are not configured in GitHub repository secrets. Non-debug release fail-safe gate is verified.
@@ -64,7 +64,7 @@
 | 35 | **Process death** | **BUILT** | Active workout state persisted to Room (`getLatestIncompleteWorkout()`). Active session resumes seamlessly following process recreation. |
 | 36 | **Error handling** | **BUILT** | Error banners and dialogs across screens; repository queries wrapped in try-catch with error state propagation. |
 | 37 | **Security** | **BUILT** | `usesCleartextTraffic="false"`, HTTPS-only network security config, `allowBackup="false"`, unexported components, zero committed secrets. |
-| 38 | **CI** | **VERIFIED** | GitHub Actions `.github/workflows/android-build.yml` running Build, Lint, Unit Tests, and Connected Instrumentation Tests on Android 14 emulator (CI Run 34698081175: 100% green). |
+| 38 | **CI** | **VERIFIED** | GitHub Actions `.github/workflows/android-build.yml` running Build, Lint, Unit Tests, and Connected Instrumentation Tests on Android 14 emulator (CI Run 34698872693: 100% green). |
 | 39 | **Release signing** | **VERIFIED** | Non-debug release fail-safe gate, v2 signature enforcement, `apksigner` check, optional `EXPECTED_CERT_SHA256` repository variable pinning check. |
 | 40 | **AAB generation** | **VERIFIED** | `bundleRelease` generates `app-release.aab`. CI structural validation confirms `classes.dex` and `AndroidManifest.xml`. |
 | 41 | **Play specialUse** | **SUBMISSION-READY DOSSIER** | Manifest declaration, subtype property, and documentation dossier in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. Review approval is EXTERNAL / PENDING. |
@@ -107,7 +107,11 @@ During this forensic pass, the following defects and hygiene issues were identif
 
 7. **Test Suite Expansion & JSON Escaping Verification**:
    - Created `PRDetectorUnitTest.kt` verifying pure mathematical and domain logic in `com.gymcoach.app.core.progression.PRDetector` (e1RM calculation, Epley 12-rep cap, total volume calculations, bodyweight proxy e1RM, and PR classification).
-   - Expanded `WorkoutDataExporterTest.kt` with edge cases for CSV quoting, newlines, unicode emojis (`🔥`), and round-trip JSON deserialization.
+    - Expanded `WorkoutDataExporterTest.kt` with edge cases for CSV quoting, newlines, unicode emojis (`🔥`), and round-trip JSON deserialization.
+
+8. **Gradle Version Catalog Modernization (`UseTomlInstead`)**:
+   - Migrated the remaining 5 hardcoded dependency coordinates from `app/build.gradle.kts` into `gradle/libs.versions.toml` (`core-splashscreen`, `arch-core-testing`, `json`, `robolectric`, `androidx-test-core-ktx`).
+   - Cleaned up dependency management and eliminated all 5 `UseTomlInstead` Android Lint warnings.
 
 ---
 
@@ -115,17 +119,17 @@ During this forensic pass, the following defects and hygiene issues were identif
 
 | Gate # | Gate Domain | Status | Evidence / Run ID | Remaining Action |
 | :---: | :--- | :---: | :--- | :--- |
-| **Gate 1** | **Build Toolchain & SDK 36** | **VERIFIED** | AGP 8.9.1, Gradle 8.11.1, compileSdk 36, targetSdk 36. CI Run 34698081175. | None (Green) |
+| **Gate 1** | **Build Toolchain & SDK 36** | **VERIFIED** | AGP 8.9.1, Gradle 8.11.1, compileSdk 36, targetSdk 36. CI Run 34698872693. | None (Green) |
 | **Gate 2** | **FGS Architecture & Manifest** | **VERIFIED** | `specialUse` FGS with manifest subtype property declared and verified. | None (Green) |
-| **Gate 3** | **Timer State Machine & Tests** | **VERIFIED** | 21/21 pure Kotlin unit tests pass in CI Run 34698081175. | None (Green) |
+| **Gate 3** | **Timer State Machine & Tests** | **VERIFIED** | 21/21 pure Kotlin unit tests pass in CI Run 34698872693. | None (Green) |
 | **Gate 4** | **CI Signing Fail-Safe & Pinning** | **VERIFIED** | Workflow enforces apksigner check, debug rejection, v2 signature, and non-secret cert pinning. | None (Green) |
-| **Gate 5** | **CI Connected Instrumentation** | **VERIFIED** | 39/39 unfiltered tests pass on API 34 emulator in CI Run 34698081175. | None (Green) |
-| **Gate 6** | **Room DB Migrations 1..12** | **VERIFIED** | 17/17 migration tests pass in CI Run 34698081175. All data preserved. | None (Green) |
+| **Gate 5** | **CI Connected Instrumentation** | **VERIFIED** | 39/39 unfiltered tests pass on API 34 emulator in CI Run 34698872693. | None (Green) |
+| **Gate 6** | **Room DB Migrations 1..12** | **VERIFIED** | 17/17 migration tests pass in CI Run 34698872693. All data preserved. | None (Green) |
 | **Gate 7** | **Production Keystore Secrets** | **BLOCKED** | Repository secrets `KEYSTORE_BASE64` not provisioned. | Human Operator Provisioning |
 | **Gate 8** | **Google Play FGS Declaration** | **SUBMISSION-READY** | Submission dossier ready in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. | Submit via Play Console |
 | **Gate 9** | **Physical Hardware QA** | **BLOCKED** | `adb devices` empty (0 connected devices). | Connect hardware and run QA |
-| **Gate 10** | **Android Lint & Zero Warnings** | **VERIFIED** | 0 lint errors, 0 warnings in CI Run 34698081175. | None (Green) |
-| **Gate 11** | **JVM Unit Test Suite** | **VERIFIED** | 165/165 unit tests pass in CI Run 34698081175. | None (Green) |
+| **Gate 10** | **Android Lint & Zero Warnings** | **VERIFIED** | 0 lint errors, 0 warnings in CI Run 34698872693. | None (Green) |
+| **Gate 11** | **JVM Unit Test Suite** | **VERIFIED** | 165/165 unit tests pass in CI Run 34698872693. | None (Green) |
 | **Gate 12** | **AAB Structural Validation** | **VERIFIED** | AAB generated and verified for `classes.dex` and `AndroidManifest.xml`. | None (Green) |
 | **Gate 13** | **Release Artifact Publishing** | **VERIFIED** | Workflow configured to publish both APK and AAB upon tagged release. | None (Green) |
 | **Gate 14** | **Production Telemetry** | **EXTERNAL** | 0 projects in Sentry organization `doms-jr`. | Configure Sentry project if desired |

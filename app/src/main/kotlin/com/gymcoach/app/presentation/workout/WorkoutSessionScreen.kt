@@ -78,6 +78,7 @@ import com.gymcoach.app.presentation.history.formatDuration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,7 +167,7 @@ fun WorkoutSessionScreen(
                             )
                             if (sessionVolume > 0) {
                                 Text(
-                                    text = "${String.format("%.0f", sessionVolume)} kg·reps",
+                                    text = "${String.format(Locale.US, "%.0f", sessionVolume)} kg·reps",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.tertiary
                                 )

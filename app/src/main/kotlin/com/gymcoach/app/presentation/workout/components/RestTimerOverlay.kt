@@ -37,8 +37,8 @@ fun RestTimerOverlay(
     onSkip: () -> Unit,
     onAddFifteen: () -> Unit,
     onSubtractFifteen: () -> Unit,
-    isPaused: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPaused: Boolean = false
 ) {
     Box(
         modifier = modifier

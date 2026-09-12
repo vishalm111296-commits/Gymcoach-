@@ -181,12 +181,7 @@ class RestTimerNotificationService : Service() {
                 getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
             }
             if (vibrator?.hasVibrator() == true) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
-                }
+                vibrator.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
             }
         } catch (_: Exception) {
             // Non-critical fallback if vibration is not supported by environment

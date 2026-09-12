@@ -2,6 +2,7 @@ package com.gymcoach.app.core.progression
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import java.time.Instant
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,14 +51,14 @@ class PRDetector @Inject constructor() {
         val bestE1RM = normalSets.maxOf { calculateEstimated1RM(it.weight, it.reps) }
         val e1PR = existingPRs.filter { it.type == PRType.ESTIMATED_1RM }.maxByOrNull { it.value }
         if (bestE1RM > (e1PR?.value ?: 0.0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bestE1RM, "e1RM: ${String.format("%.1f", bestE1RM)}kg", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bestE1RM, "e1RM: ${String.format(Locale.US, "%.1f", bestE1RM)}kg", now, workoutId))
         }
 
         // Volume PR (session volume for this exercise)
         val volume = calculateVolume(normalSets)
         val eVPR = existingPRs.filter { it.type == PRType.VOLUME }.maxByOrNull { it.value }
         if (volume > (eVPR?.value ?: 0.0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.VOLUME, volume, "Volume: ${String.format("%.0f", volume)}kg", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.VOLUME, volume, "Volume: ${String.format(Locale.US, "%.0f", volume)}kg", now, workoutId))
         }
 
         // Bodyweight exercises: rep-based e1RM and volume
@@ -66,7 +67,7 @@ class PRDetector @Inject constructor() {
             val bodyweightE1RM = bodyweightReps.toDouble() * 1.5 // Simple bodyweight strength proxy
             val bwE1PR = existingPRs.filter { it.type == PRType.ESTIMATED_1RM }.maxByOrNull { it.value }
             if (bodyweightE1RM > (bwE1PR?.value ?: 0.0)) {
-                detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bodyweightE1RM, "Bodyweight e1RM: ${String.format("%.1f", bodyweightE1RM)}kg", now, workoutId))
+                detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bodyweightE1RM, "Bodyweight e1RM: ${String.format(Locale.US, "%.1f", bodyweightE1RM)}kg", now, workoutId))
             }
         }
 

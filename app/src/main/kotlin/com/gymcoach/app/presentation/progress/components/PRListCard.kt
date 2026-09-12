@@ -28,7 +28,7 @@ import com.gymcoach.app.ui.theme.TextSecondary
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val PR_DATE_FORMAT = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+private val PR_DATE_FORMAT = DateTimeFormatter.ofPattern("MMM d")
 
 /**
  * Recent personal records: exercise name + achievement + date per row,

@@ -2,9 +2,9 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`  
 **Branch**: `main`  
-**Audited Baseline HEAD**: `6bd0808f25de0697ef483c556ab9394cf9f0cfc3`  
-**Latest CI Run ID**: [`34639391179`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34639391179)  
-**Audit Date**: September 11, 2026  
+**Audited Release Candidate Commit**: `2d195d6620e8bfdfd844a602779642739c7e1d16`
+**Latest CI Run ID**: [`34661537755`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34661537755)
+**Audit Date**: September 12, 2026
 **Auditor**: Antigravity Release Orchestration Agent  
 
 ---
@@ -12,14 +12,14 @@
 ## EXECUTIVE RELEASE VERDICT
 
 > [!CAUTION]
-> **OVERALL STATUS: NOT PRODUCTION READY — RELEASE BLOCKED**
+> **OVERALL STATUS: RELEASE CANDIDATE — EXTERNAL PRODUCTION GATES BLOCKED**
 >
-> The codebase has passed all automated engineering gates: 100% clean compilation across SDK 36, zero lint errors, 100% JVM unit test pass rate (152/152), and 100% full-suite connected instrumentation test pass rate (39/39) on an Android API 34 emulator in GitHub Actions Run 34639391179.
+> The codebase has passed all automated engineering gates: 100% clean compilation across SDK 36, zero lint errors (82 non-blocking warnings), 100% JVM unit test pass rate (152/152), and 100% full-suite connected instrumentation test pass rate (39/39, unfiltered) on an Android API 34 emulator in GitHub Actions Run 34661537755. Runtime telemetry: NO ACTIVE GYMCOACH TELEMETRY PROJECT AVAILABLE (organization `doms-jr` has 0 projects configured in Sentry).
 >
 > However, release to Google Play Production tracks is strictly **BLOCKED** by three operational release gates:
-> 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production keystore (`KEYSTORE_BASE64`), alias, and passphrases are not configured in GitHub repository secrets. Production signing credentials must never be generated locally or committed to git.
-> 2. **`ACTION REQUIRED — GOOGLE PLAY FGS SPECIAL_USE CONSOLE SUBMISSION`**: Full submission dossier and demonstration video script have been prepared at `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. The declaration form and demonstration video must be submitted via Google Play Console by the account owner.
-> 3. **`BLOCKED — PHYSICAL DEVICE QA NOT COMPLETED`**: Verification protocol on physical reference devices (Android 14, 15, and 16) covering thermal throttling under MediaPipe camera tracking, background rest timer doze survival, process death recovery, and FileProvider export sharing must be executed and signed off on connected hardware.
+> 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production signing credentials (`KEYSTORE_BASE64`, alias, passphrases) are not configured in GitHub repository secrets. Production signing credentials must never be generated locally or committed to git.
+> 2. **`SUBMISSION-READY — GOOGLE PLAY FGS SPECIAL_USE CONSOLE SUBMISSION`**: Full submission dossier and demonstration video script have been prepared at `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. The declaration form and demonstration video must be submitted via Google Play Console by the account owner and approved by Google Play policy review.
+> 3. **`BLOCKED — PHYSICAL DEVICE QA NOT COMPLETED`**: Verification protocol on physical reference devices (Android 14, 15, and 16) covering thermal throttling under MediaPipe camera tracking, background rest timer doze survival, process death recovery, and FileProvider export sharing has not been executed on connected hardware (`adb devices` list empty).
 
 ---
 
@@ -27,27 +27,27 @@
 
 | Gate # | Release Verification Domain | Status | Proven Evidence |
 | :---: | :--- | :---: | :--- |
-| **Gate 1** | **Build Toolchain & Android 16 / SDK 36** | **VERIFIED** | AGP upgraded to `8.9.1`, Gradle to `8.11.1`. `compileSdk = 36`, `targetSdk = 36`. Clean compilation and R8 minification verified in CI Run 34639391179. |
+| **Gate 1** | **Build Toolchain & Android 16 / SDK 36** | **VERIFIED** | AGP upgraded to `8.9.1`, Gradle to `8.11.1`. `compileSdk = 36`, `targetSdk = 36`. Clean compilation and R8 minification verified in CI Run 34661537755. |
 | **Gate 2** | **FGS Architecture & Manifest Compliance** | **VERIFIED** | Compliant `specialUse` FGS with manifest subtype property (`Workout rest interval countdown during active exercise sessions`) and API 34+ foreground invocation. |
-| **Gate 3** | **Timer State Machine & Unit Tests** | **VERIFIED** | `RestTimerStateMachine.kt` pure Kotlin abstraction. 21 unit tests covering all state boundaries, ticks, adjustments, and resets (100% pass rate in CI Run 34639391179). |
-| **Gate 4** | **CI/CD Signing Gate & Fail-Safe Pipeline** | **VERIFIED** | Fail-safe workflow `.github/workflows/android-build.yml` with strict `apksigner` check, non-debug cert check, v2 scheme enforcement, setup-java v5 upgrade, and blocked cert gate. |
-| **Gate 5** | **CI Full Instrumentation Suite Testing** | **VERIFIED** | Full connected suite executed on Android 14 (API 34) emulator in CI Run 34639391179 without filtering: 39 tests executed, 39 passed, 0 failed, 0 skipped. |
+| **Gate 3** | **Timer State Machine & Unit Tests** | **VERIFIED** | `RestTimerStateMachine.kt` pure Kotlin abstraction. 21 unit tests covering all state boundaries, ticks, adjustments, and resets (100% pass rate in CI Run 34661537755). |
+| **Gate 4** | **CI/CD Signing Gate & Fail-Safe Pipeline** | **VERIFIED** | Fail-safe workflow `.github/workflows/android-build.yml` with strict `apksigner` check, non-debug cert check, v2 scheme enforcement, setup-java v5 upgrade, structural AAB verification, and blocked cert gate. |
+| **Gate 5** | **CI Full Instrumentation Suite Testing** | **VERIFIED** | Full connected suite executed on Android 14 (API 34) emulator in CI Run 34661537755 without filtering: 39 tests executed, 39 passed, 0 failed, 0 skipped. |
 | **Gate 6** | **Room DB Migration 11→12 Non-Destructive Integrity** | **VERIFIED** | Schema migration normalizes duplicated `orderIndex` and `setNumber` using temp table sequential renumbering with primary-key tie-breakers; 100% data preservation and FK integrity. |
-| **Gate 7** | **Production Signing Secrets Provisioning** | **BLOCKED** | Repository secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) not provisioned. Awaiting release team key generation in HSM/KMS. |
-| **Gate 8** | **Google Play Console FGS Policy Declaration** | **DOSSIER READY** | Complete submission dossier, declaration text, and video demonstration storyboard generated in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. Pending Play Console form submission. |
-| **Gate 9** | **Physical Hardware Device QA Validation** | **BLOCKED** | Physical device verification on connected Android 14/15/16 hardware not completed. Required for thermal, camera, doze, and system interaction signoff. |
+| **Gate 7** | **Production Signing Secrets Provisioning** | **BLOCKED** | Production signing credentials (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) are not provisioned in GitHub repository secrets. |
+| **Gate 8** | **Google Play Console FGS Policy Declaration** | **SUBMISSION-READY DOSSIER** | Complete submission dossier, declaration text, and video demonstration storyboard generated in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. Actual Play Console submission and Google policy review pending. |
+| **Gate 9** | **Physical Hardware Device QA Validation** | **BLOCKED / NOT EXECUTED** | Physical device verification on connected Android 14/15/16 hardware not completed (`adb devices` empty). Required for thermal, camera, doze, and system interaction signoff. |
 
 ---
 
-## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34639391179)
+## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34661537755)
 
 | CI Job | Status | Duration | Proven Evidence / Artifacts |
 | :--- | :---: | :---: | :--- |
-| **Build and Test** | **`success`** | 6m 10s | Generated `gymcoach-release-unsigned-apk` (46 MB) and `gymcoach-release-unsigned-aab` (25 MB). Verified `classes.dex` and `AndroidManifest.xml` in AAB. |
-| **Android Lint** | **`success`** | 2m 48s | Zero lint errors across main and test sources. Uploaded `android-lint-reports`. |
-| **Unit Tests** | **`success`** | 2m 28s | 152 / 152 unit tests passed (0 failures, 0 skipped). Uploaded `unit-test-reports`. |
-| **Connected Instrumentation Tests** | **`success`** | 4m 36s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped). Uploaded `connected-test-reports`. |
-| **Create Release** | **`skipped`** | - | Expected behavior for non-tagged build branch triggers. |
+| **Build and Test** | **`success`** | 8m 43s | Generated `gymcoach-release-unsigned-apk` (21.8 MB) and `gymcoach-release-unsigned-aab` (25.8 MB). Structural ZIP validation confirmed `classes.dex` and `AndroidManifest.xml` in AAB. |
+| **Android Lint** | **`success`** | 2m 07s | Zero lint errors, 82 warnings across main and test sources (reduced from 89 warnings via 7 warning fixes in commit 2d195d6). Uploaded `android-lint-reports`. |
+| **Unit Tests** | **`success`** | 1m 44s | 152 / 152 unit tests passed (0 failures, 0 skipped). Uploaded `unit-test-reports`. |
+| **Connected Instrumentation Tests** | **`success`** | 4m 02s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped, unfiltered). Uploaded `connected-test-reports`. |
+| **Create Release** | **`skipped`** | - | Expected behavior for non-tagged build branch triggers (`if: startsWith(github.ref, 'refs/tags/v')`). |
 
 ---
 
@@ -65,11 +65,12 @@
   - Removed artificial filter (`-Pandroid.testInstrumentationRunnerArguments.class`) from `.github/workflows/android-build.yml`.
   - Configured CI runner to execute full connected suite: `./gradlew connectedDebugAndroidTest --continue --stacktrace`.
   - Resolved `program_days` schema mismatch in `MIGRATION_2_3` where column `focus` was replaced with `target_muscles` matching Room schema 3 (`3.json`).
-- **Verified Log Evidence (CI Run 34638209298, Job 103392969374)**:
+- **Verified Log Evidence (CI Run 34661537755, Job 103466337202)**:
   ```
   Starting 39 tests on emulator-5554 - 14
+  emulator-5554 - 14 Tests 39/39 completed. (0 skipped) (0 failed)
   Finished 39 tests on emulator-5554 - 14
-  BUILD SUCCESSFUL in 3m 16s
+  BUILD SUCCESSFUL in 1m 55s
   ```
 
 ### 2. Room Database Migration 11→12 Adversarial Data Preservation
@@ -101,13 +102,16 @@
   - Absence of `apksigner` fails CI immediately.
   - Verified v2 signature scheme enforcement and rejection of `CN=Android Debug`.
   - Certificate identity gate reported in CI: `Certificate identity gate BLOCKED — production certificate not provisioned`.
+- **AAB Verification Scope**:
+  - AAB verification in CI is structural content validation only (validating `base/dex/classes.dex` and `base/manifest/AndroidManifest.xml` presence via unzip); no cryptographic signature verification is performed on unsigned branch AABs.
 
 ---
 
 ## REMAINING PRE-RELEASE ACTIONS (HUMAN OPERATOR / RELEASE TEAM)
 
 1. **Production Keystore Provisioning**:
-   - Generate production signing keystore in secure HSM/KMS:
+   - Production signing credentials are not provisioned in GitHub Secrets.
+   - Recommended operational procedure: When provisioning credentials, generate the production keypair via a secure key management system / HSM procedure:
      ```bash
      keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias gymcoach -storetype PKCS12
      ```
@@ -115,5 +119,6 @@
 2. **Google Play Console Submission**:
    - Complete Foreground Service declaration form for `specialUse` using the pre-formulated responses in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`.
    - Record and submit demonstration video following the 5-step storyboard in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`.
+   - Submit alongside release bundle `app-release.aab` and await Google Play review approval.
 3. **Physical Hardware QA**:
    - Execute full test protocol on connected Android 14, 15, and 16 hardware devices using ADB (`android-device-qa`).

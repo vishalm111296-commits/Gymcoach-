@@ -7,7 +7,7 @@
 **Subtype Manifest Property**: `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE`  
 **Subtype Declared Value**: `Workout rest interval countdown during active exercise sessions`  
 **Target SDK**: 36 (Android 16) | **Min SDK**: 26 (Android 8.0)  
-**Document Purpose**: Production release submission package to fulfill and unblock Google Play Console Gate 8.
+**Document Purpose**: Production release submission package to prepare Google Play Console Gate 8 for operator submission and review.
 
 ---
 

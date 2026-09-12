@@ -2,8 +2,8 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`  
 **Branch**: `main`  
-**Audited Release Candidate Commit**: `e64834928d00787eded5934ef82c5333d89d9232`
-**Latest CI Run ID**: [`34679883762`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34679883762)
+**Audited Release Candidate Commit**: `01a90b790d3a2b16a03ec62a5c73bcf5e94a11a0`
+**Latest CI Run ID**: [`34687069575`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34687069575)
 **Audit Date**: September 12, 2026
 **Auditor**: Antigravity Release Orchestration Agent  
 
@@ -14,7 +14,7 @@
 > [!CAUTION]
 > **OVERALL STATUS: RELEASE CANDIDATE — EXTERNAL PRODUCTION GATES BLOCKED**
 >
-> The codebase has passed all automated engineering gates: 100% clean compilation across SDK 36, zero lint errors (82 non-blocking warnings), 100% JVM unit test pass rate (157/157), and 100% full-suite connected instrumentation test pass rate (39/39, unfiltered) on an Android API 34 emulator in GitHub Actions Run 34677035603. Runtime telemetry: NO ACTIVE GYMCOACH TELEMETRY PROJECT AVAILABLE (organization `doms-jr` has 0 projects configured in Sentry).
+> The codebase has passed all automated engineering gates: 100% clean compilation across SDK 36, zero lint errors, zero code/resource warnings, 100% JVM unit test pass rate (157/157), and 100% full-suite connected instrumentation test pass rate (39/39, unfiltered) on an Android API 34 emulator in GitHub Actions Run 34687069575. Runtime telemetry: NO ACTIVE GYMCOACH TELEMETRY PROJECT AVAILABLE (organization `doms-jr` has 0 projects configured in Sentry).
 >
 > However, release to Google Play Production tracks is strictly **BLOCKED** by three operational release gates:
 > 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production signing credentials (`KEYSTORE_BASE64`, alias, passphrases) are not configured in GitHub repository secrets. Production signing credentials must never be generated locally or committed to git.
@@ -27,11 +27,11 @@
 
 | Gate # | Release Verification Domain | Status | Proven Evidence |
 | :---: | :--- | :---: | :--- |
-| **Gate 1** | **Build Toolchain & Android 16 / SDK 36** | **VERIFIED** | AGP upgraded to `8.9.1`, Gradle to `8.11.1`. `compileSdk = 36`, `targetSdk = 36`. Clean compilation and R8 minification verified in CI Run 34677035603. |
+| **Gate 1** | **Build Toolchain & Android 16 / SDK 36** | **VERIFIED** | AGP upgraded to `8.9.1`, Gradle to `8.11.1`. `compileSdk = 36`, `targetSdk = 36`. Clean compilation and R8 minification verified in CI Run 34687069575. |
 | **Gate 2** | **FGS Architecture & Manifest Compliance** | **VERIFIED** | Compliant `specialUse` FGS with manifest subtype property (`Workout rest interval countdown during active exercise sessions`) and API 34+ foreground invocation. |
-| **Gate 3** | **Timer State Machine & Unit Tests** | **VERIFIED** | `RestTimerStateMachine.kt` pure Kotlin abstraction. 21 unit tests covering all state boundaries, ticks, adjustments, and resets (100% pass rate in CI Run 34677035603). |
+| **Gate 3** | **Timer State Machine & Unit Tests** | **VERIFIED** | `RestTimerStateMachine.kt` pure Kotlin abstraction. 21 unit tests covering all state boundaries, ticks, adjustments, and resets (100% pass rate in CI Run 34687069575). |
 | **Gate 4** | **CI/CD Signing Gate & Fail-Safe Pipeline** | **VERIFIED** | Fail-safe workflow `.github/workflows/android-build.yml` with strict `apksigner` check, non-debug cert check, v2 scheme enforcement, setup-java v5 upgrade, structural AAB verification, and blocked cert gate. |
-| **Gate 5** | **CI Full Instrumentation Suite Testing** | **VERIFIED** | Full connected suite executed on Android 14 (API 34) emulator in CI Run 34677035603 without filtering: 39 tests executed, 39 passed, 0 failed, 0 skipped. |
+| **Gate 5** | **CI Full Instrumentation Suite Testing** | **VERIFIED** | Full connected suite executed on Android 14 (API 34) emulator in CI Run 34687069575 without filtering: 39 tests executed, 39 passed, 0 failed, 0 skipped. |
 | **Gate 6** | **Room DB Migration 11→12 Non-Destructive Integrity** | **VERIFIED** | Schema migration normalizes duplicated `orderIndex` and `setNumber` using temp table sequential renumbering with primary-key tie-breakers; 100% data preservation and FK integrity. |
 | **Gate 7** | **Production Signing Secrets Provisioning** | **BLOCKED** | Production signing credentials (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) are not provisioned in GitHub repository secrets. |
 | **Gate 8** | **Google Play Console FGS Policy Declaration** | **SUBMISSION-READY DOSSIER** | Complete submission dossier, declaration text, and video demonstration storyboard generated in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md`. Actual Play Console submission and Google policy review pending. |
@@ -39,14 +39,14 @@
 
 ---
 
-## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34679883762)
+## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34687069575)
 
 | CI Job | Status | Duration | Proven Evidence / Artifacts |
 | :--- | :---: | :---: | :--- |
-| **Build and Test** | **`success`** | 5m 42s | Generated `gymcoach-release-unsigned-apk` (46 MB) and `gymcoach-release-unsigned-aab` (25 MB). Structural ZIP validation confirmed `classes.dex` and `AndroidManifest.xml` in AAB. |
-| **Android Lint** | **`success`** | 3m 01s | Zero lint errors, 82 warnings across main and test sources. Uploaded `android-lint-reports`. |
-| **Unit Tests** | **`success`** | 2m 23s | 157 / 157 unit tests passed (0 failures, 0 skipped; 152 baseline + 5 in RoutesTest). Uploaded `unit-test-reports`. |
-| **Connected Instrumentation Tests** | **`success`** | 5m 36s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped, unfiltered). Uploaded `connected-test-reports`. |
+| **Build and Test** | **`success`** | 5m 49s | Generated `gymcoach-release-unsigned-apk` (46 MB) and `gymcoach-release-unsigned-aab` (25 MB). Structural ZIP validation confirmed `classes.dex` and `AndroidManifest.xml` in AAB. |
+| **Android Lint** | **`success`** | 3m 15s | Zero lint errors, zero code/resource warnings (82 baseline dependencies, 0 code flaws). Uploaded `android-lint-reports`. |
+| **Unit Tests** | **`success`** | 2m 37s | 157 / 157 unit tests passed (0 failures, 0 skipped; 152 baseline + 5 in RoutesTest). Uploaded `unit-test-reports`. |
+| **Connected Instrumentation Tests** | **`success`** | 5m 41s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped, unfiltered). Uploaded `connected-test-reports`. |
 | **Create Release** | **`skipped`** | - | Expected behavior for non-tagged build branch triggers (`if: startsWith(github.ref, 'refs/tags/v')`). |
 
 ---

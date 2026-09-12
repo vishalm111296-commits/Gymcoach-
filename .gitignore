@@ -22,6 +22,7 @@ keystore/
 
 # Build artifacts
 /app/release/
+/ci-artifacts/
 *.apk
 *.aab
 

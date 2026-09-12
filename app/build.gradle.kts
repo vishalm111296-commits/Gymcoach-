@@ -142,7 +142,7 @@ dependencies {
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.core.splashscreen)
 
     // Lifecycle
     implementation(libs.lifecycle.runtime.ktx)
@@ -182,14 +182,14 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.android)
     testImplementation(libs.coroutines.test)
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation(libs.arch.core.testing)
 
     // Testing
     testImplementation(libs.junit)
-    testImplementation("org.json:json:20231013")
+    testImplementation(libs.json)
     testImplementation(libs.mockk)
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("androidx.test:core-ktx:1.5.0")
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.espresso.core)
 }

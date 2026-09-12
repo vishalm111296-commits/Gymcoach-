@@ -114,6 +114,14 @@
   - Added `RoutesTest.kt` verifying all 12 navigation route constants and dynamic parameter route generators (`exerciseDetail`, `workoutHistoryDetail`, `workoutSession`, `camera`).
   - 5/5 new tests passed, expanding the total JVM unit test suite from 152 to 157 tests.
 
+### 6. Exercise Library Navigation Closure & Release Artifact Completion
+- **Exercise Library Navigation Closure**:
+  - Added `onBackClick: () -> Unit = {}` and top-bar back navigation button (`Icons.AutoMirrored.Filled.ArrowBack`) to `ExerciseListScreen.kt`.
+  - Wired `onBackClick = { navController.popBackStack() }` in `GymCoachNavHost.kt`.
+  - Resolves trapped screen UX issue where users navigating to the Exercise Library via the Home bottom navigation bar had no visible back action to return to Home.
+- **Release Workflow AAB Packaging**:
+  - Updated `create-release` job in `.github/workflows/android-build.yml` to download `gymcoach-release-aab` alongside `gymcoach-release-apk` and publish both `*.apk` and `*.aab` as GitHub Release assets.
+
 ---
 
 ## REMAINING PRE-RELEASE ACTIONS (HUMAN OPERATOR / RELEASE TEAM)

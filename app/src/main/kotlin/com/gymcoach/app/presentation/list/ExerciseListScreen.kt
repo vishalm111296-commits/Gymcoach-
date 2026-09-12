@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
@@ -64,6 +65,7 @@ private fun ExerciseType.displayLabel(): String =
 @Composable
 fun ExerciseListScreen(
     viewModel: ExerciseViewModel = hiltViewModel(),
+    onBackClick: () -> Unit = {},
     onExerciseClick: (Long) -> Unit = {},
     onHistoryClick: () -> Unit = {},
     onProgressClick: () -> Unit = {},
@@ -83,21 +85,31 @@ fun ExerciseListScreen(
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" || filterMovementPattern != "All" || showFavoritesOnly
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = textFieldValue,
-            onValueChange = { newValue ->
-                textFieldValue = newValue
-                viewModel.onSearchQueryChange(newValue)
-            },
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            leadingIcon = {
+                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
                 )
-            },
+            }
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    textFieldValue = newValue
+                    viewModel.onSearchQueryChange(newValue)
+                },
+                modifier = Modifier.weight(1f),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
+                },
             trailingIcon = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (textFieldValue.isNotBlank()) {
@@ -120,6 +132,7 @@ fun ExerciseListScreen(
             placeholder = { Text("Search exercises, muscles, equipment...") },
             singleLine = true
         )
+    }
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

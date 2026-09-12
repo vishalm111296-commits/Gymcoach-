@@ -85,6 +85,7 @@ fun GymCoachNavHost(
 
         composable(Routes.EXERCISE_LIST) {
             ExerciseListScreen(
+                onBackClick = { navController.popBackStack() },
                 onExerciseClick = { exerciseId ->
                     navController.navigate(Routes.exerciseDetail(exerciseId))
                 },

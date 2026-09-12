@@ -2,8 +2,8 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`  
 **Branch**: `main`  
-**Audited Release Candidate Commit**: `0de29ac5b2a28691e79a20f8e220e84290e90d89`
-**Latest CI Run ID**: [`34677035603`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34677035603)
+**Audited Release Candidate Commit**: `e64834928d00787eded5934ef82c5333d89d9232`
+**Latest CI Run ID**: [`34679883762`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34679883762)
 **Audit Date**: September 12, 2026
 **Auditor**: Antigravity Release Orchestration Agent  
 
@@ -39,14 +39,14 @@
 
 ---
 
-## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34677035603)
+## CI PIPELINE VERIFICATION EVIDENCE (CI RUN 34679883762)
 
 | CI Job | Status | Duration | Proven Evidence / Artifacts |
 | :--- | :---: | :---: | :--- |
-| **Build and Test** | **`success`** | 5m 32s | Generated `gymcoach-release-unsigned-apk` (46 MB) and `gymcoach-release-unsigned-aab` (25 MB). Structural ZIP validation confirmed `classes.dex` and `AndroidManifest.xml` in AAB. |
-| **Android Lint** | **`success`** | 2m 27s | Zero lint errors, 82 warnings across main and test sources. Uploaded `android-lint-reports`. |
-| **Unit Tests** | **`success`** | 2m 23s | 157 / 157 unit tests passed (0 failures, 0 skipped; 152 baseline + 5 new in RoutesTest). Uploaded `unit-test-reports`. |
-| **Connected Instrumentation Tests** | **`success`** | 5m 05s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped, unfiltered). Uploaded `connected-test-reports`. |
+| **Build and Test** | **`success`** | 5m 42s | Generated `gymcoach-release-unsigned-apk` (46 MB) and `gymcoach-release-unsigned-aab` (25 MB). Structural ZIP validation confirmed `classes.dex` and `AndroidManifest.xml` in AAB. |
+| **Android Lint** | **`success`** | 3m 01s | Zero lint errors, 82 warnings across main and test sources. Uploaded `android-lint-reports`. |
+| **Unit Tests** | **`success`** | 2m 23s | 157 / 157 unit tests passed (0 failures, 0 skipped; 152 baseline + 5 in RoutesTest). Uploaded `unit-test-reports`. |
+| **Connected Instrumentation Tests** | **`success`** | 5m 36s | 39 / 39 instrumentation tests executed and passed on API 34 emulator (0 failures, 0 skipped, unfiltered). Uploaded `connected-test-reports`. |
 | **Create Release** | **`skipped`** | - | Expected behavior for non-tagged build branch triggers (`if: startsWith(github.ref, 'refs/tags/v')`). |
 
 ---

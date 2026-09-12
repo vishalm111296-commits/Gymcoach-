@@ -28,6 +28,7 @@ object Routes {
     const val WORKOUT_HISTORY = "workout_history"
     const val WORKOUT_HISTORY_DETAIL = "workout_history_detail/{workoutId}"
     const val WORKOUT_SESSION = "workout_session?workoutId={workoutId}"
+    const val WORKOUT_LEGACY = "workout"
     const val PROGRESS = "progress"
     const val PROFILE = "profile"
     const val READINESS = "readiness"
@@ -159,7 +160,8 @@ fun GymCoachNavHost(
             )
         }
 
-        composable("workout") {
+        // Intentional backward-compatibility and bottom-nav alias for "workout" route
+        composable(Routes.WORKOUT_LEGACY) {
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = null

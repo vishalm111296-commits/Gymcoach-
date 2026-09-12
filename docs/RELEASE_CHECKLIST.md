@@ -13,9 +13,9 @@
 - [x] `./gradlew bundleRelease` succeeds with 0 errors (produces valid AAB with `classes.dex` and `AndroidManifest.xml`).
 
 ## Testing & Verification
-- [x] `./gradlew test` passes — 157 JVM Unit Tests PASS (100% in CI Runs 34689856236 & 34690385339).
-- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Runs 34689856236 & 34690385339).
-- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Runs 34689856236 & 34690385339).
+- [x] `./gradlew test` passes — 157 JVM Unit Tests PASS (100% in CI Run 34691271693).
+- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Run 34691271693).
+- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Run 34691271693).
 - [ ] Manual testing on physical device is complete — BLOCKED (0 connected hardware devices via ADB).
 
 ## Functional Review
@@ -25,7 +25,9 @@
 - [x] Camera Preview launches, binds to lifecycle, and includes accessible back navigation.
 - [x] Form Analysis displays real-time feedback with MediaPipe Pose Landmarker.
 - [x] Progress Dashboard displays accurate strength, volume, and body measurement charts.
-- [x] Navigation works between all 12 core screens without dead-ends.
+- [x] Navigation works between all 12 core screens without dead-ends, with `Routes.WORKOUT_LEGACY` defensive alias.
+- [x] Source hygiene verified (0 duplicate imports, 0 TODOs/FIXMEs, 0 debug logs).
+- [x] Backup and data extraction rules aligned with `gymcoach.db`.
 
 ## Release Readiness
 - [x] `app/build.gradle.kts` versionCode (2) and versionName ("1.0.0") configured for release candidate.

@@ -15,6 +15,7 @@ class RoutesTest {
         assertEquals("workout_history", Routes.WORKOUT_HISTORY)
         assertEquals("workout_history_detail/{workoutId}", Routes.WORKOUT_HISTORY_DETAIL)
         assertEquals("workout_session?workoutId={workoutId}", Routes.WORKOUT_SESSION)
+        assertEquals("workout", Routes.WORKOUT_LEGACY)
         assertEquals("progress", Routes.PROGRESS)
         assertEquals("profile", Routes.PROFILE)
         assertEquals("readiness", Routes.READINESS)

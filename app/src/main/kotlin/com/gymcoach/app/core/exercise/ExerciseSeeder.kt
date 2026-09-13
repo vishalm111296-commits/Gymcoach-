@@ -140,7 +140,12 @@ class ExerciseSeeder @Inject constructor(
                         vtaperLat = vtaper("lat", "latissimus_dorsi"),
                         vtaperLateralDelt = vtaper("lateral_delt", "lateral_deltoid"),
                         vtaperUpperChest = vtaper("upper_chest", "upper_chest"),
-                        vtaperRearDelt = vtaper("rear_delt", "rear_deltoid")
+                        vtaperRearDelt = vtaper("rear_delt", "rear_deltoid"),
+                        videoUrl = e.optString("video_url").takeIf { it.isNotBlank() }
+                            ?: e.optString("videoUrl").takeIf { it.isNotBlank() },
+                        animationUrl = e.optString("animation_url").takeIf { it.isNotBlank() }
+                            ?: e.optString("animationUrl").takeIf { it.isNotBlank() }
+                            ?: id
                     )
                 )
                 result[id] = rowId

@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.detail
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,11 +39,15 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +65,7 @@ import com.gymcoach.app.core.exercise.SubstitutionEngine
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.presentation.components.ExerciseAnimationPlayer
+import com.gymcoach.app.presentation.components.ExerciseVideoPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -182,8 +188,45 @@ fun ExerciseDetailScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. DEMO & VISUAL FORM: Keyframe Animation Player or Hero Header
-                if (animationDefinition != null) {
+                // 1. DEMO & VISUAL FORM: Video Player, Keyframe Animation Player, or Hero Header
+                val hasVideo = !ex.videoUrl.isNullOrBlank()
+                val hasAnimation = animationDefinition != null
+
+                if (hasVideo && hasAnimation) {
+                    var showVideo by remember { mutableStateOf(false) }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showVideo = !showVideo }) {
+                                Text(if (showVideo) "View Stickman Animation" else "Watch Video Demo")
+                            }
+                        }
+                        if (showVideo) {
+                            ExerciseVideoPlayer(
+                                videoUri = Uri.parse(ex.videoUrl),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                            )
+                        } else {
+                            ExerciseAnimationPlayer(
+                                definition = animationDefinition!!,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(290.dp)
+                            )
+                        }
+                    }
+                } else if (hasVideo) {
+                    ExerciseVideoPlayer(
+                        videoUri = Uri.parse(ex.videoUrl),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                } else if (hasAnimation) {
                     ExerciseAnimationPlayer(
                         definition = animationDefinition!!,
                         modifier = Modifier

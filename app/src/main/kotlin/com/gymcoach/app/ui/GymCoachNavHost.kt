@@ -134,9 +134,6 @@ fun GymCoachNavHost(
             WorkoutHistoryDetailScreen(
                 workoutId = workoutId,
                 onBackClick = { navController.popBackStack() },
-                onEditClick = { id ->
-                    navController.navigate(Routes.workoutSession(id))
-                },
                 onPerformAgainClick = { newWorkoutId ->
                     navController.navigate(Routes.workoutSession(newWorkoutId))
                 }

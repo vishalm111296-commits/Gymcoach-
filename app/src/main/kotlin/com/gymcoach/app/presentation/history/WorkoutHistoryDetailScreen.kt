@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +41,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -128,6 +132,23 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateNotes(newNotes: String) {
+        val current = _uiState.value.workout ?: return
+        viewModelScope.launch {
+            try {
+                val updatedWorkout = current.workout.copy(notes = newNotes)
+                workoutRepository.updateWorkout(updatedWorkout)
+                _uiState.value = _uiState.value.copy(
+                    workout = current.copy(workout = updatedWorkout)
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to update notes"
+                )
+            }
+        }
+    }
 }
 
 data class WorkoutHistoryDetailUiState(
@@ -148,6 +169,8 @@ fun WorkoutHistoryDetailScreen(
     val state by viewModel.uiState.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val context = LocalContext.current
+    var showEditNotesDialog by remember { mutableStateOf(false) }
+    var editedNotes by remember { mutableStateOf("") }
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
@@ -171,8 +194,12 @@ fun WorkoutHistoryDetailScreen(
                     }) {
                         Icon(Icons.Filled.Share, contentDescription = "Share")
                     }
-                    IconButton(onClick = { onEditClick(workoutId) }) {
-                        Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                    IconButton(onClick = {
+                        editedNotes = state.workout?.workout?.notes ?: ""
+                        showEditNotesDialog = true
+                        onEditClick(workoutId)
+                    }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit Notes")
                     }
                     IconButton(onClick = {
                         viewModel.onDeleteClick(workoutId)
@@ -268,6 +295,36 @@ fun WorkoutHistoryDetailScreen(
                 }
             }
         }
+    }
+
+    // Edit Notes dialog
+    if (showEditNotesDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNotesDialog = false },
+            title = { Text("Edit Workout Notes") },
+            text = {
+                OutlinedTextField(
+                    value = editedNotes,
+                    onValueChange = { editedNotes = it },
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 4
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.updateNotes(editedNotes)
+                    showEditNotesDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNotesDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     // Delete confirmation dialog

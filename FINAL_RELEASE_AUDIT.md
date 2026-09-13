@@ -3,8 +3,8 @@
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`
 **Branch**: `main`
 **Audited Code RC Commit**: [`954170f0f8b249e5484d61a65a82491502dd1774`](https://github.com/vishalm111296-commits/Gymcoach-/commit/954170f0f8b249e5484d61a65a82491502dd1774), [`73940630c70829dca0a83112794dc511c7349552`](https://github.com/vishalm111296-commits/Gymcoach-/commit/73940630c70829dca0a83112794dc511c7349552), [`c9292d2714cdb4aceead4581fcce63aee1277334`](https://github.com/vishalm111296-commits/Gymcoach-/commit/c9292d2714cdb4aceead4581fcce63aee1277334), [`d583601998aa60173977c3e7fb35250d24098888`](https://github.com/vishalm111296-commits/Gymcoach-/commit/d583601998aa60173977c3e7fb35250d24098888), & [`42814abda1cdd81efc948d08b673c9952fd3ddc9`](https://github.com/vishalm111296-commits/Gymcoach-/commit/42814abda1cdd81efc948d08b673c9952fd3ddc9)
-**Reconciled Documentation Commit**: [`59d06632a9e951b14a09e5cc66dc0132b8b9cd96`](https://github.com/vishalm111296-commits/Gymcoach-/commit/59d06632a9e951b14a09e5cc66dc0132b8b9cd96)
-*Commit Lineage Note (Phase 19)*: Commit lineage traces from verified analytics fix `954170f0f8b249e5484d61a65a82491502dd1774` to gate matrix harmonization `7394063`, media/history product completion `c9292d2`, test suite perfection `d583601`, theme context unwrapping `42814ab`, and verified documentation reconciliations `935d060` and `59d0663`.
+**Reconciled Documentation Commit**: [`b074fb444d1f6d407c1be3da239330769ba28355`](https://github.com/vishalm111296-commits/Gymcoach-/commit/b074fb444d1f6d407c1be3da239330769ba28355)
+*Commit Lineage Note (Phase 19)*: Commit lineage traces from verified analytics fix `954170f0f8b249e5484d61a65a82491502dd1774` to gate matrix harmonization `7394063`, media/history product completion `c9292d2`, test suite perfection `d583601`, theme context unwrapping `42814ab`, and verified documentation reconciliations `935d060`, `59d0663`, and `b074fb4`.
 **Verified CI Pipeline Runs**:
 - Run [`34701084546`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34701084546) on commit `7e5feec`: 100% green across all 4 jobs.
 - Run [`34701773741`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34701773741) on commit `fa3e05a`: 100% green across all 4 jobs.
@@ -15,6 +15,7 @@
 - Run [`34733182849`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34733182849) on commit `42814ab`: 100% green across all 4 jobs.
 - Run [`34735906033`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34735906033) on commit `935d060`: 100% green across all 4 jobs.
 - Run [`34736341004`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34736341004) on commit `59d0663`: 100% green across all 4 jobs (Build & Test in 4m34s, Android Lint in 2m56s, Unit Tests in 2m43s, Connected Tests in 5m18s).
+- Run [`34737942084`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34737942084) on commit `b074fb4`: 100% green across all 4 jobs (Build & Test in 4m34s, Android Lint in 3m13s, Unit Tests in 2m50s, Connected Tests in 5m9s).
 **Audit Date**: September 13, 2026
 **Auditor**: Antigravity Senior Forensic Engineering Agent
 
@@ -151,22 +152,22 @@ During this forensic pass, the following defects and hygiene issues were identif
 
 | GATE | STATUS | EVIDENCE | COMMIT | CI RUN | DEVICE | REMAINING ACTION |
 | :--- | :---: | :--- | :---: | :---: | :--- | :--- |
-| **Gate 1: Build Toolchain & SDK 36** | **VERIFIED** | AGP 8.9.1, Gradle 8.11.1, compileSdk 36, targetSdk 36, minSdk 26, Java 17 | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 2: FGS Architecture & Manifest** | **VERIFIED** | `specialUse` FGS declared with subtype property in manifest, unexported receiver | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 3: Timer State Machine & Tests** | **PASS** | 21/21 pure Kotlin unit tests pass (`RestTimerStateMachineTest.kt`) | `42814ab` / `935d060` | 34735906033 | JVM Runner | None (Passing) |
-| **Gate 4: CI Signing Fail-Safe & Pinning** | **VERIFIED** | Workflow blocks release if secrets absent; validates v2 signature & optional cert pinning | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 5: Connected Instrumentation Tests** | **PASS** | 39/39 unfiltered connected tests pass in 5m3s | `42814ab` / `935d060` | 34735906033 | Android 14 API 34 Emulator (KVM) | None (Passing) |
-| **Gate 6: Room DB Migrations 1..12** | **PASS** | 17/17 migration tests pass via `MigrationTestHelper` | `42814ab` / `935d060` | 34735906033 | Android 14 API 34 Emulator (KVM) | None (Passing) |
-| **Gate 7: Production Keystore Secrets** | **BLOCKED** | Repository secrets `KEYSTORE_BASE64` not provisioned (`gh secret list` = 0) | `42814ab` / `935d060` | 34735906033 | GitHub Secrets | Human Operator Provisioning |
-| **Gate 8: Google Play FGS Declaration** | **PENDING** | Submission dossier ready in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md` | `42814ab` / `935d060` | 34735906033 | External Play Console | Operator Submit via Play Console |
-| **Gate 9: Physical Hardware QA** | **BLOCKED** | `adb devices -l` empty (0 connected hardware devices) | `42814ab` / `935d060` | 34735906033 | No Physical Device | Connect hardware and run physical QA |
-| **Gate 10: Android Lint & Zero Warnings** | **PASS** | 0 lint errors, 0 warnings across all code and resources in 3m10s | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 11: JVM Unit Test Suite** | **PASS** | 167/167 unit tests pass in 2m14s | `42814ab` / `935d060` | 34735906033 | JVM Runner | None (Passing) |
-| **Gate 12: AAB Structural Validation** | **VERIFIED** | AAB generated and verified for `classes.dex` and `AndroidManifest.xml` | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 13: Release Artifact Publishing** | **VERIFIED** | Workflow configured to publish both APK and AAB upon tagged release | `42814ab` / `935d060` | 34735906033 | GitHub Runner | None (Passing) |
-| **Gate 14: Production Telemetry** | **EXTERNAL** | 0 projects in Sentry organization `doms-jr`; strictly: `NO GYMCOACH PRODUCTION TELEMETRY AVAILABLE` | `42814ab` / `935d060` | 34735906033 | External Sentry | Configure Sentry project if desired |
-| **Gate 15: Code Hygiene & Clean Imports** | **VERIFIED** | 0 duplicate imports, 0 TODOs/FIXMEs, 0 debug println/Log.d | `42814ab` / `935d060` | 34735906033 | Source Scanner | None (Passing) |
-| **Gate 16: Backup & Extraction Rules** | **VERIFIED** | Rules aligned with actual `gymcoach.db`, `gymcoach.db-wal`, `gymcoach.db-shm` | `42814ab` / `935d060` | 34735906033 | Source & Manifest | None (Passing) |
-| **Gate 17: Metric Truthfulness** | **VERIFIED** | Arbitrary `totalVolume * 0.05` calorie multiplier eliminated; replaced with `Avg. Reps` and `Avg. Duration` | `954170f0f8b249e5484d61a65a82491502dd1774` | 34701084546 / 34729172347 / 34735906033 | Compose UI & ViewModels | None (Passing) |
-| **Gate 18: Media Player Product Integration** | **VERIFIED** | `ExerciseVideoPlayer.kt` wired into `ExerciseDetailScreen.kt` with animation toggle | `c9292d2` / `42814ab` | 34735906033 | Compose & ExoPlayer | None (Passing) |
-| **Gate 19: Historical Edit Semantics** | **VERIFIED** | In-place note editing via Room `updateWorkout` dialog; segregated from `performAgain` | `c9292d2` / `42814ab` | 34735906033 | Room DAO & Compose | None (Passing) |
+| **Gate 1: Build Toolchain & SDK 36** | **VERIFIED** | AGP 8.9.1, Gradle 8.11.1, compileSdk 36, targetSdk 36, minSdk 26, Java 17 | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 2: FGS Architecture & Manifest** | **VERIFIED** | `specialUse` FGS declared with subtype property in manifest, unexported receiver | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 3: Timer State Machine & Tests** | **PASS** | 21/21 pure Kotlin unit tests pass (`RestTimerStateMachineTest.kt`) | `42814ab` / `b074fb4` | 34737942084 | JVM Runner | None (Passing) |
+| **Gate 4: CI Signing Fail-Safe & Pinning** | **VERIFIED** | Workflow blocks release if secrets absent; validates v2 signature & optional cert pinning | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 5: Connected Instrumentation Tests** | **PASS** | 39/39 unfiltered connected tests pass in 5m9s | `42814ab` / `b074fb4` | 34737942084 | Android 14 API 34 Emulator (KVM) | None (Passing) |
+| **Gate 6: Room DB Migrations 1..12** | **PASS** | 17/17 migration tests pass via `MigrationTestHelper` | `42814ab` / `b074fb4` | 34737942084 | Android 14 API 34 Emulator (KVM) | None (Passing) |
+| **Gate 7: Production Keystore Secrets** | **BLOCKED** | Repository secrets `KEYSTORE_BASE64` not provisioned (`gh secret list` = 0) | `42814ab` / `b074fb4` | 34737942084 | GitHub Secrets | Human Operator Provisioning |
+| **Gate 8: Google Play FGS Declaration** | **PENDING** | Submission dossier ready in `docs/release/GOOGLE_PLAY_FGS_DECLARATION.md` | `42814ab` / `b074fb4` | 34737942084 | External Play Console | Operator Submit via Play Console |
+| **Gate 9: Physical Hardware QA** | **BLOCKED** | `adb devices -l` empty (0 connected hardware devices) | `42814ab` / `b074fb4` | 34737942084 | No Physical Device | Connect hardware and run physical QA |
+| **Gate 10: Android Lint & Zero Warnings** | **PASS** | 0 lint errors, 0 warnings across all code and resources in 3m13s | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 11: JVM Unit Test Suite** | **PASS** | 167/167 unit tests pass in 2m50s | `42814ab` / `b074fb4` | 34737942084 | JVM Runner | None (Passing) |
+| **Gate 12: AAB Structural Validation** | **VERIFIED** | AAB generated and verified for `classes.dex` and `AndroidManifest.xml` | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 13: Release Artifact Publishing** | **VERIFIED** | Workflow configured to publish both APK and AAB upon tagged release | `42814ab` / `b074fb4` | 34737942084 | GitHub Runner | None (Passing) |
+| **Gate 14: Production Telemetry** | **EXTERNAL** | 0 projects in Sentry organization `doms-jr`; strictly: `NO GYMCOACH PRODUCTION TELEMETRY AVAILABLE` | `42814ab` / `b074fb4` | 34737942084 | External Sentry | Configure Sentry project if desired |
+| **Gate 15: Code Hygiene & Clean Imports** | **VERIFIED** | 0 duplicate imports, 0 TODOs/FIXMEs, 0 debug println/Log.d | `42814ab` / `b074fb4` | 34737942084 | Source Scanner | None (Passing) |
+| **Gate 16: Backup & Extraction Rules** | **VERIFIED** | Rules aligned with actual `gymcoach.db`, `gymcoach.db-wal`, `gymcoach.db-shm` | `42814ab` / `b074fb4` | 34737942084 | Source & Manifest | None (Passing) |
+| **Gate 17: Metric Truthfulness** | **VERIFIED** | Arbitrary `totalVolume * 0.05` calorie multiplier eliminated; replaced with `Avg. Reps` and `Avg. Duration` | `954170f0f8b249e5484d61a65a82491502dd1774` | 34701084546 / 34729172347 / 34737942084 | Compose UI & ViewModels | None (Passing) |
+| **Gate 18: Media Player Product Integration** | **VERIFIED** | `ExerciseVideoPlayer.kt` wired into `ExerciseDetailScreen.kt` with animation toggle | `c9292d2` / `42814ab` | 34737942084 | Compose & ExoPlayer | None (Passing) |
+| **Gate 19: Historical Edit Semantics** | **VERIFIED** | In-place note editing via Room `updateWorkout` dialog; segregated from `performAgain` | `c9292d2` / `42814ab` | 34737942084 | Room DAO & Compose | None (Passing) |

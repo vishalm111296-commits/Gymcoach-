@@ -13,9 +13,9 @@
 - [x] `./gradlew bundleRelease` succeeds with 0 errors (produces valid AAB with `classes.dex` and `AndroidManifest.xml`).
 
 ## Testing & Verification
-- [x] `./gradlew test` passes — 167 JVM Unit Tests PASS (100% in CI Runs 34701084546, 34701773741, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004).
-- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004).
-- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004).
+- [x] `./gradlew test` passes — 167 JVM Unit Tests PASS (100% in CI Runs 34701084546, 34701773741, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
+- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
+- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
 - [ ] Manual testing on physical device is complete — BLOCKED (0 connected hardware devices via ADB).
 
 ## Functional Review

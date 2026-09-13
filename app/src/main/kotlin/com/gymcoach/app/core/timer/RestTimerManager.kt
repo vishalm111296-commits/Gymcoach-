@@ -3,7 +3,6 @@ package com.gymcoach.app.core.timer
 import android.content.Context
 import com.gymcoach.app.core.notification.RestTimerNotificationService
 import com.gymcoach.app.core.notification.RestTimerPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import javax.inject.Singleton
 
 data class RestTimerState(
@@ -50,8 +48,8 @@ object RestPresets {
 }
 
 @Singleton
-class RestTimerManager @Inject constructor(
-    @ApplicationContext private val context: Context? = null
+class RestTimerManager(
+    private val context: Context? = null
 ) {
 
     private val _state = MutableStateFlow(RestTimerState())

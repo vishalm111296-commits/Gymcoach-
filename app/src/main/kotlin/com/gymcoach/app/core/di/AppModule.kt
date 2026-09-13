@@ -1,5 +1,6 @@
 package com.gymcoach.app.core.di
 
+import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.dao.EquipmentDao
 import com.gymcoach.app.data.local.dao.ExerciseAliasDao
@@ -95,4 +96,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideExerciseAliasDao(database: GymCoachDatabase): ExerciseAliasDao = database.exerciseAliasDao()
+
+    @Provides
+    @Singleton
+    fun provideRestTimerManager(@ApplicationContext ctx: android.content.Context): RestTimerManager =
+        RestTimerManager(ctx)
 }

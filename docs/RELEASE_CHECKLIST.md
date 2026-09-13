@@ -13,19 +13,19 @@
 - [x] `./gradlew bundleRelease` succeeds with 0 errors (produces valid AAB with `classes.dex` and `AndroidManifest.xml`).
 
 ## Testing & Verification
-- [x] `./gradlew test` passes — 167 JVM Unit Tests PASS (100% in CI Runs 34701084546, 34701773741, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
-- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
-- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084).
+- [x] `./gradlew test` passes — 183 JVM Unit Tests PASS (100% in CI Runs 34701084546, 34701773741, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084, 34739190007, 34740688334).
+- [x] `./gradlew connectedAndroidTest` passes — 39/39 unfiltered connected tests PASS on Android 14 (API 34) emulator in CI (Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084, 34739190007, 34740688334).
+- [x] Android Lint passes — 0 errors, 0 code/resource warnings (CI Runs 34701084546, 34726944722, 34729172347, 34729692564, 34730203403, 34733182849, 34735906033, 34736341004, 34737942084, 34739190007, 34740688334).
 - [ ] Manual testing on physical device is complete — BLOCKED (0 connected hardware devices via ADB).
 
 ## Functional Review
 - [x] Exercise Library displays and functions correctly with category filters, search, and ExoPlayer video/animation player toggle (`ExerciseVideoPlayer.kt`).
 - [x] Workout Session logging works (atomic set insertion, reps, weight, RPE, rest timer).
-- [x] Rest Timer functions correctly with pure Kotlin state machine and `specialUse` FGS.
+- [x] Rest Timer functions correctly with pure Kotlin state machine, durable wall-clock persistence in SharedPreferences surviving process death, in-app +/-15s buttons, and `specialUse` FGS.
 - [x] Camera Preview launches, binds to lifecycle, and includes accessible back navigation.
 - [x] Form Analysis displays real-time feedback with MediaPipe Pose Landmarker.
 - [x] Progress Dashboard displays accurate strength, volume, and body measurement charts (truthful metrics, zero arbitrary calorie multipliers).
-- [x] Workout History detail supports in-place note editing via Room `updateWorkout` dialog, cleanly isolated from `performAgain` workout duplication.
+- [x] Workout History detail supports in-place note editing via Room `updateWorkout` dialog, delete confirmation dialog with active state flow, cleanly isolated from `performAgain` workout duplication.
 - [x] Navigation works between all 12 core screens without dead-ends, with `Routes.WORKOUT_LEGACY` defensive alias.
 - [x] Source hygiene verified (0 duplicate imports, 0 TODOs/FIXMEs, 0 debug logs).
 - [x] Backup and data extraction rules aligned with `gymcoach.db`.

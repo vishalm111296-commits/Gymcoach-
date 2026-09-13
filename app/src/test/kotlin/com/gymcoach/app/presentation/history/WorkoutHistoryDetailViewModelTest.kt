@@ -60,7 +60,7 @@ class WorkoutHistoryDetailViewModelTest {
                     difficulty = "Intermediate"
                 ),
                 sets = listOf(
-                    WorkoutSet(id = 1L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 8, rpe = 8.0, completed = true, setType = SetType.NORMAL)
+                    WorkoutSet(id = 1L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 8, rpe = 8.0, restSeconds = 90, completed = true, setType = SetType.NORMAL)
                 )
             )
         )

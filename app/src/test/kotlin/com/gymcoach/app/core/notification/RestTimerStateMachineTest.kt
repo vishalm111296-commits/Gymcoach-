@@ -243,4 +243,91 @@ class RestTimerStateMachineTest {
         assertEquals("05:15", RestTimerStateMachine.formatSeconds(315))
         assertEquals("00:00", RestTimerStateMachine.formatSeconds(-10))
     }
+
+    @Test
+    fun testStartWithWorkoutIdAndTotalDuration() {
+        stateMachine.start(90, "Bench Press Set 3", workoutId = 42L)
+        assertEquals(90, stateMachine.remainingSeconds.value)
+        assertEquals(90, stateMachine.totalDurationSeconds.value)
+        assertEquals(42L, stateMachine.workoutId)
+        assertEquals("Bench Press Set 3", stateMachine.nextSetLabel)
+        assertTrue(stateMachine.isRunning.value)
+    }
+
+    @Test
+    fun testAdjustExpandsTotalDurationWhenExceedingOriginal() {
+        stateMachine.start(30, "Curls Set 1", workoutId = 10L)
+        assertEquals(30, stateMachine.totalDurationSeconds.value)
+
+        stateMachine.adjust(15)
+        assertEquals(45, stateMachine.remainingSeconds.value)
+        assertEquals(45, stateMachine.totalDurationSeconds.value)
+    }
+
+    @Test
+    fun testToDurableStateAndRestoreRunning() {
+        val now = 1000000L
+        stateMachine.start(60, "Deadlift Set 2", workoutId = 99L)
+        val endEpoch = now + 60_000L
+        val durable = stateMachine.toDurableState(endEpoch)
+
+        assertEquals(60, durable.totalDurationSeconds)
+        assertEquals(99L, durable.workoutId)
+        assertEquals("Deadlift Set 2", durable.nextSetLabel)
+        assertTrue(durable.isRunning)
+        assertFalse(durable.isPaused)
+
+        // Reset state machine
+        stateMachine.reset()
+        assertEquals(0, stateMachine.remainingSeconds.value)
+
+        // Restore 20 seconds later (40 seconds remaining)
+        val restored = stateMachine.restore(durable, nowMillis = now + 20_000L)
+        assertTrue(restored)
+        assertEquals(40, stateMachine.remainingSeconds.value)
+        assertEquals(60, stateMachine.totalDurationSeconds.value)
+        assertEquals("Deadlift Set 2", stateMachine.nextSetLabel)
+        assertEquals(99L, stateMachine.workoutId)
+        assertTrue(stateMachine.isRunning.value)
+    }
+
+    @Test
+    fun testRestoreExpiredTransitionsToComplete() {
+        val now = 1000000L
+        stateMachine.start(60, "Deadlift Set 2", workoutId = 99L)
+        val endEpoch = now + 60_000L
+        val durable = stateMachine.toDurableState(endEpoch)
+
+        stateMachine.reset()
+
+        // Restore after expiration (70 seconds later)
+        val restored = stateMachine.restore(durable, nowMillis = now + 70_000L)
+        assertFalse(restored)
+        assertEquals(0, stateMachine.remainingSeconds.value)
+        assertFalse(stateMachine.isRunning.value)
+        assertEquals(1, completedCount)
+    }
+
+    @Test
+    fun testRestorePausedState() {
+        val now = 1000000L
+        val durable = DurableTimerState(
+            isRunning = true,
+            isPaused = true,
+            restEndEpochMillis = now + 60_000L,
+            totalDurationSeconds = 90,
+            pausedRemainingSeconds = 45,
+            nextSetLabel = "Squat Set 4",
+            workoutId = 123L
+        )
+
+        val restored = stateMachine.restore(durable, nowMillis = now + 100_000L)
+        assertTrue(restored)
+        assertEquals(45, stateMachine.remainingSeconds.value)
+        assertEquals(90, stateMachine.totalDurationSeconds.value)
+        assertTrue(stateMachine.isPaused.value)
+        assertTrue(stateMachine.isRunning.value)
+        assertEquals("Squat Set 4", stateMachine.nextSetLabel)
+        assertEquals(123L, stateMachine.workoutId)
+    }
 }

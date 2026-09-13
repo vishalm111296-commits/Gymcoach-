@@ -110,10 +110,13 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
 
     fun onDeleteClick(workoutId: Long) {
         _deleteTarget.value = workoutId
+        _showDeleteConfirmation.value = true
     }
 
     fun confirmDelete() {
         _deleteTarget.value?.let { workoutId ->
+            _deleteTarget.value = null
+            _showDeleteConfirmation.value = false
             viewModelScope.launch {
                 workoutRepository.deleteWorkout(workoutId)
             }
@@ -122,6 +125,7 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
 
     fun cancelDelete() {
         _deleteTarget.value = null
+        _showDeleteConfirmation.value = false
     }
 
     fun performAgain(workoutId: Long, onCreated: (Long) -> Unit) {

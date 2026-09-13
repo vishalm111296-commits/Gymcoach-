@@ -24,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
@@ -120,14 +121,23 @@ class WorkoutHistoryDetailViewModelTest {
     }
 
     @Test
-    fun `delete dialog flow sets target and calls deleteWorkout`() = runTest {
+    fun `delete dialog flow toggles showDeleteConfirmation sets target and calls deleteWorkout`() = runTest {
+        assertFalse(viewModel.showDeleteConfirmation.value)
+        assertNull(viewModel.deleteTarget.value)
+
         viewModel.onDeleteClick(201L)
         assertEquals(201L, viewModel.deleteTarget.value)
+        assertTrue(viewModel.showDeleteConfirmation.value)
 
         viewModel.confirmDelete()
         coVerify(exactly = 1) { workoutRepository.deleteWorkout(201L) }
+        assertNull(viewModel.deleteTarget.value)
+        assertFalse(viewModel.showDeleteConfirmation.value)
 
+        viewModel.onDeleteClick(201L)
+        assertTrue(viewModel.showDeleteConfirmation.value)
         viewModel.cancelDelete()
         assertNull(viewModel.deleteTarget.value)
+        assertFalse(viewModel.showDeleteConfirmation.value)
     }
 }

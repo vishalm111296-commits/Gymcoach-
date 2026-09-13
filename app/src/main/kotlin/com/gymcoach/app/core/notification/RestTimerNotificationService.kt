@@ -38,34 +38,83 @@ class RestTimerNotificationService : Service() {
 
         const val EXTRA_SECONDS = "extra_seconds"
         const val EXTRA_NEXT_SET = "extra_next_set"
+        const val EXTRA_WORKOUT_ID = "extra_workout_id"
 
         private val stateMachine = RestTimerStateMachine()
 
         val remainingSeconds: StateFlow<Int> = stateMachine.remainingSeconds
         val isPaused: StateFlow<Boolean> = stateMachine.isPaused
         val isRunning: StateFlow<Boolean> = stateMachine.isRunning
+        val totalDurationSeconds: StateFlow<Int> = stateMachine.totalDurationSeconds
+        val workoutId: Long get() = stateMachine.workoutId
+        val nextSetLabel: String get() = stateMachine.nextSetLabel
 
-        fun start(context: Context, seconds: Int, nextSet: String = "") {
+        fun start(context: Context, seconds: Int, nextSet: String = "", workoutId: Long = -1L) {
+            val safeSeconds = seconds.coerceAtLeast(0)
+            val now = System.currentTimeMillis()
+            val endMillis = now + safeSeconds * 1000L
+            RestTimerPreferences.save(
+                context,
+                DurableTimerState(
+                    isRunning = safeSeconds > 0,
+                    isPaused = false,
+                    restEndEpochMillis = endMillis,
+                    totalDurationSeconds = safeSeconds,
+                    pausedRemainingSeconds = safeSeconds,
+                    nextSetLabel = nextSet,
+                    workoutId = workoutId
+                )
+            )
             val intent = Intent(context, RestTimerNotificationService::class.java)
                 .setAction(ACTION_START)
                 .putExtra(EXTRA_SECONDS, seconds)
                 .putExtra(EXTRA_NEXT_SET, nextSet)
+                .putExtra(EXTRA_WORKOUT_ID, workoutId)
             context.startForegroundService(intent)
         }
 
         fun pause(context: Context) {
+            val durable = RestTimerPreferences.load(context)
+            if (durable.isRunning && !durable.isPaused) {
+                val remaining = durable.calculateRemainingSeconds()
+                RestTimerPreferences.save(context, durable.copy(isPaused = true, pausedRemainingSeconds = remaining))
+            }
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_PAUSE)
             )
         }
 
         fun resume(context: Context) {
+            val durable = RestTimerPreferences.load(context)
+            if (durable.isRunning && durable.isPaused) {
+                val endMillis = System.currentTimeMillis() + durable.pausedRemainingSeconds * 1000L
+                RestTimerPreferences.save(context, durable.copy(isPaused = false, restEndEpochMillis = endMillis))
+            }
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_RESUME)
             )
         }
 
         fun adjust(context: Context, deltaSeconds: Int) {
+            val durable = RestTimerPreferences.load(context)
+            if (durable.isRunning) {
+                if (durable.isPaused) {
+                    val newRem = (durable.pausedRemainingSeconds + deltaSeconds).coerceAtLeast(0)
+                    if (newRem == 0) {
+                        cancel(context)
+                        return
+                    }
+                    RestTimerPreferences.save(context, durable.copy(pausedRemainingSeconds = newRem, totalDurationSeconds = maxOf(durable.totalDurationSeconds, newRem)))
+                } else {
+                    val newEnd = durable.restEndEpochMillis + deltaSeconds * 1000L
+                    val newRem = ((newEnd - System.currentTimeMillis() + 999) / 1000).toInt().coerceAtLeast(0)
+                    if (newRem == 0) {
+                        cancel(context)
+                        return
+                    }
+                    RestTimerPreferences.save(context, durable.copy(restEndEpochMillis = newEnd, totalDurationSeconds = maxOf(durable.totalDurationSeconds, newRem)))
+                }
+            }
             val action = if (deltaSeconds >= 0) ACTION_PLUS_15 else ACTION_MINUS_15
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(action)
@@ -73,6 +122,7 @@ class RestTimerNotificationService : Service() {
         }
 
         fun cancel(context: Context) {
+            RestTimerPreferences.clear(context)
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_CANCEL)
             )
@@ -89,6 +139,21 @@ class RestTimerNotificationService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        // If service was recreated after process kill, check durable state
+        val saved = RestTimerPreferences.load(this)
+        if (saved.isRunning) {
+            val restored = stateMachine.restore(saved)
+            if (restored) {
+                promoteToForeground()
+                if (!saved.isPaused) {
+                    startTimer(stateMachine.remainingSeconds.value, stateMachine.nextSetLabel, stateMachine.workoutId)
+                } else {
+                    updateNotification()
+                }
+            } else {
+                finishTimer(isCompleted = true)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -96,7 +161,8 @@ class RestTimerNotificationService : Service() {
             ACTION_START -> {
                 val seconds = intent.getIntExtra(EXTRA_SECONDS, 90)
                 val nextSet = intent.getStringExtra(EXTRA_NEXT_SET) ?: ""
-                startTimer(seconds, nextSet)
+                val workoutId = intent.getLongExtra(EXTRA_WORKOUT_ID, -1L)
+                startTimer(seconds, nextSet, workoutId)
                 promoteToForeground()
             }
             ACTION_PAUSE -> pauseTimer()
@@ -109,9 +175,13 @@ class RestTimerNotificationService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startTimer(seconds: Int, nextSet: String = stateMachine.nextSetLabel) {
+    private fun startTimer(
+        seconds: Int,
+        nextSet: String = stateMachine.nextSetLabel,
+        workoutId: Long = stateMachine.workoutId
+    ) {
         timer?.cancel()
-        stateMachine.start(seconds, nextSet)
+        stateMachine.start(seconds, nextSet, workoutId)
         if (!stateMachine.isRunning.value) {
             finishTimer(isCompleted = false)
             return
@@ -159,6 +229,7 @@ class RestTimerNotificationService : Service() {
     }
 
     private fun finishTimer(isCompleted: Boolean = false) {
+        RestTimerPreferences.clear(this)
         if (isCompleted) {
             triggerCompletionHaptics()
             stateMachine.complete()

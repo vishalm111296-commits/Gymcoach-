@@ -218,6 +218,8 @@ fun WorkoutSessionScreen(
                                     else viewModel.pauseRestTimer()
                                 },
                                 onSkip = { viewModel.stopRestTimer() },
+                                onAddFifteen = { viewModel.adjustRestTimer(15) },
+                                onSubtractFifteen = { viewModel.adjustRestTimer(-15) },
                                 onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
                             )
                         }
@@ -372,6 +374,8 @@ private fun RestTimerCard(
     isPaused: Boolean,
     onPauseResume: () -> Unit,
     onSkip: () -> Unit,
+    onAddFifteen: () -> Unit,
+    onSubtractFifteen: () -> Unit,
     onPresetTap: (Int) -> Unit
 ) {
     Card(
@@ -396,7 +400,23 @@ private fun RestTimerCard(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onSubtractFifteen) {
+                        Text(
+                            "-15s",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    TextButton(onClick = onAddFifteen) {
+                        Text(
+                            "+15s",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                     IconButton(onClick = onPauseResume) {
                         Icon(
                             if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,

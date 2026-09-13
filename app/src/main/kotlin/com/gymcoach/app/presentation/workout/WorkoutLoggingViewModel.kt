@@ -457,7 +457,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         if (updated.completed) {
             val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
             val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
-            restTimer.start(restSeconds, viewModelScope)
+            val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
+            restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
         } else {
             restTimer.stop()
         }
@@ -466,9 +467,29 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun pauseRestTimer() { restTimer.pause() }
     fun resumeRestTimer() { restTimer.resume() }
     fun stopRestTimer() { restTimer.stop() }
+    fun adjustRestTimer(deltaSeconds: Int) { restTimer.adjust(deltaSeconds) }
 
     fun changeRestTimerDuration(seconds: Int) {
-        restTimer.restart(seconds, viewModelScope)
+        val workout = _currentWorkout.value
+        val workoutId = workout?.workout?.id ?: -1L
+        restTimer.start(seconds, viewModelScope, workoutId = workoutId)
+    }
+
+    private fun calculateNextSetLabel(
+        workout: WorkoutWithDetails,
+        exerciseIndex: Int,
+        setIndex: Int
+    ): String {
+        val currentWe = workout.exercises.getOrNull(exerciseIndex) ?: return ""
+        val nextSetInSameExercise = currentWe.sets.getOrNull(setIndex + 1)
+        if (nextSetInSameExercise != null) {
+            return "${currentWe.exercise.name} Set ${nextSetInSameExercise.setNumber}"
+        }
+        val nextWe = workout.exercises.getOrNull(exerciseIndex + 1)
+        if (nextWe != null) {
+            return "${nextWe.exercise.name} Set 1"
+        }
+        return "Workout Complete"
     }
 
     fun completeWorkout() {

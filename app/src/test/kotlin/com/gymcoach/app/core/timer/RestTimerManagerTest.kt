@@ -63,4 +63,23 @@ class RestTimerManagerTest {
         assertEquals(0, state.timeRemaining)
         assertFalse(state.isRunning)
     }
+
+    @Test
+    fun `adjust updates remaining time and total duration`() = testScope.runTest {
+        timerManager.start(45, this)
+        timerManager.adjust(15)
+        assertEquals(60, timerManager.state.value.timeRemaining)
+        assertEquals(60, timerManager.state.value.totalDuration)
+
+        timerManager.adjust(-20)
+        assertEquals(40, timerManager.state.value.timeRemaining)
+    }
+
+    @Test
+    fun `adjust to zero stops the timer`() = testScope.runTest {
+        timerManager.start(30, this)
+        timerManager.adjust(-30)
+        assertEquals(0, timerManager.state.value.timeRemaining)
+        assertFalse(timerManager.state.value.isRunning)
+    }
 }

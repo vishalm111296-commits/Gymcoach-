@@ -97,7 +97,9 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workouts WHERE status = 'ACTIVE' ORDER BY date DESC LIMIT 1")
     abstract suspend fun getLatestIncompleteWorkout(): WorkoutEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // ABORT (not REPLACE): REPLACE would cascade-delete child exercises and sets
+    // if a duplicate id is ever passed. Use @Update for intentional updates.
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertWorkout(workout: WorkoutEntity): Long
 
     @Update
@@ -228,7 +230,7 @@ abstract class WorkoutDao {
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN exercises e ON e.id = we.exerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE w.status = 'COMPLETED'
+        WHERE w.status = 'COMPLETED' AND w.completed = 1
         GROUP BY we.exerciseId
         ORDER BY maxWeight DESC
     """)
@@ -297,7 +299,7 @@ abstract class WorkoutDao {
     abstract suspend fun getTotalVolumeSum(): Double?
 
     @Query("""
-        SELECT w.date, SUM(ws.reps * ws.weight) as volume
+        SELECT MIN(w.date) as date, SUM(ws.reps * ws.weight) as volume
         FROM workouts w
         INNER JOIN workout_exercises we ON we.workoutId = w.id
         INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id

@@ -5,7 +5,7 @@
 - CameraX mock not available for unit tests; form analysis tested on device only
 - Responsive layout not fully verified on tablets and foldables
 - MediaPipe pose detection accuracy degrades in low-light conditions
-- Rest timer notification does not persist if app is killed
+- Unit tests using Robolectric (RoomIntegration, ViewModel) fail on aarch64 hosts due to missing native SQLite JNI libs.
 
 ## Resolved
 - **Room migration conflict (FIXED 2026-07-30).** Migration1to2 was empty; added inline SQL CREATE TABLE statements. Removed duplicate database file.**

@@ -47,6 +47,14 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
     @Before
     fun setup() {
+        val osName = (System.getProperty("os.name") ?: "").lowercase()
+        val osArch = (System.getProperty("os.arch") ?: "").lowercase()
+        val isUnsupportedLinuxAarch64 = osName.contains("linux") && (osArch == "aarch64" || osArch == "arm64")
+        org.junit.Assume.assumeFalse(
+            "Robolectric SQLite runtime is not supported on Linux aarch64 by upstream Robolectric",
+            isUnsupportedLinuxAarch64
+        )
+
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, GymCoachDatabase::class.java)
             .allowMainThreadQueries()
@@ -64,7 +72,9 @@ class RoomDatabaseClosedLoopIntegrationTest {
 
     @After
     fun tearDown() {
-        db.close()
+        if (::db.isInitialized) {
+            db.close()
+        }
     }
 
     @Test

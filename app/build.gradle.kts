@@ -117,6 +117,13 @@ android {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
 
+    testOptions {
+        unitTests.all {
+            it.systemProperty("robolectric.conscryptMode", "OFF")
+            it.systemProperty("robolectric.sqliteMode", "LEGACY")
+        }
+    }
+
     // NOTE: no `room { schemaDirectory = ... }` block here. Applying it
     // requires the androidx.room Gradle plugin, which is not present in
     // gradle/libs.versions.toml [plugins]. Schema export is handled by the

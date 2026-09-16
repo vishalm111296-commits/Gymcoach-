@@ -573,6 +573,5 @@ class WorkoutLoggingViewModel @Inject constructor(
         super.onCleared()
         workoutCollectorJob?.cancel()
         workoutTimerJob?.cancel()
-        restTimer.stop()
     }
 }

@@ -36,5 +36,8 @@ class RestTimerNotificationServiceTest {
         assertEquals("com.gymcoach.app.resttimer.SKIP", RestTimerNotificationService.ACTION_SKIP)
         assertEquals("com.gymcoach.app.resttimer.PLUS_15", RestTimerNotificationService.ACTION_PLUS_15)
         assertEquals("com.gymcoach.app.resttimer.MINUS_15", RestTimerNotificationService.ACTION_MINUS_15)
+        assertEquals("com.gymcoach.app.resttimer.ADJUST", RestTimerNotificationService.ACTION_ADJUST)
+        assertEquals("com.gymcoach.app.resttimer.RESTORE", RestTimerNotificationService.ACTION_RESTORE)
+        assertEquals("extra_delta", RestTimerNotificationService.EXTRA_DELTA)
     }
 }

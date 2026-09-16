@@ -74,8 +74,13 @@ class RestTimerManager(
                         totalDuration = total
                     )
                 }.collect { serviceState ->
-                    if (serviceState.isRunning || _state.value.isRunning) {
+                    if (serviceState.isRunning) {
                         _state.value = serviceState
+                    } else if (_state.value.isRunning && !serviceState.isRunning) {
+                        val durable = RestTimerPreferences.load(context)
+                        if (!durable.isRunning) {
+                            _state.value = serviceState
+                        }
                     }
                 }
             }
@@ -94,8 +99,10 @@ class RestTimerManager(
                         isPaused = durable.isPaused,
                         totalDuration = durable.totalDurationSeconds
                     )
+                    RestTimerNotificationService.restore(context)
                 } else {
                     RestTimerPreferences.clear(context)
+                    _state.value = RestTimerState()
                 }
             }
         }

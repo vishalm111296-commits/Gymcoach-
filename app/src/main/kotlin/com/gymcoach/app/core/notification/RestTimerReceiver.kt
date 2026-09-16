@@ -17,15 +17,16 @@ class RestTimerReceiver : BroadcastReceiver() {
             RestTimerNotificationService.ACTION_SKIP,
             RestTimerNotificationService.ACTION_PLUS_15,
             RestTimerNotificationService.ACTION_MINUS_15,
+            RestTimerNotificationService.ACTION_ADJUST,
             RestTimerNotificationService.ACTION_PAUSE,
             RestTimerNotificationService.ACTION_RESUME,
             RestTimerNotificationService.ACTION_CANCEL
         )
         if (action in supported) {
             try {
-                context.startService(
-                    Intent(context, RestTimerNotificationService::class.java).setAction(action)
-                )
+                val serviceIntent = Intent(context, RestTimerNotificationService::class.java).setAction(action)
+                intent.extras?.let { serviceIntent.putExtras(it) }
+                context.startService(serviceIntent)
             } catch (_: Exception) {
                 // Service may have already completed or background start was restricted
             }

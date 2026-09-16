@@ -35,10 +35,13 @@ class RestTimerNotificationService : Service() {
         const val ACTION_SKIP = "com.gymcoach.app.resttimer.SKIP"
         const val ACTION_PLUS_15 = "com.gymcoach.app.resttimer.PLUS_15"
         const val ACTION_MINUS_15 = "com.gymcoach.app.resttimer.MINUS_15"
+        const val ACTION_ADJUST = "com.gymcoach.app.resttimer.ADJUST"
+        const val ACTION_RESTORE = "com.gymcoach.app.resttimer.RESTORE"
 
         const val EXTRA_SECONDS = "extra_seconds"
         const val EXTRA_NEXT_SET = "extra_next_set"
         const val EXTRA_WORKOUT_ID = "extra_workout_id"
+        const val EXTRA_DELTA = "extra_delta"
 
         private val stateMachine = RestTimerStateMachine()
 
@@ -115,9 +118,10 @@ class RestTimerNotificationService : Service() {
                     RestTimerPreferences.save(context, durable.copy(restEndEpochMillis = newEnd, totalDurationSeconds = maxOf(durable.totalDurationSeconds, newRem)))
                 }
             }
-            val action = if (deltaSeconds >= 0) ACTION_PLUS_15 else ACTION_MINUS_15
             context.startService(
-                Intent(context, RestTimerNotificationService::class.java).setAction(action)
+                Intent(context, RestTimerNotificationService::class.java)
+                    .setAction(ACTION_ADJUST)
+                    .putExtra(EXTRA_DELTA, deltaSeconds)
             )
         }
 
@@ -126,6 +130,23 @@ class RestTimerNotificationService : Service() {
             context.startService(
                 Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_CANCEL)
             )
+        }
+
+        fun restore(context: Context) {
+            val durable = RestTimerPreferences.load(context)
+            if (durable.isRunning) {
+                val rem = durable.calculateRemainingSeconds()
+                if (rem > 0) {
+                    val intent = Intent(context, RestTimerNotificationService::class.java).setAction(ACTION_RESTORE)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                } else {
+                    RestTimerPreferences.clear(context)
+                }
+            }
         }
 
         fun formatSeconds(totalSeconds: Int): String =
@@ -139,21 +160,6 @@ class RestTimerNotificationService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        // If service was recreated after process kill, check durable state
-        val saved = RestTimerPreferences.load(this)
-        if (saved.isRunning) {
-            val restored = stateMachine.restore(saved)
-            if (restored) {
-                promoteToForeground()
-                if (!saved.isPaused) {
-                    startTimer(stateMachine.remainingSeconds.value, stateMachine.nextSetLabel, stateMachine.workoutId)
-                } else {
-                    updateNotification()
-                }
-            } else {
-                finishTimer(isCompleted = true)
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -169,10 +175,35 @@ class RestTimerNotificationService : Service() {
             ACTION_RESUME -> resumeTimer()
             ACTION_PLUS_15 -> adjustTime(15)
             ACTION_MINUS_15 -> adjustTime(-15)
+            ACTION_ADJUST -> {
+                val delta = intent.getIntExtra(EXTRA_DELTA, 0)
+                adjustTime(delta)
+            }
+            ACTION_RESTORE, null -> restoreTimer()
             ACTION_COMPLETE, ACTION_SKIP -> finishTimer(isCompleted = true)
             ACTION_CANCEL -> finishTimer(isCompleted = false)
         }
         return START_NOT_STICKY
+    }
+
+    private fun restoreTimer() {
+        val saved = RestTimerPreferences.load(this)
+        if (saved.isRunning) {
+            val restored = stateMachine.restore(saved)
+            if (restored) {
+                promoteToForeground()
+                if (!saved.isPaused) {
+                    startTimer(stateMachine.remainingSeconds.value, stateMachine.nextSetLabel, stateMachine.workoutId)
+                } else {
+                    updateNotification()
+                }
+            } else {
+                finishTimer(isCompleted = true)
+            }
+        } else {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     private fun startTimer(
@@ -204,13 +235,23 @@ class RestTimerNotificationService : Service() {
         timer?.cancel()
         timer = null
         stateMachine.pause()
+        val durable = RestTimerPreferences.load(this)
+        if (durable.isRunning) {
+            RestTimerPreferences.save(this, durable.copy(isPaused = true, pausedRemainingSeconds = stateMachine.remainingSeconds.value))
+        }
         updateNotification()
     }
 
     private fun resumeTimer() {
         if (!stateMachine.isRunning.value || !stateMachine.isPaused.value) return
         stateMachine.resume()
-        startTimer(stateMachine.remainingSeconds.value)
+        val rem = stateMachine.remainingSeconds.value
+        val durable = RestTimerPreferences.load(this)
+        if (durable.isRunning) {
+            val endMillis = System.currentTimeMillis() + rem * 1000L
+            RestTimerPreferences.save(this, durable.copy(isPaused = false, restEndEpochMillis = endMillis))
+        }
+        startTimer(rem)
     }
 
     private fun adjustTime(deltaSeconds: Int) {
@@ -219,6 +260,27 @@ class RestTimerNotificationService : Service() {
         if (newTotal <= 0) {
             finishTimer(isCompleted = false)
             return
+        }
+        val durable = RestTimerPreferences.load(this)
+        if (durable.isRunning) {
+            if (stateMachine.isPaused.value) {
+                RestTimerPreferences.save(
+                    this,
+                    durable.copy(
+                        pausedRemainingSeconds = newTotal,
+                        totalDurationSeconds = maxOf(durable.totalDurationSeconds, newTotal)
+                    )
+                )
+            } else {
+                val newEnd = System.currentTimeMillis() + newTotal * 1000L
+                RestTimerPreferences.save(
+                    this,
+                    durable.copy(
+                        restEndEpochMillis = newEnd,
+                        totalDurationSeconds = maxOf(durable.totalDurationSeconds, newTotal)
+                    )
+                )
+            }
         }
         if (stateMachine.isPaused.value) {
             updateNotification()

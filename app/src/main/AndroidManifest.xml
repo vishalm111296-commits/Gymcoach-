@@ -28,6 +28,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GymCoach.Splash"
         android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="33">
 
         <activity

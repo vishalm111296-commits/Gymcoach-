@@ -34,12 +34,23 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;35.0.0"
-          yes | sdkmanager --licenses
+          echo "=== Android SDK Diagnostic ==="
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+          sdkmanager --version || true
+          echo "=== Installing Required Packages ==="
+          yes | sdkmanager "platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;35.0.0" || {
+            echo "FATAL: Failed to install Android SDK packages via sdkmanager"
+            exit 1
+          }
+          echo "=== Accepting Licenses ==="
+          yes | sdkmanager --licenses || true
 
       - name: Validate Project Configuration
         run: |
@@ -227,12 +238,19 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
-          yes | sdkmanager --licenses
+          echo "=== Android SDK Diagnostic (Lint) ==="
+          sdkmanager --version || true
+          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0" || {
+            echo "FATAL: Failed to install Android SDK packages in lint job"
+            exit 1
+          }
+          yes | sdkmanager --licenses || true
 
       - name: Run Android Lint
         run: |
@@ -266,12 +284,19 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
-          yes | sdkmanager --licenses
+          echo "=== Android SDK Diagnostic (Tests) ==="
+          sdkmanager --version || true
+          yes | sdkmanager "platforms;android-36" "build-tools;35.0.0" || {
+            echo "FATAL: Failed to install Android SDK packages in test job"
+            exit 1
+          }
+          yes | sdkmanager --licenses || true
 
       - name: Run Unit Tests
         run: |
@@ -306,7 +331,9 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Enable KVM group perms
         run: |

@@ -22,12 +22,18 @@ class RoutesTest {
         assertEquals("program_detail", Routes.PROGRAM_DETAIL)
         assertEquals("camera/{exerciseType}", Routes.CAMERA)
         assertEquals("templates", Routes.TEMPLATES)
+        assertEquals("progression_analytics/{exerciseId}?exerciseName={exerciseName}", Routes.PROGRESSION_ANALYTICS)
     }
 
     @Test
     fun testExerciseDetailRouteGenerator() {
         assertEquals("exercise_detail/42", Routes.exerciseDetail(42L))
         assertEquals("exercise_detail/1", Routes.exerciseDetail(1L))
+    }
+
+    @Test
+    fun testProgressionAnalyticsRouteGenerator() {
+        assertEquals("progression_analytics/42?exerciseName=Bench+Press", Routes.progressionAnalytics(42L, "Bench Press"))
     }
 
     @Test

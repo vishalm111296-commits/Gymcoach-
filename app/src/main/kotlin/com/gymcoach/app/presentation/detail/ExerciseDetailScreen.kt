@@ -142,6 +142,7 @@ fun ExerciseDetailScreen(
     exerciseId: Long,
     onBackClick: () -> Unit,
     onExerciseClick: (Long) -> Unit = {},
+    onViewProgressClick: (exerciseId: Long, exerciseName: String) -> Unit = { _, _ -> },
     viewModel: ExerciseDetailViewModel = hiltViewModel()
 ) {
     val exercise by viewModel.exercise.collectAsState()
@@ -483,6 +484,23 @@ fun ExerciseDetailScreen(
                     SubstitutionSection(
                         substitutes = substitutes,
                         onExerciseClick = onExerciseClick
+                    )
+                }
+
+                // 8. VIEW PROGRESSION ANALYTICS
+                Spacer(Modifier.height(16.dp))
+                androidx.compose.material3.Button(
+                    onClick = { onViewProgressClick(ex.id, ex.name) },
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = com.gymcoach.app.ui.theme.AccentBlue
+                    )
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "View Progression Analytics",
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
                 }
 

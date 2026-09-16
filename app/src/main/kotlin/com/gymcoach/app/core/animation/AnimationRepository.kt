@@ -70,6 +70,7 @@ class AnimationRepository @Inject constructor(
                 }
             }
         } catch (e: Exception) {
+            android.util.Log.e("AnimationRepository", "Error parsing animations from assets", e)
             // Keep app operational offline even if an asset is temporarily inaccessible
         }
     }

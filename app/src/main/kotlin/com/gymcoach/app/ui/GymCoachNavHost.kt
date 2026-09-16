@@ -17,6 +17,7 @@ import com.gymcoach.app.presentation.onboarding.OnboardingScreen
 import com.gymcoach.app.presentation.profile.ProfileScreen
 import com.gymcoach.app.presentation.program.ProgramDetailScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
+import com.gymcoach.app.presentation.progress.ProgressionAnalyticsScreen
 import com.gymcoach.app.presentation.readiness.ReadinessScreen
 import com.gymcoach.app.presentation.template.WorkoutTemplateScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
@@ -36,11 +37,14 @@ object Routes {
     const val PROGRAM_DETAIL = "program_detail"
     const val CAMERA = "camera/{exerciseType}"
     const val TEMPLATES = "templates"
+    const val PROGRESSION_ANALYTICS = "progression_analytics/{exerciseId}?exerciseName={exerciseName}"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
     fun workoutSession(workoutId: Long? = null) = if (workoutId != null) "workout_session?workoutId=$workoutId" else "workout_session"
     fun camera(exerciseType: ExerciseType) = "camera/${exerciseType.name}"
+    fun progressionAnalytics(exerciseId: Long, exerciseName: String) =
+        "progression_analytics/$exerciseId?exerciseName=${java.net.URLEncoder.encode(exerciseName, "UTF-8")}"
 }
 
 @Composable
@@ -112,7 +116,10 @@ fun GymCoachNavHost(
             val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
             ExerciseDetailScreen(
                 exerciseId = exerciseId,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onViewProgressClick = { exId, exName ->
+                    navController.navigate(Routes.progressionAnalytics(exId, exName))
+                }
             )
         }
 
@@ -222,6 +229,26 @@ fun GymCoachNavHost(
                         popUpTo(Routes.TEMPLATES) { inclusive = false }
                     }
                 }
+            )
+        }
+
+        composable(
+            route = Routes.PROGRESSION_ANALYTICS,
+            arguments = listOf(
+                navArgument("exerciseId") { type = NavType.LongType },
+                navArgument("exerciseName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
+            val exerciseName = backStackEntry.arguments?.getString("exerciseName")
+                ?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: ""
+            ProgressionAnalyticsScreen(
+                exerciseId = exerciseId,
+                exerciseName = exerciseName,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

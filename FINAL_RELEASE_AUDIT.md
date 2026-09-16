@@ -2,23 +2,13 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`
 **Branch**: `main`
-**Audited Code RC Commit**: [`954170f0f8b249e5484d61a65a82491502dd1774`](https://github.com/vishalm111296-commits/Gymcoach-/commit/954170f0f8b249e5484d61a65a82491502dd1774), [`73940630c70829dca0a83112794dc511c7349552`](https://github.com/vishalm111296-commits/Gymcoach-/commit/73940630c70829dca0a83112794dc511c7349552), [`c9292d2714cdb4aceead4581fcce63aee1277334`](https://github.com/vishalm111296-commits/Gymcoach-/commit/c9292d2714cdb4aceead4581fcce63aee1277334), [`d583601998aa60173977c3e7fb35250d24098888`](https://github.com/vishalm111296-commits/Gymcoach-/commit/d583601998aa60173977c3e7fb35250d24098888), [`42814abda1cdd81efc948d08b673c9952fd3ddc9`](https://github.com/vishalm111296-commits/Gymcoach-/commit/42814abda1cdd81efc948d08b673c9952fd3ddc9), [`c7f79cbb507b54b4342b390a4b1312171e1a93c7`](https://github.com/vishalm111296-commits/Gymcoach-/commit/c7f79cbb507b54b4342b390a4b1312171e1a93c7), & [`9cb1252f4ac6c339fa63ee2050f8b3af1c9e35db`](https://github.com/vishalm111296-commits/Gymcoach-/commit/9cb1252f4ac6c339fa63ee2050f8b3af1c9e35db)
+**Audited Code RC Commit**: [`3a50ec2`](https://github.com/vishalm111296-commits/Gymcoach-/commit/3a50ec2) (feat: reusable workout templates with Room schema v14) & [`66e0b37`](https://github.com/vishalm111296-commits/Gymcoach-/commit/66e0b37) (feat: custom exercises with Room schema v13)
 **Verified CI Pipeline Runs**:
-- Run [`34701084546`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34701084546) on commit `7e5feec`: 100% green across all 4 jobs.
-- Run [`34701773741`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34701773741) on commit `fa3e05a`: 100% green across all 4 jobs.
-- Run [`34726944722`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34726944722) on commit `7394063`: 100% green across all 4 jobs.
-- Run [`34729172347`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34729172347) on commit `d583601`: 100% green across all 4 jobs.
-- Run [`34729692564`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34729692564) on commit `2452aea`: 100% green across all 4 jobs.
-- Run [`34730203403`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34730203403) on commit `931fad5`: 100% green across all 4 jobs.
-- Run [`34733182849`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34733182849) on commit `42814ab`: 100% green across all 4 jobs.
-- Run [`34735906033`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34735906033) on commit `935d060`: 100% green across all 4 jobs.
-- Run [`34736341004`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34736341004) on commit `59d0663`: 100% green across all 4 jobs (Build & Test in 4m34s, Android Lint in 2m56s, Unit Tests in 2m43s, Connected Tests in 5m18s).
-- Run [`34737942084`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34737942084) on commit `b074fb4`: 100% green across all 4 jobs (Build & Test in 4m34s, Android Lint in 3m13s, Unit Tests in 2m50s, Connected Tests in 5m9s).
-- Run [`34739190007`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34739190007) on commit `9e7feb8`: 100% green across all 4 jobs in 10m59s.
-- Run [`34740688334`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34740688334) on commit `9cb1252`: 100% green across all 4 jobs (Build & Test in 5m12s, Android Lint in 3m12s, Unit Tests in 2m33s, Connected Tests in 5m4s).
-- Run [`34741204142`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34741204142) on commit `ffadc78`: 100% green across all 4 jobs (Build & Test in 4m51s, Android Lint in 3m5s, Unit Tests in 2m50s, Connected Tests in 5m4s).
-**Audit Date**: September 13, 2026
-**Auditor**: Antigravity Senior Forensic Engineering Agent
+- Run [`35090284756`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35090284756) on commit `66e0b37`: 100% green across all 4 jobs (Build & Test, Lint, Unit Tests, Connected Instrumentation Tests).
+- Run [`35106665535`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35106665535) on commit `3a50ec2`: 100% green across all 4 jobs (Build & Test in 5m54s, Lint in 2m58s, Unit Tests in 2m38s, Connected Tests in 4m49s).
+- Run [`34740688334`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34740688334) on commit `9cb1252`: 100% green across all 4 jobs.
+**Audit Date**: September 16, 2026
+**Auditor**: Antigravity Principal Engineering & Release Agent
 
 ---
 

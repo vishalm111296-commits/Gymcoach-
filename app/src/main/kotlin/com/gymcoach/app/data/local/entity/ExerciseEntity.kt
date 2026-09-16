@@ -24,6 +24,7 @@ data class ExerciseEntity(
     val tags: String = "",
     val isFavorite: Boolean = false,
     val lastViewed: Long = 0L,
+    @ColumnInfo(name = "is_custom") val isCustom: Boolean = false,
     // V-taper relevance scores (0-10)
     @ColumnInfo(name = "vtaper_lat") val vtaperLat: Int = 0,
     @ColumnInfo(name = "vtaper_lateral_delt") val vtaperLateralDelt: Int = 0,

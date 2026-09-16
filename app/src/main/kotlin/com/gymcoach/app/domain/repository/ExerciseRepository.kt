@@ -9,8 +9,17 @@ interface ExerciseRepository {
     fun getFilteredExercises(muscle: String?, difficulty: String?, equipment: String?): Flow<List<Exercise>>
     fun searchExercises(query: String): Flow<List<Exercise>>
     fun getExerciseById(id: Long): Flow<Exercise?>
+    fun getCustomExercises(): Flow<List<Exercise>>
     fun getAllExerciseMuscleDetails(): Flow<List<ExerciseMuscleWithDetails>>
-    suspend fun addExercise(exercise: Exercise)
+    suspend fun addExercise(exercise: Exercise): Long
+    suspend fun createCustomExercise(
+        name: String,
+        muscleGroup: String,
+        equipment: String,
+        difficulty: String = "Intermediate",
+        notes: String = ""
+    ): Long
     suspend fun updateExercise(exercise: Exercise)
     suspend fun deleteExercise(exercise: Exercise)
+    suspend fun deleteCustomExercise(id: Long): Boolean
 }

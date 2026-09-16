@@ -30,7 +30,7 @@ import com.gymcoach.app.data.local.dao.*
         UserProfileEntity::class,
         ReadinessEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -454,6 +454,12 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `exercises` ADD COLUMN `is_custom` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
@@ -470,7 +476,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
+                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13
                 )
                 .build()
         }

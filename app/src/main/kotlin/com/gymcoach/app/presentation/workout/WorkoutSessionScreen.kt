@@ -36,7 +36,10 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.gymcoach.app.presentation.components.CreateCustomExerciseBottomSheet
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -100,6 +103,9 @@ fun WorkoutSessionScreen(
     var dismissReadinessAdvisory by rememberSaveable { mutableStateOf(false) }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
+    var pickerSearchQuery by rememberSaveable { mutableStateOf("") }
+    var pickerSelectedCategory by rememberSaveable { mutableStateOf("All") }
+    var showCreateCustomExerciseInWorkout by rememberSaveable { mutableStateOf(false) }
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -325,30 +331,80 @@ fun WorkoutSessionScreen(
     }
 
     if (showPicker) {
+        val filteredExercises = allExercises.filter { exercise ->
+            val matchesCategory = pickerSelectedCategory == "All" || exercise.muscleGroup.equals(pickerSelectedCategory, ignoreCase = true)
+            val matchesQuery = pickerSearchQuery.isBlank() ||
+                exercise.name.contains(pickerSearchQuery, ignoreCase = true) ||
+                exercise.muscleGroup.contains(pickerSearchQuery, ignoreCase = true)
+            matchesCategory && matchesQuery
+        }
+
         AlertDialog(
             onDismissRequest = { viewModel.hideExercisePicker() },
             title = { Text("Add Exercise") },
             text = {
-                LazyColumn {
-                    items(allExercises, key = { it.id }) { exercise ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { viewModel.addExerciseToWorkout(exercise) },
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = pickerSearchQuery,
+                        onValueChange = { pickerSearchQuery = it },
+                        placeholder = { Text("Search exercise...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core").forEach { category ->
+                            FilterChip(
+                                selected = pickerSelectedCategory == category,
+                                onClick = { pickerSelectedCategory = category },
+                                label = { Text(category) }
                             )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = exercise.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.hideExercisePicker()
+                            showCreateCustomExerciseInWorkout = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Create Custom Exercise")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(filteredExercises, key = { it.id }) { exercise ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { viewModel.addExerciseToWorkout(exercise) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                                 )
-                                Text(
-                                    text = exercise.muscleGroup,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = exercise.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = exercise.muscleGroup,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -359,6 +415,22 @@ fun WorkoutSessionScreen(
                 TextButton(onClick = { viewModel.hideExercisePicker() }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    if (showCreateCustomExerciseInWorkout) {
+        CreateCustomExerciseBottomSheet(
+            onDismiss = { showCreateCustomExerciseInWorkout = false },
+            onSave = { name, muscleGroup, equipment, difficulty, notes ->
+                viewModel.createAndAddCustomExercise(
+                    name = name,
+                    muscleGroup = muscleGroup,
+                    equipment = equipment,
+                    difficulty = difficulty,
+                    notes = notes
+                )
+                showCreateCustomExerciseInWorkout = false
             }
         )
     }

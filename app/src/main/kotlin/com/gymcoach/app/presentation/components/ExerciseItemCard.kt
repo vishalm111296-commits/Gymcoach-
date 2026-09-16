@@ -39,6 +39,7 @@ fun ExerciseItemCard(
     movementPattern: String = "",
     isFavorite: Boolean = false,
     hasAnimation: Boolean = false,
+    isCustom: Boolean = false,
     onClick: () -> Unit = {}
 ) {
     val diffColor = when (difficulty.lowercase()) {
@@ -102,6 +103,23 @@ fun ExerciseItemCard(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
+                        }
+                    }
+
+                    if (isCustom) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFD4FF32).copy(alpha = 0.15f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "CUSTOM",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFD4FF32)
+                            )
                         }
                     }
 

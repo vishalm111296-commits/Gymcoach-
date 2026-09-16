@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.presentation.ExerciseViewModel
+import com.gymcoach.app.presentation.components.CreateCustomExerciseBottomSheet
 import com.gymcoach.app.presentation.components.ExerciseItemCard
 
 private fun ExerciseType.displayLabel(): String =
@@ -81,6 +83,7 @@ fun ExerciseListScreen(
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     var showCameraPicker by rememberSaveable { mutableStateOf(false) }
+    var showCreateCustomExerciseSheet by rememberSaveable { mutableStateOf(false) }
 
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" || filterMovementPattern != "All" || showFavoritesOnly
 
@@ -156,6 +159,14 @@ fun ExerciseListScreen(
                 }
             }
 
+            IconButton(onClick = { showCreateCustomExerciseSheet = true }) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create Custom Exercise",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
             IconButton(onClick = { viewModel.toggleFavoritesOnly() }) {
                 Icon(
                     imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -225,6 +236,7 @@ fun ExerciseListScreen(
                         movementPattern = exercise.movementPattern,
                         isFavorite = exercise.isFavorite,
                         hasAnimation = exercise.animationUrl != null || exercise.id <= 20,
+                        isCustom = exercise.isCustom,
                         onClick = { onExerciseClick(exercise.id) }
                     )
                 }
@@ -362,5 +374,21 @@ fun ExerciseListScreen(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+
+    if (showCreateCustomExerciseSheet) {
+        CreateCustomExerciseBottomSheet(
+            onDismiss = { showCreateCustomExerciseSheet = false },
+            onSave = { name, muscleGroup, equipment, difficulty, notes ->
+                viewModel.createCustomExercise(
+                    name = name,
+                    muscleGroup = muscleGroup,
+                    equipment = equipment,
+                    difficulty = difficulty,
+                    notes = notes
+                )
+                showCreateCustomExerciseSheet = false
+            }
+        )
     }
 }

@@ -76,6 +76,12 @@ interface ExerciseDao {
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun count(): Int
 
+    @Query("SELECT * FROM exercises WHERE is_custom = 1 ORDER BY LOWER(name) ASC")
+    fun getCustomExercises(): Flow<List<ExerciseEntity>>
+
+    @Query("DELETE FROM exercises WHERE id = :id AND is_custom = 1")
+    suspend fun deleteCustomExerciseById(id: Long): Int
+
     // --- Writes ---
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -129,4 +129,31 @@ class ExerciseViewModel @Inject constructor(
             repository.deleteExercise(exercise)
         }
     }
+
+    fun createCustomExercise(
+        name: String,
+        muscleGroup: String,
+        equipment: String,
+        difficulty: String = "Intermediate",
+        notes: String = "",
+        onCreated: (Long) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val id = repository.createCustomExercise(
+                name = name,
+                muscleGroup = muscleGroup,
+                equipment = equipment,
+                difficulty = difficulty,
+                notes = notes
+            )
+            onCreated(id)
+        }
+    }
+
+    fun deleteCustomExercise(id: Long, onDeleted: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val success = repository.deleteCustomExercise(id)
+            onDeleted(success)
+        }
+    }
 }

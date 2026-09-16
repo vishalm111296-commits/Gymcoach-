@@ -330,6 +330,32 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    fun createAndAddCustomExercise(
+        name: String,
+        muscleGroup: String,
+        equipment: String,
+        difficulty: String = "Intermediate",
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            try {
+                val exerciseId = exerciseRepository.createCustomExercise(
+                    name = name,
+                    muscleGroup = muscleGroup,
+                    equipment = equipment,
+                    difficulty = difficulty,
+                    notes = notes
+                )
+                val created = exerciseRepository.getExerciseById(exerciseId).firstOrNull()
+                if (created != null) {
+                    addExerciseToWorkout(created)
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to create and add custom exercise"
+            }
+        }
+    }
+
     /**
      * Add a new set, serialised via [addSetMutex] to prevent duplicate setNumber
      * assignment when two taps arrive before the first DB write completes

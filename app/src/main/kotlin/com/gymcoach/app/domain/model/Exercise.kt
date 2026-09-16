@@ -19,6 +19,7 @@ data class Exercise(
     val tags: String = "",
     val isFavorite: Boolean = false,
     val lastViewed: Long = 0L,
+    val isCustom: Boolean = false,
     // V-taper relevance scores (0-10)
     val vtaperLat: Int = 0,
     val vtaperLateralDelt: Int = 0,

@@ -565,4 +565,53 @@ class RoomMigrationTest {
 
         db.close()
     }
+
+    @Test
+    fun migrate12To13_addsIsCustomColumn() {
+        var db = migrationTestHelper.createDatabase(TEST_DB, 12)
+        db.execSQL("INSERT INTO exercises (id, name, description, muscleGroup, equipment, difficulty, secondaryMuscles, instructions, tips, commonMistakes, safetyNotes, recommendedRepRange, recommendedRestTime, estimatedCalories, category, tags, isFavorite, lastViewed, vtaper_lat, vtaper_lateral_delt, vtaper_upper_chest, vtaper_rear_delt, movement_pattern, setup_instructions, execution_instructions, breathing_instructions, tempo_guidance) VALUES (1, 'Barbell Bench Press', '', 'Chest', 'Barbell', 'Intermediate', '', '', '', '', '', '8-12', '90', 10, 'Strength', '', 0, 0, 0, 0, 0, 0, 'horizontal_push', '', '', '', '')")
+        db.close()
+
+        db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 13, true,
+            GymCoachDatabase.MIGRATION_12_13
+        )
+
+        val pragmaCursor = db.query("PRAGMA table_info(exercises)")
+        var hasIsCustom = false
+        while (pragmaCursor.moveToNext()) {
+            if (pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")) == "is_custom") {
+                hasIsCustom = true
+                break
+            }
+        }
+        pragmaCursor.close()
+        assertTrue("exercises table must have is_custom column after 12→13 migration", hasIsCustom)
+
+        val checkCursor = db.query("SELECT is_custom FROM exercises WHERE id = 1")
+        assertTrue(checkCursor.moveToFirst())
+        assertEquals("Default is_custom should be 0", 0, checkCursor.getInt(0))
+        checkCursor.close()
+        db.close()
+    }
+
+    @Test
+    fun migrateFullChain1To13() {
+        migrationTestHelper.createDatabase(TEST_DB, 1).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 13, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
+            MIGRATION_10_11, GymCoachDatabase.MIGRATION_11_12,
+            GymCoachDatabase.MIGRATION_12_13
+        )
+
+        val cursor = db.query("SELECT COUNT(*) FROM exercises")
+        assertTrue(cursor.moveToFirst())
+        cursor.close()
+
+        db.close()
+    }
 }

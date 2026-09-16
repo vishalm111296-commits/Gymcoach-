@@ -117,4 +117,41 @@ class ExerciseRepositoryTest {
             )
         }
     }
+
+    @Test
+    fun `createCustomExercise creates entity with isCustom true and inserts`() = runTest {
+        io.mockk.coEvery { dao.insert(any()) } returns 42L
+
+        val id = repo.createCustomExercise(
+            name = "Incline Dumbbell Fly",
+            muscleGroup = "Chest",
+            equipment = "Dumbbell",
+            difficulty = "Intermediate",
+            notes = "Slow negative"
+        )
+
+        assertEquals(42L, id)
+        coVerify {
+            dao.insert(
+                match { entity ->
+                    entity.name == "Incline Dumbbell Fly" &&
+                        entity.muscleGroup == "Chest" &&
+                        entity.equipment == "Dumbbell" &&
+                        entity.difficulty == "Intermediate" &&
+                        entity.instructions == "Slow negative" &&
+                        entity.isCustom
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `deleteCustomExercise calls dao deleteCustomExerciseById`() = runTest {
+        io.mockk.coEvery { dao.deleteCustomExerciseById(42L) } returns 1
+
+        val result = repo.deleteCustomExercise(42L)
+
+        assertEquals(true, result)
+        coVerify { dao.deleteCustomExerciseById(42L) }
+    }
 }

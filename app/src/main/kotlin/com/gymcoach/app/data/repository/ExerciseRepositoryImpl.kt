@@ -41,8 +41,33 @@ class ExerciseRepositoryImpl @Inject constructor(
         return exerciseMuscleDao.getAllWithDetails()
     }
 
-    override suspend fun addExercise(exercise: Exercise) {
-        exerciseDao.insert(exercise.toEntity())
+    override fun getCustomExercises(): Flow<List<Exercise>> {
+        return exerciseDao.getCustomExercises().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun addExercise(exercise: Exercise): Long {
+        return exerciseDao.insert(exercise.toEntity())
+    }
+
+    override suspend fun createCustomExercise(
+        name: String,
+        muscleGroup: String,
+        equipment: String,
+        difficulty: String,
+        notes: String
+    ): Long {
+        val customExercise = Exercise(
+            name = name.trim(),
+            description = notes.trim(),
+            muscleGroup = muscleGroup.trim(),
+            equipment = equipment.trim(),
+            difficulty = difficulty.trim(),
+            instructions = notes.trim(),
+            isCustom = true
+        )
+        return exerciseDao.insert(customExercise.toEntity())
     }
 
     override suspend fun updateExercise(exercise: Exercise) {
@@ -51,6 +76,11 @@ class ExerciseRepositoryImpl @Inject constructor(
 
     override suspend fun deleteExercise(exercise: Exercise) {
         exerciseDao.delete(exercise.toEntity())
+    }
+
+    override suspend fun deleteCustomExercise(id: Long): Boolean {
+        val deletedRows = exerciseDao.deleteCustomExerciseById(id)
+        return deletedRows > 0
     }
 
     private fun ExerciseEntity.toDomain() = Exercise(
@@ -72,6 +102,7 @@ class ExerciseRepositoryImpl @Inject constructor(
         tags = tags,
         isFavorite = isFavorite,
         lastViewed = lastViewed,
+        isCustom = isCustom,
         vtaperLat = vtaperLat,
         vtaperLateralDelt = vtaperLateralDelt,
         vtaperUpperChest = vtaperUpperChest,
@@ -107,6 +138,7 @@ class ExerciseRepositoryImpl @Inject constructor(
         tags = tags,
         isFavorite = isFavorite,
         lastViewed = lastViewed,
+        isCustom = isCustom,
         vtaperLat = vtaperLat,
         vtaperLateralDelt = vtaperLateralDelt,
         vtaperUpperChest = vtaperUpperChest,

@@ -21,6 +21,7 @@ class RoutesTest {
         assertEquals("readiness", Routes.READINESS)
         assertEquals("program_detail", Routes.PROGRAM_DETAIL)
         assertEquals("camera/{exerciseType}", Routes.CAMERA)
+        assertEquals("templates", Routes.TEMPLATES)
     }
 
     @Test

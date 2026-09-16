@@ -66,6 +66,64 @@ abstract class WorkoutDao {
         }
         return newWorkoutId
     }
+
+    @Transaction
+    open suspend fun createWorkoutFromTemplateTransaction(
+        template: com.gymcoach.app.data.local.entity.WorkoutTemplateEntity,
+        exercises: List<com.gymcoach.app.data.local.entity.TemplateExerciseEntity>
+    ): Long {
+        val now = System.currentTimeMillis()
+        val activeWorkout = getIncompleteWorkout()
+        if (activeWorkout != null) {
+            updateWorkout(
+                activeWorkout.copy(
+                    completed = true,
+                    status = "ABANDONED",
+                    endTime = now
+                )
+            )
+        }
+        val newWorkoutEntity = WorkoutEntity(
+            id = 0,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            notes = template.name,
+            completed = false,
+            status = "ACTIVE",
+            templateId = template.id,
+            templateVersion = template.version,
+            sourceType = "TEMPLATE"
+        )
+        val newWorkoutId = insertWorkout(newWorkoutEntity)
+        exercises.sortedBy { it.orderIndex }.forEachIndexed { index, templateExercise ->
+            val exerciseEntity = WorkoutExerciseEntity(
+                id = 0,
+                workoutId = newWorkoutId,
+                exerciseId = templateExercise.exerciseId,
+                orderIndex = index
+            )
+            val workoutExerciseId = insertWorkoutExercise(exerciseEntity)
+            val targetReps = templateExercise.targetReps.split("-", "–", "to").firstOrNull()?.trim()?.toIntOrNull() ?: 10
+            for (setNum in 1..templateExercise.targetSets.coerceAtLeast(1)) {
+                val setEntity = WorkoutSetEntity(
+                    id = 0,
+                    workoutExerciseId = workoutExerciseId,
+                    setNumber = setNum,
+                    weight = templateExercise.targetWeightKg,
+                    reps = targetReps,
+                    rpe = templateExercise.targetRpe ?: 8.0,
+                    restSeconds = templateExercise.restSeconds,
+                    completed = false,
+                    setType = 0
+                )
+                insertWorkoutSet(setEntity)
+            }
+        }
+        return newWorkoutId
+    }
+
     // Workouts
     @Query("SELECT * FROM workouts ORDER BY date DESC")
     abstract fun getAllWorkouts(): Flow<List<WorkoutEntity>>
@@ -262,6 +320,7 @@ abstract class WorkoutDao {
     @Query("SELECT COUNT(*) FROM workout_exercises WHERE workoutId IN (SELECT id FROM workouts WHERE status = 'COMPLETED')")
     abstract suspend fun getTotalExercisesCount(): Int
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -274,6 +333,7 @@ abstract class WorkoutDao {
     """)
     abstract suspend fun getLongestWorkout(): WorkoutWithStats?
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -345,6 +405,7 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' AND date >= :startDate AND date <= :endDate ORDER BY date DESC")
     abstract fun getWorkoutsInDateRange(startDate: Long, endDate: Long): Flow<List<WorkoutEntity>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -359,6 +420,7 @@ abstract class WorkoutDao {
     @Query("SELECT * FROM workouts WHERE status = 'COMPLETED' ORDER BY date ASC")
     abstract fun getCompletedWorkoutsAsc(): Flow<List<WorkoutEntity>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -370,6 +432,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -381,6 +444,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -392,6 +456,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsWithStats(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -403,6 +468,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsWithStatsByVolumeDesc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -414,6 +480,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsWithStatsByVolumeAsc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -425,6 +492,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsWithStatsByDurationDesc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w
@@ -436,6 +504,7 @@ abstract class WorkoutDao {
     """)
     abstract fun getCompletedWorkoutsWithStatsByDurationAsc(): Flow<List<WorkoutWithStats>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT w.*, SUM(ws.reps * ws.weight) as volume, COUNT(ws.id) as setCount, SUM(ws.reps) as repCount, COUNT(DISTINCT we.id) as exerciseCount
         FROM workouts w

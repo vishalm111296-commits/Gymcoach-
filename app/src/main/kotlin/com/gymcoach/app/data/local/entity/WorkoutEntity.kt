@@ -13,5 +13,9 @@ data class WorkoutEntity(
     val duration: Long,
     val notes: String,
     val completed: Boolean,
-    @ColumnInfo(defaultValue = "NOT_STARTED") val status: String = "NOT_STARTED"
+    @ColumnInfo(defaultValue = "NOT_STARTED") val status: String = "NOT_STARTED",
+    @ColumnInfo(name = "template_id") val templateId: Long? = null,
+    @ColumnInfo(name = "template_version") val templateVersion: Int? = null,
+    @ColumnInfo(name = "source_type", defaultValue = "EMPTY") val sourceType: String = "EMPTY",
+    @ColumnInfo(name = "program_day_id") val programDayId: Long? = null
 )

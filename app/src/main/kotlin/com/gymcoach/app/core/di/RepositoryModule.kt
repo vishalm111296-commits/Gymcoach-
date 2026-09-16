@@ -35,6 +35,12 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindWorkoutTemplateRepository(
+        impl: com.gymcoach.app.data.repository.WorkoutTemplateRepositoryImpl
+    ): com.gymcoach.app.domain.repository.WorkoutTemplateRepository
+
+    @Binds
+    @Singleton
     abstract fun bindAnalyticsRepository(
         impl: AnalyticsRepositoryImpl
     ): AnalyticsRepository

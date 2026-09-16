@@ -28,14 +28,17 @@ import com.gymcoach.app.data.local.dao.*
         ProgramEntity::class,
         ProgramExerciseEntity::class,
         UserProfileEntity::class,
-        ReadinessEntity::class
+        ReadinessEntity::class,
+        WorkoutTemplateEntity::class,
+        TemplateExerciseEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutDao(): WorkoutDao
+    abstract fun workoutTemplateDao(): WorkoutTemplateDao
     abstract fun programDao(): ProgramDao
     abstract fun programDayDao(): ProgramDayDao
     abstract fun programExerciseDao(): ProgramExerciseDao
@@ -460,6 +463,50 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_13_14 = object : androidx.room.migration.Migration(13, 14) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `workout_templates` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `is_archived` INTEGER NOT NULL,
+                        `version` INTEGER NOT NULL,
+                        `created_at` INTEGER NOT NULL,
+                        `updated_at` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `template_exercises` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `template_id` INTEGER NOT NULL,
+                        `exercise_id` INTEGER NOT NULL,
+                        `order_index` INTEGER NOT NULL,
+                        `target_sets` INTEGER NOT NULL,
+                        `target_reps` TEXT NOT NULL,
+                        `target_weight_kg` REAL NOT NULL,
+                        `target_rpe` REAL,
+                        `rest_seconds` INTEGER NOT NULL,
+                        `notes` TEXT NOT NULL,
+                        FOREIGN KEY(`template_id`) REFERENCES `workout_templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`exercise_id`) REFERENCES `exercises`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_template_exercises_template_id` ON `template_exercises` (`template_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_template_exercises_exercise_id` ON `template_exercises` (`exercise_id`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_template_exercises_template_id_order_index` ON `template_exercises` (`template_id`, `order_index`)")
+
+                db.execSQL("ALTER TABLE `workouts` ADD COLUMN `template_id` INTEGER")
+                db.execSQL("ALTER TABLE `workouts` ADD COLUMN `template_version` INTEGER")
+                db.execSQL("ALTER TABLE `workouts` ADD COLUMN `source_type` TEXT NOT NULL DEFAULT 'EMPTY'")
+                db.execSQL("ALTER TABLE `workouts` ADD COLUMN `program_day_id` INTEGER")
+            }
+        }
+
         val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `user_profiles` ADD COLUMN `preferred_schedule` TEXT NOT NULL DEFAULT ''")
@@ -476,7 +523,8 @@ abstract class GymCoachDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13
+                    MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
+                    MIGRATION_13_14
                 )
                 .build()
         }

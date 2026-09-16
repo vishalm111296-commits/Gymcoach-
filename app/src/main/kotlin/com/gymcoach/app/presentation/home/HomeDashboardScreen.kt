@@ -52,6 +52,7 @@ fun HomeDashboardScreen(
     onNavigateToReadiness: () -> Unit = {},
     // F-NAV-1: wire the new Exercises bottom tab to caller navigation
     onNavigateToExercises: () -> Unit = {},
+    onNavigateToTemplates: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -185,6 +186,43 @@ fun HomeDashboardScreen(
             if (state.vtaperBars.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Card(
+                onClick = onNavigateToTemplates,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "WORKOUT TEMPLATES",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Create and start saved workout templates",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                    Text(
+                        text = "\u2192",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = AccentBlue
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))

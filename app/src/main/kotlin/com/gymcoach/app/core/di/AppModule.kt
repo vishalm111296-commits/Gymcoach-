@@ -43,6 +43,10 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideWorkoutTemplateDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.WorkoutTemplateDao = database.workoutTemplateDao()
+
+    @Provides
+    @Singleton
     fun provideReadinessDao(database: GymCoachDatabase): ReadinessDao = database.readinessDao()
 
     @Provides

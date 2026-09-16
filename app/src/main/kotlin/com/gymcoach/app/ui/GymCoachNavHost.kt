@@ -18,6 +18,7 @@ import com.gymcoach.app.presentation.profile.ProfileScreen
 import com.gymcoach.app.presentation.program.ProgramDetailScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.readiness.ReadinessScreen
+import com.gymcoach.app.presentation.template.WorkoutTemplateScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 
 object Routes {
@@ -34,6 +35,7 @@ object Routes {
     const val READINESS = "readiness"
     const val PROGRAM_DETAIL = "program_detail"
     const val CAMERA = "camera/{exerciseType}"
+    const val TEMPLATES = "templates"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -80,6 +82,9 @@ fun GymCoachNavHost(
                 },
                 onNavigateToExercises = {
                     navController.navigate(Routes.EXERCISE_LIST)
+                },
+                onNavigateToTemplates = {
+                    navController.navigate(Routes.TEMPLATES)
                 }
             )
         }
@@ -206,6 +211,17 @@ fun GymCoachNavHost(
             CameraPreviewScreen(
                 exerciseType = exerciseType,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.TEMPLATES) {
+            WorkoutTemplateScreen(
+                onBackClick = { navController.popBackStack() },
+                onStartWorkout = { workoutId ->
+                    navController.navigate(Routes.workoutSession(workoutId)) {
+                        popUpTo(Routes.TEMPLATES) { inclusive = false }
+                    }
+                }
             )
         }
     }

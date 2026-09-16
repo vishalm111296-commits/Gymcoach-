@@ -614,4 +614,60 @@ class RoomMigrationTest {
 
         db.close()
     }
+
+    @Test
+    fun migrate13To14_createsTemplateTables() {
+        var db = migrationTestHelper.createDatabase(TEST_DB, 13)
+        db.execSQL("INSERT INTO workouts (id, date, startTime, endTime, duration, notes, completed, status) VALUES (1, 1000, 1000, 2000, 1000, 'Morning Workout', 1, 'COMPLETED')")
+        db.close()
+
+        db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 14, true,
+            GymCoachDatabase.MIGRATION_13_14
+        )
+
+        // Check workout_templates table
+        val templateCursor = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='workout_templates'")
+        assertTrue("workout_templates table should exist after 13→14 migration", templateCursor.moveToFirst())
+        templateCursor.close()
+
+        // Check template_exercises table
+        val teCursor = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='template_exercises'")
+        assertTrue("template_exercises table should exist after 13→14 migration", teCursor.moveToFirst())
+        teCursor.close()
+
+        // Check workouts table new columns
+        val pragmaCursor = db.query("PRAGMA table_info(workouts)")
+        val cols = mutableSetOf<String>()
+        while (pragmaCursor.moveToNext()) {
+            cols.add(pragmaCursor.getString(pragmaCursor.getColumnIndexOrThrow("name")))
+        }
+        pragmaCursor.close()
+        assertTrue("workouts table must have template_id", cols.contains("template_id"))
+        assertTrue("workouts table must have template_version", cols.contains("template_version"))
+        assertTrue("workouts table must have source_type", cols.contains("source_type"))
+        assertTrue("workouts table must have program_day_id", cols.contains("program_day_id"))
+
+        db.close()
+    }
+
+    @Test
+    fun migrateFullChain1To14() {
+        migrationTestHelper.createDatabase(TEST_DB, 1).close()
+
+        val db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 14, true,
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+            MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
+            MIGRATION_10_11, GymCoachDatabase.MIGRATION_11_12,
+            GymCoachDatabase.MIGRATION_12_13, GymCoachDatabase.MIGRATION_13_14
+        )
+
+        val cursor = db.query("SELECT COUNT(*) FROM workout_templates")
+        assertTrue(cursor.moveToFirst())
+        cursor.close()
+
+        db.close()
+    }
 }

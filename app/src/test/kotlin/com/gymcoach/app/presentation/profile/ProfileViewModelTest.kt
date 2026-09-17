@@ -1,15 +1,35 @@
 package com.gymcoach.app.presentation.profile
 
 import com.gymcoach.app.data.local.entity.UserProfileEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 /**
  * Tests for ProfileViewModel and profile data display.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
+
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `UserProfileEntity defaults are correct`() {
@@ -137,5 +157,38 @@ class ProfileViewModelTest {
         assertTrue(p.goal.isBlank())
         assertTrue(p.preferredExercises.isBlank())
         assertTrue(p.exercisesToAvoid.isBlank())
+    }
+
+    @Test
+    fun `updateProfile saves new profile and inserts body measurement`() = kotlinx.coroutines.test.runTest {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+
+        io.mockk.every { mockRepo.getLatestProfile() } returns kotlinx.coroutines.flow.flowOf(UserProfileEntity(id = 1L))
+        io.mockk.coEvery { mockRepo.saveProfile(any()) } returns 1L
+        io.mockk.coEvery { mockDao.insert(any()) } returns 1L
+
+        val viewModel = ProfileViewModel(mockRepo, mockDao)
+
+        viewModel.updateProfile(
+            age = 30,
+            sex = "Male",
+            heightCm = 180.0,
+            weightKg = 85.0,
+            trainingDays = 5,
+            sessionLength = 90,
+            experience = "Advanced",
+            goal = "Strength",
+            equipment = "gym"
+        )
+
+        io.mockk.coVerify {
+            mockRepo.saveProfile(match {
+                it.age == 30 && it.weightKg == 85.0 && it.goal == "Strength"
+            })
+            mockDao.insert(match {
+                it.weightKg == 85.0 && it.notes == "Profile update"
+            })
+        }
     }
 }

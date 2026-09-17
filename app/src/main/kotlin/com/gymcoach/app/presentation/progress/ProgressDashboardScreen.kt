@@ -69,6 +69,7 @@ import java.util.Locale
 fun ProgressDashboardScreen(
     onBackClick: () -> Unit,
     onNavigateToProgressionAnalytics: (Long, String) -> Unit = { _, _ -> },
+    onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -89,6 +90,9 @@ fun ProgressDashboardScreen(
     }
 
     Scaffold(
+        bottomBar = {
+            com.gymcoach.app.ui.GymCoachBottomNav(currentRoute = "progress", onNavigate = onNavigateBottomBar)
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Progress") },

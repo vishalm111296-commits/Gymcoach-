@@ -175,7 +175,7 @@ During this forensic pass, the following defects and hygiene issues were identif
 | **Gate 10: Android Lint & Zero Warnings** | **PASS** | 0 lint errors, 0 warnings across all code and resources | `e092177` | 35181283756 | GitHub Runner | None (Passing) |
 | **Gate 11: JVM Unit Test Suite** | **PASS** | 214 unit tests (209 passed, 5 skipped, 0 failures) in 2m22s | `e092177` | 35181283756 | JVM Runner | None (Passing) |
 | **Gate 12: AAB Structural Validation** | **VERIFIED** | AAB generated and verified for `classes.dex` and `AndroidManifest.xml` | `e092177` | 35181283756 | GitHub Runner | None (Passing) |
-| **Gate 13: Single Final Release Artifact** | **VERIFIED** | Workflow emits ONE production artifact `gymcoach-final-aab` containing signed `app-release.aab` on tag; suppresses unsigned binaries on main/PRs | `e092177` | 35181283756 | GitHub Runner | None (Passing) |
+| **Gate 13: Single Final Release Artifact** | **VERIFIED** | 0 artifacts on main push, exactly one AAB artifact on tag. | `e092177` | 35181283756 | GitHub Runner | None (Passing) |
 | **Gate 14: Production Telemetry** | **EXTERNAL** | 0 projects in Sentry organization `doms-jr`; strictly: `NO GYMCOACH PRODUCTION TELEMETRY AVAILABLE` | `e092177` | 35181283756 | External Sentry | Configure Sentry project if desired |
 | **Gate 15: Code Hygiene & Clean Imports** | **VERIFIED** | 0 duplicate imports, 0 TODOs/FIXMEs, 0 debug println/Log.d | `e092177` | 35181283756 | Source Scanner | None (Passing) |
 | **Gate 16: Backup & Extraction Rules** | **VERIFIED** | Rules aligned with actual `gymcoach.db`, `gymcoach.db-wal`, `gymcoach.db-shm` | `e092177` | 35181283756 | Source & Manifest | None (Passing) |

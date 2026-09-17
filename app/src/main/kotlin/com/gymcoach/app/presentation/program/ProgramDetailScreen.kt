@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.program
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.gymcoach.app.ui.GymCoachBottomNav
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -95,8 +98,33 @@ data class ProgramDetailUiState(
 class ProgramDetailViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     private val exerciseDao: ExerciseDao,
-    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository
+    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository,
+    private val programGenerator: com.gymcoach.app.core.program.ProgramGenerator
 ) : ViewModel() {
+
+    constructor(
+        programRepository: ProgramRepository,
+        exerciseDao: ExerciseDao,
+        workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository
+    ) : this(
+        programRepository,
+        exerciseDao,
+        workoutRepository,
+        com.gymcoach.app.core.program.ProgramGenerator(
+            exerciseDao = exerciseDao,
+            equipmentAvailability = com.gymcoach.app.core.exercise.EquipmentAvailability(),
+            readinessRepository = object : com.gymcoach.app.domain.repository.ReadinessRepository {
+                override fun getAllReadiness() = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
+                override fun getLatestReadiness() = kotlinx.coroutines.flow.flowOf(null)
+                override fun getReadinessInRange(s: Long, e: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
+                override fun getRecentReadiness(s: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
+                override suspend fun saveReadiness(r: com.gymcoach.app.data.local.entity.ReadinessEntity) = 0L
+                override suspend fun updateReadiness(r: com.gymcoach.app.data.local.entity.ReadinessEntity) {}
+                override suspend fun deleteReadiness(id: Long) {}
+            }
+        )
+    )
+
     private val _uiState = MutableStateFlow(ProgramDetailUiState())
     val uiState: StateFlow<ProgramDetailUiState> = _uiState.asStateFlow()
 
@@ -104,6 +132,22 @@ class ProgramDetailViewModel @Inject constructor(
         loadActiveProgram()
     }
 
+    fun generateAndActivateProgram(frequency: Int, equipmentType: String, goal: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                val generated = programGenerator.generateProgram(
+                    frequency = frequency,
+                    equipmentType = equipmentType,
+                    goal = goal
+                )
+                programRepository.saveGeneratedProgram(generated)
+                loadActiveProgram()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to generate program")
+            }
+        }
+    }
     fun loadActiveProgram() {
         viewModelScope.launch {
             _uiState.value = ProgramDetailUiState(isLoading = true)
@@ -173,13 +217,18 @@ class ProgramDetailViewModel @Inject constructor(
 fun ProgramDetailScreen(
     onBackClick: () -> Unit,
     onStartWorkout: (Long) -> Unit = {},
+    onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgramDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     var showBuilderSheet by rememberSaveable { mutableStateOf(false) }
+    var showGenerateSheet by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         containerColor = DarkBackground,
+        bottomBar = {
+            GymCoachBottomNav(currentRoute = "program_detail", onNavigate = onNavigateBottomBar)
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Training Program", color = MaterialTheme.colorScheme.onBackground) },
@@ -215,6 +264,13 @@ fun ProgramDetailScreen(
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
                             Text("Create Custom Routine")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { showGenerateSheet = true },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text("AI Program Generator")
                         }
                     }
                 }
@@ -269,6 +325,9 @@ fun ProgramDetailScreen(
                                     }
                                     OutlinedButton(onClick = { showBuilderSheet = true }) {
                                         Text("New Routine")
+                                    }
+                                    OutlinedButton(onClick = { showGenerateSheet = true }) {
+                                        Text("AI Generator")
                                     }
                                 }
                             }
@@ -366,6 +425,22 @@ fun ProgramDetailScreen(
                     item { Spacer(Modifier.height(24.dp)) }
                 }
             }
+        }
+    }
+
+
+    if (showGenerateSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showGenerateSheet = false },
+            sheetState = sheetState
+        ) {
+            GenerateProgramBottomSheet(
+                onDismiss = { showGenerateSheet = false },
+                onGenerate = { freq, eq, goal ->
+                    viewModel.generateAndActivateProgram(freq, eq, goal)
+                }
+            )
         }
     }
 
@@ -482,6 +557,82 @@ private fun RoutineBuilderContent(
             }
         }
 
+        Spacer(Modifier.height(32.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GenerateProgramBottomSheet(
+    onDismiss: () -> Unit,
+    onGenerate: (Int, String, String) -> Unit
+) {
+    var goal by rememberSaveable { mutableStateOf("Hypertrophy") }
+    var frequency by rememberSaveable { mutableStateOf(4) }
+    var equipment by rememberSaveable { mutableStateOf("gym") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "AI Program Generator",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text("Primary Goal", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            listOf("Hypertrophy", "Strength", "Fat Loss", "Endurance").forEach { g ->
+                FilterChip(
+                    selected = goal == g,
+                    onClick = { goal = g },
+                    label = { Text(g) }
+                )
+            }
+        }
+
+        Text("Training Days / Week", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            listOf(2, 3, 4, 5, 6).forEach { f ->
+                FilterChip(
+                    selected = frequency == f,
+                    onClick = { frequency = f },
+                    label = { Text("$f Days") }
+                )
+            }
+        }
+
+        Text("Available Equipment", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            FilterChip(selected = equipment == "gym", onClick = { equipment = "gym" }, label = { Text("Full Gym") })
+            FilterChip(selected = equipment == "home", onClick = { equipment = "home" }, label = { Text("Dumbbells/Bands") })
+            FilterChip(selected = equipment == "custom", onClick = { equipment = "custom" }, label = { Text("Bodyweight") })
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    onGenerate(frequency, equipment, goal)
+                    onDismiss()
+                }
+            ) {
+                Text("Generate & Activate Program")
+            }
+        }
+        
         Spacer(Modifier.height(32.dp))
     }
 }

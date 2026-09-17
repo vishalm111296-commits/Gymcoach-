@@ -71,7 +71,8 @@ fun ExerciseListScreen(
     onExerciseClick: (Long) -> Unit = {},
     onHistoryClick: () -> Unit = {},
     onProgressClick: () -> Unit = {},
-    onCameraClick: (ExerciseType) -> Unit = {}
+    onCameraClick: (ExerciseType) -> Unit = {},
+    onNavigateBottomBar: (String) -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
@@ -87,7 +88,12 @@ fun ExerciseListScreen(
 
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" || filterMovementPattern != "All" || showFavoritesOnly
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    androidx.compose.material3.Scaffold(
+        bottomBar = {
+            com.gymcoach.app.ui.GymCoachBottomNav(currentRoute = "exercise_list", onNavigate = onNavigateBottomBar)
+        }
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -243,6 +249,7 @@ fun ExerciseListScreen(
             }
         }
     }
+    } // end scaffold
 
     if (showFilterSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

@@ -54,6 +54,18 @@ fun GymCoachNavHost(
     navController: NavHostController,
     startDestination: String = Routes.HOME
 ) {
+
+    val onBottomNavigate: (String) -> Unit = { route ->
+        when (route) {
+            "home" -> navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = false } }
+            "workout" -> navController.navigate(Routes.workoutSession())
+            "exercise_list" -> navController.navigate(Routes.EXERCISE_LIST)
+            "program_detail" -> navController.navigate(Routes.PROGRAM_DETAIL)
+            "progress" -> navController.navigate(Routes.PROGRESS)
+            "profile" -> navController.navigate(Routes.PROFILE)
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -105,7 +117,8 @@ fun GymCoachNavHost(
                 onProgressClick = { navController.navigate(Routes.PROGRESS) },
                 onCameraClick = { exerciseType ->
                     navController.navigate(Routes.camera(exerciseType))
-                }
+                },
+                onNavigateBottomBar = onBottomNavigate
             )
         }
 
@@ -195,13 +208,15 @@ fun GymCoachNavHost(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToProgressionAnalytics = { exerciseId, exerciseName ->
                     navController.navigate(Routes.progressionAnalytics(exerciseId, exerciseName))
-                }
+                },
+                onNavigateBottomBar = onBottomNavigate
             )
         }
 
         composable(Routes.PROFILE) {
             ProfileScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateBottomBar = onBottomNavigate
             )
         }
 
@@ -214,7 +229,8 @@ fun GymCoachNavHost(
         composable(Routes.PROGRAM_DETAIL) {
             ProgramDetailScreen(
                 onBackClick = { navController.popBackStack() },
-                onStartWorkout = { workoutId -> navController.navigate(Routes.workoutSession(workoutId)) }
+                onStartWorkout = { workoutId -> navController.navigate(Routes.workoutSession(workoutId)) },
+                onNavigateBottomBar = onBottomNavigate
             )
         }
 

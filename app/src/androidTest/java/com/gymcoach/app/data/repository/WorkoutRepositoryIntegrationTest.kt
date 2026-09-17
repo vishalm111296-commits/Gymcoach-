@@ -54,7 +54,7 @@ class WorkoutRepositoryIntegrationTest {
             GymCoachDatabase::class.java
         ).allowMainThreadQueries().build()
         workoutDao = db.workoutDao()
-        repository = WorkoutRepositoryImpl(workoutDao, db.exerciseDao())
+        repository = WorkoutRepositoryImpl(workoutDao, db.exerciseDao(), db.programDayDao(), db.programExerciseDao())
         analyticsRepo = AnalyticsRepositoryImpl(workoutDao)
 
         // Seed exercise id 1 so child workout_exercises foreign keys are satisfied

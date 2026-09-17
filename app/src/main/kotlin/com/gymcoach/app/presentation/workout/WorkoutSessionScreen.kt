@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +41,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.gymcoach.app.presentation.components.CreateCustomExerciseBottomSheet
 import androidx.compose.material3.LinearProgressIndicator
@@ -57,6 +60,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -87,6 +91,7 @@ import java.util.Locale
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
     workoutId: Long? = null,
+    onViewHistoryDetail: (Long) -> Unit = {},
     onCameraClick: (com.gymcoach.app.core.ml.ExerciseType) -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
@@ -94,6 +99,7 @@ fun WorkoutSessionScreen(
     val showPicker by viewModel.showExercisePicker.collectAsState()
     val allExercises by viewModel.allExercises.collectAsState()
     val completed by viewModel.completed.collectAsState()
+    val workoutSummary by viewModel.workoutSummary.collectAsState()
     val error by viewModel.error.collectAsState()
     val restTimerState by viewModel.restTimerState.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
@@ -140,19 +146,27 @@ fun WorkoutSessionScreen(
     }
 
     if (completed) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Workout Complete!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = onBackClick) {
-                    Text("Go Back")
+        if (workoutSummary != null) {
+            WorkoutCompletionView(
+                summary = workoutSummary!!,
+                onDone = onBackClick,
+                onViewHistoryDetail = onViewHistoryDetail
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Workout Complete!",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = onBackClick) {
+                        Text("Go Back")
+                    }
                 }
             }
         }
@@ -972,6 +986,211 @@ private fun RecoveryAdvisoryBanner(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Dismiss",
                     tint = androidx.compose.ui.graphics.Color(0xFFFFB74D)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun WorkoutCompletionView(
+    summary: WorkoutLoggingViewModel.WorkoutSummary,
+    onDone: () -> Unit,
+    onViewHistoryDetail: (Long) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "Workout Crushed! 🔥",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "${summary.workoutName} • ${java.time.LocalDate.now()}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 2x2 Grid using Rows and Columns
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard(
+                    title = "Total Volume",
+                    value = "${String.format(Locale.US, "%.0f", summary.totalVolumeKg)}\nkg·reps",
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    title = "Duration",
+                    value = formatDuration(summary.durationSeconds),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard(
+                    title = "Sets Completed",
+                    value = "${summary.completedSetsCount} / ${summary.totalSetsCount}",
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    title = "Personal Records",
+                    value = if (summary.newPRs.isNotEmpty()) "${summary.newPRs.size} New PRs!" else "0",
+                    modifier = Modifier.weight(1f),
+                    highlight = summary.newPRs.isNotEmpty()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            if (summary.newPRs.isNotEmpty()) {
+                Text(
+                    text = "Personal Records Broken",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                summary.newPRs.forEach { pr ->
+                    PRCard(pr)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            Button(
+                onClick = onDone,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Done", style = MaterialTheme.typography.titleMedium)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { onViewHistoryDetail(summary.workoutId) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("View Detailed Breakdown", style = MaterialTheme.typography.titleMedium)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    highlight: Boolean = false
+) {
+    Card(
+        modifier = modifier.aspectRatio(1.2f),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00) else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                color = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00) else MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalRecord) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(androidx.compose.ui.graphics.Color(0xFFCCFF00).copy(alpha = 0.2f), shape = androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "PR Icon",
+                    tint = androidx.compose.ui.graphics.Color(0xFFCCFF00),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = pr.exerciseName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = pr.details,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

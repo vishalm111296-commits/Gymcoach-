@@ -167,6 +167,7 @@ fun GymCoachNavHost(
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId,
+                onViewHistoryDetail = { wId -> navController.navigate(Routes.workoutHistoryDetail(wId)) },
                 onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
             )
         }
@@ -176,6 +177,7 @@ fun GymCoachNavHost(
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = null,
+                onViewHistoryDetail = { wId -> navController.navigate(Routes.workoutHistoryDetail(wId)) },
                 onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
             )
         }

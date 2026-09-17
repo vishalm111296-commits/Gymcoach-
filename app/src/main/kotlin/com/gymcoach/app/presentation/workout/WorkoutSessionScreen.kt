@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Check
@@ -86,6 +87,7 @@ import java.util.Locale
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
     workoutId: Long? = null,
+    onCameraClick: (com.gymcoach.app.core.ml.ExerciseType) -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
     val currentWorkout by viewModel.currentWorkout.collectAsState()
@@ -255,7 +257,8 @@ fun WorkoutSessionScreen(
                                onRestSecondsChange = { setIdx, rest -> viewModel.updateSetRestSeconds(exIdx, setIdx, rest) },
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
-                               onOpenPlateCalculator = { w -> plateCalcWeight = w }
+                               onOpenPlateCalculator = { w -> plateCalcWeight = w },
+                               onCameraClick = onCameraClick
                             )
                         }
 
@@ -554,7 +557,7 @@ private fun RestTimerCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExerciseSetCard(
+internal fun ExerciseSetCard(
     exerciseName: String,
     muscleGroup: String,
     sets: List<com.gymcoach.app.domain.model.WorkoutSet>,
@@ -571,7 +574,8 @@ private fun ExerciseSetCard(
     onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: (Int) -> Unit,
-    onOpenPlateCalculator: (Double) -> Unit = {}
+    onOpenPlateCalculator: (Double) -> Unit = {},
+    onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     Card(
@@ -602,6 +606,16 @@ private fun ExerciseSetCard(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val exerciseType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(exerciseName)
+                    if (exerciseType != null && onCameraClick != null) {
+                        IconButton(onClick = { onCameraClick(exerciseType) }) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = "Camera Form Coach",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     IconButton(onClick = {
                         val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
                         onOpenPlateCalculator(maxWeight)

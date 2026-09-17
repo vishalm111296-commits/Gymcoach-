@@ -119,7 +119,8 @@ fun GymCoachNavHost(
                 onBackClick = { navController.popBackStack() },
                 onViewProgressClick = { exId, exName ->
                     navController.navigate(Routes.progressionAnalytics(exId, exName))
-                }
+                },
+                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
             )
         }
 
@@ -165,7 +166,8 @@ fun GymCoachNavHost(
             val workoutId = if (arg == -1L) null else arg
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
-                workoutId = workoutId
+                workoutId = workoutId,
+                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
             )
         }
 
@@ -173,7 +175,8 @@ fun GymCoachNavHost(
         composable(Routes.WORKOUT_LEGACY) {
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
-                workoutId = null
+                workoutId = null,
+                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
             )
         }
 

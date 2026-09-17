@@ -10,15 +10,36 @@ class WorkoutSessionScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun testExerciseInstructionsExpandable() {
-        // Assume basic setup: mock view model with workout containing exercise with instructions
-        // This is a placeholder test; actual impl requires Dagger/Hilt setup for viewmodel injection
-        // Given instructions "Lift heavy", check "View Instructions" toggle functionality.
-        
-        // Example check:
-        // composeTestRule.onNodeWithText("View Instructions").assertExists()
-        // composeTestRule.onNodeWithText("View Instructions").performClick()
-        // composeTestRule.onNodeWithText("Instructions").assertIsDisplayed()
-        // composeTestRule.onNodeWithText("Lift heavy").assertIsDisplayed()
+    fun testExerciseInstructionsExpandableAndCameraAction() {
+        var cameraClicked = false
+        composeTestRule.setContent {
+            ExerciseSetCard(
+                exerciseName = "Barbell Squat",
+                muscleGroup = "Quads",
+                sets = emptyList(),
+                previousSets = null,
+                lastPerformance = null,
+                instructions = "Keep chest up and knees over toes.",
+                recommendation = null,
+                onAddSet = {},
+                onRemoveSet = {},
+                onRemoveExercise = {},
+                onRepsChange = { _, _ -> },
+                onWeightChange = { _, _ -> },
+                onRpeChange = { _, _ -> },
+                onRestSecondsChange = { _, _ -> },
+                onSetTypeChange = { _, _ -> },
+                onToggleComplete = {},
+                onOpenPlateCalculator = {},
+                onCameraClick = { cameraClicked = true }
+            )
+        }
+
+        composeTestRule.onNodeWithText("View Instructions").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Instructions").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Keep chest up and knees over toes.").assertIsDisplayed()
+
+        composeTestRule.onNodeWithContentDescription("Camera Form Coach").assertIsDisplayed().performClick()
+        assert(cameraClicked)
     }
 }

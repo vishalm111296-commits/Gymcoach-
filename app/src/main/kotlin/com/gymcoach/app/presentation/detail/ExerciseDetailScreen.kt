@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -143,6 +144,7 @@ fun ExerciseDetailScreen(
     onBackClick: () -> Unit,
     onExerciseClick: (Long) -> Unit = {},
     onViewProgressClick: (exerciseId: Long, exerciseName: String) -> Unit = { _, _ -> },
+    onCameraClick: (com.gymcoach.app.core.ml.ExerciseType) -> Unit = {},
     viewModel: ExerciseDetailViewModel = hiltViewModel()
 ) {
     val exercise by viewModel.exercise.collectAsState()
@@ -487,7 +489,33 @@ fun ExerciseDetailScreen(
                     )
                 }
 
-                // 8. VIEW PROGRESSION ANALYTICS
+                // 8. CAMERA FORM COACH (If supported)
+                val matchedType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(ex.name)
+                if (matchedType != null) {
+                    Spacer(Modifier.height(16.dp))
+                    androidx.compose.material3.Button(
+                        onClick = { onCameraClick(matchedType) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Check Form with Camera",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        androidx.compose.material3.Text(
+                            text = "Check Form with Camera",
+                            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        )
+                    }
+                }
+
+                // 9. VIEW PROGRESSION ANALYTICS
                 Spacer(Modifier.height(16.dp))
                 androidx.compose.material3.Button(
                     onClick = { onViewProgressClick(ex.id, ex.name) },

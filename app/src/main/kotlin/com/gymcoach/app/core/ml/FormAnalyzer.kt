@@ -26,7 +26,25 @@ data class Pose(
 
 enum class ExerciseType {
     BICEP_CURL, SQUAT, PUSH_UP, SHOULDER_PRESS, LATERAL_RAISE,
-    BENT_OVER_ROW, PLANK, DEADLIFT, BENCH_PRESS
+    BENT_OVER_ROW, PLANK, DEADLIFT, BENCH_PRESS;
+
+    companion object {
+        fun fromExerciseName(name: String): ExerciseType? {
+            val lower = name.lowercase().replace("-", " ")
+            return when {
+                "bicep curl" in lower || "dumbbell curl" in lower || "barbell curl" in lower || "hammer curl" in lower -> BICEP_CURL
+                "push up" in lower || "pushup" in lower -> PUSH_UP
+                "bench press" in lower || "chest press" in lower -> BENCH_PRESS
+                "squat" in lower -> SQUAT
+                "deadlift" in lower -> DEADLIFT
+                "shoulder press" in lower || "overhead press" in lower || "military press" in lower -> SHOULDER_PRESS
+                "lateral raise" in lower || "side raise" in lower -> LATERAL_RAISE
+                "bent over row" in lower || "barbell row" in lower || "dumbbell row" in lower -> BENT_OVER_ROW
+                "plank" in lower -> PLANK
+                else -> null
+            }
+        }
+    }
 }
 
 // ── Per-exercise configuration ───────────────────────────

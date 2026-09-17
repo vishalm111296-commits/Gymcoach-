@@ -71,4 +71,25 @@ class FormAnalyzerTest {
         assertNotNull(result)
         assertEquals(1, result!!.repCount)
     }
+
+    @Test
+    fun `fromExerciseName matches expected recognized exercises`() {
+        assertEquals(ExerciseType.SQUAT, ExerciseType.fromExerciseName("Barbell Squat"))
+        assertEquals(ExerciseType.BICEP_CURL, ExerciseType.fromExerciseName("Dumbbell Bicep Curl"))
+        assertEquals(ExerciseType.PUSH_UP, ExerciseType.fromExerciseName("Push-up"))
+        assertEquals(ExerciseType.PLANK, ExerciseType.fromExerciseName("Standard Plank"))
+        assertEquals(ExerciseType.DEADLIFT, ExerciseType.fromExerciseName("Romanian Deadlift"))
+        assertEquals(ExerciseType.BENCH_PRESS, ExerciseType.fromExerciseName("Incline Bench Press"))
+        assertEquals(ExerciseType.SHOULDER_PRESS, ExerciseType.fromExerciseName("Overhead Press"))
+        assertEquals(ExerciseType.LATERAL_RAISE, ExerciseType.fromExerciseName("Cable Lateral Raise"))
+        assertEquals(ExerciseType.BENT_OVER_ROW, ExerciseType.fromExerciseName("Bent-over Row"))
+    }
+
+    @Test
+    fun `fromExerciseName returns null for unrecognized exercises`() {
+        assertNull(ExerciseType.fromExerciseName("Tricep Extension"))
+        assertNull(ExerciseType.fromExerciseName("Leg Press"))
+        assertNull(ExerciseType.fromExerciseName("Calf Raise"))
+        assertNull(ExerciseType.fromExerciseName("Unknown Exercise"))
+    }
 }

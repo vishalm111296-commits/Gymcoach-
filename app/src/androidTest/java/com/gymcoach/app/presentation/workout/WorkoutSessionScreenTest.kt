@@ -10,6 +10,21 @@ class WorkoutSessionScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
+    fun testCameraOverlayDisplaysApplyRepsButtonAndTriggersCallback() {
+        var appliedReps = 0
+        composeTestRule.setContent {
+            com.gymcoach.app.presentation.camera.CameraOverlay(
+                repCount = 12,
+                formFeedback = "Good form",
+                onApplyReps = { count -> appliedReps = count }
+            )
+        }
+
+        composeTestRule.onNodeWithText("Finish & Apply Reps (12)").assertIsDisplayed().performClick()
+        assert(appliedReps == 12)
+    }
+
+    @Test
     fun testExerciseInstructionsExpandableAndCameraAction() {
         var cameraClicked = false
         composeTestRule.setContent {

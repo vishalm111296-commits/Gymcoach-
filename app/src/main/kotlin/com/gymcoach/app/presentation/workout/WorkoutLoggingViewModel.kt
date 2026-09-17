@@ -457,6 +457,33 @@ class WorkoutLoggingViewModel @Inject constructor(
         updateSetField(exerciseIndex, setIndex) { it.copy(setType = setType) }
     }
 
+    fun applyCameraReps(exerciseIndex: Int, reps: Int, setIndex: Int? = null) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices) return
+        val we = workout.exercises[exerciseIndex]
+        if (we.sets.isEmpty()) return
+        val targetSetIndex = setIndex ?: we.sets.indexOfFirst { !it.completed }.let { if (it == -1) we.sets.lastIndex else it }
+        if (targetSetIndex !in we.sets.indices) return
+        val set = we.sets[targetSetIndex]
+        val updated = set.copy(reps = reps, completed = true)
+        viewModelScope.launch {
+            try {
+                workoutRepository.updateSet(updated)
+                val refreshed = _currentWorkout.value
+                calculateSessionVolume(refreshed)
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to apply camera reps"
+            }
+        }
+        val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
+        val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
+        val nextSet = calculateNextSetLabel(workout, exerciseIndex, targetSetIndex)
+        restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+    }
+
     fun removeSet(exerciseIndex: Int, setIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return

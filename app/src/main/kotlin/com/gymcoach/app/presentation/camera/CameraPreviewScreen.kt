@@ -80,7 +80,8 @@ private sealed interface ModelState {
 @Composable
 fun CameraPreviewScreen(
     exerciseType: ExerciseType = ExerciseType.BICEP_CURL,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onApplyReps: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -248,7 +249,8 @@ fun CameraPreviewScreen(
                 )
                 CameraOverlay(
                     repCount = repCount,
-                    formFeedback = formFeedback
+                    formFeedback = formFeedback,
+                    onApplyReps = onApplyReps
                 )
             } else {
                 // Model still downloading/initializing.

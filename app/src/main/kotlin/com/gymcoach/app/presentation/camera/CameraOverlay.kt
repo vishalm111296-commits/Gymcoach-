@@ -17,10 +17,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+
 @Composable
 fun CameraOverlay(
     repCount: Int,
     formFeedback: String?,
+    onApplyReps: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -32,12 +42,39 @@ fun CameraOverlay(
         )
 
         if (!formFeedback.isNullOrBlank()) {
+            val bottomPadding = if (onApplyReps != null && repCount > 0) 96.dp else 80.dp
             FormFeedbackView(
                 feedback = formFeedback,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
+                    .padding(bottom = bottomPadding)
             )
+        }
+
+        if (onApplyReps != null && repCount > 0) {
+            Button(
+                onClick = { onApplyReps(repCount) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFCCFF00),
+                    contentColor = Color.Black
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Apply Reps",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Finish & Apply Reps ($repCount)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
         }
     }
 }

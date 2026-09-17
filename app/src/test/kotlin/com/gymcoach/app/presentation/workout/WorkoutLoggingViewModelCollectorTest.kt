@@ -59,6 +59,73 @@ class WorkoutLoggingViewModelCollectorTest {
     }
 
     @Test
+    fun `applyCameraReps updates set reps, marks completed, and starts rest timer`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(
+            id = 55L,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            completed = false,
+            status = "ACTIVE",
+            notes = ""
+        )
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 55L, exerciseId = 100L, orderIndex = 0),
+                    exercise = Exercise(id = 100L, name = "Barbell Squat", description = "", muscleGroup = "Legs", equipment = "Barbell", difficulty = "Intermediate"),
+                    sets = listOf(
+                        WorkoutSet(id = 10L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = false, setType = SetType.NORMAL),
+                        WorkoutSet(id = 11L, workoutExerciseId = 1L, setNumber = 2, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = false, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(55L) } returns flowOf(details)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        )
+
+        viewModel.loadOrStartWorkout(55L)
+        kotlinx.coroutines.delay(100) // allow collection
+
+        viewModel.applyCameraReps(exerciseIndex = 0, reps = 12)
+
+        coVerify(exactly = 1) {
+            workoutRepository.updateSet(
+                match {
+                    it.id == 10L && it.reps == 12 && it.completed
+                }
+            )
+        }
+
+        verify(exactly = 1) {
+            restTimer.start(
+                seconds = 90,
+                scope = any(),
+                nextSet = "Barbell Squat Set 2",
+                workoutId = 55L
+            )
+        }
+    }
+
+    @Test
     fun `toggleSetCompletion starts restTimer with next set label and workout id`() = runTest {
         val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
         val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)

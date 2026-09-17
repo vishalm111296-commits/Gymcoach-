@@ -1,6 +1,8 @@
 package com.gymcoach.app.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -164,21 +166,27 @@ fun GymCoachNavHost(
         ) { backStackEntry ->
             val arg = backStackEntry.arguments?.getLong("workoutId") ?: -1L
             val workoutId = if (arg == -1L) null else arg
+            val appliedReps by backStackEntry.savedStateHandle.getStateFlow<Int?>("applied_reps", null).collectAsState()
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = workoutId,
                 onViewHistoryDetail = { wId -> navController.navigate(Routes.workoutHistoryDetail(wId)) },
-                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
+                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) },
+                appliedReps = appliedReps,
+                onClearAppliedReps = { backStackEntry.savedStateHandle.remove<Int>("applied_reps") }
             )
         }
 
         // Intentional backward-compatibility and bottom-nav alias for "workout" route
-        composable(Routes.WORKOUT_LEGACY) {
+        composable(Routes.WORKOUT_LEGACY) { backStackEntry ->
+            val appliedReps by backStackEntry.savedStateHandle.getStateFlow<Int?>("applied_reps", null).collectAsState()
             WorkoutSessionScreen(
                 onBackClick = { navController.popBackStack() },
                 workoutId = null,
                 onViewHistoryDetail = { wId -> navController.navigate(Routes.workoutHistoryDetail(wId)) },
-                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) }
+                onCameraClick = { exerciseType -> navController.navigate(Routes.camera(exerciseType)) },
+                appliedReps = appliedReps,
+                onClearAppliedReps = { backStackEntry.savedStateHandle.remove<Int>("applied_reps") }
             )
         }
 
@@ -225,7 +233,11 @@ fun GymCoachNavHost(
                 ?: ExerciseType.BICEP_CURL
             CameraPreviewScreen(
                 exerciseType = exerciseType,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onApplyReps = { count ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("applied_reps", count)
+                    navController.popBackStack()
+                }
             )
         }
 

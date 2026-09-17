@@ -93,6 +93,8 @@ fun WorkoutSessionScreen(
     workoutId: Long? = null,
     onViewHistoryDetail: (Long) -> Unit = {},
     onCameraClick: (com.gymcoach.app.core.ml.ExerciseType) -> Unit = {},
+    appliedReps: Int? = null,
+    onClearAppliedReps: () -> Unit = {},
     viewModel: WorkoutLoggingViewModel = hiltViewModel()
 ) {
     val currentWorkout by viewModel.currentWorkout.collectAsState()
@@ -114,6 +116,7 @@ fun WorkoutSessionScreen(
     var pickerSearchQuery by rememberSaveable { mutableStateOf("") }
     var pickerSelectedCategory by rememberSaveable { mutableStateOf("All") }
     var showCreateCustomExerciseInWorkout by rememberSaveable { mutableStateOf(false) }
+    var activeCameraExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -128,6 +131,15 @@ fun WorkoutSessionScreen(
 
     LaunchedEffect(workoutId) {
         viewModel.loadOrStartWorkout(workoutId)
+    }
+
+    LaunchedEffect(appliedReps) {
+        val reps = appliedReps
+        if (reps != null && reps > 0) {
+            val targetIdx = activeCameraExerciseIndex ?: 0
+            viewModel.applyCameraReps(targetIdx, reps)
+            onClearAppliedReps()
+        }
     }
 
     DisposableEffect(Unit) {
@@ -272,7 +284,10 @@ fun WorkoutSessionScreen(
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
                                onOpenPlateCalculator = { w -> plateCalcWeight = w },
-                               onCameraClick = onCameraClick
+                               onCameraClick = { type ->
+                                   activeCameraExerciseIndex = exIdx
+                                   onCameraClick(type)
+                               }
                             )
                         }
 

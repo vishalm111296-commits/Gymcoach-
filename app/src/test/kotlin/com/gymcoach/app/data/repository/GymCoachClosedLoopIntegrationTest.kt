@@ -68,7 +68,7 @@ class GymCoachClosedLoopIntegrationTest {
         workoutDao = mockk(relaxed = true)
         exerciseDao = mockk(relaxed = true)
         equipmentAvailability = mockk(relaxed = true)
-        workoutRepository = WorkoutRepositoryImpl(workoutDao, exerciseDao)
+        workoutRepository = WorkoutRepositoryImpl(workoutDao, exerciseDao, mockk(relaxed=true), mockk(relaxed=true))
         progressionEngine = ProgressionEngine(equipmentAvailability)
         volumeCalculator = VolumeCalculator()
     }

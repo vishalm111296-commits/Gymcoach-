@@ -68,6 +68,61 @@ abstract class WorkoutDao {
     }
 
     @Transaction
+    open suspend fun createWorkoutFromProgramDayTransaction(
+        day: com.gymcoach.app.data.local.entity.ProgramDayEntity,
+        exercises: List<com.gymcoach.app.data.local.entity.ProgramExerciseEntity>
+    ): Long {
+        val now = System.currentTimeMillis()
+        val activeWorkout = getIncompleteWorkout()
+        if (activeWorkout != null) {
+            updateWorkout(
+                activeWorkout.copy(
+                    completed = true,
+                    status = "ABANDONED",
+                    endTime = now
+                )
+            )
+        }
+        val newWorkoutEntity = WorkoutEntity(
+            id = 0,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            notes = day.name,
+            completed = false,
+            status = "ACTIVE",
+            programDayId = day.id,
+            sourceType = "PROGRAM"
+        )
+        val newWorkoutId = insertWorkout(newWorkoutEntity)
+        exercises.sortedBy { it.orderIndex }.forEachIndexed { index, pe ->
+            val exerciseEntity = WorkoutExerciseEntity(
+                id = 0,
+                workoutId = newWorkoutId,
+                exerciseId = pe.exerciseId,
+                orderIndex = index
+            )
+            val workoutExerciseId = insertWorkoutExercise(exerciseEntity)
+            for (setNum in 1..pe.sets.coerceAtLeast(1)) {
+                val setEntity = WorkoutSetEntity(
+                    id = 0,
+                    workoutExerciseId = workoutExerciseId,
+                    setNumber = setNum,
+                    weight = 0.0,
+                    reps = pe.targetReps.split("-", "–", "to").firstOrNull()?.trim()?.toIntOrNull() ?: 10,
+                    rpe = 0.0,
+                    restSeconds = pe.restSeconds,
+                    completed = false,
+                    setType = 0
+                )
+                insertWorkoutSet(setEntity)
+            }
+        }
+        return newWorkoutId
+    }
+
+    @Transaction
     open suspend fun createWorkoutFromTemplateTransaction(
         template: com.gymcoach.app.data.local.entity.WorkoutTemplateEntity,
         exercises: List<com.gymcoach.app.data.local.entity.TemplateExerciseEntity>

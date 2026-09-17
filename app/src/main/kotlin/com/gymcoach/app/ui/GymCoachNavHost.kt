@@ -69,8 +69,8 @@ fun GymCoachNavHost(
         composable(Routes.HOME) {
             // F-NAV-1: pass onNavigateToExercises so the new Exercises tab works from Home
             HomeDashboardScreen(
-                onStartWorkout = {
-                    navController.navigate(Routes.workoutSession())
+                onStartWorkout = { workoutId ->
+                    navController.navigate(Routes.workoutSession(workoutId))
                 },
                 onViewProgram = {
                     navController.navigate(Routes.PROGRAM_DETAIL)
@@ -204,7 +204,7 @@ fun GymCoachNavHost(
         composable(Routes.PROGRAM_DETAIL) {
             ProgramDetailScreen(
                 onBackClick = { navController.popBackStack() },
-                onStartWorkout = { navController.navigate(Routes.workoutSession()) }
+                onStartWorkout = { workoutId -> navController.navigate(Routes.workoutSession(workoutId)) }
             )
         }
 

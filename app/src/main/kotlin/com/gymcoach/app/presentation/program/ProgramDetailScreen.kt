@@ -94,7 +94,8 @@ data class ProgramDetailUiState(
 @HiltViewModel
 class ProgramDetailViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
-    private val exerciseDao: ExerciseDao
+    private val exerciseDao: ExerciseDao,
+    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ProgramDetailUiState())
     val uiState: StateFlow<ProgramDetailUiState> = _uiState.asStateFlow()
@@ -156,13 +157,22 @@ class ProgramDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun startWorkoutForDay(dayId: Long, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
+            if (newId != null) {
+                onCreated(newId)
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgramDetailScreen(
     onBackClick: () -> Unit,
-    onStartWorkout: () -> Unit = {},
+    onStartWorkout: (Long) -> Unit = {},
     viewModel: ProgramDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -244,7 +254,15 @@ fun ProgramDetailScreen(
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Button(onClick = onStartWorkout, modifier = Modifier.weight(1f)) {
+                                    Button(
+                                        onClick = {
+                                            val firstDay = state.daysWithExercises.firstOrNull()?.day?.id
+                                            if (firstDay != null) {
+                                                viewModel.startWorkoutForDay(firstDay, onStartWorkout)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
                                         Icon(Icons.Filled.FitnessCenter, contentDescription = null)
                                         Spacer(Modifier.width(6.dp))
                                         Text("Start Workout")
@@ -270,13 +288,25 @@ fun ProgramDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Day ${dayWithEx.day.dayNumber}: ${dayWithEx.day.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(dayWithEx.day.targetMuscles, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(dayWithEx.day.targetMuscles, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        }
+                                        Button(
+                                            onClick = { viewModel.startWorkoutForDay(dayWithEx.day.id, onStartWorkout) },
+                                            modifier = Modifier.height(32.dp),
+                                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                        ) {
+                                            Text("Start", style = MaterialTheme.typography.labelSmall)
+                                        }
                                     }
                                 }
 

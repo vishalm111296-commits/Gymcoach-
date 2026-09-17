@@ -19,7 +19,7 @@ class WorkoutRepositoryConcurrencyTest {
     fun `concurrent addSetToExercise calls produce sequential set numbers`() = runTest {
         val dao = mockk<WorkoutDao>()
         val exerciseDao = mockk<ExerciseDao>()
-        val repository = WorkoutRepositoryImpl(dao, exerciseDao)
+        val repository = WorkoutRepositoryImpl(dao, exerciseDao, mockk(relaxed=true), mockk(relaxed=true))
 
         val setNumberCounter = AtomicInteger(1)
         coEvery { dao.addSetToExerciseAtomic(eq(100L), any()) } answers {
@@ -53,7 +53,7 @@ class WorkoutRepositoryConcurrencyTest {
     fun `concurrent addExerciseToWorkout calls produce sequential order indices`() = runTest {
         val dao = mockk<WorkoutDao>()
         val exerciseDao = mockk<ExerciseDao>()
-        val repository = WorkoutRepositoryImpl(dao, exerciseDao)
+        val repository = WorkoutRepositoryImpl(dao, exerciseDao, mockk(relaxed=true), mockk(relaxed=true))
 
         val orderCounter = AtomicInteger(0)
         coEvery { dao.addExerciseToWorkoutAtomic(eq(1L), eq(10L)) } answers {

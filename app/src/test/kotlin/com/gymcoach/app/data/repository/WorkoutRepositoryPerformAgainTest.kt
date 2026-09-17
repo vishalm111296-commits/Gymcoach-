@@ -85,7 +85,7 @@ class WorkoutRepositoryPerformAgainTest {
     fun setup() {
         workoutDao = mockk(relaxed = true)
         exerciseDao = mockk(relaxed = true)
-        repository = WorkoutRepositoryImpl(workoutDao, exerciseDao)
+        repository = WorkoutRepositoryImpl(workoutDao, exerciseDao, io.mockk.mockk(relaxed=true), io.mockk.mockk(relaxed=true))
     }
 
     @Test

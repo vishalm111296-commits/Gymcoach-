@@ -45,7 +45,7 @@ import java.time.LocalTime
 
 @Composable
 fun HomeDashboardScreen(
-    onStartWorkout: () -> Unit,
+    onStartWorkout: (Long?) -> Unit,
     onViewProgram: () -> Unit,
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
@@ -64,7 +64,7 @@ fun HomeDashboardScreen(
                 currentRoute = "home",
                 onNavigate = { route ->
                     when (route) {
-                        "workout" -> onStartWorkout()
+                        "workout" -> onStartWorkout(null)
                         "exercise_list" -> onNavigateToExercises()
                         "program_detail" -> onViewProgram()
                         "progress" -> onNavigateToProgress()
@@ -101,7 +101,7 @@ fun HomeDashboardScreen(
                     targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
                     exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
                     estimatedDuration = state.todayWorkout?.estimatedDurationMin ?: 0,
-                    onStartClick = onStartWorkout
+                    onStartClick = { viewModel.startTodayWorkout { id -> onStartWorkout(id) } }
                 )
             }
 

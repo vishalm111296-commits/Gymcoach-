@@ -1,6 +1,8 @@
 package com.gymcoach.app.data.repository
 
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.dao.ProgramDayDao
+import com.gymcoach.app.data.local.dao.ProgramExerciseDao
 import com.gymcoach.app.data.local.dao.LastPerformance
 import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.data.local.dao.WorkoutDao
@@ -29,7 +31,9 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutRepositoryImpl @Inject constructor(
     private val workoutDao: WorkoutDao,
-    private val exerciseDao: ExerciseDao
+    private val exerciseDao: ExerciseDao,
+    private val programDayDao: ProgramDayDao,
+    private val programExerciseDao: ProgramExerciseDao
 ) : WorkoutRepository {
 
     override fun getAllWorkouts(): Flow<List<Workout>> {
@@ -214,6 +218,12 @@ class WorkoutRepositoryImpl @Inject constructor(
             we to sets
         }
         return workoutDao.createWorkoutFromHistoryTransaction(sourceEntity, exercisesWithSets)
+    }
+
+    override suspend fun createWorkoutFromProgramDay(programDayId: Long): Long? {
+        val day = programDayDao.getById(programDayId) ?: return null
+        val exercises = programExerciseDao.getByDayId(programDayId).first()
+        return workoutDao.createWorkoutFromProgramDayTransaction(day, exercises)
     }
 }
 

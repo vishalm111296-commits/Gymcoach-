@@ -65,7 +65,7 @@ class RoomDatabaseClosedLoopIntegrationTest {
         exerciseMuscleDao = db.exerciseMuscleDao()
         muscleDao = db.muscleDao()
 
-        repository = WorkoutRepositoryImpl(workoutDao, exerciseDao)
+        repository = WorkoutRepositoryImpl(workoutDao, exerciseDao, io.mockk.mockk(relaxed=true), io.mockk.mockk(relaxed=true))
         volumeCalculator = VolumeCalculator()
         progressionEngine = ProgressionEngine(EquipmentAvailability())
     }

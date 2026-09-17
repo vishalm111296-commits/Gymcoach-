@@ -31,7 +31,8 @@ data class TodayWorkoutUiModel(
     val name: String,
     val targetMuscles: List<String>,
     val exerciseCount: Int,
-    val estimatedDurationMin: Int
+    val estimatedDurationMin: Int,
+    val programDayId: Long? = null
 )
 
 data class HomeUiState(
@@ -207,7 +208,8 @@ class HomeViewModel @Inject constructor(
                 name = core.todayDay?.name?.takeIf { it.isNotBlank() } ?: "Training Session",
                 targetMuscles = targetMusclesMuscles(core.todayDay),
                 exerciseCount = todayExercises.size,
-                estimatedDurationMin = estimatedDuration
+                estimatedDurationMin = estimatedDuration,
+                programDayId = core.todayDay?.id
             ),
             coachInsight = insight,
             workoutsThisWeek = completedThisWeek,
@@ -244,6 +246,18 @@ class HomeViewModel @Inject constructor(
         raw.contains("calf", ignoreCase = true) || raw.contains("calves", ignoreCase = true) -> VolumeCalculator.MUSCLE_CALVES
         raw.contains("core", ignoreCase = true) || raw.contains("abs", ignoreCase = true) -> VolumeCalculator.MUSCLE_CORE
         else -> raw
+    }
+
+    fun startTodayWorkout(onCreated: (Long?) -> Unit) {
+        viewModelScope.launch {
+            val dayId = _uiState.value.todayWorkout?.programDayId
+            if (dayId != null) {
+                val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
+                onCreated(newId)
+            } else {
+                onCreated(null)
+            }
+        }
     }
 
     private fun weekStartMillis(): Long {

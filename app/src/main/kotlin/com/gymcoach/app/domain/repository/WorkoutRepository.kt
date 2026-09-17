@@ -40,4 +40,5 @@ interface WorkoutRepository {
     suspend fun searchWorkouts(query: String): List<WorkoutWithStats>
     suspend fun getIncompleteWorkout(): Workout?
     suspend fun createWorkoutFromHistory(workoutId: Long): Long?
+    suspend fun createWorkoutFromProgramDay(programDayId: Long): Long?
 }

@@ -19,7 +19,7 @@
 > [!CAUTION]
 > **OVERALL STATUS: RELEASE CANDIDATE — EXTERNAL PRODUCTION GATES BLOCKED**
 >
-> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (207/212 passing, 5 skipped, 0 failures), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Runs 35090284756, 35106665535, 35119134736, 35127156825, and 35176233404).
+> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (209/214 passing, 5 skipped, 0 failures), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Runs 35090284756, 35106665535, 35119134736, 35127156825, and 35176233404).
 >
 > Release to Google Play Production tracks remains gated by three operational requirements:
 > 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production signing secrets (`KEYSTORE_BASE64`, passphrases) are not configured in GitHub repository secrets. Non-debug release fail-safe gate is verified.

@@ -44,4 +44,25 @@ class PlateCalculatorTest {
         assertEquals(1.25, result.platesPerSide[1].plateWeight, 0.001)
         assertEquals(1, result.platesPerSide[1].count)
     }
+
+    @Test
+    fun testCustomBarWeightEZBar() {
+        // 35 kg on 10 kg EZ-curl bar = 12.5 kg per side -> 1x10kg + 1x2.5kg
+        val result = PlateCalculator.calculatePlates(targetWeight = 35.0, barWeight = 10.0)
+        assertEquals(12.5, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(10.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2.5, result.platesPerSide[1].plateWeight, 0.001)
+    }
+
+    @Test
+    fun testNonExactWeightWithRemainder() {
+        // 61.0 kg on 20 kg bar = 20.5 kg per side -> 1x20kg per side (40kg plates + 20kg bar = 60kg), remainder 1.0kg total
+        val result = PlateCalculator.calculatePlates(targetWeight = 61.0, barWeight = 20.0)
+        assertEquals(20.5, result.weightPerSide, 0.001)
+        assertEquals(1.0, result.remainder, 0.001)
+        assertEquals(1, result.platesPerSide.size)
+        assertEquals(20.0, result.platesPerSide[0].plateWeight, 0.001)
+    }
 }

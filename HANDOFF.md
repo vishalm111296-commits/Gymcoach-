@@ -209,7 +209,7 @@ ViewModel → Compose UI feedback
 - Complete workout → update `WorkoutEntity` with `endTime`, `duration`, `completed=true`.
 
 ## 12. Verification & Testing Evidence
-- **JVM Unit Tests**: 212 tests (207 passed, 0 failures, 5 skipped) across ViewModels, Repositories, ProgressionEngine, StateMachines, ProgramGenerator, VolumeCalculator, and Room Migrations.
+- **JVM Unit Tests**: 214 tests (209 passed, 0 failures, 5 skipped) across ViewModels, Repositories, ProgressionEngine, StateMachines, ProgramGenerator, VolumeCalculator, and Room Migrations.
 - **Connected Instrumentation Tests**: 39 tests passing on Android 14 API 34 emulator in CI.
 - **CI Pipeline**: 100% green across all 4 jobs (Build, Unit Tests, Lint, Instrumentation Tests) in GitHub Actions runs `35090284756`, `35106665535`, `35119134736`, and `35127156825`.
 - **Database Schema**: Version 14 verified with automated forward migrations (1..14) and full migration chain regression tests (`RoomMigrationTest`).

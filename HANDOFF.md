@@ -242,8 +242,8 @@ To provision production signing for official Play Store releases:
    - CI builds, tests, verifies signature & fingerprint, and packages `gymcoach-final-aab` directly to GitHub Releases.
 
 ## 15. CI/CD Artifact Architecture
-- **Pushes & PRs to `main`**: Exactly zero artifacts are uploaded (debug-only builds, reports suppressed).
-- **Version Tags (`v*`)**: Requires `KEYSTORE_BASE64`. Builds, signs, minifies with R8 full mode, verifies APK Signature Scheme v2, verifies jarsigner and R8 mapping, and exposes exactly ONE production artifact: `gymcoach-final-aab` containing signed `app-release.aab`.
+- **Pushes & PRs to `main` (VERIFIED)**: Exactly zero artifacts are uploaded (debug-only validation, report uploads eliminated; verified with `total_count: 0` in GitHub Actions runs 35190457060 & 35189804969).
+- **Version Tags (`v*`) (CONFIGURED BUT NOT EXECUTED / BLOCKED)**: Requires `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` secrets. Fails immediately if secrets are missing. Builds `assembleRelease` and `bundleRelease`, minifies with R8 full mode, verifies APK Signature Scheme v2 via `apksigner`, verifies AAB signature independently via `jarsigner`, verifies AAB structure and R8 `mapping.txt`, and uploads exactly ONE artifact: `gymcoach-final-aab` containing signed `app-release.aab` (`if-no-files-found: error`). GitHub Release publishes only that `.aab`.
 
 ## 16. Build Prerequisites
 - JDK 17+

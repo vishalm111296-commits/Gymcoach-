@@ -222,15 +222,40 @@ ViewModel → Compose UI feedback
 - **Data Export & Sharing**: CSV, Strong CSV, and JSON export via `FileProvider` and Android Sharesheet.
 - **MediaPipe Pose Detection**: Bundled offline pose model with multi-exercise joint angle state machines.
 
-## 14. Build Prerequisites
+## 14. Release Signing Setup
+To provision production signing for official Play Store releases:
+1. **Generate Keystore**:
+   ```bash
+   keytool -genkey -v -keystore gymcoach-release.jks -alias gymcoach -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. **Base64 Encode**:
+   ```bash
+   base64 gymcoach-release.jks | tr -d '\n'
+   ```
+3. **Configure GitHub Repository Secrets**:
+   - `KEYSTORE_BASE64`: Paste base64-encoded keystore output
+   - `KEYSTORE_PASSWORD`: Keystore passphrase
+   - `KEY_ALIAS`: `gymcoach` (or your chosen alias)
+   - `KEY_PASSWORD`: Key passphrase
+4. **Trigger Release**:
+   - Push a version tag: `git tag v1.0.0 && git push origin v1.0.0`
+   - CI builds, tests, verifies signature & fingerprint, and packages `gymcoach-final-aab` directly to GitHub Releases.
+
+## 15. CI/CD Artifact Architecture
+- **Pushes & PRs to `main`**: Publishes only `debug-apk` (for internal developer sanity testing) along with unit-test and lint reports. Unsigned APK/AAB release binaries are suppressed.
+- **Version Tags (`v*`)**: Requires `KEYSTORE_BASE64`. Builds, signs, minifies with R8 full mode, verifies APK Signature Scheme v2, and exposes exactly ONE production artifact: `gymcoach-final-aab` containing signed `app-release.aab`.
+
+## 16. Build Prerequisites
 - JDK 17+
-- Android SDK with API 34 / 36 and build-tools.
+- Android SDK with API 34 / 36 and build-tools 35.0.0.
 - Gradle wrapper: `./gradlew assembleDebug testDebugUnitTest`
 
-## 15. Release Checklist
+## 17. Release Checklist
 - [x] Gradle build clean & reproducible
-- [x] All 211 unit tests passing
+- [x] All 214 unit tests passing (209 passed, 5 skipped)
 - [x] Room schema v14 exported & migration chain tested
-- [x] CI/CD pipeline green on GitHub Actions
+- [x] CI/CD pipeline green on GitHub Actions (single final AAB release strategy)
+- [x] Foreground Service Special Use attribute & property declared in manifest
+- [x] R8 full mode & comprehensive Proguard rules enabled
 - [ ] Production signing secrets provisioned in GitHub repository
 - [ ] Google Play FGS Special Use declaration submitted

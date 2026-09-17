@@ -95,7 +95,7 @@ jobs:
           else
             echo "No KEYSTORE_BASE64 secret provided."
             if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
-              echo "FATAL: Tagged release build requires KEYSTORE_BASE64 secret!"
+              echo "FATAL: Tagged release requires KEYSTORE_BASE64 secret — provisioning instructions in HANDOFF.md"
               exit 1
             fi
             echo "Proceeding with assembleDebug, assembleRelease, and bundleRelease (unsigned release)..."
@@ -187,29 +187,22 @@ jobs:
             fi
           fi
 
-      - name: Upload Debug Artifacts
+      - name: Upload Debug Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gymcoach-debug-apk
+          name: debug-apk
           path: ./app/build/outputs/apk/debug/
           retention-days: 7
           if-no-files-found: error
 
-      - name: Upload Release Artifacts
+      - name: Upload Final Release AAB (Tagged Releases Only)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && 'gymcoach-release-apk' || 'gymcoach-release-unsigned-apk' }}
-          path: ./app/build/outputs/apk/release/
-          retention-days: 7
-          if-no-files-found: warn
-
-      - name: Upload Release Bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && 'gymcoach-release-aab' || 'gymcoach-release-unsigned-aab' }}
-          path: ./app/build/outputs/bundle/release/
-          retention-days: 7
-          if-no-files-found: warn
+          name: gymcoach-final-aab
+          path: ./app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Create Build Summary
         if: success()
@@ -373,24 +366,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Release APK
+      - name: Download Final Release AAB
         uses: actions/download-artifact@v4
         with:
-          name: gymcoach-release-apk
-          path: ./build/artifacts
-
-      - name: Download Release AAB
-        uses: actions/download-artifact@v4
-        with:
-          name: gymcoach-release-aab
+          name: gymcoach-final-aab
           path: ./build/artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ./build/artifacts/*.apk
-            ./build/artifacts/*.aab
+          files: ./build/artifacts/*.aab
           generate_release_notes: true
           draft: false
           prerelease: false
+

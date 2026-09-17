@@ -65,3 +65,10 @@
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
 -dontwarn javax.lang.model.**
+
+# ── Kotlin Metadata & Reflection ─────────────────────
+-keep class kotlin.Metadata { *; }
+
+# ── Hilt Android & ViewModels ────────────────────────
+-keep @dagger.hilt.android.HiltAndroidApp class *
+-keep class * extends dagger.hilt.android.lifecycle.HiltViewModel { *; }

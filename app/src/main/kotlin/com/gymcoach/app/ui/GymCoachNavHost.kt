@@ -179,7 +179,10 @@ fun GymCoachNavHost(
 
         composable(Routes.PROGRESS) {
             ProgressDashboardScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToProgressionAnalytics = { exerciseId, exerciseName ->
+                    navController.navigate(Routes.progressionAnalytics(exerciseId, exerciseName))
+                }
             )
         }
 

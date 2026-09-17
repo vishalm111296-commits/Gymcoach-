@@ -36,6 +36,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,6 +68,7 @@ import java.util.Locale
 @Composable
 fun ProgressDashboardScreen(
     onBackClick: () -> Unit,
+    onNavigateToProgressionAnalytics: (Long, String) -> Unit = { _, _ -> },
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -313,10 +315,25 @@ fun ProgressDashboardScreen(
                     SectionHeader("Strength Progression")
                     Spacer(Modifier.height(8.dp))
                     if (state.selectedExercise != null) {
-                        ExerciseSelector(
-                            selectedExercise = state.selectedExercise!!,
-                            onSelect = { viewModel.selectExercise(it) }
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ExerciseSelector(
+                                selectedExercise = state.selectedExercise!!,
+                                onSelect = { viewModel.selectExercise(it) }
+                            )
+                            TextButton(
+                                onClick = {
+                                    state.selectedExercise?.let { exName ->
+                                        onNavigateToProgressionAnalytics(0L, exName)
+                                    }
+                                }
+                            ) {
+                                Text("Detailed Analytics \u2192")
+                            }
+                        }
                         Spacer(Modifier.height(8.dp))
                     }
                     if (state.strengthPoints.isNotEmpty()) {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.core.progression.PRDetector
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,7 +52,8 @@ data class ProgressionAnalyticsUiState(
 @HiltViewModel
 class ProgressionAnalyticsViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val prDetector: PRDetector
+    private val prDetector: PRDetector,
+    private val exerciseRepository: ExerciseRepository
 ) : ViewModel() {
 
     private val _exerciseId = MutableStateFlow(0L)
@@ -62,8 +64,19 @@ class ProgressionAnalyticsViewModel @Inject constructor(
         _exerciseId.value = exerciseId
         _uiState.update { it.copy(exerciseId = exerciseId, exerciseName = exerciseName, isLoading = true) }
         viewModelScope.launch {
+            val resolvedId = if (exerciseId <= 0L && exerciseName.isNotBlank()) {
+                try {
+                    val all = exerciseRepository.getAllExercises().first()
+                    all.firstOrNull { it.name.equals(exerciseName, ignoreCase = true) }?.id ?: exerciseId
+                } catch (e: Exception) {
+                    exerciseId
+                }
+            } else {
+                exerciseId
+            }
+            _exerciseId.value = resolvedId
             workoutRepository.getCompletedSetsWithContext()
-                .map { allSets -> computeAnalytics(exerciseId, exerciseName, allSets) }
+                .map { allSets -> computeAnalytics(resolvedId, exerciseName, allSets) }
                 .catch { e ->
                     android.util.Log.e("ProgressionAnalyticsVM", "Error loading progression data", e)
                     _uiState.update { it.copy(isLoading = false, isEmpty = true) }

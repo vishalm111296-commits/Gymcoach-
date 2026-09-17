@@ -3,6 +3,8 @@ package com.gymcoach.app.presentation.progress
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.core.progression.PRDetector
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
+import com.gymcoach.app.domain.model.Exercise
+import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -26,6 +28,7 @@ class ProgressionAnalyticsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var workoutRepository: WorkoutRepository
     private lateinit var prDetector: PRDetector
+    private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var viewModel: ProgressionAnalyticsViewModel
 
     // Helper: create a SetWithContext
@@ -57,6 +60,8 @@ class ProgressionAnalyticsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         workoutRepository = mockk(relaxed = true)
         prDetector = PRDetector()
+        exerciseRepository = mockk(relaxed = true)
+        every { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
     }
 
     @After
@@ -67,7 +72,7 @@ class ProgressionAnalyticsViewModelTest {
     @Test
     fun initialState_isLoading() {
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(emptyList())
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
         // Before loadExercise is called, state is initial
         assertTrue(viewModel.uiState.value.isLoading)
     }
@@ -75,7 +80,7 @@ class ProgressionAnalyticsViewModelTest {
     @Test
     fun loadExercise_withNoData_setsIsEmpty() = runTest {
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(emptyList())
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -90,10 +95,37 @@ class ProgressionAnalyticsViewModelTest {
     }
 
     @Test
+    fun loadExercise_withZeroId_resolvesIdFromExerciseRepository() = runTest {
+        val sampleExercise = Exercise(
+            id = 42L,
+            name = "Incline Bench Press",
+            description = "Upper chest pressing movement",
+            muscleGroup = "Chest",
+            equipment = "Barbell",
+            difficulty = "Intermediate",
+            category = "Strength"
+        )
+        every { exerciseRepository.getAllExercises() } returns flowOf(listOf(sampleExercise))
+        val sets = listOf(makeSet(exerciseId = 42L, weight = 80.0, reps = 6, workoutDate = 1_000_000L))
+        every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
+
+        val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+        viewModel.loadExercise(0L, "Incline Bench Press")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isEmpty)
+        assertEquals(42L, state.exerciseId)
+        assertEquals(1, state.e1rmTrend.size)
+        collectJob.cancel()
+    }
+
+    @Test
     fun loadExercise_withOnlyOtherExercise_setsIsEmpty() = runTest {
         val sets = listOf(makeSet(exerciseId = 99L, weight = 100.0, reps = 5, workoutDate = 1_000_000L))
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -109,7 +141,7 @@ class ProgressionAnalyticsViewModelTest {
         // Epley: 100 * (1 + 5/30.0) = 116.67
         val sets = listOf(makeSet(exerciseId = 1L, weight = 100.0, reps = 5, workoutDate = 1_000_000L))
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -135,7 +167,7 @@ class ProgressionAnalyticsViewModelTest {
             makeSet(exerciseId = 1L, weight = 70.0, reps = 8, workoutDate = day3, id = 3)
         )
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -160,7 +192,7 @@ class ProgressionAnalyticsViewModelTest {
             makeSet(exerciseId = 1L, weight = 80.0, reps = 5, workoutDate = day2, id = 2)
         )
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -181,7 +213,7 @@ class ProgressionAnalyticsViewModelTest {
             makeSet(exerciseId = 1L, weight = 100.0, reps = 5, workoutDate = 1_000_000L, completed = false)
         )
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")
@@ -201,7 +233,7 @@ class ProgressionAnalyticsViewModelTest {
             makeSet(exerciseId = 1L, weight = 60.0, reps = 10, workoutDate = workoutDate, id = 2)
         )
         every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
-        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
 
         val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
         viewModel.loadExercise(1L, "Bench Press")

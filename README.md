@@ -22,7 +22,7 @@ A modern Android fitness application built with Kotlin, Jetpack Compose, and Cle
 - **Database:** Room (v14 with verified migrations 1..14)
 - **Camera & ML:** CameraX, MediaPipe Tasks Vision (bundled offline model)
 - **Video:** Media3 ExoPlayer
-- **Testing:** 211 unit tests (206 passed, 0 failures, 5 skipped), connected instrumentation tests
+- **Testing:** 212 unit tests (207 passed, 0 failures, 5 skipped), connected instrumentation tests
 
 ## Getting Started
 

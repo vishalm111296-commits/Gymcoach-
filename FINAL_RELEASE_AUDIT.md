@@ -2,13 +2,14 @@
 
 **Repository**: `https://github.com/vishalm111296-commits/Gymcoach-.git`
 **Branch**: `main`
-**Audited Code RC Commit**: [`6153c01`](https://github.com/vishalm111296-commits/Gymcoach-/commit/6153c01) (feat: progression analytics UI, ViewModel, unit tests & doc reconciliation), [`3a50ec2`](https://github.com/vishalm111296-commits/Gymcoach-/commit/3a50ec2) (feat: reusable workout templates with Room schema v14) & [`66e0b37`](https://github.com/vishalm111296-commits/Gymcoach-/commit/66e0b37) (feat: custom exercises with Room schema v13)
+**Audited Code RC Commit**: [`2daf1b2`](https://github.com/vishalm111296-commits/Gymcoach-/commit/2daf1b2) (feat: wire ProgressionAnalytics navigation from ProgressDashboard & resolve exercise by name), [`6153c01`](https://github.com/vishalm111296-commits/Gymcoach-/commit/6153c01), [`3a50ec2`](https://github.com/vishalm111296-commits/Gymcoach-/commit/3a50ec2) & [`66e0b37`](https://github.com/vishalm111296-commits/Gymcoach-/commit/66e0b37)
 **Verified CI Pipeline Runs**:
-- Run [`35119134736`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35119134736) on commit `6153c01`: 100% green across all 4 jobs (Build & Test in 5m45s, Lint in 2m56s, Unit Tests in 2m20s, Connected Tests in 5m14s).
-- Run [`35106665535`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35106665535) on commit `3a50ec2`: 100% green across all 4 jobs (Build & Test in 5m54s, Lint in 2m58s, Unit Tests in 2m38s, Connected Tests in 4m49s).
+- Run [`35176233404`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35176233404) on commit `2daf1b2`: 100% green across all 4 jobs (Build & Test in 5m47s, Unit Tests in 2m24s, Lint in 2m52s, Connected Tests in 5m40s).
+- Run [`35127156825`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35127156825) on commit `d2e43fe`: 100% green across all 4 jobs (Build & Test in 6m4s, Lint in 2m19s, Unit Tests in 2m24s, Connected Tests in 5m27s).
+- Run [`35119134736`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35119134736) on commit `6153c01`: 100% green across all 4 jobs.
+- Run [`35106665535`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35106665535) on commit `3a50ec2`: 100% green across all 4 jobs.
 - Run [`35090284756`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/35090284756) on commit `66e0b37`: 100% green across all 4 jobs.
-- Run [`34740688334`](https://github.com/vishalm111296-commits/Gymcoach-/actions/runs/34740688334) on commit `9cb1252`: 100% green across all 4 jobs.
-**Audit Date**: September 16, 2026
+**Audit Date**: September 17, 2026
 **Auditor**: Antigravity Principal Engineering & Release Agent
 
 ---
@@ -18,7 +19,7 @@
 > [!CAUTION]
 > **OVERALL STATUS: RELEASE CANDIDATE — EXTERNAL PRODUCTION GATES BLOCKED**
 >
-> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (207/212 passing, 5 skipped, 0 failures), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Runs 35090284756, 35106665535, 35119134736, and 35127156825).
+> The codebase has undergone comprehensive forensic verification across all architectural layers (UI → ViewModel → Repository → DAO → Room SQLite) and toolchain security gates. Clean compilation across SDK 36 (Android 16), zero lint errors, zero compiler warnings, 100% JVM unit test pass rate (207/212 passing, 5 skipped, 0 failures), and 100% connected instrumentation test pass rate (39/39 unfiltered on Android 14 API 34 emulator in CI Runs 35090284756, 35106665535, 35119134736, 35127156825, and 35176233404).
 >
 > Release to Google Play Production tracks remains gated by three operational requirements:
 > 1. **`BLOCKED — PRODUCTION SIGNING CREDENTIALS NOT PROVISIONED`**: Production signing secrets (`KEYSTORE_BASE64`, passphrases) are not configured in GitHub repository secrets. Non-debug release fail-safe gate is verified.

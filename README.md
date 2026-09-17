@@ -33,6 +33,10 @@ A modern Android fitness application built with Kotlin, Jetpack Compose, and Cle
 
 See [BUILD_GUIDE.md](docs/BUILD_GUIDE.md) for detailed build and release instructions.
 
+**CI/CD Pipeline Details:**
+- **Push/PR to main (VERIFIED):** Generates debug builds only to verify codebase stability. Zero artifacts are uploaded.
+- **Tagged Release (CONFIGURED BUT NOT EXECUTED / BLOCKED):** Automatically builds, signs, and generates a single production artifact (`app-release.aab`) upon pushing a version tag. (Currently blocked by missing production signing secrets).
+
 ## License
 
 N/A

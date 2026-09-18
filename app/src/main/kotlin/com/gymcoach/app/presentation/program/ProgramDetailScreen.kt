@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -250,25 +251,25 @@ fun ProgramDetailScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text("Training Program", color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text("Training Program", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
                     }
                 },
                 actions = {
                     IconButton(onClick = { showBuilderSheet = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "New Routine", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Add, contentDescription = "New Routine", tint = AccentBlue)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         }
     ) { padding ->
         when {
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = AccentBlue)
                 }
             }
             state.program == null -> {
@@ -276,20 +277,25 @@ fun ProgramDetailScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)) {
                         Text(
                             "No active training program.",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = TextPrimary
                         )
-                        Button(onClick = { showBuilderSheet = true }) {
+                        Button(
+                            onClick = { showBuilderSheet = true },
+                            shape = GymCoachShapes.md,
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                        ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Create Custom Routine")
+                            Text("Create Custom Routine", fontWeight = FontWeight.Bold)
                         }
-                        Spacer(Modifier.height(8.dp))
-                        Button(
+                        OutlinedButton(
                             onClick = { showGenerateSheet = true },
-                            modifier = Modifier.padding(top = 8.dp)
+                            shape = GymCoachShapes.md,
+                            border = GymCoachBorders.subtle,
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
                         ) {
-                            Text("Adaptive Program Generator")
+                            Text("Adaptive Program Generator", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -304,7 +310,8 @@ fun ProgramDetailScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
-                            shape = GymCoachShapes.lg
+                            shape = GymCoachShapes.lg,
+                            border = GymCoachBorders.subtle
                         ) {
                             Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
                                 Row(
@@ -312,20 +319,20 @@ fun ProgramDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(program.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(program.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextPrimary)
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                            .clip(GymCoachShapes.xs)
+                                            .background(AccentBlue.copy(alpha = 0.15f))
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
-                                        Text("ACTIVE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                        Text("ACTIVE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = AccentBlue)
                                     }
                                 }
-                                Text(program.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(program.description, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Goal: ${program.goal}", style = MaterialTheme.typography.labelMedium)
-                                    Text("Frequency: ${program.daysPerWeek} days/week", style = MaterialTheme.typography.labelMedium)
+                                    Text("Goal: ${program.goal}", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                                    Text("Frequency: ${program.daysPerWeek} days/week", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
@@ -336,17 +343,29 @@ fun ProgramDetailScreen(
                                                 viewModel.startWorkoutForDay(firstDay, onStartWorkout)
                                             }
                                         },
+                                        shape = GymCoachShapes.md,
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(Icons.Filled.FitnessCenter, contentDescription = null)
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Start Workout")
+                                        Text("Start Workout", fontWeight = FontWeight.Bold)
                                     }
-                                    OutlinedButton(onClick = { showBuilderSheet = true }) {
+                                    OutlinedButton(
+                                        onClick = { showBuilderSheet = true },
+                                        shape = GymCoachShapes.md,
+                                        border = GymCoachBorders.subtle,
+                                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+                                    ) {
                                         Text("New Routine")
                                     }
-                                    OutlinedButton(onClick = { showGenerateSheet = true }) {
-                                        Text("Adaptive Generator")
+                                    OutlinedButton(
+                                        onClick = { showGenerateSheet = true },
+                                        shape = GymCoachShapes.md,
+                                        border = GymCoachBorders.subtle,
+                                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+                                    ) {
+                                        Text("Adaptive")
                                     }
                                 }
                             }
@@ -357,7 +376,8 @@ fun ProgramDetailScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
-                            shape = GymCoachShapes.lg
+                            shape = GymCoachShapes.lg,
+                            border = GymCoachBorders.subtle
                         ) {
                             Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
                                 Row(
@@ -365,25 +385,27 @@ fun ProgramDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Day ${dayWithEx.day.dayNumber}: ${dayWithEx.day.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text("Day ${dayWithEx.day.dayNumber}: ${dayWithEx.day.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                                .clip(GymCoachShapes.xs)
+                                                .background(AccentBlue.copy(alpha = 0.15f))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
-                                            Text(dayWithEx.day.targetMuscles, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                            Text(dayWithEx.day.targetMuscles, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = AccentBlue)
                                         }
                                         Button(
                                             onClick = { viewModel.startWorkoutForDay(dayWithEx.day.id, onStartWorkout) },
                                             modifier = Modifier.height(32.dp),
+                                            shape = GymCoachShapes.xs,
+                                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                                         ) {
-                                            Text("Start", style = MaterialTheme.typography.labelSmall)
+                                            Text("Start", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -394,7 +416,7 @@ fun ProgramDetailScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clip(GymCoachShapes.sm)
-                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                                .background(GymCoachColors.SurfaceDeep)
                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
@@ -403,12 +425,13 @@ fun ProgramDetailScreen(
                                                 Text(
                                                     text = "${idx + 1}. ${ex.exerciseName}",
                                                     style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.SemiBold
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = TextPrimary
                                                 )
                                                 Text(
                                                     text = "${ex.muscleGroup} • ${ex.equipment}",
                                                     style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    color = TextSecondary
                                                 )
                                             }
 
@@ -417,20 +440,20 @@ fun ProgramDetailScreen(
                                                     text = "${ex.entity.sets} sets × ${ex.entity.targetReps}",
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.primary
+                                                    color = AccentBlue
                                                 )
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Icon(
                                                         imageVector = Icons.Default.Timer,
                                                         contentDescription = "Rest",
                                                         modifier = Modifier.size(12.dp),
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        tint = TextTertiary
                                                     )
                                                     Spacer(Modifier.width(3.dp))
                                                     Text(
                                                         text = "${ex.entity.restSeconds}s",
                                                         style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        color = TextSecondary
                                                     )
                                                 }
                                             }

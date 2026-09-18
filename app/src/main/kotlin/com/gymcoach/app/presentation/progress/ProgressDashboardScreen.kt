@@ -65,6 +65,7 @@ import java.util.Date
 import java.util.Locale
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
@@ -98,31 +99,41 @@ fun ProgressDashboardScreen(
     }
 
     Scaffold(
+        containerColor = DarkBackground,
         bottomBar = {
             com.gymcoach.app.ui.GymCoachBottomNav(currentRoute = "progress", onNavigate = onNavigateBottomBar)
         },
         topBar = {
             TopAppBar(
-                title = { Text("Progress") },
+                title = {
+                    Text(
+                        text = "Progress & Analytics",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showMeasurementDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = AccentBlue,
+                contentColor = androidx.compose.ui.graphics.Color.White
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Log Measurement",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = androidx.compose.ui.graphics.Color.White
                 )
             }
         }
@@ -176,7 +187,7 @@ fun ProgressDashboardScreen(
                     // Weekly Adherence
                     WorkoutAdherenceCard(
                         workoutsThisWeek = state.workoutsThisWeek,
-                        targetSessionsPerWeek = 4,
+                        targetSessionsPerWeek = state.targetSessionsPerWeek,
                         adherence = state.adherence
                     )
 

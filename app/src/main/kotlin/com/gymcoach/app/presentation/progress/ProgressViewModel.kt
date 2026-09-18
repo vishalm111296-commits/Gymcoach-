@@ -54,6 +54,7 @@ data class ProgressUiState(
     // Enhanced progress experience
     val dateRange: ProgressDateRange = ProgressDateRange.EIGHT_WEEKS,
     val workoutsThisWeek: Int = 0,
+    val targetSessionsPerWeek: Int = TARGET_SESSIONS_PER_WEEK,
     val adherence: Float = 0f,
     val muscleVolume: List<MuscleVolumeData> = emptyList(),
     val selectedExercise: String? = null,
@@ -309,6 +310,7 @@ class ProgressViewModel @Inject constructor(
                     dateRange = _uiState.value.dateRange,
                     selectedExercise = selectedExercise,
                     workoutsThisWeek = workoutsThisWeek,
+                    targetSessionsPerWeek = targetSessions,
                     adherence = adherence,
                     muscleVolume = muscleSets.entries
                         .sortedByDescending { it.value }

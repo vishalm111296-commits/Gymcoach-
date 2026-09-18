@@ -321,31 +321,49 @@ fun WorkoutSessionScreen(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            androidx.compose.material3.Surface(
+                color = GymCoachColors.SurfaceDeep,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Button(
-                    onClick = { viewModel.showExercisePicker() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Exercise")
-                }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.HorizontalDivider(
+                        thickness = 1.dp,
+                        color = GymCoachColors.BorderSubtle
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { viewModel.showExercisePicker() },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = GymCoachShapes.md,
+                            border = GymCoachBorders.subtle,
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = TextPrimary
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = AccentBlue)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Add Exercise", fontWeight = FontWeight.SemiBold)
+                        }
 
-                Button(
-                    onClick = { showFinishDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Complete Workout")
+                        Button(
+                            onClick = { showFinishDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentBlue,
+                                contentColor = androidx.compose.ui.graphics.Color.White
+                            ),
+                            shape = GymCoachShapes.md,
+                            modifier = Modifier.weight(1f).height(48.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Finish Workout", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -503,9 +521,9 @@ private fun RestTimerCard(
             .padding(vertical = 4.dp),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = GymCoachColors.SurfaceCardElevated
         ),
-        border = GymCoachBorders.subtleBorder()
+        border = GymCoachBorders.primary
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -518,7 +536,7 @@ private fun RestTimerCard(
                         modifier = Modifier
                             .size(40.dp)
                             .background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                AccentBlue.copy(alpha = 0.2f),
                                 shape = androidx.compose.foundation.shape.CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -526,23 +544,27 @@ private fun RestTimerCard(
                         Icon(
                             if (isPaused) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = "Rest",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = AccentBlue
                         )
                     }
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
                             text = "REST INTERVAL",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
+                                fontSize = 10.sp
+                            ),
+                            color = AccentBlue
                         )
                         Text(
                             text = "${timeRemaining}s",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 26.sp
+                            ),
+                            color = TextPrimary
                         )
                     }
                 }
@@ -550,6 +572,11 @@ private fun RestTimerCard(
                     FilledTonalButton(
                         onClick = onSubtractFifteen,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = GymCoachShapes.xs,
+                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                            containerColor = GymCoachColors.SurfaceDeep,
+                            contentColor = TextPrimary
+                        ),
                         modifier = Modifier.height(34.dp)
                     ) {
                         Text("-15s", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
@@ -557,6 +584,11 @@ private fun RestTimerCard(
                     FilledTonalButton(
                         onClick = onAddFifteen,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = GymCoachShapes.xs,
+                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                            containerColor = GymCoachColors.SurfaceDeep,
+                            contentColor = TextPrimary
+                        ),
                         modifier = Modifier.height(34.dp)
                     ) {
                         Text("+15s", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
@@ -565,14 +597,14 @@ private fun RestTimerCard(
                         Icon(
                             if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                             contentDescription = "Pause/Resume",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            tint = TextPrimary
                         )
                     }
                     IconButton(onClick = onSkip) {
                         Icon(
                             Icons.Default.SkipNext,
                             contentDescription = "Skip",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            tint = TextSecondary
                         )
                     }
                 }
@@ -584,9 +616,10 @@ private fun RestTimerCard(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    .height(6.dp)
+                    .clip(GymCoachShapes.pill),
+                color = AccentBlue,
+                trackColor = GymCoachColors.SurfaceDeep
             )
 
             // Quick-select rest duration presets
@@ -613,10 +646,14 @@ private fun RestTimerCard(
                                 fontWeight = FontWeight.Bold
                             )
                         },
+                        shape = GymCoachShapes.pill,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            containerColor = GymCoachColors.SurfaceDeep,
+                            labelColor = TextSecondary,
+                            selectedContainerColor = AccentBlue,
+                            selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         ),
+                        border = if (totalDuration == seconds) null else GymCoachBorders.subtle,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -652,9 +689,9 @@ internal fun ExerciseSetCard(
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = GymCoachColors.SurfaceCard
         ),
-        border = GymCoachBorders.subtleBorder()
+        border = GymCoachBorders.subtle
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -675,18 +712,18 @@ internal fun ExerciseSetCard(
                     Spacer(Modifier.height(2.dp))
                     Box(
                         modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .clip(GymCoachShapes.xs)
+                            .background(AccentBlue.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = muscleGroup.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 0.5.sp
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = AccentBlue
                         )
                     }
                 }
@@ -900,10 +937,11 @@ internal fun ExerciseSetCard(
                 if (showInstructions) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = GymCoachShapes.sm,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
+                            containerColor = GymCoachColors.SurfaceCardElevated
+                        ),
+                        border = GymCoachBorders.subtle
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
@@ -1032,7 +1070,11 @@ internal fun ExerciseSetCard(
             FilledTonalButton(
                 onClick = onAddSet,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = GymCoachShapes.sm,
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = GymCoachColors.SurfaceCardElevated,
+                    contentColor = TextPrimary
+                )
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))

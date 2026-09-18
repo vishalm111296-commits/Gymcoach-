@@ -42,11 +42,18 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.AccentBlueLight
 import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
@@ -62,7 +69,7 @@ private val BOTTOM_NAV_ITEMS = listOf(
 
 /**
  * Premium bottom navigation bar with elevated surface, subtle top border,
- * haptic feedback, active pill highlight, and accessible 48dp+ touch targets.
+ * haptic feedback, active pill highlight, gesture nav padding, and accessible touch targets.
  */
 @Composable
 fun GymCoachBottomNav(
@@ -80,7 +87,9 @@ fun GymCoachBottomNav(
 
         Surface(
             color = DarkSurface,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
@@ -93,7 +102,7 @@ fun GymCoachBottomNav(
                 BOTTOM_NAV_ITEMS.forEach { item ->
                     val active = currentRoute == item.route
                     val iconTint by animateColorAsState(
-                        targetValue = if (active) AccentBlueLight else TextTertiary,
+                        targetValue = if (active) AccentBlueLight else TextSecondary,
                         animationSpec = tween(durationMillis = 200),
                         label = "iconTint"
                     )
@@ -107,8 +116,13 @@ fun GymCoachBottomNav(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(bgColor)
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Tab
+                                selected = active
+                                contentDescription = item.label
+                            }
                             .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
+                                interactionSource = remember(item.route) { MutableInteractionSource() },
                                 indication = null
                             ) {
                                 if (!active) {
@@ -125,7 +139,7 @@ fun GymCoachBottomNav(
                         ) {
                             Icon(
                                 imageVector = item.icon,
-                                contentDescription = item.label,
+                                contentDescription = null,
                                 tint = iconTint,
                                 modifier = Modifier.size(22.dp)
                             )

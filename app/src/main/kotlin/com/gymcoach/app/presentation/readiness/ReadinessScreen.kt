@@ -38,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -261,7 +262,7 @@ private fun MetricRow(icon: ImageVector, label: String, value: Int) {
 
 @Composable
 private fun ReadinessHistoryItem(readiness: ReadinessEntity) {
-    val dateFormat = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
+    val dateFormat = remember { SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()) }
     
     Card(
         modifier = Modifier.fillMaxWidth(),

@@ -281,7 +281,7 @@ fun WorkoutHistoryScreen(
             // Workout list
             if (workouts.isEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -295,7 +295,6 @@ fun WorkoutHistoryScreen(
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(padding)
                         .padding(horizontal = 16.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)

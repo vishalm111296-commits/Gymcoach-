@@ -57,12 +57,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import com.gymcoach.app.ui.theme.GymCoachShapes
@@ -168,25 +171,28 @@ fun ProfileScreen(
     var showEditSheet by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = DarkBackground,
         bottomBar = {
             GymCoachBottomNav(currentRoute = "profile", onNavigate = onNavigateBottomBar)
         },
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text("Profile & Settings", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showEditSheet = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile")
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = AccentBlue)
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         }
     ) { padding ->
@@ -197,7 +203,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = AccentBlue)
                 }
             }
             profile == null -> {
@@ -209,7 +215,7 @@ fun ProfileScreen(
                     Text(
                         text = "No profile found",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = TextSecondary
                     )
                 }
             }
@@ -229,9 +235,9 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = GymCoachColors.SurfaceCardElevated
                         ),
-                        border = GymCoachBorders.subtleBorder()
+                        border = GymCoachBorders.subtle
                     ) {
                         Column(modifier = Modifier.padding(18.dp)) {
                             Row(
@@ -242,7 +248,7 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                            AccentBlue.copy(alpha = 0.2f),
                                             shape = CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -250,7 +256,7 @@ fun ProfileScreen(
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = AccentBlue,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -258,33 +264,33 @@ fun ProfileScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "ATHLETE PROFILE",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        letterSpacing = 1.sp
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            letterSpacing = 1.2.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp
+                                        ),
+                                        color = AccentBlue
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
                                         text = "${p.experience.ifBlank { "Lifter" }} Athlete",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = TextPrimary
                                     )
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .background(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(6.dp)
-                                        )
+                                        .clip(GymCoachShapes.xs)
+                                        .background(AccentBlue.copy(alpha = 0.15f))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
                                         text = p.goal.ifBlank { "Hypertrophy" }.uppercase(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontSize = 10.sp
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp
+                                        ),
+                                        color = AccentBlue
                                     )
                                 }
                             }
@@ -299,26 +305,25 @@ fun ProfileScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            shape = GymCoachShapes.sm
-                                        )
+                                        .clip(GymCoachShapes.sm)
+                                        .background(GymCoachColors.SurfaceDeep)
+                                        .border(GymCoachBorders.subtle, GymCoachShapes.sm)
                                         .padding(vertical = 10.dp, horizontal = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             text = "WEIGHT",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 9.sp
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp
+                                            ),
+                                            color = TextSecondary
                                         )
                                         Text(
                                             text = if (p.weightKg > 0) "%.1f kg".format(p.weightKg) else "—",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Black,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = TextPrimary
                                         )
                                     }
                                 }
@@ -326,26 +331,25 @@ fun ProfileScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            shape = GymCoachShapes.sm
-                                        )
+                                        .clip(GymCoachShapes.sm)
+                                        .background(GymCoachColors.SurfaceDeep)
+                                        .border(GymCoachBorders.subtle, GymCoachShapes.sm)
                                         .padding(vertical = 10.dp, horizontal = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             text = "HEIGHT",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 9.sp
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp
+                                            ),
+                                            color = TextSecondary
                                         )
                                         Text(
                                             text = if (p.heightCm > 0) "%.0f cm".format(p.heightCm) else "—",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Black,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = TextPrimary
                                         )
                                     }
                                 }
@@ -353,26 +357,25 @@ fun ProfileScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            shape = GymCoachShapes.sm
-                                        )
+                                        .clip(GymCoachShapes.sm)
+                                        .background(GymCoachColors.SurfaceDeep)
+                                        .border(GymCoachBorders.subtle, GymCoachShapes.sm)
                                         .padding(vertical = 10.dp, horizontal = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             text = "SCHEDULE",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 9.sp
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp
+                                            ),
+                                            color = TextSecondary
                                         )
                                         Text(
                                             text = "${p.trainingDaysPerWeek} d/wk",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Black,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = TextPrimary
                                         )
                                     }
                                 }

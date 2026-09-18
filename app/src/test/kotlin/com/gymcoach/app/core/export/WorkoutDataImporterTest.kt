@@ -1,6 +1,12 @@
 package com.gymcoach.app.core.export
 
+import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.SetType
+import com.gymcoach.app.domain.model.Workout
+import com.gymcoach.app.domain.model.WorkoutExercise
+import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
+import com.gymcoach.app.domain.model.WorkoutSet
+import com.gymcoach.app.domain.model.WorkoutWithDetails
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -307,5 +313,183 @@ class WorkoutDataImporterTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
         assertTrue(result.exceptionOrNull()?.message?.contains("Invalid JSON syntax") == true)
+    }
+
+    @Test
+    fun `parseJson returns failure for negative durationSeconds`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 1,
+                  "startTime": 1672531200000,
+                  "endTime": 1672531200000,
+                  "durationSeconds": -10,
+                  "completed": true,
+                  "exercises": []
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Invalid durationSeconds") == true)
+    }
+
+    @Test
+    fun `parseJson returns failure for blank exerciseName`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 1,
+                  "startTime": 1672531200000,
+                  "endTime": 1672531200000,
+                  "durationSeconds": 60,
+                  "completed": true,
+                  "exercises": [
+                    {
+                      "exerciseId": 1,
+                      "exerciseName": "   ",
+                      "muscleGroup": "Chest",
+                      "sets": []
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("exerciseName cannot be blank") == true)
+    }
+
+    @Test
+    fun `parseJson parses workout using date string when startTime is omitted`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 1,
+                  "date": "2026-09-18 10:30:00",
+                  "durationSeconds": 1800,
+                  "completed": true,
+                  "exercises": []
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isSuccess)
+        val data = result.getOrNull()!!
+        assertEquals(1, data.workouts.size)
+        assertEquals(1800L, data.workouts[0].workout.duration)
+    }
+
+    @Test
+    fun `exportToJson and parseJson roundtrip achieves full data fidelity`() {
+        val exporter = WorkoutDataExporter()
+        val exercise = Exercise(
+            id = 42L,
+            name = "Overhead Barbell Press",
+            description = "",
+            muscleGroup = "Shoulders",
+            equipment = "barbell",
+            difficulty = "Intermediate"
+        )
+        val startTime = Instant.ofEpochMilli(1700000000000L)
+        val endTime = Instant.ofEpochMilli(1700003600000L)
+        val workout = Workout(
+            id = 77L,
+            date = startTime,
+            startTime = startTime,
+            endTime = endTime,
+            duration = 3600L,
+            notes = "Strict overhead presses, clean reps",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(
+                id = 1,
+                workoutExerciseId = 10,
+                setNumber = 1,
+                weight = 50.0,
+                reps = 10,
+                rpe = 7.0,
+                restSeconds = 90,
+                completed = true,
+                setType = SetType.WARMUP
+            ),
+            WorkoutSet(
+                id = 2,
+                workoutExerciseId = 10,
+                setNumber = 2,
+                weight = 65.0,
+                reps = 6,
+                rpe = 9.0,
+                restSeconds = 120,
+                completed = true,
+                setType = SetType.NORMAL
+            ),
+            WorkoutSet(
+                id = 3,
+                workoutExerciseId = 10,
+                setNumber = 3,
+                weight = 45.0,
+                reps = 12,
+                rpe = 9.5,
+                restSeconds = 60,
+                completed = true,
+                setType = SetType.DROP
+            )
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 10, workoutId = 77, exerciseId = 42, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val originalWorkout = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val exportedJson = exporter.exportToJson(listOf(originalWorkout))
+        val importResult = importer.parseJson(exportedJson)
+
+        assertTrue("Import must succeed", importResult.isSuccess)
+        val importedData = importResult.getOrNull()!!
+        assertEquals(1, importedData.workouts.size)
+
+        val importedWorkoutWithDetails = importedData.workouts[0]
+        val importedWorkout = importedWorkoutWithDetails.workout
+        assertEquals(originalWorkout.workout.id, importedWorkout.id)
+        assertEquals(originalWorkout.workout.startTime, importedWorkout.startTime)
+        assertEquals(originalWorkout.workout.endTime, importedWorkout.endTime)
+        assertEquals(originalWorkout.workout.duration, importedWorkout.duration)
+        assertEquals(originalWorkout.workout.notes, importedWorkout.notes)
+        assertEquals(originalWorkout.workout.completed, importedWorkout.completed)
+
+        assertEquals(1, importedWorkoutWithDetails.exercises.size)
+        val importedExerciseWithSets = importedWorkoutWithDetails.exercises[0]
+        assertEquals(originalWorkout.exercises[0].exercise.name, importedExerciseWithSets.exercise.name)
+        assertEquals(originalWorkout.exercises[0].exercise.muscleGroup, importedExerciseWithSets.exercise.muscleGroup)
+
+        assertEquals(3, importedExerciseWithSets.sets.size)
+        for (i in 0 until 3) {
+            val expectedSet = sets[i]
+            val actualSet = importedExerciseWithSets.sets[i]
+            assertEquals(expectedSet.setNumber, actualSet.setNumber)
+            assertEquals(expectedSet.weight, actualSet.weight, 0.001)
+            assertEquals(expectedSet.reps, actualSet.reps)
+            assertEquals(expectedSet.rpe, actualSet.rpe, 0.001)
+            assertEquals(expectedSet.completed, actualSet.completed)
+            assertEquals(expectedSet.setType, actualSet.setType)
+        }
     }
 }

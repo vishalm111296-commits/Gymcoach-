@@ -10,6 +10,8 @@ import com.gymcoach.app.domain.model.WorkoutWithDetails
 import org.json.JSONException
 import org.json.JSONObject
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,10 +46,25 @@ class WorkoutDataImporter @Inject constructor() {
                 val wObj = workoutsArray.getJSONObject(i)
 
                 val workoutId = wObj.getLong("id")
-                val startTimeStr = wObj.optString("date")
-                val startTimeMillis = wObj.getLong("startTime")
-                val endTimeMillis = wObj.getLong("endTime")
+                val startTimeMillis = if (wObj.has("startTime")) {
+                    wObj.getLong("startTime")
+                } else if (wObj.has("date")) {
+                    try {
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                            .withZone(ZoneId.systemDefault())
+                            .parse(wObj.getString("date"), Instant::from)
+                            .toEpochMilli()
+                    } catch (e: Exception) {
+                        return Result.failure(IllegalArgumentException("Invalid date format: ${wObj.getString("date")}", e))
+                    }
+                } else {
+                    return Result.failure(IllegalArgumentException("Missing required date or startTime"))
+                }
+                val endTimeMillis = if (wObj.has("endTime")) wObj.getLong("endTime") else startTimeMillis
                 val durationSeconds = wObj.getLong("durationSeconds")
+                if (durationSeconds < 0) {
+                    return Result.failure(IllegalArgumentException("Invalid durationSeconds $durationSeconds. Must be >= 0"))
+                }
                 val completed = wObj.getBoolean("completed")
                 val notes = if (wObj.has("notes") && !wObj.isNull("notes")) wObj.getString("notes") else ""
 
@@ -69,6 +86,9 @@ class WorkoutDataImporter @Inject constructor() {
 
                     val exerciseId = eObj.getLong("exerciseId")
                     val exerciseName = eObj.getString("exerciseName")
+                    if (exerciseName.isBlank()) {
+                        return Result.failure(IllegalArgumentException("exerciseName cannot be blank"))
+                    }
                     val muscleGroup = eObj.getString("muscleGroup")
 
                     val exercise = Exercise(

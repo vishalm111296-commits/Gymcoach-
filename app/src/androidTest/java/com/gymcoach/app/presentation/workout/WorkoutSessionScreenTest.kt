@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
 
 class WorkoutSessionScreenTest {
     @get:Rule
@@ -69,11 +70,12 @@ class WorkoutSessionScreenTest {
             workoutId = 1L
         )
 
+        val totalVolumeKg = 5000.0
         val summary = WorkoutLoggingViewModel.WorkoutSummary(
             workoutId = 1L,
             workoutName = "Leg Day",
             durationSeconds = 3600,
-            totalVolumeKg = 5000.0,
+            totalVolumeKg = totalVolumeKg,
             completedSetsCount = 12,
             totalSetsCount = 12,
             exercisesCompletedCount = 4,
@@ -93,7 +95,10 @@ class WorkoutSessionScreenTest {
 
         composeTestRule.onNodeWithText("Workout Crushed! 🔥").assertIsDisplayed()
         composeTestRule.onNodeWithText("Total Volume").assertIsDisplayed()
-        composeTestRule.onNodeWithText("5000\nkg·reps", substring = true).assertIsDisplayed()
+
+        val expectedVolumeText = "${String.format(Locale.US, "%.0f", totalVolumeKg)}\nkg·reps"
+        composeTestRule.onNodeWithText(expectedVolumeText, useUnmergedTree = true).assertIsDisplayed()
+
         composeTestRule.onNodeWithText("Duration").assertIsDisplayed()
         // 3600 seconds = 01:00:00 (formatDuration converts this depending on logic, check view)
         composeTestRule.onNodeWithText("Sets Completed").assertIsDisplayed()

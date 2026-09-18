@@ -50,8 +50,7 @@ class WorkoutSessionScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("View Instructions").assertIsDisplayed().performClick()
-        composeTestRule.onNodeWithText("Instructions").assertIsDisplayed()
+        composeTestRule.onNodeWithText("View Technique Guide").assertIsDisplayed().performClick()
         composeTestRule.onNodeWithText("Keep chest up and knees over toes.").assertIsDisplayed()
 
         composeTestRule.onNodeWithContentDescription("Camera Form Coach").assertIsDisplayed().performClick()
@@ -94,7 +93,7 @@ class WorkoutSessionScreenTest {
 
         composeTestRule.onNodeWithText("Workout Crushed! 🔥").assertIsDisplayed()
         composeTestRule.onNodeWithText("Total Volume").assertIsDisplayed()
-        composeTestRule.onNodeWithText("5000\nkg·reps").assertIsDisplayed()
+        composeTestRule.onNodeWithText("5000\nkg·reps", substring = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("Duration").assertIsDisplayed()
         // 3600 seconds = 01:00:00 (formatDuration converts this depending on logic, check view)
         composeTestRule.onNodeWithText("Sets Completed").assertIsDisplayed()

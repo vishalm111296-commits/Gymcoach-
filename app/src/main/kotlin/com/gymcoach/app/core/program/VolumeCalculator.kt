@@ -96,7 +96,8 @@ class VolumeCalculator @Inject constructor() {
 
     fun calculateWeeklyVolume(
         completedSets: List<SetWithContext>,
-        exerciseMuscleMap: Map<Long, List<MuscleAssignment>>
+        exerciseMuscleMap: Map<Long, List<MuscleAssignment>>,
+        totalCalendarWeeks: Int? = null
     ): TrainingBalance {
         val weekBuckets = mutableMapOf<Int, MutableMap<String, Double>>()
         val directSetsByMuscle = mutableMapOf<String, Int>()
@@ -130,9 +131,16 @@ class VolumeCalculator @Inject constructor() {
                 avgWeekly[muscle] = (avgWeekly[muscle] ?: 0.0) + credits
             }
         }
+
+        val effectiveWeeks = when {
+            totalCalendarWeeks != null && totalCalendarWeeks > 0 -> totalCalendarWeeks.toDouble()
+            weekBuckets.isNotEmpty() -> weekBuckets.size.toDouble()
+            else -> 1.0
+        }
+
         if (weekBuckets.isNotEmpty()) {
             for ((muscle, total) in avgWeekly) {
-                avgWeekly[muscle] = total / weekBuckets.size.toDouble()
+                avgWeekly[muscle] = total / effectiveWeeks
             }
         }
 
@@ -140,7 +148,9 @@ class VolumeCalculator @Inject constructor() {
             val totalDirect = directSetsByMuscle[muscle] ?: 0
             val totalIndirect = indirectSetsByMuscle[muscle] ?: 0
             val totalSets = totalDirect + totalIndirect
-            val weeklyRate = if (weekBuckets.size > 1) {
+            val weeklyRate = if (totalCalendarWeeks != null && totalCalendarWeeks > 0) {
+                Math.round(avgWeekly[muscle] ?: 0.0).toInt()
+            } else if (weekBuckets.size > 1) {
                 Math.round(avgWeekly[muscle] ?: 0.0).toInt()
             } else {
                 totalSets

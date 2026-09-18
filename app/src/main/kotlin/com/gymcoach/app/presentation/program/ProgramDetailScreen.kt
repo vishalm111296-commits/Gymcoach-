@@ -17,13 +17,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,6 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.data.local.dao.ExerciseDao
+import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ProgramDayEntity
 import com.gymcoach.app.data.local.entity.ProgramEntity
 import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
@@ -69,9 +75,11 @@ import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.ui.theme.DarkSurface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -128,6 +136,9 @@ class ProgramDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProgramDetailUiState())
     val uiState: StateFlow<ProgramDetailUiState> = _uiState.asStateFlow()
 
+    val availableExercises: StateFlow<List<ExerciseEntity>> = exerciseDao.getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         loadActiveProgram()
     }
@@ -157,10 +168,17 @@ class ProgramDetailViewModel @Inject constructor(
                     _uiState.value = ProgramDetailUiState(isLoading = false, program = null)
                 } else {
                     val days = programRepository.getDaysForProgram(activeProgram.id).firstOrNull() ?: emptyList()
+                    val dayIds = days.map { it.id }
+                    val exercisesByDay = if (dayIds.isNotEmpty()) {
+                        programRepository.getExercisesForDays(dayIds).firstOrNull() ?: emptyMap()
+                    } else {
+                        emptyMap()
+                    }
+                    val allExercisesMap = exerciseDao.getAll().firstOrNull()?.associateBy { it.id } ?: emptyMap()
                     val daysWithEx = days.map { day ->
-                        val exercises = programRepository.getExercisesForDay(day.id).firstOrNull() ?: emptyList()
+                        val exercises = exercisesByDay[day.id] ?: emptyList()
                         val detailedExercises = exercises.map { pe ->
-                            val exEntity = exerciseDao.getById(pe.exerciseId).firstOrNull()
+                            val exEntity = allExercisesMap[pe.exerciseId]
                             ProgramExerciseDetail(
                                 entity = pe,
                                 exerciseName = exEntity?.name ?: "Exercise #${pe.exerciseId}",
@@ -221,6 +239,7 @@ fun ProgramDetailScreen(
     viewModel: ProgramDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val availableExercises by viewModel.availableExercises.collectAsState()
     var showBuilderSheet by rememberSaveable { mutableStateOf(false) }
     var showGenerateSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -327,7 +346,7 @@ fun ProgramDetailScreen(
                                         Text("New Routine")
                                     }
                                     OutlinedButton(onClick = { showGenerateSheet = true }) {
-                                        Text("AI Generator")
+                                        Text("Adaptive Generator")
                                     }
                                 }
                             }
@@ -452,6 +471,7 @@ fun ProgramDetailScreen(
         ) {
             RoutineBuilderContent(
                 onDismiss = { showBuilderSheet = false },
+                availableExercises = availableExercises,
                 onSave = { name, desc, goal, days ->
                     viewModel.createCustomRoutine(name, desc, goal, days)
                     showBuilderSheet = false
@@ -461,14 +481,49 @@ fun ProgramDetailScreen(
     }
 }
 
+data class EditableExercise(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val exerciseId: Long,
+    val exerciseName: String,
+    val muscleGroup: String,
+    val sets: Int = 3,
+    val reps: String = "8-12",
+    val restSeconds: Int = 90
+)
+
+data class EditableDay(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val dayNumber: Int,
+    val name: String,
+    val targetMuscles: String,
+    val exercises: List<EditableExercise> = emptyList()
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoutineBuilderContent(
     onDismiss: () -> Unit,
+    availableExercises: List<ExerciseEntity>,
     onSave: (String, String, String, List<CustomRoutineDay>) -> Unit
 ) {
-    var routineName by rememberSaveable { mutableStateOf("My Custom Routine") }
-    var description by rememberSaveable { mutableStateOf("Tailored personalized workout routine") }
-    var goal by rememberSaveable { mutableStateOf("Hypertrophy") }
+    var routineName by remember { mutableStateOf<String>("My Custom Routine") }
+    var description by remember { mutableStateOf<String>("Personalized custom workout program") }
+    var goal by remember { mutableStateOf<String>("Hypertrophy") }
+    var days by remember {
+        mutableStateOf<List<EditableDay>>(
+            listOf(
+                EditableDay(
+                    dayNumber = 1,
+                    name = "Day 1 - Full Body",
+                    targetMuscles = "Chest, Back, Legs"
+                )
+            )
+        )
+    }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var pickerDayIndex by remember { mutableStateOf<Int?>(null) }
+    var pickerSearch by remember { mutableStateOf<String>("") }
+    var pickerCategory by remember { mutableStateOf<String>("All") }
 
     Column(
         modifier = Modifier
@@ -483,40 +538,251 @@ private fun RoutineBuilderContent(
             fontWeight = FontWeight.Bold
         )
 
+        if (errorMessage != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
         OutlinedTextField(
             value = routineName,
-            onValueChange = { routineName = it },
-            label = { Text("Routine Name") },
+            onValueChange = { raw: String -> routineName = raw; errorMessage = null },
+            label = { Text("Routine Name *") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         OutlinedTextField(
             value = description,
-            onValueChange = { description = it },
+            onValueChange = { raw: String -> description = raw },
             label = { Text("Description") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
-        OutlinedTextField(
-            value = goal,
-            onValueChange = { goal = it },
-            label = { Text("Primary Goal (Hypertrophy / Strength / Endurance)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        Text("Primary Goal", style = MaterialTheme.typography.titleSmall)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
+            listOf("Hypertrophy", "Strength", "Endurance", "Fat Loss").forEach { g ->
+                FilterChip(
+                    selected = goal == g,
+                    onClick = { goal = g },
+                    label = { Text(g) }
+                )
+            }
+        }
 
         Text(
-            text = "Sample Day 1: Upper Body Power",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
+            text = "Workout Days (${days.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
-        Text(
-            text = "3 exercises: Bench Press (1), Bent Over Row (3), Overhead Press (8)",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+
+        for ((dayIndex, day) in days.withIndex()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Day ${day.dayNumber}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (days.size > 1) {
+                            IconButton(
+                                onClick = {
+                                    days = days.filterIndexed { i, _ -> i != dayIndex }
+                                        .mapIndexed { i, d -> d.copy(dayNumber = i + 1) }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Remove Day",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = day.name,
+                        onValueChange = { newName: String ->
+                            days = days.toMutableList().also { it[dayIndex] = day.copy(name = newName) }
+                            errorMessage = null
+                        },
+                        label = { Text("Day Title (e.g. Upper Body)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = day.targetMuscles,
+                        onValueChange = { newMuscles: String ->
+                            days = days.toMutableList().also { it[dayIndex] = day.copy(targetMuscles = newMuscles) }
+                        },
+                        label = { Text("Focus / Target Muscles") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    Text(
+                        text = "Exercises (${day.exercises.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    if (day.exercises.isEmpty()) {
+                        Text(
+                            text = "No exercises added yet. Tap '+ Add Exercise' below.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        for ((exIndex, ex) in day.exercises.withIndex()) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = ex.exerciseName,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = ex.muscleGroup,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                val updatedEx = day.exercises.filterIndexed { i, _ -> i != exIndex }
+                                                days = days.toMutableList().also { it[dayIndex] = day.copy(exercises = updatedEx) }
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Remove Exercise",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = ex.sets.toString(),
+                                            onValueChange = { raw: String ->
+                                                val parsed = raw.filter { c -> c.isDigit() }.toIntOrNull() ?: 1
+                                                val updatedEx = day.exercises.toMutableList().also {
+                                                     it[exIndex] = ex.copy(sets = parsed)
+                                                }
+                                                days = days.toMutableList().also { it[dayIndex] = day.copy(exercises = updatedEx) }
+                                            },
+                                            label = { Text("Sets") },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = ex.reps,
+                                            onValueChange = { raw: String ->
+                                                val updatedEx = day.exercises.toMutableList().also {
+                                                     it[exIndex] = ex.copy(reps = raw)
+                                                }
+                                                days = days.toMutableList().also { it[dayIndex] = day.copy(exercises = updatedEx) }
+                                            },
+                                            label = { Text("Reps") },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = ex.restSeconds.toString(),
+                                            onValueChange = { raw: String ->
+                                                val parsed = raw.filter { c -> c.isDigit() }.toIntOrNull() ?: 90
+                                                val updatedEx = day.exercises.toMutableList().also {
+                                                     it[exIndex] = ex.copy(restSeconds = parsed)
+                                                }
+                                                days = days.toMutableList().also { it[dayIndex] = day.copy(exercises = updatedEx) }
+                                            },
+                                            label = { Text("Rest (s)") },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            pickerDayIndex = dayIndex
+                            pickerSearch = ""
+                            pickerCategory = "All"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Add Exercise to Day ${day.dayNumber}")
+                    }
+                }
+            }
+        }
+
+        OutlinedButton(
+            onClick = {
+                days = days + EditableDay(
+                    dayNumber = days.size + 1,
+                    name = "Day ${days.size + 1}",
+                    targetMuscles = ""
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Add Another Training Day")
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -529,35 +795,182 @@ private fun RoutineBuilderContent(
             Spacer(Modifier.width(8.dp))
             Button(
                 onClick = {
-                    val defaultDays = listOf(
+                    if (routineName.isBlank()) {
+                        errorMessage = "Please enter a routine name."
+                        return@Button
+                    }
+                    if (days.isEmpty()) {
+                        errorMessage = "Please add at least one workout day."
+                        return@Button
+                    }
+                    val emptyDay = days.firstOrNull { it.exercises.isEmpty() }
+                    if (emptyDay != null) {
+                        errorMessage = "Day ${emptyDay.dayNumber} has no exercises. Please add at least one exercise."
+                        return@Button
+                    }
+                    val invalidSets = days.any { d -> d.exercises.any { it.sets <= 0 } }
+                    if (invalidSets) {
+                        errorMessage = "All exercises must have at least 1 set."
+                        return@Button
+                    }
+
+                    val customDays = days.mapIndexed { dayIdx, day ->
                         CustomRoutineDay(
-                            dayNumber = 1,
-                            name = "Upper Body Focus",
-                            targetMuscles = "Chest,Back,Shoulders",
-                            exercises = listOf(
-                                CustomRoutineExercise(exerciseId = 1L, targetSets = 3, targetReps = "8-12", restSeconds = 90),
-                                CustomRoutineExercise(exerciseId = 3L, targetSets = 3, targetReps = "8-12", restSeconds = 90),
-                                CustomRoutineExercise(exerciseId = 8L, targetSets = 3, targetReps = "10-12", restSeconds = 60)
-                            )
-                        ),
-                        CustomRoutineDay(
-                            dayNumber = 2,
-                            name = "Lower Body Focus",
-                            targetMuscles = "Legs,Core",
-                            exercises = listOf(
-                                CustomRoutineExercise(exerciseId = 2L, targetSets = 3, targetReps = "6-10", restSeconds = 120),
-                                CustomRoutineExercise(exerciseId = 4L, targetSets = 3, targetReps = "8-12", restSeconds = 90)
-                            )
+                            dayNumber = dayIdx + 1,
+                            name = day.name.ifBlank { "Day ${dayIdx + 1}" },
+                            targetMuscles = day.targetMuscles.ifBlank { "Full Body" },
+                            exercises = day.exercises.map { ex ->
+                                CustomRoutineExercise(
+                                    exerciseId = ex.exerciseId,
+                                    targetSets = ex.sets.coerceAtLeast(1),
+                                    targetReps = ex.reps.ifBlank { "8-12" },
+                                    restSeconds = ex.restSeconds.coerceAtLeast(30)
+                                )
+                            }
                         )
-                    )
-                    onSave(routineName, description, goal, defaultDays)
+                    }
+                    onSave(routineName.trim(), description.trim(), goal.trim(), customDays)
                 }
             ) {
-                Text("Create Routine")
+                Text("Save & Activate Routine")
             }
         }
 
         Spacer(Modifier.height(32.dp))
+    }
+
+    if (pickerDayIndex != null) {
+        val targetDayIdx = pickerDayIndex ?: 0
+        AlertDialog(
+            onDismissRequest = { pickerDayIndex = null },
+            title = {
+                Text(
+                    text = "Select Exercise (Day ${targetDayIdx + 1})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(380.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = pickerSearch,
+                        onValueChange = { raw: String -> pickerSearch = raw },
+                        label = { Text("Search exercise name...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
+                        listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core").forEach { cat ->
+                            FilterChip(
+                                selected = pickerCategory == cat,
+                                onClick = { pickerCategory = cat },
+                                label = { Text(cat, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+
+                    val filteredExercises = availableExercises.filter { ex ->
+                        val matchesCat = pickerCategory == "All" || ex.muscleGroup.lowercase().contains(pickerCategory.lowercase())
+                        val matchesQuery = pickerSearch.isBlank() ||
+                                ex.name.lowercase().contains(pickerSearch.lowercase()) ||
+                                ex.muscleGroup.lowercase().contains(pickerSearch.lowercase())
+                        matchesCat && matchesQuery
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (filteredExercises.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "No matching exercises found.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        } else {
+                            items(filteredExercises) { exercise ->
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val currentDay = days[targetDayIdx]
+                                            val updatedExercises = currentDay.exercises + EditableExercise(
+                                                exerciseId = exercise.id,
+                                                exerciseName = exercise.name,
+                                                muscleGroup = exercise.muscleGroup,
+                                                sets = 3,
+                                                reps = "8-12",
+                                                restSeconds = 90
+                                            )
+                                            val updatedMuscles = if (currentDay.targetMuscles.isBlank()) {
+                                                exercise.muscleGroup
+                                            } else if (!currentDay.targetMuscles.lowercase().contains(exercise.muscleGroup.lowercase())) {
+                                                "${currentDay.targetMuscles}, ${exercise.muscleGroup}"
+                                            } else {
+                                                currentDay.targetMuscles
+                                            }
+                                            days = days.toMutableList().also {
+                                                it[targetDayIdx] = currentDay.copy(
+                                                    exercises = updatedExercises,
+                                                    targetMuscles = updatedMuscles
+                                                )
+                                            }
+                                            errorMessage = null
+                                            pickerDayIndex = null
+                                        }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = exercise.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = "${exercise.muscleGroup} • ${exercise.equipment}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Add",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickerDayIndex = null }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }
 

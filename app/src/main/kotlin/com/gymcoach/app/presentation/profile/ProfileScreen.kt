@@ -80,9 +80,9 @@ class ProfileViewModel @Inject constructor(
     constructor(userProfileRepository: UserProfileRepository) : this(
         userProfileRepository,
         object : com.gymcoach.app.data.local.dao.BodyMeasurementDao {
-            override suspend fun insert(m: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Long = 0L
-            override suspend fun insertAll(m: List<com.gymcoach.app.data.local.entity.BodyMeasurementEntity>) {}
-            override suspend fun update(m: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Int = 0
+            override suspend fun insert(measurement: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Long = 0L
+            override suspend fun insertAll(measurements: List<com.gymcoach.app.data.local.entity.BodyMeasurementEntity>) {}
+            override suspend fun update(measurement: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Int = 0
             override fun getAll() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.BodyMeasurementEntity>())
             override fun getLatest() = kotlinx.coroutines.flow.flowOf(null)
             override suspend fun getById(id: Long): com.gymcoach.app.data.local.entity.BodyMeasurementEntity? = null

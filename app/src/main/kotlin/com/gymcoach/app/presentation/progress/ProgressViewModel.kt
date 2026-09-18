@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -86,8 +87,28 @@ data class ProgressUiState(
 class ProgressViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val workoutRepository: WorkoutRepository,
-    private val bodyMeasurementDao: BodyMeasurementDao
+    private val bodyMeasurementDao: BodyMeasurementDao,
+    private val programRepository: com.gymcoach.app.domain.repository.ProgramRepository
 ) : ViewModel() {
+
+    // Secondary constructor for existing unit tests
+    constructor(
+        analyticsRepository: AnalyticsRepository,
+        workoutRepository: WorkoutRepository,
+        bodyMeasurementDao: BodyMeasurementDao
+    ) : this(
+        analyticsRepository,
+        workoutRepository,
+        bodyMeasurementDao,
+        object : com.gymcoach.app.domain.repository.ProgramRepository {
+            override fun getActiveProgram() = kotlinx.coroutines.flow.flowOf<com.gymcoach.app.data.local.entity.ProgramEntity?>(null)
+            override fun getDaysForProgram(programId: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.ProgramDayEntity>())
+            override fun getExercisesForDay(dayId: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.ProgramExerciseEntity>())
+            override fun getExercisesForDays(dayIds: List<Long>) = kotlinx.coroutines.flow.flowOf(emptyMap<Long, List<com.gymcoach.app.data.local.entity.ProgramExerciseEntity>>())
+            override suspend fun saveGeneratedProgram(program: com.gymcoach.app.core.program.ProgramGenerator.GeneratedProgram) = 0L
+            override suspend fun saveCustomRoutine(name: String, description: String, goal: String, days: List<com.gymcoach.app.domain.repository.CustomRoutineDay>, setAsActive: Boolean) = 0L
+        }
+    )
 
     private val _uiState = MutableStateFlow(ProgressUiState())
     val uiState: StateFlow<ProgressUiState> = _uiState.asStateFlow()
@@ -153,32 +174,51 @@ class ProgressViewModel @Inject constructor(
                     .filter { it.completed }
                     .sortedBy { it.date }
 
+                val activeProgram = programRepository.getActiveProgram().firstOrNull()
+                val targetSessions = activeProgram?.daysPerWeek?.takeIf { it > 0 } ?: TARGET_SESSIONS_PER_WEEK
                 val workoutsThisWeek = completed.count { it.date.toLocalDate(zone) >= weekStart }
-                val adherence = (workoutsThisWeek.toFloat() / TARGET_SESSIONS_PER_WEEK).coerceIn(0f, 1f)
+                val adherence = (workoutsThisWeek.toFloat() / targetSessions).coerceIn(0f, 1f)
 
                 val windowStart = today.minusWeeks(HEATMAP_WEEKS.toLong())
+                val windowStartMs = windowStart.atStartOfDay(zone).toInstant().toEpochMilli()
                 val muscleSets = linkedMapOf<String, Int>()
                 val workoutDays = sortedSetOf<LocalDate>()
                 val bestByExerciseDate = mutableMapOf<String, MutableMap<LocalDate, Double>>()
                 val prByExercise = mutableMapOf<String, Triple<Double, Int, LocalDate>>()
 
-                for (workout in completed) {
-                    val day = workout.date.toLocalDate(zone)
-                    if (day.isBefore(windowStart)) continue
-                    workoutDays += day
-                    val details = workoutRepository.getWorkoutWithDetails(workout.id).first() ?: continue
-                    for (entry in details.exercises) {
-                        val doneSets = entry.sets.filter { it.completed }
-                        if (doneSets.isEmpty()) continue
-                        val muscle = entry.exercise.muscleGroup.uppercase()
-                        muscleSets[muscle] = (muscleSets[muscle] ?: 0) + doneSets.size
-                        val bestSet = doneSets.maxBy { it.weight }
-                        val previous = prByExercise[entry.exercise.name]
-                        if (previous == null || bestSet.weight > previous.first) {
-                            prByExercise[entry.exercise.name] = Triple(bestSet.weight, bestSet.reps, day)
+                val bulkRecords = workoutRepository.getCompletedSetsWithExerciseSince(windowStartMs).firstOrNull() ?: emptyList()
+                if (bulkRecords.isNotEmpty()) {
+                    for (record in bulkRecords) {
+                        val day = Instant.ofEpochMilli(record.workoutDate).toLocalDate(zone)
+                        workoutDays += day
+                        val muscle = record.muscleGroup.uppercase()
+                        muscleSets[muscle] = (muscleSets[muscle] ?: 0) + 1
+                        val previous = prByExercise[record.exerciseName]
+                        if (previous == null || record.weight > previous.first) {
+                            prByExercise[record.exerciseName] = Triple(record.weight, record.reps, day)
                         }
-                        val series = bestByExerciseDate.getOrPut(entry.exercise.name) { mutableMapOf() }
-                        series[day] = maxOf(series[day] ?: 0.0, bestSet.weight)
+                        val series = bestByExerciseDate.getOrPut(record.exerciseName) { mutableMapOf() }
+                        series[day] = maxOf(series[day] ?: 0.0, record.weight)
+                    }
+                } else {
+                    for (workout in completed) {
+                        val day = workout.date.toLocalDate(zone)
+                        if (day.isBefore(windowStart)) continue
+                        workoutDays += day
+                        val details = workoutRepository.getWorkoutWithDetails(workout.id).firstOrNull() ?: continue
+                        for (entry in details.exercises) {
+                            val doneSets = entry.sets.filter { it.completed }
+                            if (doneSets.isEmpty()) continue
+                            val muscle = entry.exercise.muscleGroup.uppercase()
+                            muscleSets[muscle] = (muscleSets[muscle] ?: 0) + doneSets.size
+                            val bestSet = doneSets.maxBy { it.weight }
+                            val previous = prByExercise[entry.exercise.name]
+                            if (previous == null || bestSet.weight > previous.first) {
+                                prByExercise[entry.exercise.name] = Triple(bestSet.weight, bestSet.reps, day)
+                            }
+                            val series = bestByExerciseDate.getOrPut(entry.exercise.name) { mutableMapOf() }
+                            series[day] = maxOf(series[day] ?: 0.0, bestSet.weight)
+                        }
                     }
                 }
 
@@ -328,7 +368,14 @@ class ProgressViewModel @Inject constructor(
                     bodyweightDirection = trendDirection(state.bodyweightTrend),
                     waistDirection = trendDirection(state.waistTrend),
                     shouldersDirection = trendDirection(state.shouldersTrend),
-                    ratioDirection = trendDirection(state.shoulderToWaistTrend)
+                    ratioDirection = trendDirection(state.shoulderToWaistTrend),
+                    insights = generateInsights(
+                        weeklyTrend = state.weeklyTrend,
+                        recentPRs = state.recentPRs,
+                        muscleVolume = state.muscleVolume,
+                        adherence = state.adherence,
+                        workoutsThisWeek = state.workoutsThisWeek
+                    )
                 )
             } catch (e: Exception) {
                 _uiState.update {

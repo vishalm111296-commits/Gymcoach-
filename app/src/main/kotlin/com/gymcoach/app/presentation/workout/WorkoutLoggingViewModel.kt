@@ -666,6 +666,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             val profile = userProfileRepository.getLatestProfile().firstOrNull()
             val equipmentType = profile?.equipmentType ?: "home"
+            val currentReadiness = latestReadiness.value?.readinessScore
             val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
             for (we in exercises) {
                 val exercise = we.exercise
@@ -683,7 +684,8 @@ class WorkoutLoggingViewModel @Inject constructor(
                             )
                         },
                         currentSets = normalSets.map { it.toEntity() },
-                        equipmentType = equipmentType
+                        equipmentType = equipmentType,
+                        readinessScore = currentReadiness
                     )
                     recommendations[exercise.id] = recommendation
                 }

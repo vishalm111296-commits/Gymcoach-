@@ -20,6 +20,18 @@ data class WorkoutSetWithContext(
     val workoutDate: Long
 )
 
+data class CompletedSetWithExerciseData(
+    val id: Long,
+    val workoutId: Long,
+    val exerciseId: Long,
+    val exerciseName: String,
+    val muscleGroup: String,
+    val weight: Double,
+    val reps: Int,
+    val completed: Boolean,
+    val workoutDate: Long
+)
+
 @Dao
 abstract class WorkoutDao {
     @Transaction
@@ -282,30 +294,57 @@ abstract class WorkoutDao {
 
     /**
      * Get the last completed workout's date and max weight for a given exercise.
-     * Returns the most recent completed workout date + max weight achieved.
+     * Returns the most recent completed workout date + max weight achieved from eligible completed NORMAL working sets.
      */
     @Query("""
         SELECT w.date, MAX(ws.weight) as maxWeight
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
-        ORDER BY w.date DESC
-        LIMIT 1
+        WHERE we.exerciseId = :exerciseId 
+          AND w.status = 'COMPLETED'
+          AND ws.completed = 1 
+          AND ws.setType = 0
+          AND w.id = (
+              SELECT w2.id FROM workouts w2
+              INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+              INNER JOIN workout_sets ws2 ON ws2.workoutExerciseId = we2.id
+              WHERE we2.exerciseId = :exerciseId 
+                AND w2.status = 'COMPLETED'
+                AND ws2.completed = 1
+                AND ws2.setType = 0
+              ORDER BY w2.date DESC, w2.id DESC
+              LIMIT 1
+          )
+        GROUP BY w.id, w.date
     """)
     abstract suspend fun getLastPerformanceForExercise(exerciseId: Long): LastPerformance?
 
     /**
      * Get the last completed workout's sets for a given exercise.
-     * Returns the weight, reps, rpe, and rest from the most recent session.
+     * Returns the weight, reps, rpe, and rest from eligible completed NORMAL sets of the most recent session.
      */
     @Query("""
         SELECT ws.weight, ws.reps, ws.rpe, ws.restSeconds, ws.setType, w.date
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE we.exerciseId = :exerciseId AND w.status = 'COMPLETED'
-        ORDER BY w.date DESC, ws.setNumber ASC
+        WHERE we.exerciseId = :exerciseId 
+          AND w.status = 'COMPLETED'
+          AND ws.completed = 1
+          AND ws.setType = 0
+          AND w.id = (
+              SELECT w2.id FROM workouts w2
+              INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+              INNER JOIN workout_sets ws2 ON ws2.workoutExerciseId = we2.id
+              WHERE we2.exerciseId = :exerciseId 
+                AND w2.status = 'COMPLETED'
+                AND ws2.completed = 1
+                AND ws2.setType = 0
+              ORDER BY w2.date DESC, w2.id DESC
+              LIMIT 1
+          )
+        ORDER BY ws.setNumber ASC
         LIMIT 10
     """)
     abstract suspend fun getLastSetsForExercise(exerciseId: Long): List<LastSetData>
@@ -315,20 +354,26 @@ abstract class WorkoutDao {
      * Batched version of getLastPerformanceForExercise
      */
     @Query("""
-        WITH LastWorkouts AS (
-            SELECT we.exerciseId, MAX(w.date) as maxDate
-            FROM workouts w
-            INNER JOIN workout_exercises we ON we.workoutId = w.id
-            WHERE w.status = 'COMPLETED' AND we.exerciseId IN (:exerciseIds)
-            GROUP BY we.exerciseId
-        )
         SELECT we.exerciseId, w.date, MAX(ws.weight) as maxWeight
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        INNER JOIN LastWorkouts lw ON lw.exerciseId = we.exerciseId AND lw.maxDate = w.date
-        WHERE w.status = 'COMPLETED'
-        GROUP BY we.exerciseId
+        WHERE w.status = 'COMPLETED' 
+          AND we.exerciseId IN (:exerciseIds)
+          AND ws.completed = 1 
+          AND ws.setType = 0
+          AND w.id = (
+              SELECT w2.id FROM workouts w2
+              INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+              INNER JOIN workout_sets ws2 ON ws2.workoutExerciseId = we2.id
+              WHERE we2.exerciseId = we.exerciseId 
+                AND w2.status = 'COMPLETED'
+                AND ws2.completed = 1
+                AND ws2.setType = 0
+              ORDER BY w2.date DESC, w2.id DESC
+              LIMIT 1
+          )
+        GROUP BY we.exerciseId, w.id, w.date
     """)
     abstract suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): List<LastPerformanceWithExercise>
 
@@ -340,16 +385,35 @@ abstract class WorkoutDao {
         FROM workout_sets ws
         INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
         INNER JOIN workouts w ON w.id = we.workoutId
-        WHERE w.status = 'COMPLETED' AND we.exerciseId IN (:exerciseIds)
-        AND w.date = (
-            SELECT MAX(w2.date)
-            FROM workouts w2
-            INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
-            WHERE w2.status = 'COMPLETED' AND we2.exerciseId = we.exerciseId
-        )
+        WHERE w.status = 'COMPLETED' 
+          AND we.exerciseId IN (:exerciseIds)
+          AND ws.completed = 1 
+          AND ws.setType = 0
+          AND w.id = (
+              SELECT w2.id FROM workouts w2
+              INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id
+              INNER JOIN workout_sets ws2 ON ws2.workoutExerciseId = we2.id
+              WHERE we2.exerciseId = we.exerciseId 
+                AND w2.status = 'COMPLETED'
+                AND ws2.completed = 1
+                AND ws2.setType = 0
+              ORDER BY w2.date DESC, w2.id DESC
+              LIMIT 1
+          )
         ORDER BY we.exerciseId, ws.setNumber ASC
     """)
     abstract suspend fun getLastSetsForExercises(exerciseIds: List<Long>): List<LastSetDataWithExercise>
+
+    @Query("""
+        SELECT ws.id, w.id as workoutId, we.exerciseId, e.name as exerciseName, e.muscleGroup as muscleGroup, ws.weight, ws.reps, ws.completed, w.date as workoutDate
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON we.id = ws.workoutExerciseId
+        INNER JOIN workouts w ON w.id = we.workoutId
+        INNER JOIN exercises e ON e.id = we.exerciseId
+        WHERE w.status = 'COMPLETED' AND ws.completed = 1 AND w.date >= :sinceDate
+        ORDER BY w.date ASC, ws.setNumber ASC
+    """)
+    abstract fun getCompletedSetsWithExerciseSince(sinceDate: Long): Flow<List<CompletedSetWithExerciseData>>
 
     // ─── Analytics Queries ──────────────────────────────────────────────
 

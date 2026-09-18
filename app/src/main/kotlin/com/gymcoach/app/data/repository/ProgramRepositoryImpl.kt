@@ -31,8 +31,8 @@ class ProgramRepositoryImpl @Inject constructor(
 
     override fun getExercisesForDays(dayIds: List<Long>): Flow<Map<Long, List<ProgramExerciseEntity>>> {
         if (dayIds.isEmpty()) return flowOf(emptyMap())
-        return combine(dayIds.map { id -> programExerciseDao.getByDayId(id).map { id to it } }) { pairs ->
-            pairs.toMap()
+        return programExerciseDao.getByDayIds(dayIds).map { list ->
+            list.groupBy { it.programDayId }
         }
     }
 

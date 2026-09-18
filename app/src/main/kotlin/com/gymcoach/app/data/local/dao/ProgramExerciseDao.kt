@@ -22,6 +22,9 @@ interface ProgramExerciseDao {
     @Query("SELECT * FROM program_exercises WHERE program_day_id = :dayId ORDER BY order_index")
     fun getByDayId(dayId: Long): Flow<List<ProgramExerciseEntity>>
 
+    @Query("SELECT * FROM program_exercises WHERE program_day_id IN (:dayIds) ORDER BY program_day_id ASC, order_index ASC")
+    fun getByDayIds(dayIds: List<Long>): Flow<List<ProgramExerciseEntity>>
+
     @Query("SELECT * FROM program_exercises WHERE id = :id")
     suspend fun getById(id: Long): ProgramExerciseEntity?
 

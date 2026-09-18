@@ -193,4 +193,66 @@ class VolumeCalculatorTest {
         assertEquals("Sunday Dec 29 2024 belongs to 202452", 202452, keySun)
         assertEquals("Monday Dec 30 2024 belongs to 202501", 202501, keyMon)
     }
+
+    @Test
+    fun `calendar weeks divides volume over total calendar span even with empty weeks`() {
+        val week1Date = 1700000000000L
+        val sets = (1..8).map { i ->
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = i.toLong(), workoutExerciseId = 10, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 100,
+                workoutDate = week1Date
+            )
+        }
+        val muscleMap = mapOf(
+            100L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // Without totalCalendarWeeks: single active week returns total sets (8)
+        val activeBalance = volumeCalculator.calculateWeeklyVolume(sets, muscleMap)
+        assertEquals(8, activeBalance.backVolume.weeklySets)
+        assertEquals(8, activeBalance.backVolume.totalSets)
+
+        // With totalCalendarWeeks = 4: spans 4 calendar weeks with 3 empty weeks (8 / 4 = 2)
+        val calendarBalance = volumeCalculator.calculateWeeklyVolume(sets, muscleMap, totalCalendarWeeks = 4)
+        assertEquals(2, calendarBalance.backVolume.weeklySets)
+        assertEquals(8, calendarBalance.backVolume.totalSets)
+    }
+
+    @Test
+    fun `empty weeks with calendar weeks returns zero volume across all muscles`() {
+        val balance = volumeCalculator.calculateWeeklyVolume(emptyList(), emptyMap(), totalCalendarWeeks = 4)
+        assertTrue("All weekly sets should be 0", balance.asList().all { it.weeklySets == 0 })
+        assertTrue("All total sets should be 0", balance.asList().all { it.totalSets == 0 })
+        assertTrue("All statuses should be INSUFFICIENT", balance.asList().all { it.status == VolumeCalculator.VolumeStatus.INSUFFICIENT })
+    }
+
+    @Test
+    fun `multi week transition with calendar weeks preserves correct total and rate`() {
+        val week1Date = 1700000000000L
+        val week2Date = week1Date + (7 * 24 * 60 * 60 * 1000L)
+        val setsWeek1 = (1..4).map { i ->
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = i.toLong(), workoutExerciseId = 10, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 100,
+                workoutDate = week1Date
+            )
+        }
+        val setsWeek2 = (5..8).map { i ->
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = i.toLong(), workoutExerciseId = 20, setNumber = i - 4, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 100,
+                workoutDate = week2Date
+            )
+        }
+        val muscleMap = mapOf(
+            100L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // 8 total sets across 2 active weeks in a 4-week window -> 8 / 4 = 2 sets/week
+        val balance = volumeCalculator.calculateWeeklyVolume(setsWeek1 + setsWeek2, muscleMap, totalCalendarWeeks = 4)
+        assertEquals(2, balance.backVolume.weeklySets)
+        assertEquals(8, balance.backVolume.totalSets)
+        assertEquals(8, balance.backVolume.directSets)
+    }
 }

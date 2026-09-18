@@ -41,4 +41,5 @@ interface WorkoutRepository {
     suspend fun getIncompleteWorkout(): Workout?
     suspend fun createWorkoutFromHistory(workoutId: Long): Long?
     suspend fun createWorkoutFromProgramDay(programDayId: Long): Long?
+    fun getCompletedSetsWithExerciseSince(sinceDate: Long): Flow<List<com.gymcoach.app.data.local.dao.CompletedSetWithExerciseData>> = kotlinx.coroutines.flow.flowOf(emptyList())
 }

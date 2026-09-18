@@ -231,6 +231,10 @@ class WorkoutRepositoryImpl @Inject constructor(
         val exercises = programExerciseDao.getByDayId(programDayId).first()
         return workoutDao.createWorkoutFromProgramDayTransaction(day, exercises)
     }
+
+    override fun getCompletedSetsWithExerciseSince(sinceDate: Long): Flow<List<com.gymcoach.app.data.local.dao.CompletedSetWithExerciseData>> {
+        return workoutDao.getCompletedSetsWithExerciseSince(sinceDate)
+    }
 }
 
 // Entity -> Domain mappers

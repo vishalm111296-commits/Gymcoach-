@@ -197,4 +197,115 @@ class ProgressionEngineTest {
         assertEquals(3, result.recommendedSets)
         assertEquals("Maintain current weight and focus on hitting target reps.", result.reason)
     }
+
+    @Test
+    fun `calculateProgression recommends deload when readiness is critically low below 2`() {
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 12),
+            createSet(weight = 100.0, reps = 12)
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            readinessScore = 1.8
+        )
+
+        assertEquals(100.0, result.currentWeight, 0.0)
+        assertEquals(90.0, result.recommendedWeight, 0.0) // 100 * 0.9 = 90
+        assertEquals(2, result.recommendedSets) // Deload sets (3-1 = 2)
+        assertTrue(result.isDeloadRecommended)
+        assertFalse(result.isPlateaued)
+        assertTrue(result.reason.contains("Readiness is critically low"))
+    }
+
+    @Test
+    fun `calculateProgression holds weight when readiness is between 2 and 2_5 even if all reps hit max`() {
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 12),
+            createSet(weight = 100.0, reps = 12)
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            readinessScore = 2.2
+        )
+
+        assertEquals(100.0, result.currentWeight, 0.0)
+        assertEquals(100.0, result.recommendedWeight, 0.0) // Held at current weight
+        assertEquals(3, result.recommendedSets)
+        assertFalse(result.isDeloadRecommended)
+        assertTrue(result.reason.contains("Reduced readiness"))
+    }
+
+    @Test
+    fun `calculateProgression detects plateau after 3 sessions at same weight without hitting top reps`() {
+        val currentSets = listOf(
+            createSet(weight = 80.0, reps = 9),
+            createSet(weight = 80.0, reps = 9)
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            consecutiveSessionsAtSameWeight = 3
+        )
+
+        assertTrue(result.isPlateaued)
+        assertTrue(result.isDeloadRecommended)
+        assertEquals(72.0, result.recommendedWeight, 0.0) // 80 * 0.9 = 72
+        assertTrue(result.reason.contains("Plateau detected"))
+    }
+
+    @Test
+    fun `calculateProgression breaks plateau when user reaches top of rep range`() {
+        val currentSets = listOf(
+            createSet(weight = 80.0, reps = 12),
+            createSet(weight = 80.0, reps = 12)
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            consecutiveSessionsAtSameWeight = 3
+        )
+
+        assertFalse(result.isPlateaued)
+        assertFalse(result.isDeloadRecommended)
+        assertEquals(85.0, result.recommendedWeight, 0.0) // 80 + 5 = 85
+        assertTrue(result.reason.contains("Increase weight"))
+    }
+
+    @Test
+    fun `roundToIncrement rounds weights to standard equipment plate increments`() {
+        assertEquals(52.5, progressionEngine.roundToIncrement(52.3, 2.5), 0.001)
+        assertEquals(55.0, progressionEngine.roundToIncrement(53.8, 2.5), 0.001)
+        assertEquals(12.0, progressionEngine.roundToIncrement(11.1, 2.0), 0.001)
+        assertEquals(10.0, progressionEngine.roundToIncrement(10.0, 2.5), 0.001)
+    }
 }

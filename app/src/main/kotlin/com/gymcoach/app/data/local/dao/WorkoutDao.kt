@@ -255,9 +255,29 @@ abstract class WorkoutDao {
     @Delete
     abstract suspend fun deleteWorkout(workout: WorkoutEntity)
 
-    // WorkoutExercises
     @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex ASC")
     abstract fun getExercisesForWorkout(workoutId: Long): Flow<List<WorkoutExerciseEntity>>
+
+    @Query("SELECT * FROM workouts WHERE date = :date")
+    abstract suspend fun getWorkoutsByDateDirect(date: Long): List<WorkoutEntity>
+
+    @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex ASC")
+    abstract suspend fun getExercisesForWorkoutDirect(workoutId: Long): List<WorkoutExerciseEntity>
+
+    @Transaction
+    open suspend fun importSingleWorkoutTransaction(
+        workout: WorkoutEntity,
+        exercisesWithSets: List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>
+    ): Long {
+        val newWorkoutId = insertWorkout(workout)
+        for ((we, sets) in exercisesWithSets) {
+            val workoutExerciseId = insertWorkoutExercise(we.copy(id = 0, workoutId = newWorkoutId))
+            for (set in sets) {
+                insertWorkoutSet(set.copy(id = 0, workoutExerciseId = workoutExerciseId))
+            }
+        }
+        return newWorkoutId
+    }
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertWorkoutExercise(exercise: WorkoutExerciseEntity): Long

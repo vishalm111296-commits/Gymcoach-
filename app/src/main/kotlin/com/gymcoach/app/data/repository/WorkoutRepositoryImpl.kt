@@ -235,6 +235,108 @@ class WorkoutRepositoryImpl @Inject constructor(
     override fun getCompletedSetsWithExerciseSince(sinceDate: Long): Flow<List<com.gymcoach.app.data.local.dao.CompletedSetWithExerciseData>> {
         return workoutDao.getCompletedSetsWithExerciseSince(sinceDate)
     }
+
+    override suspend fun importWorkouts(workouts: List<WorkoutWithDetails>): Result<com.gymcoach.app.domain.repository.ImportStats> {
+        return try {
+            var importedCount = 0
+            var skippedCount = 0
+            var setsCount = 0
+
+            for (workoutWithDetails in workouts) {
+                val workout = workoutWithDetails.workout
+                val workoutEpoch = workout.startTime.toEpochMilli()
+
+                // Deduplicate workouts with identical date and exercise composition
+                val existingWorkouts = workoutDao.getWorkoutsByDateDirect(workoutEpoch)
+
+                val resolvedExercises = mutableListOf<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>()
+                val inputExerciseIds = mutableListOf<Long>()
+
+                for ((index, weWithSets) in workoutWithDetails.exercises.withIndex()) {
+                    val exerciseName = weWithSets.exercise.name.trim()
+                    val existingExercise = exerciseDao.getByName(exerciseName)
+                    val exerciseId = if (existingExercise != null) {
+                        existingExercise.id
+                    } else {
+                        exerciseDao.insert(
+                            ExerciseEntity(
+                                id = 0,
+                                name = exerciseName,
+                                description = "Imported custom exercise",
+                                muscleGroup = weWithSets.exercise.muscleGroup.ifBlank { "Full Body" },
+                                equipment = weWithSets.exercise.equipment.ifBlank { "Other" },
+                                difficulty = weWithSets.exercise.difficulty.ifBlank { "Intermediate" },
+                                isCustom = true
+                            )
+                        )
+                    }
+                    inputExerciseIds.add(exerciseId)
+
+                    val weEntity = WorkoutExerciseEntity(
+                        id = 0,
+                        workoutId = 0,
+                        exerciseId = exerciseId,
+                        orderIndex = index
+                    )
+                    val setEntities = weWithSets.sets.map { s ->
+                        WorkoutSetEntity(
+                            id = 0,
+                            workoutExerciseId = 0,
+                            setNumber = s.setNumber,
+                            weight = s.weight,
+                            reps = s.reps,
+                            rpe = s.rpe,
+                            restSeconds = s.restSeconds,
+                            completed = s.completed,
+                            setType = s.setType.ordinal
+                        )
+                    }
+                    resolvedExercises.add(weEntity to setEntities)
+                }
+
+                // Check identical exercise composition against existing workouts at this date
+                var isDuplicate = false
+                for (existing in existingWorkouts) {
+                    val existingExercises = workoutDao.getExercisesForWorkoutDirect(existing.id)
+                    val existingExIds = existingExercises.map { it.exerciseId }
+                    if (existingExIds == inputExerciseIds) {
+                        isDuplicate = true
+                        break
+                    }
+                }
+
+                if (isDuplicate) {
+                    skippedCount++
+                    continue
+                }
+
+                val workoutEntity = WorkoutEntity(
+                    id = 0,
+                    date = workoutEpoch,
+                    startTime = workout.startTime.toEpochMilli(),
+                    endTime = workout.endTime.toEpochMilli(),
+                    duration = workout.duration,
+                    notes = workout.notes,
+                    completed = workout.completed,
+                    status = if (workout.completed) "COMPLETED" else "ACTIVE"
+                )
+
+                workoutDao.importSingleWorkoutTransaction(workoutEntity, resolvedExercises)
+                importedCount++
+                setsCount += resolvedExercises.sumOf { it.second.size }
+            }
+
+            Result.success(
+                com.gymcoach.app.domain.repository.ImportStats(
+                    workoutsImported = importedCount,
+                    workoutsSkipped = skippedCount,
+                    setsImported = setsCount
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 
 // Entity -> Domain mappers

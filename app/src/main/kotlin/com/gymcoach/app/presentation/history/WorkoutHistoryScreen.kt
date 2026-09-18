@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.HorizontalDivider
 import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -95,7 +97,25 @@ fun WorkoutHistoryScreen(
     var showExportMenu by remember { mutableStateOf(false) }
     val exportResult by viewModel.exportResult.collectAsState()
     val isExporting by viewModel.isExporting.collectAsState()
+    val importUiState by viewModel.importUiState.collectAsState()
     val context = LocalContext.current
+
+    val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            try {
+                val jsonString = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                    reader.readText()
+                }
+                if (!jsonString.isNullOrBlank()) {
+                    viewModel.importWorkoutsFromJson(jsonString)
+                }
+            } catch (e: Exception) {
+                // Handled in viewModel
+            }
+        }
+    }
 
     LaunchedEffect(exportResult) {
         exportResult?.let { result ->
@@ -186,6 +206,14 @@ fun WorkoutHistoryScreen(
                                 onClick = {
                                     showExportMenu = false
                                     viewModel.exportData(ExportFormat.JSON)
+                                }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = GymCoachColors.BorderSubtle)
+                            DropdownMenuItem(
+                                text = { Text("Import Workouts (JSON)") },
+                                onClick = {
+                                    showExportMenu = false
+                                    filePickerLauncher.launch(arrayOf("application/json", "text/*"))
                                 }
                             )
                         }
@@ -354,6 +382,49 @@ fun WorkoutHistoryScreen(
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelDelete() }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (importUiState.isImporting) {
+        AlertDialog(
+            onDismissRequest = { /* non-cancelable during import */ },
+            title = { Text("Importing Workouts") },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text("Validating and importing workouts into database...")
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    importUiState.message?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearImportUiState() },
+            title = { Text("Import Successful") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    importUiState.error?.let { err ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearImportUiState() },
+            title = { Text("Import Failed") },
+            text = { Text(err) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
                 }
             }
         )

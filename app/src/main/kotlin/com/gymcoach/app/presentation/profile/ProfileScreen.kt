@@ -23,12 +23,17 @@ import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.gymcoach.app.ui.GymCoachBottomNav
+import com.gymcoach.app.core.export.WorkoutDataImporter
+import com.gymcoach.app.domain.repository.WorkoutRepository
 import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.TextButton
@@ -62,14 +67,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.GymCoachBorders
-import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
-import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.GymCoachSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -84,11 +85,29 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class ProfileImportUiState(
+    val isImporting: Boolean = false,
+    val message: String? = null,
+    val error: String? = null
+)
+
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userProfileRepository: UserProfileRepository,
-    private val bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao
+    private val bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao,
+    private val workoutRepository: WorkoutRepository? = null,
+    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter()
 ) : ViewModel() {
+
+    constructor(
+        userProfileRepository: UserProfileRepository,
+        bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao
+    ) : this(
+        userProfileRepository,
+        bodyMeasurementDao,
+        null,
+        WorkoutDataImporter()
+    )
 
     constructor(userProfileRepository: UserProfileRepository) : this(
         userProfileRepository,
@@ -100,8 +119,53 @@ class ProfileViewModel @Inject constructor(
             override fun getLatest() = kotlinx.coroutines.flow.flowOf(null)
             override suspend fun getById(id: Long): com.gymcoach.app.data.local.entity.BodyMeasurementEntity? = null
             override suspend fun deleteById(id: Long): Int = 0
-        }
+        },
+        null,
+        WorkoutDataImporter()
     )
+
+    private val _importUiState = MutableStateFlow(ProfileImportUiState())
+    val importUiState: StateFlow<ProfileImportUiState> = _importUiState.asStateFlow()
+
+    fun importWorkoutsFromJson(jsonString: String) {
+        val repo = workoutRepository
+        if (repo == null) {
+            _importUiState.value = ProfileImportUiState(isImporting = false, error = "Workout repository unavailable")
+            return
+        }
+        viewModelScope.launch {
+            _importUiState.value = ProfileImportUiState(isImporting = true)
+            try {
+                val parseResult = workoutDataImporter.parseJson(jsonString)
+                if (parseResult.isFailure) {
+                    _importUiState.value = ProfileImportUiState(
+                        isImporting = false,
+                        error = parseResult.exceptionOrNull()?.message ?: "Invalid JSON format"
+                    )
+                    return@launch
+                }
+                val data = parseResult.getOrThrow()
+                val result = repo.importWorkouts(data.workouts)
+                if (result.isFailure) {
+                    _importUiState.value = ProfileImportUiState(
+                        isImporting = false,
+                        error = result.exceptionOrNull()?.message ?: "Failed to import workouts"
+                    )
+                    return@launch
+                }
+                val stats = result.getOrThrow()
+                val msg = StringBuilder("Successfully imported ${stats.workoutsImported} workout(s) (${stats.setsImported} sets).")
+                if (stats.workoutsSkipped > 0) msg.append(" Skipped ${stats.workoutsSkipped} duplicate(s).")
+                _importUiState.value = ProfileImportUiState(isImporting = false, message = msg.toString())
+            } catch (e: Exception) {
+                _importUiState.value = ProfileImportUiState(isImporting = false, error = e.message ?: "Import error")
+            }
+        }
+    }
+
+    fun clearImportUiState() {
+        _importUiState.value = ProfileImportUiState()
+    }
 
     private val _profile = MutableStateFlow<UserProfileEntity?>(null)
     val profile: StateFlow<UserProfileEntity?> = _profile.asStateFlow()
@@ -168,7 +232,26 @@ fun ProfileScreen(
 ) {
     val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val importUiState by viewModel.importUiState.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
     var showEditSheet by rememberSaveable { mutableStateOf(false) }
+
+    val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            try {
+                val jsonString = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                    reader.readText()
+                }
+                if (!jsonString.isNullOrBlank()) {
+                    viewModel.importWorkoutsFromJson(jsonString)
+                }
+            } catch (e: Exception) {
+                // Handled in viewModel
+            }
+        }
+    }
 
     Scaffold(
         containerColor = DarkBackground,
@@ -445,6 +528,17 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = { filePickerLauncher.launch(arrayOf("application/json", "text/*")) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = GymCoachShapes.sm,
+                                colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
+                            ) {
+                                Icon(Icons.Default.FileOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Import Workouts (JSON)")
+                            }
                         }
                     }
 
@@ -502,6 +596,49 @@ fun ProfileScreen(
                 }
             }
         }
+
+    if (importUiState.isImporting) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Importing Workouts") },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text("Validating and importing workouts into database...")
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    importUiState.message?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearImportUiState() },
+            title = { Text("Import Successful") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    importUiState.error?.let { err ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearImportUiState() },
+            title = { Text("Import Failed") },
+            text = { Text(err) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     if (showEditSheet && profile != null) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.core.timer.RestTimerManager
 import com.gymcoach.app.core.export.WorkoutDataExporter
+import com.gymcoach.app.core.export.WorkoutDataImporter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,11 +34,18 @@ data class ExportResult(
     val mimeType: String
 )
 
+data class ImportUiState(
+    val isImporting: Boolean = false,
+    val message: String? = null,
+    val error: String? = null
+)
+
 @HiltViewModel
 class WorkoutHistoryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val restTimer: RestTimerManager,
-    private val workoutDataExporter: WorkoutDataExporter
+    private val workoutDataExporter: WorkoutDataExporter,
+    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter()
 ) : ViewModel() {
 
     // Test backward compatibility constructor
@@ -47,7 +55,8 @@ class WorkoutHistoryViewModel @Inject constructor(
     ) : this(
         workoutRepository,
         restTimer,
-        WorkoutDataExporter()
+        WorkoutDataExporter(),
+        WorkoutDataImporter()
     )
 
     private val _exportResult = MutableStateFlow<ExportResult?>(null)
@@ -55,6 +64,9 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     private val _isExporting = MutableStateFlow(false)
     val isExporting: StateFlow<Boolean> = _isExporting.asStateFlow()
+
+    private val _importUiState = MutableStateFlow(ImportUiState())
+    val importUiState: StateFlow<ImportUiState> = _importUiState.asStateFlow()
 
     enum class SortOption { NEWEST, OLDEST, VOLUME_DESC, VOLUME_ASC, DURATION_DESC, DURATION_ASC }
     enum class FilterOption { ALL, TODAY, THIS_WEEK, THIS_MONTH, CUSTOM }
@@ -256,5 +268,48 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     fun clearExportResult() {
         _exportResult.value = null
+    }
+
+    fun importWorkoutsFromJson(jsonString: String) {
+        viewModelScope.launch {
+            _importUiState.value = ImportUiState(isImporting = true)
+            try {
+                val parseResult = workoutDataImporter.parseJson(jsonString)
+                if (parseResult.isFailure) {
+                    _importUiState.value = ImportUiState(
+                        isImporting = false,
+                        error = parseResult.exceptionOrNull()?.message ?: "Invalid or corrupt JSON format"
+                    )
+                    return@launch
+                }
+                val importedData = parseResult.getOrThrow()
+                val importResult = workoutRepository.importWorkouts(importedData.workouts)
+                if (importResult.isFailure) {
+                    _importUiState.value = ImportUiState(
+                        isImporting = false,
+                        error = importResult.exceptionOrNull()?.message ?: "Failed to save imported workouts"
+                    )
+                    return@launch
+                }
+                val stats = importResult.getOrThrow()
+                val msg = StringBuilder("Successfully imported ${stats.workoutsImported} workout(s) (${stats.setsImported} sets).")
+                if (stats.workoutsSkipped > 0) {
+                    msg.append(" Skipped ${stats.workoutsSkipped} duplicate(s).")
+                }
+                _importUiState.value = ImportUiState(
+                    isImporting = false,
+                    message = msg.toString()
+                )
+            } catch (e: Exception) {
+                _importUiState.value = ImportUiState(
+                    isImporting = false,
+                    error = e.message ?: "Failed to import workouts"
+                )
+            }
+        }
+    }
+
+    fun clearImportUiState() {
+        _importUiState.value = ImportUiState()
     }
 }

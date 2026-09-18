@@ -2,39 +2,39 @@ package com.gymcoach.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Deep charcoal backgrounds
-val DarkBackground = Color(0xFF1A1A2E)
-val DarkSurface = Color(0xFF16213E)
-val DarkSurfaceVariant = Color(0xFF1F2B45)
-val DarkCard = Color(0xFF252A41)
+// Deep layered dark charcoal/slate backgrounds
+val DarkBackground = Color(0xFF0F1420)
+val DarkSurface = Color(0xFF171F30)
+val DarkSurfaceVariant = Color(0xFF1F2A40)
+val DarkCard = Color(0xFF1C2538)
 
-// Warm white primary text
-val TextPrimary = Color(0xFFF5F5F0)
-val TextSecondary = Color(0xFFB8B5AD)
-val TextTertiary = Color(0xFF7A7770)
+// Crisp typography colors with WCAG AAA contrast
+val TextPrimary = Color(0xFFF8FAFC)
+val TextSecondary = Color(0xFF94A3B8)
+val TextTertiary = Color(0xFF64748B)
 
-// Restrained blue/violet accent
+// Refined violet/indigo accent
 val AccentBlue = Color(0xFF6C63FF)
-val AccentBlueLight = Color(0xFF8B83FF)
-val AccentBlueDark = Color(0xFF4A42E0)
+val AccentBlueLight = Color(0xFF8B85FF)
+val AccentBlueDark = Color(0xFF4E45D9)
 
 // State colors
-val SuccessGreen = Color(0xFF4CAF50)
-val WarningAmber = Color(0xFFFFB300)
-val ErrorRed = Color(0xFFFF5252)
-val InfoBlue = Color(0xFF2196F3)
+val SuccessGreen = Color(0xFF10B981)
+val WarningAmber = Color(0xFFF59E0B)
+val ErrorRed = Color(0xFFEF4444)
+val InfoBlue = Color(0xFF0EA5E9)
 
 // Workout-specific
-val RestTimerBg = Color(0xFF2D2D44)
-val SetComplete = Color(0xFF4CAF50)
-val PRHighlight = Color(0xFFFFD700)
+val RestTimerBg = Color(0xFF1A2234)
+val SetComplete = Color(0xFF10B981)
+val PRHighlight = Color(0xFFFFB300)
 val MuscleActive = Color(0xFF6C63FF)
-val MuscleRest = Color(0xFF3A3A5C)
+val MuscleRest = Color(0xFF263248)
 
 // Volume chart
 val VolumeChartLine = Color(0xFF6C63FF)
 val VolumeChartFill = Color(0x336C63FF)
-val VolumeChartGrid = Color(0xFF2A2A44)
+val VolumeChartGrid = Color(0xFF232D42)
 
 // Onboarding/home aliases mapped onto the main palette
 val WarmWhite = TextPrimary

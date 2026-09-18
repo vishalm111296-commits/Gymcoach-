@@ -63,6 +63,13 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -474,9 +481,11 @@ private fun WorkoutAdherenceCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -486,37 +495,51 @@ private fun WorkoutAdherenceCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Weekly Adherence",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "$workoutsThisWeek/$targetSessionsPerWeek",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Column {
+                    Text(
+                        text = "WEEKLY ADHERENCE",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "$workoutsThisWeek of $targetSessionsPerWeek sessions completed",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .background(
+                            if (adherence >= 0.8f) Color(0xFF10B981).copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${(adherence * 100).toInt()}%",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = if (adherence >= 0.8f) Color(0xFF10B981) else MaterialTheme.colorScheme.primary
+                    )
+                }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress = { adherence },
+                progress = { adherence.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
                 color = when {
-                    adherence >= 0.8f -> Color(0xFF2E7D32)
+                    adherence >= 0.8f -> Color(0xFF10B981)
                     adherence >= 0.5f -> MaterialTheme.colorScheme.primary
                     else -> MaterialTheme.colorScheme.error
                 },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "${(adherence * 100).toInt()}% of goal",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
         }
     }
@@ -527,51 +550,61 @@ private fun StrengthLineChart(
     data: List<ProgressPoint>,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = MaterialTheme.colorScheme.primary
-    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    Card(
+        modifier = modifier,
+        shape = GymCoachShapes.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        val lineColor = MaterialTheme.colorScheme.primary
+        val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
-    Canvas(modifier = modifier) {
-        if (data.size < 2) return@Canvas
+        Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            if (data.size < 2) return@Canvas
 
-        val paddingLeft = 8f
-        val paddingBottom = 8f
-        val chartWidth = size.width - paddingLeft
-        val chartHeight = size.height - paddingBottom
+            val paddingLeft = 12f
+            val paddingBottom = 12f
+            val chartWidth = size.width - paddingLeft
+            val chartHeight = size.height - paddingBottom
 
-        val values = data.map { it.value }
-        val minVal = values.min()
-        val maxVal = values.max()
-        val range = (maxVal - minVal).coerceAtLeast(1.0)
+            val values = data.map { it.value }
+            val minVal = values.min()
+            val maxVal = values.max()
+            val range = (maxVal - minVal).coerceAtLeast(1.0)
 
-        for (i in 0..3) {
-            val y = chartHeight - (chartHeight * i / 3f)
-            drawLine(
-                color = gridColor,
-                start = Offset(paddingLeft, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1f
+            for (i in 0..3) {
+                val y = chartHeight - (chartHeight * i / 3f)
+                drawLine(
+                    color = gridColor,
+                    start = Offset(paddingLeft, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1f
+                )
+            }
+
+            val path = Path()
+            val stepX = chartWidth / (data.size - 1).toFloat()
+
+            data.forEachIndexed { index, point ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+
+            drawPath(
+                path = path,
+                color = lineColor,
+                style = Stroke(width = 3.5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
             )
-        }
 
-        val path = Path()
-        val stepX = chartWidth / (data.size - 1).toFloat()
-
-        data.forEachIndexed { index, point ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-
-        drawPath(
-            path = path,
-            color = lineColor,
-            style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        )
-
-        data.forEachIndexed { index, point ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
-            drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+            data.forEachIndexed { index, point ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+                drawCircle(color = lineColor, radius = 5f, center = Offset(x, y))
+                drawCircle(color = Color.White, radius = 2.5f, center = Offset(x, y))
+            }
         }
     }
 }
@@ -586,28 +619,29 @@ private fun ExerciseSelector(
     Box {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
                 .clickable { expanded = true },
+            shape = GymCoachShapes.sm,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ),
+            border = GymCoachBorders.subtleBorder()
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = selectedExercise,
                     style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "\u25bc",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -646,12 +680,14 @@ private fun MuscleVolumeBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -661,27 +697,58 @@ private fun MuscleVolumeBar(
                 Text(
                     text = muscleName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = "$currentSets sets (target: $targetMin-$targetMax)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "$currentSets / $targetMax sets",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                when {
+                                    inRange -> Color(0xFF10B981).copy(alpha = 0.15f)
+                                    isOver -> Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                    else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                },
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = when {
+                                inRange -> "OPTIMAL"
+                                isOver -> "OVER"
+                                else -> "LOW"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 9.sp,
+                            color = when {
+                                inRange -> Color(0xFF10B981)
+                                isOver -> Color(0xFFF59E0B)
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp),
                 color = when {
-                    inRange -> Color(0xFF2E7D32)
-                    isOver -> Color(0xFFF57F17)
+                    inRange -> Color(0xFF10B981)
+                    isOver -> Color(0xFFF59E0B)
                     else -> MaterialTheme.colorScheme.primary
                 },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
         }
     }
@@ -697,40 +764,50 @@ private fun PRCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD54F).copy(alpha = 0.35f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.EmojiEvents,
-                contentDescription = "PR",
-                tint = Color(0xFFF57F17),
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFFFD54F).copy(alpha = 0.15f), shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.EmojiEvents,
+                    contentDescription = "PR",
+                    tint = Color(0xFFFFD54F),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = exerciseName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = achievement,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
                 text = date.toString(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }
@@ -739,20 +816,39 @@ private fun PRCard(
 @Composable
 private fun SectionHeader(title: String) {
     Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.primary,
+        letterSpacing = 1.sp
     )
 }
 
 @Composable
 private fun EmptyPlaceholder(message: String) {
-    Text(
-        text = message,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = GymCoachShapes.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
@@ -761,9 +857,11 @@ private fun SummaryRow(label: String, value: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Row(
             modifier = Modifier
@@ -774,13 +872,13 @@ private fun SummaryRow(label: String, value: String) {
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -792,51 +890,61 @@ private fun VolumeLineChart(
     data: List<Pair<Date, Double>>,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = MaterialTheme.colorScheme.primary
-    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    Card(
+        modifier = modifier,
+        shape = GymCoachShapes.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        val lineColor = MaterialTheme.colorScheme.primary
+        val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
-    Canvas(modifier = modifier) {
-        if (data.size < 2) return@Canvas
+        Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            if (data.size < 2) return@Canvas
 
-        val paddingLeft = 8f
-        val paddingBottom = 8f
-        val chartWidth = size.width - paddingLeft
-        val chartHeight = size.height - paddingBottom
+            val paddingLeft = 12f
+            val paddingBottom = 12f
+            val chartWidth = size.width - paddingLeft
+            val chartHeight = size.height - paddingBottom
 
-        val values = data.map { it.second }
-        val minVal = values.min()
-        val maxVal = values.max()
-        val range = (maxVal - minVal).coerceAtLeast(1.0)
+            val values = data.map { it.second }
+            val minVal = values.min()
+            val maxVal = values.max()
+            val range = (maxVal - minVal).coerceAtLeast(1.0)
 
-        for (i in 0..3) {
-            val y = chartHeight - (chartHeight * i / 3f)
-            drawLine(
-                color = gridColor,
-                start = Offset(paddingLeft, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1f
+            for (i in 0..3) {
+                val y = chartHeight - (chartHeight * i / 3f)
+                drawLine(
+                    color = gridColor,
+                    start = Offset(paddingLeft, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1f
+                )
+            }
+
+            val path = Path()
+            val stepX = chartWidth / (data.size - 1).toFloat()
+
+            data.forEachIndexed { index, point ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+
+            drawPath(
+                path = path,
+                color = lineColor,
+                style = Stroke(width = 3.5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
             )
-        }
 
-        val path = Path()
-        val stepX = chartWidth / (data.size - 1).toFloat()
-
-        data.forEachIndexed { index, (_, volume) ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-
-        drawPath(
-            path = path,
-            color = lineColor,
-            style = Stroke(width = 3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        )
-
-        data.forEachIndexed { index, (_, volume) ->
-            val x = paddingLeft + index * stepX
-            val y = chartHeight - ((volume - minVal) / range * chartHeight).toFloat()
-            drawCircle(color = lineColor, radius = 4f, center = Offset(x, y))
+            data.forEachIndexed { index, point ->
+                val x = paddingLeft + index * stepX
+                val y = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
+                drawCircle(color = lineColor, radius = 5f, center = Offset(x, y))
+                drawCircle(color = Color.White, radius = 2.5f, center = Offset(x, y))
+            }
         }
     }
 }
@@ -915,23 +1023,27 @@ private fun StatsOverview(
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
+        shape = GymCoachShapes.sm,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = label,
+                text = label.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }

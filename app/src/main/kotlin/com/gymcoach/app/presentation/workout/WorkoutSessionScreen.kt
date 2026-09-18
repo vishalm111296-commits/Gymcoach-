@@ -3,6 +3,14 @@ package com.gymcoach.app.presentation.workout
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
 
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +56,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -468,9 +477,7 @@ fun WorkoutSessionScreen(
     }
 }
 
-/**
- * Rest timer card with progress bar and quick-select preset buttons.
- */
+// Rest timer card with progress bar and quick-select preset buttons.
 @Composable
 private fun RestTimerCard(
     timeRemaining: Int,
@@ -483,10 +490,14 @@ private fun RestTimerCard(
     onPresetTap: (Int) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -495,64 +506,86 @@ private fun RestTimerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Rest")
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Rest: ${timeRemaining}s",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onSubtractFifteen) {
-                        Text(
-                            "-15s",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.labelMedium
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (isPaused) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = "Rest",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    TextButton(onClick = onAddFifteen) {
+                    Spacer(Modifier.width(12.dp))
+                    Column {
                         Text(
-                            "+15s",
+                            text = "REST INTERVAL",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.labelMedium
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            letterSpacing = 1.sp
                         )
+                        Text(
+                            text = "${timeRemaining}s",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilledTonalButton(
+                        onClick = onSubtractFifteen,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Text("-15s", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                    }
+                    FilledTonalButton(
+                        onClick = onAddFifteen,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Text("+15s", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
                     }
                     IconButton(onClick = onPauseResume) {
                         Icon(
                             if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = "Pause/Resume"
+                            contentDescription = "Pause/Resume",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     IconButton(onClick = onSkip) {
-                        Icon(Icons.Default.SkipNext, contentDescription = "Skip")
+                        Icon(
+                            Icons.Default.SkipNext,
+                            contentDescription = "Skip",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
                 progress = {
-                    if (totalDuration > 0) timeRemaining.toFloat() / totalDuration else 0f
+                    if (totalDuration > 0) (timeRemaining.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
                 },
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 
             // Quick-select rest duration presets
             Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Adjust rest:",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-            )
-            Spacer(Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 val presets = listOf(
                     "30s" to RestPresets.SHORT,
@@ -573,8 +606,8 @@ private fun RestTimerCard(
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primaryContainer
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         modifier = Modifier.weight(1f)
                     )
@@ -609,30 +642,45 @@ internal fun ExerciseSetCard(
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Exercise Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = exerciseName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = muscleGroup,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Spacer(Modifier.height(2.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = muscleGroup.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val exerciseType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(exerciseName)
@@ -656,61 +704,83 @@ internal fun ExerciseSetCard(
                         )
                     }
                     IconButton(onClick = onRemoveExercise) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove Exercise")
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Remove Exercise",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
 
-            // Progression recommendation banner
+            // Adaptive Progression Recommendation banner ("WHY THIS WEIGHT?")
             if (recommendation != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "TARGET PROGRESSION",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "ADAPTIVE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 9.sp
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Next session target",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
+                            text = "${recommendation.recommendedWeight} kg × ${recommendation.recommendedReps} reps",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Text(
-                            text = "${recommendation.recommendedWeight}kg × ${recommendation.recommendedReps} reps",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Spacer(Modifier.height(2.dp))
                         Text(
                             text = recommendation.reason,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                         )
                     }
                 }
             }
-
-            // Instructions
-                        if (instructions.isNotEmpty()) {
-                            TextButton(onClick = { showInstructions = !showInstructions }) {
-                                Text(if (showInstructions) "Hide Instructions" else "View Instructions")
-                            }
-                
-                            if (showInstructions) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("Instructions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                        Text(instructions, style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                }
-                            }
-                        }
 
             // Previous performance indicator
             if (lastPerformance != null) {
@@ -718,51 +788,142 @@ internal fun ExerciseSetCard(
                     .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("MMM d"))
                 val bestWeight = lastPerformance.maxWeight
-                val lastSetSummary = previousSets?.joinToString(", ") { 
-                    "${it.weight}kg x ${it.reps}" 
+                val lastSetSummary = previousSets?.joinToString("  •  ") { 
+                    "${it.weight}kg × ${it.reps}" 
                 } ?: ""
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
                     )
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "Last time ($lastDate)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "LAST SESSION ($lastDate)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Best: ${bestWeight}kg",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         if (lastSetSummary.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
                             Text(
                                 text = lastSetSummary,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Text(
-                            text = "Best: ${bestWeight}kg",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
                     }
                 }
             }
 
-            // Set labels
+            // Instructions expander
+            if (instructions.isNotEmpty()) {
+                TextButton(
+                    onClick = { showInstructions = !showInstructions },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        if (showInstructions) "Hide Instructions" else "View Technique Guide",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+    
+                if (showInstructions) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "Technique & Form",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                instructions,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Set Column Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Spacer(modifier = Modifier.width(40.dp)) // Checkbox + Delete
+                Text(
+                    "SET",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.12f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "KG",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.22f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "REPS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.22f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "RPE",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.16f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "REST",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(0.16f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "DONE",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(44.dp),
+                    textAlign = TextAlign.Center
+                )
             }
 
             sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
@@ -786,7 +947,7 @@ internal fun ExerciseSetCard(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(color)
+                                .background(color, shape = RoundedCornerShape(8.dp))
                                 .padding(horizontal = 16.dp),
                             contentAlignment = Alignment.CenterEnd
                         ) {
@@ -814,10 +975,14 @@ internal fun ExerciseSetCard(
                 }
             }
 
-            TextButton(onClick = onAddSet) {
+            FilledTonalButton(
+                onClick = onAddSet,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Add Set")
+                Spacer(Modifier.width(6.dp))
+                Text("Add Set", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -843,34 +1008,54 @@ private fun SetRow(
     var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }
     var rpeText by rememberSaveable { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
     var restText by rememberSaveable { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
+    val haptic = LocalHapticFeedback.current
+
+    val setTypeColor = when (setType) {
+        com.gymcoach.app.domain.model.SetType.WARMUP -> androidx.compose.ui.graphics.Color(0xFFFFB74D)
+        com.gymcoach.app.domain.model.SetType.DROP -> androidx.compose.ui.graphics.Color(0xFFBA68C8)
+        com.gymcoach.app.domain.model.SetType.FAILURE -> androidx.compose.ui.graphics.Color(0xFFE57373)
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val setTypeText = when (setType) {
+        com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
+        com.gymcoach.app.domain.model.SetType.DROP -> "D"
+        com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
+        else -> "${index + 1}"
+    }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (completed) MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.surfaceContainerLow,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(vertical = 4.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Set Number & Type Indicator
-        val setTypeColor = when (setType) {
-            com.gymcoach.app.domain.model.SetType.WARMUP -> MaterialTheme.colorScheme.tertiary
-            com.gymcoach.app.domain.model.SetType.DROP -> MaterialTheme.colorScheme.secondary
-            com.gymcoach.app.domain.model.SetType.FAILURE -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.onSurface
-        }
-        val setTypeText = when (setType) {
-            com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
-            com.gymcoach.app.domain.model.SetType.DROP -> "D"
-            com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
-            else -> "${index + 1}"
-        }
+        // Set Number / Type Pill button (tap to cycle)
         Box(
-            modifier = Modifier.width(24.dp),
+            modifier = Modifier
+                .weight(0.12f)
+                .height(38.dp)
+                .clickable {
+                    val nextType = when (setType) {
+                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
+                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
+                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
+                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
+                    }
+                    onSetTypeChange(nextType)
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = setTypeText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = setTypeColor,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black
             )
         }
 
@@ -880,10 +1065,13 @@ private fun SetRow(
                 weightText = v
                 v.toDoubleOrNull()?.let { onWeightChange(it) }
             },
-            modifier = Modifier.weight(0.18f),
+            modifier = Modifier.weight(0.22f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
         )
 
         OutlinedTextField(
@@ -892,10 +1080,13 @@ private fun SetRow(
                 repsText = v
                 v.toIntOrNull()?.let { onRepsChange(it) }
             },
-            modifier = Modifier.weight(0.18f),
+            modifier = Modifier.weight(0.22f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
         )
 
         OutlinedTextField(
@@ -904,10 +1095,13 @@ private fun SetRow(
                 rpeText = v
                 v.toDoubleOrNull()?.let { onRpeChange(it) }
             },
-            modifier = Modifier.weight(0.13f),
+            modifier = Modifier.weight(0.16f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
         )
 
         OutlinedTextField(
@@ -916,43 +1110,42 @@ private fun SetRow(
                 restText = v
                 v.toIntOrNull()?.let { onRestSecondsChange(it) }
             },
-            modifier = Modifier.weight(0.13f),
+            modifier = Modifier.weight(0.16f),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
         )
 
-        Row(
-            modifier = Modifier.width(56.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+        // Tactile completion button
+        Box(
+            modifier = Modifier
+                .width(44.dp)
+                .height(38.dp),
+            contentAlignment = Alignment.Center
         ) {
-            val haptic = LocalHapticFeedback.current
-            Checkbox(
-                checked = completed,
-                onCheckedChange = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleComplete()
-                },
-                modifier = Modifier.size(24.dp)
-            )
-            IconButton(
-                onClick = { 
-                    val nextType = when (setType) {
-                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
-                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
-                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
-                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
-                    }
-                    onSetTypeChange(nextType)
-                },
-                modifier = Modifier.size(24.dp)
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(
+                        if (completed) androidx.compose.ui.graphics.Color(0xFF2E7D32)
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleComplete()
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Star,
-                    contentDescription = "Cycle Set Type",
-                    modifier = Modifier.size(16.dp),
-                    tint = setTypeColor
+                    imageVector = Icons.Default.Check,
+                    contentDescription = if (completed) "Completed" else "Mark Complete",
+                    tint = if (completed) androidx.compose.ui.graphics.Color.White
+                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -971,15 +1164,19 @@ private fun RecoveryAdvisoryBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = androidx.compose.ui.graphics.Color(0xFF332014)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.4f)
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -987,11 +1184,12 @@ private fun RecoveryAdvisoryBanner(
                     text = "RECOVERY ADVISORY (Readiness: %.1f/5.0)".format(readiness.readinessScore),
                     style = MaterialTheme.typography.labelSmall,
                     color = androidx.compose.ui.graphics.Color(0xFFFFB74D),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "${readiness.trainingRecommendation}. Consider autoregulation: keep 1-2 reps in reserve (RIR 2) and avoid forced failure.",
+                    text = "${readiness.trainingRecommendation}. Autoregulation recommended: leave 1-2 reps in reserve (RIR 2) and avoid forced failure.",
                     style = MaterialTheme.typography.bodySmall,
                     color = androidx.compose.ui.graphics.Color(0xFFFFF3E0)
                 )
@@ -1135,31 +1333,36 @@ private fun StatCard(
     highlight: Boolean = false
 ) {
     Card(
-        modifier = modifier.aspectRatio(1.2f),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.aspectRatio(1.15f),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = if (highlight) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                             else MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = if (highlight) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                 else GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00) else MaterialTheme.colorScheme.onSurfaceVariant,
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
-                color = if (highlight) androidx.compose.ui.graphics.Color(0xFFCCFF00) else MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmall,
+                color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
         }
@@ -1170,10 +1373,11 @@ private fun StatCard(
 private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalRecord) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.35f))
     ) {
         Row(
             modifier = Modifier
@@ -1183,29 +1387,49 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(androidx.compose.ui.graphics.Color(0xFFCCFF00).copy(alpha = 0.2f), shape = androidx.compose.foundation.shape.CircleShape),
+                    .size(44.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.15f),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "PR Icon",
-                    tint = androidx.compose.ui.graphics.Color(0xFFCCFF00),
+                    tint = androidx.compose.ui.graphics.Color(0xFFFFD54F),
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = pr.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = pr.details,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .background(
+                        androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "NEW PR",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Black,
+                    color = androidx.compose.ui.graphics.Color(0xFFFFD54F),
+                    letterSpacing = 0.5.sp
                 )
             }
         }

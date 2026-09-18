@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.detail
 
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,14 +25,19 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,10 +45,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,6 +76,15 @@ import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.presentation.components.ExerciseAnimationPlayer
 import com.gymcoach.app.presentation.components.ExerciseVideoPlayer
+import com.gymcoach.app.ui.theme.AccentBlue
+import com.gymcoach.app.ui.theme.DarkBackground
+import com.gymcoach.app.ui.theme.DarkSurface
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.TextPrimary
+import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.TextTertiary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -157,16 +175,23 @@ fun ExerciseDetailScreen(
     }
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = exercise?.name ?: "Exercise Details")
+                    Text(
+                        text = exercise?.name ?: "Exercise Detail",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary,
+                        maxLines = 1
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
                 },
@@ -175,10 +200,11 @@ fun ExerciseDetailScreen(
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = if (isFavorite) "Unfavorite" else "Favorite",
-                            tint = if (isFavorite) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurface
+                            tint = if (isFavorite) Color(0xFFF43F5E) else TextSecondary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         }
     ) { padding ->
@@ -187,178 +213,371 @@ fun ExerciseDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. DEMO & VISUAL FORM: Video Player, Keyframe Animation Player, or Hero Header
-                val hasVideo = !ex.videoUrl.isNullOrBlank()
-                val hasAnimation = animationDefinition != null
-
-                if (hasVideo && hasAnimation) {
-                    var showVideo by remember { mutableStateOf(false) }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = { showVideo = !showVideo }) {
-                                Text(if (showVideo) "View Stickman Animation" else "Watch Video Demo")
-                            }
-                        }
-                        if (showVideo) {
-                            ExerciseVideoPlayer(
-                                videoUri = Uri.parse(ex.videoUrl),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                            )
-                        } else {
-                            ExerciseAnimationPlayer(
-                                definition = animationDefinition!!,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(290.dp)
-                            )
-                        }
-                    }
-                } else if (hasVideo) {
-                    ExerciseVideoPlayer(
-                        videoUri = Uri.parse(ex.videoUrl),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
+                // Header Titles
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = ex.name,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
+                        ),
+                        color = TextPrimary
                     )
-                } else if (hasAnimation) {
-                    ExerciseAnimationPlayer(
-                        definition = animationDefinition!!,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(290.dp)
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                RoundedCornerShape(20.dp)
-                            )
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .clip(GymCoachShapes.xs)
+                                .background(AccentBlue.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
                             Text(
-                                text = ex.name.firstOrNull()?.uppercase() ?: "?",
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                fontWeight = FontWeight.Bold
+                                text = ex.muscleGroup,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = AccentBlue
                             )
-                            Spacer(Modifier.height(8.dp))
+                        }
+                        Text(
+                            text = "•",
+                            color = TextTertiary
+                        )
+                        Text(
+                            text = ex.equipment.ifBlank { "Bodyweight" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        if (ex.movementPattern.isNotBlank()) {
+                            Text(text = "•", color = TextTertiary)
                             Text(
-                                text = "${ex.muscleGroup} • ${ex.equipment}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = ex.movementPattern,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
                             )
                         }
                     }
                 }
 
-                // 2. QUICK SPECIFICATIONS CARD
-                Card(
+                // 1. HERO MEDIA SECTION: Animation, Video, or Stylized Anatomy Glyph Card
+                // Strictly guard: Never show a video player with 0:00 / 0:00 when video is absent/invalid!
+                val hasPlayableVideo = !ex.videoUrl.isNullOrBlank() &&
+                        (ex.videoUrl.startsWith("http://") || ex.videoUrl.startsWith("https://") || ex.videoUrl.startsWith("android.resource://"))
+                val hasAnimation = animationDefinition != null
+
+                if (hasPlayableVideo && hasAnimation) {
+                    var showVideo by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.lg)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { showVideo = !showVideo }) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayCircleOutline,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = AccentBlue
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = if (showVideo) "View Stickman Form Animation" else "Watch Video Demo",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = AccentBlue
+                                    )
+                                }
+                            }
+                            if (showVideo) {
+                                ExerciseVideoPlayer(
+                                    videoUri = Uri.parse(ex.videoUrl),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(GymCoachShapes.md)
+                                )
+                            } else {
+                                ExerciseAnimationPlayer(
+                                    definition = animationDefinition!!,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(260.dp)
+                                )
+                            }
+                        }
+                    }
+                } else if (hasAnimation) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.lg)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                    ) {
+                        ExerciseAnimationPlayer(
+                            definition = animationDefinition!!,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp)
+                                .padding(12.dp)
+                        )
+                    }
+                } else if (hasPlayableVideo) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.lg)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                    ) {
+                        ExerciseVideoPlayer(
+                            videoUri = Uri.parse(ex.videoUrl),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(GymCoachShapes.md)
+                        )
+                    }
+                } else {
+                    // Meaningful Exercise Glyph & Anatomy Placeholder (Zero fake 0:00 / 0:00 players!)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.lg)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(AccentBlue.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FitnessCenter,
+                                    contentDescription = null,
+                                    tint = AccentBlue,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                text = "Technical Movement Profile",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = TextPrimary
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Biomechanical form notes and coaching cues detailed below",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+
+                // 2. PRIMARY ACTIONS ROW (Start Form Check + View Progress)
+                val matchedType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(ex.name)
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    shape = RoundedCornerShape(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (matchedType != null) {
+                        Button(
+                            onClick = { onCameraClick(matchedType) },
+                            modifier = Modifier.weight(1f),
+                            shape = GymCoachShapes.md,
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Form Check", fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = { onViewProgressClick(ex.id, ex.name) },
+                        modifier = Modifier.weight(1f),
+                        shape = GymCoachShapes.md,
+                        border = GymCoachBorders.subtle
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = TextPrimary
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Analytics", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                // 3. QUICK SPECIFICATIONS GRID (Target Reps, Rest, Difficulty, Equipment)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(GymCoachShapes.md)
+                        .border(GymCoachBorders.subtle, GymCoachShapes.md),
+                    colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Text(
+                            text = "Quick Specifications",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = AccentBlue
+                            )
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            DetailColumn(label = "Primary Muscle", value = ex.muscleGroup, icon = Icons.Default.FitnessCenter)
-                            DetailColumn(label = "Equipment", value = ex.equipment.ifBlank { "Bodyweight" }, icon = Icons.Default.Build)
-                            DetailColumn(label = "Difficulty", value = ex.difficulty, icon = Icons.Default.LocalFireDepartment)
+                            SpecBadge(
+                                label = "Target Reps",
+                                value = ex.recommendedRepRange.ifBlank { "8–12" },
+                                icon = Icons.Default.Refresh
+                            )
+                            SpecBadge(
+                                label = "Rest Interval",
+                                value = ex.recommendedRestTime.ifBlank { "90s" },
+                                icon = Icons.Default.Timer
+                            )
+                            SpecBadge(
+                                label = "Difficulty",
+                                value = ex.difficulty.replaceFirstChar { it.uppercase() },
+                                icon = Icons.Default.LocalFireDepartment
+                            )
                         }
-                        if (ex.movementPattern.isNotBlank()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                DetailColumn(label = "Movement Pattern", value = ex.movementPattern, icon = Icons.AutoMirrored.Filled.TrendingUp)
-                                if (ex.recommendedRepRange.isNotBlank()) {
-                                    DetailColumn(label = "Target Reps", value = ex.recommendedRepRange, icon = Icons.Default.Refresh)
-                                }
-                                if (ex.recommendedRestTime.isNotBlank()) {
-                                    DetailColumn(label = "Rest Interval", value = ex.recommendedRestTime, icon = Icons.Default.Info)
+                    }
+                }
+
+                // 4. OVERVIEW / DESCRIPTION
+                if (ex.description.isNotBlank()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.md)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Overview",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = ex.description,
+                                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+
+                // 5. COACHING CUES (Bullet Points with Green Checkmarks)
+                val cuesList = ex.tips.split(";").map { it.trim() }.filter { it.isNotBlank() }
+                if (cuesList.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.md)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = "Coaching Cues",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = GymCoachColors.Success
+                                )
+                            )
+                            cuesList.forEach { cue ->
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = GymCoachColors.Success,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = cue,
+                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                        color = TextPrimary
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                // 3. OVERVIEW / DESCRIPTION CARD
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Overview",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = ex.description.ifBlank { "No detailed description available." },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            lineHeight = 22.sp
-                        )
-                    }
-                }
-
-                // 4. HOW TO SET UP & HOW TO PERFORM
+                // 6. HOW TO PERFORM / EXECUTION GUIDE
                 val setup = ex.setupInstructions.ifBlank { "" }
                 val execution = ex.executionInstructions.ifBlank { ex.instructions }
                 if (setup.isNotBlank() || execution.isNotBlank()) {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        shape = RoundedCornerShape(16.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.md)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Execution",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "Form & Execution Guide",
-                                    style = MaterialTheme.typography.titleMedium,
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Form & Execution Guide",
+                                style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = TextPrimary
                                 )
-                            }
+                            )
 
                             if (setup.isNotBlank()) {
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(
                                         text = "Setup Position",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = AccentBlue
                                     )
                                     Text(
                                         text = setup,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 20.sp
+                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                        color = TextSecondary
                                     )
                                 }
                             }
@@ -367,31 +586,13 @@ fun ExerciseDetailScreen(
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(
                                         text = "Rep Execution",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = AccentBlue
                                     )
                                     Text(
                                         text = execution,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 20.sp
-                                    )
-                                }
-                            }
-
-                            if (ex.breathingInstructions.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(
-                                        text = "Breathing Rhythm",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = ex.breathingInstructions,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                        color = TextSecondary
                                     )
                                 }
                             }
@@ -399,78 +600,50 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 5. COMMON MISTAKES & SAFETY TIPS
-                val mistakes = ex.commonMistakes.ifBlank { "" }
-                val safety = ex.safetyNotes.ifBlank { "" }
-                val tips = ex.tips.ifBlank { "" }
-                if (mistakes.isNotBlank() || safety.isNotBlank() || tips.isNotBlank()) {
+                // 7. COMMON MISTAKES
+                val mistakesList = ex.commonMistakes.split(";").map { it.trim() }.filter { it.isNotBlank() }
+                if (mistakesList.isNotEmpty()) {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        shape = RoundedCornerShape(16.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.md)
+                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Warning,
-                                    contentDescription = "Mistakes",
-                                    tint = Color(0xFFE65100),
-                                    modifier = Modifier.size(20.dp)
+                                    contentDescription = null,
+                                    tint = GymCoachColors.Warning,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(6.dp))
                                 Text(
-                                    text = "Form Mastery & Safety",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE65100)
+                                    text = "Common Mistakes to Avoid",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = GymCoachColors.Warning
+                                    )
                                 )
                             }
-
-                            if (mistakes.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            mistakesList.forEach { mistake ->
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     Text(
-                                        text = "Common Mistakes to Avoid",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        text = "•",
+                                        color = GymCoachColors.Warning,
+                                        fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = mistakes,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 20.sp
-                                    )
-                                }
-                            }
-
-                            if (tips.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(
-                                        text = "Pro Cues",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = tips,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            if (safety.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(
-                                        text = "Safety Precautions",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = safety,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = mistake,
+                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                        color = TextPrimary
                                     )
                                 }
                             }
@@ -478,10 +651,10 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 6. TARGET MUSCLES & V-TAPER RELEVANCE
+                // 8. TARGET MUSCLES & V-TAPER
                 VTaperScoresSection(exercise = ex)
 
-                // 7. SUGGESTED SUBSTITUTIONS
+                // 9. SUGGESTED SUBSTITUTIONS
                 if (substitutes.isNotEmpty()) {
                     SubstitutionSection(
                         substitutes = substitutes,
@@ -489,50 +662,7 @@ fun ExerciseDetailScreen(
                     )
                 }
 
-                // 8. CAMERA FORM COACH (If supported)
-                val matchedType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(ex.name)
-                if (matchedType != null) {
-                    Spacer(Modifier.height(16.dp))
-                    androidx.compose.material3.Button(
-                        onClick = { onCameraClick(matchedType) },
-                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Check Form with Camera",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        androidx.compose.material3.Text(
-                            text = "Check Form with Camera",
-                            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                    }
-                }
-
-                // 9. VIEW PROGRESSION ANALYTICS
-                Spacer(Modifier.height(16.dp))
-                androidx.compose.material3.Button(
-                    onClick = { onViewProgressClick(ex.id, ex.name) },
-                    modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = com.gymcoach.app.ui.theme.AccentBlue
-                    )
-                ) {
-                    androidx.compose.material3.Text(
-                        text = "View Progression Analytics",
-                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                }
-
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(32.dp))
             }
         } ?: run {
             Box(
@@ -545,10 +675,40 @@ fun ExerciseDetailScreen(
                 Text(
                     text = "Exercise not found.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondary
                 )
             }
         }
+    }
+}
+
+// --- Spec Badge Component ---
+
+@Composable
+private fun SpecBadge(label: String, value: String, icon: ImageVector) {
+    Column(horizontalAlignment = Alignment.Start) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = TextTertiary,
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextTertiary
+            )
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = TextPrimary
+        )
     }
 }
 
@@ -564,33 +724,34 @@ private fun VTaperScoresSection(exercise: Exercise) {
     ).filter { it.second > 0 }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = RoundedCornerShape(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                     contentDescription = "Anatomy",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    tint = AccentBlue,
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Target Muscles & V-Taper Impact",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
                 )
             }
 
             if (exercise.secondaryMuscles.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = "Secondary: ${exercise.secondaryMuscles}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
                 )
             }
 
@@ -598,7 +759,7 @@ private fun VTaperScoresSection(exercise: Exercise) {
                 Spacer(Modifier.height(12.dp))
                 scores.forEach { (label, score) ->
                     VTaperBar(label = label, score = score, maxScore = 10)
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
@@ -609,10 +770,9 @@ private fun VTaperScoresSection(exercise: Exercise) {
 private fun VTaperBar(label: String, score: Int, maxScore: Int) {
     val progress = score.toFloat() / maxScore
     val color = when {
-        score >= 8 -> Color(0xFF2E7D32)
-        score >= 5 -> MaterialTheme.colorScheme.primary
-        score >= 2 -> Color(0xFFF57F17)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        score >= 8 -> GymCoachColors.Success
+        score >= 5 -> AccentBlue
+        else -> GymCoachColors.Warning
     }
 
     Row(
@@ -623,23 +783,23 @@ private fun VTaperBar(label: String, score: Int, maxScore: Int) {
             text = label,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.width(90.dp),
-            color = MaterialTheme.colorScheme.onSurface
+            color = TextSecondary
         )
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier
                 .weight(1f)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .height(6.dp)
+                .clip(CircleShape),
             color = color,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            trackColor = DarkSurface
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(10.dp))
         Text(
             text = "$score/$maxScore",
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.width(30.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.width(36.dp),
+            color = TextPrimary
         )
     }
 }
@@ -652,32 +812,33 @@ private fun SubstitutionSection(
     onExerciseClick: (Long) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-        shape = RoundedCornerShape(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.SwapHoriz,
                     contentDescription = "Substitutions",
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
+                    tint = AccentBlue,
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Suggested Substitutes",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    text = "Suggested Substitutions",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
                 )
             }
 
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Targeting identical muscle paths with alternate equipment:",
+                text = "Targeting identical muscle recruitment with alternate equipment:",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                color = TextSecondary
             )
 
             Spacer(Modifier.height(12.dp))
@@ -705,9 +866,11 @@ private fun SubstitutionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(GymCoachShapes.sm)
+            .border(GymCoachBorders.subtle, GymCoachShapes.sm)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        shape = GymCoachShapes.sm
     ) {
         Row(
             modifier = Modifier
@@ -719,63 +882,28 @@ private fun SubstitutionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = substitute.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = TextPrimary
                 )
                 Text(
-                    text = "${substitute.muscleGroup} · ${substitute.equipment}",
+                    text = "${substitute.muscleGroup} • ${substitute.equipment}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondary
                 )
             }
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$score%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = "$score% match",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = AccentBlue
                 )
                 Text(
                     text = reason,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextTertiary
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun DetailColumn(
-    label: String,
-    value: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.Start) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }

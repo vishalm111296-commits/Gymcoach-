@@ -1,89 +1,205 @@
 package com.gymcoach.app.presentation.home.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkSurface
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.TextPrimary
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
 
 /**
- * Today's scheduled session with a full-width start CTA.
+ * Premium Hero Workout Card for Home Dashboard.
+ * Serves as the primary focal point: answers "What should I do today?" with clear metrics
+ * and a high-contrast action CTA.
  */
 @Composable
 fun TodayWorkoutCard(
     workoutName: String,
     targetMuscles: List<String>,
     exerciseCount: Int,
-    estimatedDuration: Int, // minutes
+    estimatedDuration: Int,
     onStartClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.lg)
+            .border(GymCoachBorders.primary, GymCoachShapes.lg),
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCardElevated)
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "TODAY'S WORKOUT",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Pill header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(AccentBlue)
+                    )
+                    Text(
+                        text = "TODAY'S WORKOUT",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        ),
+                        color = AccentBlue
+                    )
+                }
+
+                if (targetMuscles.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(GymCoachShapes.xs)
+                            .background(GymCoachColors.SurfaceCard)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = targetMuscles.firstOrNull() ?: "",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+
+            // Workout Name
             Text(
                 text = workoutName,
-                style = MaterialTheme.typography.headlineSmall,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                ),
+                color = TextPrimary
             )
-            if (targetMuscles.isNotEmpty()) {
-                Text(
-                    text = targetMuscles.joinToString(" \u2022 "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
+
+            // Metrics row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        tint = TextTertiary,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = "$exerciseCount exercises",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                        color = TextSecondary
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = TextTertiary,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = "~$estimatedDuration min",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                        color = TextSecondary
+                    )
+                }
             }
-            Text(
-                text = "$exerciseCount exercises \u2022 ~$estimatedDuration min",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextTertiary
-            )
+
+            Spacer(Modifier.height(4.dp))
+
+            // High-impact Start CTA
             Button(
                 onClick = onStartClick,
-                shape = RoundedCornerShape(14.dp),
+                shape = GymCoachShapes.md,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentBlue,
-                    contentColor = WarmWhite
+                    contentColor = Color.White
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
+                    .height(52.dp)
             ) {
-                Text(
-                    text = "START WORKOUT",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "START WORKOUT",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }

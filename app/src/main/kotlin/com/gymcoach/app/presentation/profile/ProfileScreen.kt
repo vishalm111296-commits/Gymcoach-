@@ -56,7 +56,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -214,24 +222,166 @@ fun ProfileScreen(
                 ) {
                     Spacer(Modifier.height(8.dp))
 
-                    // Profile header
-                    Text(
-                        text = "Your Profile",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Collected during onboarding",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // Athlete Command Center Hero Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = GymCoachShapes.Card,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        border = GymCoachBorders.subtleBorder()
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FitnessCenter,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "ATHLETE PROFILE",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = "${p.experience.ifBlank { "Lifter" }} Athlete",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(6.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = p.goal.ifBlank { "Hypertrophy" }.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(16.dp))
+
+                            // 3-Metric Overview Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            shape = GymCoachShapes.sm
+                                        )
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "WEIGHT",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 9.sp
+                                        )
+                                        Text(
+                                            text = if (p.weightKg > 0) "%.1f kg".format(p.weightKg) else "—",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            shape = GymCoachShapes.sm
+                                        )
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "HEIGHT",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 9.sp
+                                        )
+                                        Text(
+                                            text = if (p.heightCm > 0) "%.0f cm".format(p.heightCm) else "—",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            shape = GymCoachShapes.sm
+                                        )
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "SCHEDULE",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 9.sp
+                                        )
+                                        Text(
+                                            text = "${p.trainingDaysPerWeek} d/wk",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     Spacer(Modifier.height(24.dp))
 
                     // Personal Info
-                    SectionHeader("Personal")
+                    SectionHeader("Personal Biometrics")
                     Spacer(Modifier.height(8.dp))
                     ProfileInfoRow(icon = Icons.Default.Cake, label = "Age", value = "${p.age} years")
                     ProfileInfoRow(icon = Icons.Default.SelfImprovement, label = "Sex", value = p.sex.ifBlank { "Not specified" })
@@ -241,40 +391,42 @@ fun ProfileScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // Training Info
-                    SectionHeader("Training")
+                    SectionHeader("Training Blueprint")
                     Spacer(Modifier.height(8.dp))
                     ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Experience", value = p.experience.ifBlank { "Not specified" })
-                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Training Days/Week", value = "${p.trainingDaysPerWeek}")
+                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Training Days / Week", value = "${p.trainingDaysPerWeek} days")
                     ProfileInfoRow(icon = Icons.Default.Timer, label = "Session Length", value = "${p.sessionLengthMinutes} minutes")
-                    ProfileInfoRow(icon = Icons.AutoMirrored.Filled.DirectionsRun, label = "Goal", value = p.goal.ifBlank { "Not specified" })
+                    ProfileInfoRow(icon = Icons.AutoMirrored.Filled.DirectionsRun, label = "Primary Goal", value = p.goal.ifBlank { "Not specified" })
 
                     Spacer(Modifier.height(24.dp))
 
                     // Equipment
-                    SectionHeader("Equipment")
+                    SectionHeader("Equipment & Preferences")
                     Spacer(Modifier.height(8.dp))
-                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Equipment", value = p.equipmentType.ifBlank { "Not specified" })
+                    ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Equipment Access", value = p.equipmentType.ifBlank { "Not specified" })
 
                     if (p.preferredExercises.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(4.dp))
                         ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Preferred Exercises", value = p.preferredExercises)
                     }
 
                     if (p.exercisesToAvoid.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(4.dp))
                         ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Exercises to Avoid", value = p.exercisesToAvoid)
                     }
 
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(24.dp))
 
                     // Data & Backup
-                    SectionHeader("Data & Export")
+                    SectionHeader("Data & Portability")
                     Spacer(Modifier.height(8.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        border = GymCoachBorders.subtleBorder()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
@@ -294,30 +446,54 @@ fun ProfileScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // About
-                    SectionHeader("About GymCoach")
+                    SectionHeader("App Architecture")
                     Spacer(Modifier.height(8.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
+                        shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        border = GymCoachBorders.subtleBorder()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "GymCoach v1.0",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFF10B981).copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "OFFLINE-FIRST",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF10B981),
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
                             Text(
-                                text = "GymCoach v1.0",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "Rule-based fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Exercise substitutions use deterministic matching, not AI.",
+                                text = "Deterministic fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Exercise substitutions use rule-based matching with zero cloud latency.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(24.dp))
                 }
             }
         }
@@ -343,10 +519,11 @@ fun ProfileScreen(
 @Composable
 private fun SectionHeader(title: String) {
     Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.primary,
+        letterSpacing = 1.sp
     )
 }
 
@@ -360,34 +537,46 @@ private fun ProfileInfoRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 3.dp),
+        shape = GymCoachShapes.sm,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Spacer(Modifier.width(12.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }

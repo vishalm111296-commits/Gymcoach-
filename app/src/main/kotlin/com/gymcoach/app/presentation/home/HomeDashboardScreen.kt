@@ -1,6 +1,8 @@
 package com.gymcoach.app.presentation.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,15 +12,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,18 +40,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
 import com.gymcoach.app.ui.GymCoachBottomNav
 import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.DarkBackground
 import com.gymcoach.app.ui.theme.DarkSurface
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.TextPrimary
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 import com.gymcoach.app.ui.theme.WarmWhite
@@ -50,7 +70,6 @@ fun HomeDashboardScreen(
     onNavigateToProgress: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToReadiness: () -> Unit = {},
-    // F-NAV-1: wire the new Exercises bottom tab to caller navigation
     onNavigateToExercises: () -> Unit = {},
     onNavigateToTemplates: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
@@ -81,216 +100,291 @@ fun HomeDashboardScreen(
                 .background(DarkBackground)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(Modifier.height(24.dp))
-            GreetingHeader()
-            Spacer(Modifier.height(20.dp))
+            GreetingHeader(state)
 
             when {
                 state.isLoading -> {
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp)) {
-                        CircularProgressIndicator(color = AccentBlue, modifier = Modifier.align(Alignment.Center))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = AccentBlue)
                     }
                 }
 
-                state.todayWorkout == null -> EmptyProgramCard(onViewProgram)
+                state.todayWorkout == null -> {
+                    EmptyProgramCard(onViewProgram)
+                }
 
-                else -> TodayWorkoutCard(
-                    workoutName = state.todayWorkout?.name ?: "",
-                    targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
-                    exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
-                    estimatedDuration = state.todayWorkout?.estimatedDurationMin ?: 0,
-                    onStartClick = { viewModel.startTodayWorkout { id -> onStartWorkout(id) } }
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-            CoachInsightCard(state.coachInsight)
-
-            Spacer(Modifier.height(16.dp))
-            WeekSummaryRow(state.workoutsThisWeek, state.targetWorkouts, state.prCount)
-
-            // Readiness quick link & dynamic score card
-            Spacer(Modifier.height(16.dp))
-            val readiness = state.latestReadiness
-            val isToday = readiness?.isRecordedToday == true
-            Card(
-                onClick = onNavigateToReadiness,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isToday && readiness?.isRestDayRecommended == true)
-                        Color(0xFF2C1B1B) else DarkSurface
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "RECOVERY & READINESS",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AccentBlue,
-                                letterSpacing = 1.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            if (readiness != null && isToday) {
-                                Spacer(Modifier.width(8.dp))
-                                val score = readiness.readinessScore
-                                val badgeColor = when {
-                                    score >= 4.0 -> Color(0xFF4CAF50)
-                                    score >= 3.0 -> Color(0xFF2196F3)
-                                    score >= 2.0 -> Color(0xFFFF9800)
-                                    else -> Color(0xFFF44336)
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .background(badgeColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "%.1f / 5.0".format(score),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = badgeColor
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = if (readiness != null && isToday) {
-                                readiness.trainingRecommendation
-                            } else {
-                                "Log how you're feeling today to calibrate training"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "\u2192",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
+                else -> {
+                    TodayWorkoutCard(
+                        workoutName = state.todayWorkout?.name ?: "",
+                        targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
+                        exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
+                        estimatedDuration = state.todayWorkout?.estimatedDurationMin ?: 0,
+                        onStartClick = { viewModel.startTodayWorkout { id -> onStartWorkout(id) } }
                     )
                 }
             }
 
+            // Recovery & Readiness Quick Card
+            ReadinessDashboardCard(
+                readiness = state.latestReadiness,
+                onClick = onNavigateToReadiness
+            )
+
+            // Weekly Consistency & PR Summary
+            WeeklyConsistencyCard(
+                workoutsThisWeek = state.workoutsThisWeek,
+                targetWorkouts = state.targetWorkouts,
+                prCount = state.prCount
+            )
+
+            // Coach Insight Card
+            if (state.coachInsight.isNotBlank()) {
+                CoachInsightCard(state.coachInsight)
+            }
+
+            // V-Taper Focus if available
             if (state.vtaperBars.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
                 VtaperFocusCard(muscleData = state.vtaperBars)
             }
 
-            Spacer(Modifier.height(16.dp))
-            Card(
-                onClick = onNavigateToTemplates,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "WORKOUT TEMPLATES",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AccentBlue,
-                            letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Create and start saved workout templates",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Text(
-                        text = "\u2192",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = AccentBlue
-                    )
-                }
-            }
+            // Quick Actions: Blank Workout, Templates, Exercise Library
+            QuickActionsSection(
+                onStartBlankWorkout = { onStartWorkout(null) },
+                onNavigateToTemplates = onNavigateToTemplates,
+                onNavigateToExercises = onNavigateToExercises
+            )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-private fun GreetingHeader() {
+private fun GreetingHeader(state: HomeUiState) {
     val hour = LocalTime.now().hour
     val greeting = when {
         hour < 12 -> "GOOD MORNING"
         hour < 17 -> "GOOD AFTERNOON"
         else -> "GOOD EVENING"
     }
-    Column {
+
+    // Dynamic alive status driven by real app state
+    val dynamicStatus = when {
+        state.todayWorkout != null && state.latestReadiness?.readinessScore ?: 0.0 >= 3.8 ->
+            "Prime recovery — ready for peak performance."
+        state.todayWorkout != null && state.latestReadiness?.readinessScore ?: 5.0 < 2.5 ->
+            "Recovery is lower today — focus on form & control."
+        state.todayWorkout != null ->
+            "Ready for ${state.todayWorkout.name}?"
+        state.hasProgram ->
+            "Scheduled rest day — recovery fuels growth."
+        else ->
+            "Start your training journey today."
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = greeting,
-            style = MaterialTheme.typography.labelMedium,
-            color = TextTertiary,
-            letterSpacing = 2.sp
+            style = MaterialTheme.typography.labelMedium.copy(
+                letterSpacing = 2.sp,
+                fontSize = 11.sp
+            ),
+            color = TextTertiary
         )
         Text(
-            text = "Ready to train?",
-            style = MaterialTheme.typography.headlineMedium,
-            color = WarmWhite,
-            fontWeight = FontWeight.Bold
+            text = dynamicStatus,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            ),
+            color = TextPrimary
         )
     }
 }
 
-/** Action-oriented empty state - never "No workouts yet". */
 @Composable
-private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
+private fun ReadinessDashboardCard(
+    readiness: ReadinessEntity?,
+    onClick: () -> Unit
+) {
+    val isToday = readiness?.isRecordedToday == true
+    val score = readiness?.readinessScore ?: 0.0
+
+    val (badgeColor, statusLabel) = when {
+        !isToday || readiness == null -> Pair(TextTertiary, "Check-in Pending")
+        score >= 4.0 -> Pair(GymCoachColors.Success, "Optimal Recovery")
+        score >= 3.0 -> Pair(AccentBlue, "Good Readiness")
+        score >= 2.0 -> Pair(GymCoachColors.Warning, "Moderate Fatigue")
+        else -> Pair(GymCoachColors.Danger, "Rest Advised")
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = GymCoachShapes.md
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "YOUR FIRST SESSION IS READY",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "RECOVERY & READINESS",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp
+                        ),
+                        color = AccentBlue
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(GymCoachShapes.xs)
+                            .background(badgeColor.copy(alpha = 0.18f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (isToday && readiness != null) "%.1f / 5.0".format(score) else statusLabel,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = badgeColor
+                        )
+                    }
+                }
+
+                Text(
+                    text = if (isToday && readiness != null) {
+                        readiness.trainingRecommendation
+                    } else {
+                        "Tap to log sleep, soreness & energy to calibrate workout loads"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    maxLines = 2
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Open Readiness",
+                tint = TextTertiary,
+                modifier = Modifier.size(18.dp)
             )
-            Text(
-                text = "Let's build your plan",
-                style = MaterialTheme.typography.headlineSmall,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Two minutes of setup and your first V-taper program is generated around your goal, schedule, and equipment.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-            Button(
-                onClick = onSetUpPlan,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = WarmWhite),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(56.dp)
-            ) {
-                Text("SET UP MY PLAN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        }
+    }
+}
+
+@Composable
+private fun WeeklyConsistencyCard(
+    workoutsThisWeek: Int,
+    targetWorkouts: Int,
+    prCount: Int
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = GymCoachShapes.md
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Workouts adherence
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "THIS WEEK'S CONSISTENCY",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    ),
+                    color = TextTertiary
+                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "$workoutsThisWeek",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        ),
+                        color = AccentBlue
+                    )
+                    Text(
+                        text = " / ${targetWorkouts.coerceAtLeast(1)} sessions",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
+                    )
+                }
+
+                // Progress Indicator Dots
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    val maxTarget = targetWorkouts.coerceIn(1, 7)
+                    for (i in 1..maxTarget) {
+                        val isDone = i <= workoutsThisWeek
+                        Box(
+                            modifier = Modifier
+                                .size(width = 16.dp, height = 5.dp)
+                                .clip(CircleShape)
+                                .background(if (isDone) AccentBlue else DarkSurface)
+                        )
+                    }
+                }
+            }
+
+            // PR Count if any
+            if (prCount > 0) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = null,
+                            tint = GymCoachColors.GoldAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "$prCount PRs",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = GymCoachColors.GoldAccent
+                        )
+                    }
+                    Text(
+                        text = "new bests logged",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextTertiary
+                    )
+                }
             }
         }
     }
@@ -299,58 +393,174 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
 @Composable
 private fun CoachInsightCard(insight: String) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = GymCoachShapes.md
     ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "COACH",
-                style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
-                letterSpacing = 1.5.sp,
-                fontWeight = FontWeight.Bold
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(AccentBlue.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    tint = AccentBlue,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "ADAPTIVE COACH INSIGHT",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    ),
+                    color = AccentBlue
+                )
+                Text(
+                    text = insight,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                    color = TextPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsSection(
+    onStartBlankWorkout: () -> Unit,
+    onNavigateToTemplates: () -> Unit,
+    onNavigateToExercises: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "QUICK ACTIONS",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp
+            ),
+            color = TextTertiary
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ActionTile(
+                title = "Free Session",
+                icon = Icons.Default.Add,
+                onClick = onStartBlankWorkout,
+                modifier = Modifier.weight(1f)
             )
-            Text(
-                text = insight.ifBlank { "Log sessions to unlock volume insights." },
-                style = MaterialTheme.typography.bodyMedium,
-                color = WarmWhite
+            ActionTile(
+                title = "Templates",
+                icon = Icons.Default.Bookmark,
+                onClick = onNavigateToTemplates,
+                modifier = Modifier.weight(1f)
+            )
+            ActionTile(
+                title = "Exercises",
+                icon = Icons.Default.Search,
+                onClick = onNavigateToExercises,
+                modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
 @Composable
-private fun WeekSummaryRow(workoutsThisWeek: Int, targetWorkouts: Int, prCount: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(48.dp)
+private fun ActionTile(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier
+            .clip(GymCoachShapes.sm)
+            .border(GymCoachBorders.subtle, GymCoachShapes.sm),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = GymCoachShapes.sm
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "$workoutsThisWeek/$targetWorkouts",
-                style = MaterialTheme.typography.titleLarge,
-                color = AccentBlue,
-                fontWeight = FontWeight.Bold
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = AccentBlue,
+                modifier = Modifier.size(20.dp)
             )
             Text(
-                text = "workouts this week",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                text = title,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = TextPrimary,
+                maxLines = 1
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    }
+}
+
+@Composable
+private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.lg)
+            .border(GymCoachBorders.primary, GymCoachShapes.lg),
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text(
-                text = "$prCount",
-                style = MaterialTheme.typography.titleLarge,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
+                text = "TRAINING PROGRAM SETUP",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    letterSpacing = 1.5.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = AccentBlue
             )
             Text(
-                text = "personal records",
-                style = MaterialTheme.typography.bodySmall,
+                text = "No Active Program",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary
+            )
+            Text(
+                text = "Generate an adaptive multi-day routine calibrated to your goals, schedule, and available gym equipment.",
+                style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
+            Button(
+                onClick = onSetUpPlan,
+                shape = GymCoachShapes.md,
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text("Generate or Build Program", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

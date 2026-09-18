@@ -60,20 +60,23 @@ fun ReadinessScreen(
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Recovery & Readiness") },
+                title = { Text("Recovery & Readiness", fontWeight = FontWeight.Bold, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showLogDialog() },
-                containerColor = GymCoachColors.Primary
+                containerColor = AccentBlue,
+                contentColor = androidx.compose.ui.graphics.Color.White
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Log Readiness")
             }

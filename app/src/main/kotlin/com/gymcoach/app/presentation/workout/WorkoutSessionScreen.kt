@@ -8,9 +8,17 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.AccentBlue
+import com.gymcoach.app.ui.theme.TextPrimary
+import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.TextTertiary
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -717,72 +725,106 @@ internal fun ExerciseSetCard(
             if (recommendation != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = GymCoachShapes.md,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                        containerColor = GymCoachColors.SurfaceCardElevated
                     ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    )
+                    border = GymCoachBorders.primary
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    modifier = Modifier.size(15.dp),
+                                    tint = AccentBlue
                                 )
-                                Spacer(Modifier.width(6.dp))
                                 Text(
-                                    text = "TARGET PROGRESSION",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    text = "WHY THIS WEIGHT? • ADAPTIVE COACH",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp,
+                                        fontSize = 10.sp
+                                    ),
+                                    color = AccentBlue
                                 )
                             }
                             Box(
                                 modifier = Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .clip(GymCoachShapes.xs)
+                                    .background(AccentBlue.copy(alpha = 0.15f))
+                                    .padding(horizontal = 7.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "ADAPTIVE",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 9.sp
+                                    text = "AUTOREGULATED",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 9.sp
+                                    ),
+                                    color = AccentBlue
                                 )
                             }
                         }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "${recommendation.recommendedWeight} kg × ${recommendation.recommendedReps} reps",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = recommendation.reason,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Target for Today",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                                Text(
+                                    text = "${recommendation.recommendedWeight} kg × ${recommendation.recommendedReps} reps",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp
+                                    ),
+                                    color = TextPrimary
+                                )
+                            }
+                        }
+
+                        // Coaching reason from progression engine
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = GymCoachColors.Success,
+                                modifier = Modifier.size(14.dp).padding(top = 2.dp)
+                            )
+                            Text(
+                                text = recommendation.reason,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    lineHeight = 18.sp,
+                                    fontSize = 12.sp
+                                ),
+                                color = TextPrimary
+                            )
+                        }
                     }
                 }
             }
 
-            // Previous performance indicator
+            // Previous performance indicator (What did I lift last time?)
             if (lastPerformance != null) {
                 val lastDate = Instant.ofEpochMilli(lastPerformance.date)
                     .atZone(ZoneId.systemDefault())
@@ -794,41 +836,53 @@ internal fun ExerciseSetCard(
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = GymCoachShapes.sm,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
-                    )
+                        containerColor = GymCoachColors.SurfaceCard
+                    ),
+                    border = GymCoachBorders.subtle
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "LAST SESSION ($lastDate)",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "PREVIOUS SESSION ($lastDate)",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 0.8.sp,
+                                    fontSize = 10.sp
+                                ),
+                                color = TextTertiary
                             )
                             Text(
-                                text = "Best: ${bestWeight}kg",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                text = "Session Best: ${bestWeight}kg",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                ),
+                                color = GymCoachColors.CyanAccent
                             )
                         }
                         if (lastSetSummary.isNotEmpty()) {
-                            Spacer(Modifier.height(4.dp))
                             Text(
                                 text = lastSetSummary,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 12.sp
+                                ),
+                                color = TextSecondary
                             )
                         }
                     }
                 }
             }
+
 
             // Instructions expander
             if (instructions.isNotEmpty()) {
@@ -1023,16 +1077,30 @@ private fun SetRow(
         else -> "${index + 1}"
     }
 
+    val completeScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (completed) 1.1f else 1.0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "completeScale"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(GymCoachShapes.sm)
             .background(
-                if (completed) MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(8.dp)
+                if (completed) GymCoachColors.Success.copy(alpha = 0.08f)
+                else GymCoachColors.SurfaceDeep
             )
-            .padding(vertical = 4.dp, horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .border(
+                if (completed) GymCoachBorders.success
+                else GymCoachBorders.subtle,
+                GymCoachShapes.sm
+            )
+            .padding(vertical = 4.dp, horizontal = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Set Number / Type Pill button (tap to cycle)
@@ -1040,6 +1108,8 @@ private fun SetRow(
             modifier = Modifier
                 .weight(0.12f)
                 .height(38.dp)
+                .clip(GymCoachShapes.xs)
+                .background(setTypeColor.copy(alpha = 0.12f))
                 .clickable {
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
@@ -1067,10 +1137,19 @@ private fun SetRow(
             },
             modifier = Modifier.weight(0.22f),
             singleLine = true,
+            shape = GymCoachShapes.xs,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = GymCoachColors.SurfaceInput,
+                unfocusedContainerColor = GymCoachColors.SurfaceInput,
+                focusedBorderColor = AccentBlue,
+                unfocusedBorderColor = GymCoachColors.BorderSubtle,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         )
 
@@ -1082,10 +1161,19 @@ private fun SetRow(
             },
             modifier = Modifier.weight(0.22f),
             singleLine = true,
+            shape = GymCoachShapes.xs,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = GymCoachColors.SurfaceInput,
+                unfocusedContainerColor = GymCoachColors.SurfaceInput,
+                focusedBorderColor = AccentBlue,
+                unfocusedBorderColor = GymCoachColors.BorderSubtle,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         )
 
@@ -1097,10 +1185,19 @@ private fun SetRow(
             },
             modifier = Modifier.weight(0.16f),
             singleLine = true,
+            shape = GymCoachShapes.xs,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = GymCoachColors.SurfaceInput,
+                unfocusedContainerColor = GymCoachColors.SurfaceInput,
+                focusedBorderColor = AccentBlue,
+                unfocusedBorderColor = GymCoachColors.BorderSubtle,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         )
 
@@ -1112,14 +1209,23 @@ private fun SetRow(
             },
             modifier = Modifier.weight(0.16f),
             singleLine = true,
+            shape = GymCoachShapes.xs,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = GymCoachColors.SurfaceInput,
+                unfocusedContainerColor = GymCoachColors.SurfaceInput,
+                focusedBorderColor = AccentBlue,
+                unfocusedBorderColor = GymCoachColors.BorderSubtle,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         )
 
-        // Tactile completion button
+        // Tactile set completion button
         Box(
             modifier = Modifier
                 .width(44.dp)
@@ -1129,10 +1235,16 @@ private fun SetRow(
             Box(
                 modifier = Modifier
                     .size(34.dp)
+                    .scale(completeScale)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
                     .background(
-                        if (completed) androidx.compose.ui.graphics.Color(0xFF2E7D32)
-                        else MaterialTheme.colorScheme.surfaceVariant,
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        if (completed) GymCoachColors.Success
+                        else GymCoachColors.SurfaceCardElevated
+                    )
+                    .border(
+                        if (completed) GymCoachBorders.success
+                        else GymCoachBorders.subtle,
+                        androidx.compose.foundation.shape.CircleShape
                     )
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1142,15 +1254,16 @@ private fun SetRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = if (completed) "Completed" else "Mark Complete",
+                    contentDescription = if (completed) "Set Completed" else "Mark Set Complete",
                     tint = if (completed) androidx.compose.ui.graphics.Color.White
-                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(20.dp)
+                           else TextTertiary,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
     }
 }
+
 
 /**
  * Recovery Advisory banner informing the lifter of low readiness/high fatigue.

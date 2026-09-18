@@ -279,6 +279,19 @@ private fun ReadinessDashboardCard(
                     color = TextSecondary,
                     maxLines = 2
                 )
+
+                if (isToday && readiness != null) {
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { (score / 5.0).toFloat().coerceIn(0.05f, 1.0f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(CircleShape),
+                        color = badgeColor,
+                        trackColor = GymCoachColors.SurfaceInput
+                    )
+                }
             }
 
             Icon(

@@ -86,3 +86,10 @@ object GymCoachBorders {
     val success = BorderStroke(1.dp, GymCoachColors.Success.copy(alpha = 0.4f))
     fun subtleBorder() = subtle
 }
+
+object GymCoachMotion {
+    const val durationFast = 150
+    const val durationMedium = 250
+    const val durationSlow = 400
+}
+

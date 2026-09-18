@@ -46,10 +46,16 @@ import com.gymcoach.app.ui.theme.TextPrimary
 import com.gymcoach.app.ui.theme.TextSecondary
 import com.gymcoach.app.ui.theme.TextTertiary
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.scale
+
 /**
  * Premium, high-contrast exercise card component.
  * Features a structured typographic hierarchy:
- * - Dominant exercise name + quick favorite toggle
+ * - Dominant exercise name + tactile animated favorite toggle
  * - Secondary metadata with muscle tag and clean equipment/movement string
  * - Bottom status bar with guaranteed single-line difficulty badge and subtle animation prompt
  */
@@ -78,6 +84,14 @@ fun ExerciseItemCard(
         targetValue = if (isFavorite) Color(0xFFF43F5E) else TextTertiary,
         label = "favTint"
     )
+    val favoriteScale by animateFloatAsState(
+        targetValue = if (isFavorite) 1.15f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "favScale"
+    )
 
     Card(
         modifier = modifier
@@ -91,10 +105,10 @@ fun ExerciseItemCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Row 1: Exercise Name & Actions (Favorite, Custom)
+            // Row 1: Exercise Name & Actions (Custom tag, Favorite toggle)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,13 +153,15 @@ fun ExerciseItemCard(
                     if (onFavoriteToggle != null) {
                         IconButton(
                             onClick = onFavoriteToggle,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(36.dp)
+                                .scale(favoriteScale)
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
                                 tint = favoriteTint,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     } else if (isFavorite) {
@@ -159,18 +175,18 @@ fun ExerciseItemCard(
                 }
             }
 
-            // Row 2: Clean Metadata Tags (Muscle group + equipment / movement)
+            // Row 2: Secondary Metadata (Muscle tag + Equipment / Movement Pattern)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Muscle group badge
+                // Muscle group pill badge
                 Box(
                     modifier = Modifier
                         .clip(GymCoachShapes.xs)
                         .background(AccentBlue.copy(alpha = 0.14f))
-                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = muscleGroup,
@@ -201,18 +217,20 @@ fun ExerciseItemCard(
                 }
             }
 
-            // Row 3: Bottom Status Bar (Single-line Difficulty Badge + Animation Indicator)
+            // Row 3: Bottom Status Bar (Single-line Guaranteed Difficulty + Optional Animation Prompt)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Difficulty Badge: Never wraps, guaranteed single-line
+                // Difficulty Badge: Never wraps, guaranteed single-line with explicit minWidth
                 Box(
                     modifier = Modifier
                         .clip(GymCoachShapes.xs)
                         .background(diffBg)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        .widthIn(min = 60.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = difficulty.replaceFirstChar { it.uppercase() },
@@ -229,7 +247,7 @@ fun ExerciseItemCard(
                 if (hasAnimation) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier
                             .clip(GymCoachShapes.pill)
                             .background(GymCoachColors.SurfaceCardElevated)
@@ -237,7 +255,7 @@ fun ExerciseItemCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayCircleFilled,
-                            contentDescription = "Animation demo",
+                            contentDescription = "Animation available",
                             tint = AccentBlue,
                             modifier = Modifier.size(13.dp)
                         )
@@ -261,3 +279,4 @@ fun ExerciseItemCard(
         }
     }
 }
+

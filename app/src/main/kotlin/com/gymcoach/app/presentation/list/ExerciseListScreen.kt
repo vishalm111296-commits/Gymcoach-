@@ -90,6 +90,7 @@ fun ExerciseListScreen(
     onNavigateBottomBar: (String) -> Unit = {}
 ) {
     val exercises by viewModel.exercises.collectAsState()
+    val animatedNames by viewModel.animatedExerciseNames.collectAsState()
     val filterDifficulty by viewModel.filterDifficulty.collectAsState()
     val filterEquipment by viewModel.filterEquipment.collectAsState()
     val filterMovementPattern by viewModel.filterMovementPattern.collectAsState()
@@ -355,6 +356,8 @@ fun ExerciseListScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(exercises, key = { it.id }) { exercise ->
+                        val hasRealAnimation = animatedNames.contains(exercise.name.trim().lowercase()) ||
+                                !exercise.animationUrl.isNullOrBlank()
                         ExerciseItemCard(
                             name = exercise.name,
                             muscleGroup = exercise.muscleGroup,
@@ -362,12 +365,14 @@ fun ExerciseListScreen(
                             equipment = exercise.equipment,
                             movementPattern = exercise.movementPattern,
                             isFavorite = exercise.isFavorite,
-                            hasAnimation = exercise.animationUrl != null || exercise.id <= 20,
+                            hasAnimation = hasRealAnimation,
                             isCustom = exercise.isCustom,
+                            onFavoriteToggle = { viewModel.toggleFavorite(exercise) },
                             onClick = { onExerciseClick(exercise.id) }
                         )
                     }
                 }
+
             }
         }
     }

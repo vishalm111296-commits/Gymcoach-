@@ -53,7 +53,10 @@ fun ExerciseVideoPlayer(
     var duration by remember { mutableLongStateOf(0L) }
     var hasEnded by remember { mutableStateOf(false) }
 
+    var hasError by remember { mutableStateOf(false) }
+
     LaunchedEffect(videoUri) {
+        hasError = false
         exoPlayer.setMediaItem(MediaItem.fromUri(videoUri))
         exoPlayer.prepare()
     }
@@ -68,6 +71,11 @@ fun ExerciseVideoPlayer(
                 }
             }
 
+            override fun onPlayerError(error: PlaybackException) {
+                hasError = true
+                isPlaying = false
+            }
+
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
             }
@@ -75,7 +83,6 @@ fun ExerciseVideoPlayer(
 
         exoPlayer.addListener(listener)
 
-        // ponytail: polling for seek bar; replace with Compose animation frame callback if perf matters
         while (true) {
             kotlinx.coroutines.delay(200L)
             if (exoPlayer.playbackState == Player.STATE_READY) {
@@ -103,91 +110,107 @@ fun ExerciseVideoPlayer(
         }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                player = exoPlayer
-                useController = false
-            }
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f),
-    )
-
-    // Controls
-    val formattedPosition = formatTime(currentPosition)
-    val formattedDuration = formatTime(duration)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Play / Pause / Replay
-        IconButton(onClick = {
-            when {
-                hasEnded -> {
-                    exoPlayer.seekTo(0)
-                    exoPlayer.play()
-                    hasEnded = false
-                }
-                isPlaying -> {
-                    exoPlayer.pause()
-                    hasEnded = false
-                }
-                else -> {
-                    exoPlayer.play()
-                }
-            }
-        }) {
-            Icon(
-                imageVector = when {
-                    hasEnded -> Icons.Default.Replay
-                    isPlaying -> Icons.Default.Pause
-                    else -> Icons.Default.PlayArrow
-                },
-                contentDescription = when {
-                    hasEnded -> "Replay"
-                    isPlaying -> "Pause"
-                    else -> "Play"
-                },
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
+    if (hasError) {
+        androidx.compose.foundation.layout.Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Text(
+                text = "Video preview unavailable offline. Biomechanical cues available below.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
-        Spacer(Modifier.width(4.dp))
-
-        // Seek bar
-        Slider(
-            value = if (duration > 0) currentPosition.toFloat() / duration else 0f,
-            onValueChange = { fraction ->
-                val newPosition = (fraction * duration).toLong()
-                exoPlayer.seekTo(newPosition)
-                currentPosition = newPosition
-                hasEnded = false
+    } else {
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = false
+                }
             },
-            modifier = Modifier.weight(1f),
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+            modifier = modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
         )
-    }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        androidx.compose.material3.Text(
-            text = "$formattedPosition / $formattedDuration",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        // Controls only if media actually has valid duration
+        if (duration > 0) {
+            val formattedPosition = formatTime(currentPosition)
+            val formattedDuration = formatTime(duration)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = {
+                    when {
+                        hasEnded -> {
+                            exoPlayer.seekTo(0)
+                            exoPlayer.play()
+                            hasEnded = false
+                        }
+                        isPlaying -> {
+                            exoPlayer.pause()
+                            hasEnded = false
+                        }
+                        else -> {
+                            exoPlayer.play()
+                        }
+                    }
+                }) {
+                    Icon(
+                        imageVector = when {
+                            hasEnded -> Icons.Default.Replay
+                            isPlaying -> Icons.Default.Pause
+                            else -> Icons.Default.PlayArrow
+                        },
+                        contentDescription = when {
+                            hasEnded -> "Replay"
+                            isPlaying -> "Pause"
+                            else -> "Play"
+                        },
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                Spacer(Modifier.width(4.dp))
+
+                Slider(
+                    value = if (duration > 0) currentPosition.toFloat() / duration else 0f,
+                    onValueChange = { fraction ->
+                        val newPosition = (fraction * duration).toLong()
+                        exoPlayer.seekTo(newPosition)
+                        currentPosition = newPosition
+                        hasEnded = false
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                androidx.compose.material3.Text(
+                    text = "$formattedPosition / $formattedDuration",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

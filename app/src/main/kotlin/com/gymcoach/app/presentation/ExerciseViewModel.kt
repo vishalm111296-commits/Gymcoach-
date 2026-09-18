@@ -9,6 +9,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
@@ -114,9 +116,27 @@ class ExerciseViewModel @Inject constructor(
         showFavoritesOnly.value = !showFavoritesOnly.value
     }
 
+    fun toggleFavorite(exercise: Exercise) {
+        viewModelScope.launch {
+            repository.updateExercise(exercise.copy(isFavorite = !exercise.isFavorite))
+        }
+    }
+
+
+    private val _animatedExerciseNames = MutableStateFlow<Set<String>>(emptySet())
+    val animatedExerciseNames: StateFlow<Set<String>> = _animatedExerciseNames.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val names = animationRepository.getAllAnimations().map { it.exerciseName.trim().lowercase() }.toSet()
+            _animatedExerciseNames.value = names
+        }
+    }
+
     suspend fun hasAnimation(name: String): Boolean {
         return animationRepository.hasAnimation(name)
     }
+
 
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {

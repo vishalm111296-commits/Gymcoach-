@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
 
 class WorkoutSessionScreenTest {
     @get:Rule
@@ -50,8 +51,7 @@ class WorkoutSessionScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("View Instructions").assertIsDisplayed().performClick()
-        composeTestRule.onNodeWithText("Instructions").assertIsDisplayed()
+        composeTestRule.onNodeWithText("View Technique Guide").assertIsDisplayed().performClick()
         composeTestRule.onNodeWithText("Keep chest up and knees over toes.").assertIsDisplayed()
 
         composeTestRule.onNodeWithContentDescription("Camera Form Coach").assertIsDisplayed().performClick()
@@ -70,11 +70,12 @@ class WorkoutSessionScreenTest {
             workoutId = 1L
         )
 
+        val totalVolumeKg = 5000.0
         val summary = WorkoutLoggingViewModel.WorkoutSummary(
             workoutId = 1L,
             workoutName = "Leg Day",
             durationSeconds = 3600,
-            totalVolumeKg = 5000.0,
+            totalVolumeKg = totalVolumeKg,
             completedSetsCount = 12,
             totalSetsCount = 12,
             exercisesCompletedCount = 4,
@@ -94,7 +95,9 @@ class WorkoutSessionScreenTest {
 
         composeTestRule.onNodeWithText("Workout Crushed! 🔥").assertIsDisplayed()
         composeTestRule.onNodeWithText("Total Volume").assertIsDisplayed()
+
         composeTestRule.onNodeWithText("5000\nkg·reps").assertIsDisplayed()
+
         composeTestRule.onNodeWithText("Duration").assertIsDisplayed()
         // 3600 seconds = 01:00:00 (formatDuration converts this depending on logic, check view)
         composeTestRule.onNodeWithText("Sets Completed").assertIsDisplayed()

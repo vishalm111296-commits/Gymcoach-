@@ -19,11 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.DarkSurfaceVariant
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.*
+
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -43,7 +40,7 @@ fun ProgressionAnalyticsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         topBar = {
             TopAppBar(
                 title = {
@@ -63,7 +60,7 @@ fun ProgressionAnalyticsScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         }
     ) { padding ->
@@ -72,7 +69,7 @@ fun ProgressionAnalyticsScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = AccentBlue)
+                CircularProgressIndicator(color = GymCoachColors.Primary)
             }
 
             state.isEmpty -> Box(
@@ -83,13 +80,13 @@ fun ProgressionAnalyticsScreen(
                     Text(
                         text = "No workout data yet",
                         style = MaterialTheme.typography.titleMedium,
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "Complete some sets to see your progression",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary.copy(alpha = 0.7f)
+                        color = GymCoachColors.TextSecondary.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -98,15 +95,15 @@ fun ProgressionAnalyticsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(DarkBackground),
+                    .background(GymCoachColors.PureDark),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
             ) {
                 // Summary stats row
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
                     ) {
                         StatCard(
                             label = "PEAK E1RM",
@@ -166,17 +163,17 @@ fun ProgressionAnalyticsScreen(
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(GymCoachSpacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 letterSpacing = 1.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -196,7 +193,7 @@ private fun SectionHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
-        color = AccentBlue,
+        color = GymCoachColors.Primary,
         letterSpacing = 1.5.sp,
         fontWeight = FontWeight.Bold
     )
@@ -211,10 +208,10 @@ private fun E1RMChart(dataPoints: List<E1RMDataPoint>) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
             // Show last 10 sessions as bar segments
             val displayed = dataPoints.takeLast(10)
             Row(
@@ -236,7 +233,7 @@ private fun E1RMChart(dataPoints: List<E1RMDataPoint>) {
                                 .fillMaxWidth()
                                 .fillMaxHeight(fraction)
                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(AccentBlue)
+                                .background(GymCoachColors.Primary)
                         )
                     }
                 }
@@ -250,7 +247,7 @@ private fun E1RMChart(dataPoints: List<E1RMDataPoint>) {
                     Text(
                         text = formatter.format(point.date.atZone(zone)),
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
+                        color = GymCoachColors.TextSecondary,
                         fontSize = 8.sp,
                         modifier = Modifier.weight(1f)
                     )
@@ -264,7 +261,7 @@ private fun E1RMChart(dataPoints: List<E1RMDataPoint>) {
                     dataPoints.lastOrNull()?.reps ?: 0
                 ),
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
         }
     }
@@ -276,13 +273,13 @@ private fun PREntryCard(pr: PREntry) {
     val zone = ZoneId.systemDefault()
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCardElevated)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(GymCoachSpacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -302,13 +299,13 @@ private fun PREntryCard(pr: PREntry) {
                 Text(
                     text = "%.0f kg × %d reps".format(pr.weight, pr.reps),
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
             Text(
                 text = formatter.format(pr.date.atZone(zone)),
                 style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -320,10 +317,10 @@ private fun WeeklyVolumeChart(entries: List<WeeklyVolumeEntry>) {
     val maxVol = entries.maxOfOrNull { it.volumeKg }?.takeIf { it > 0 } ?: 1.0
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -352,7 +349,7 @@ private fun WeeklyVolumeChart(entries: List<WeeklyVolumeEntry>) {
             Text(
                 text = "Total volume last week: %.0f kg".format(entries.lastOrNull()?.volumeKg ?: 0.0),
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
         }
     }

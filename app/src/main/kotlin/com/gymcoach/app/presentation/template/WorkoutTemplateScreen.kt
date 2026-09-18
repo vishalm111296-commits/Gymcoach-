@@ -22,9 +22,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.domain.model.TemplateExercise
 import com.gymcoach.app.domain.model.WorkoutTemplate
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
-private val VoltAccent = Color(0xFFD4FF32)
-private val DarkVoltText = Color(0xFF121316)
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +79,7 @@ fun WorkoutTemplateScreen(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Create Template",
-                            tint = VoltAccent
+                            tint = GymCoachColors.CyanAccent
                         )
                     }
                 }
@@ -88,8 +91,8 @@ fun WorkoutTemplateScreen(
                     editingTemplate = null
                     showCreateDialog = true
                 },
-                containerColor = VoltAccent,
-                contentColor = DarkVoltText
+                containerColor = GymCoachColors.CyanAccent,
+                contentColor = GymCoachColors.SurfaceCardElevated
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create Template")
             }
@@ -118,7 +121,7 @@ fun WorkoutTemplateScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = VoltAccent)
+                    CircularProgressIndicator(color = GymCoachColors.CyanAccent)
                 }
             } else {
                 val currentList = if (selectedTab == 0) templates else archivedTemplates
@@ -161,8 +164,8 @@ fun WorkoutTemplateScreen(
                                         showCreateDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = VoltAccent,
-                                        contentColor = DarkVoltText
+                                        containerColor = GymCoachColors.CyanAccent,
+                                        contentColor = GymCoachColors.SurfaceCardElevated
                                     )
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = null)
@@ -176,7 +179,7 @@ fun WorkoutTemplateScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
                     ) {
                         items(currentList, key = { it.id }) { template ->
                             TemplateCard(
@@ -232,12 +235,12 @@ private fun TemplateCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = GymCoachShapes.lg,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -320,7 +323,7 @@ private fun TemplateCard(
                         Text(
                             text = "+ ${template.exercises.size - 4} more exercises",
                             style = MaterialTheme.typography.labelSmall,
-                            color = VoltAccent
+                            color = GymCoachColors.CyanAccent
                         )
                     }
                 }
@@ -340,8 +343,8 @@ private fun TemplateCard(
                     onClick = onStartWorkout,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = VoltAccent,
-                        contentColor = DarkVoltText
+                        containerColor = GymCoachColors.CyanAccent,
+                        contentColor = GymCoachColors.SurfaceCardElevated
                     ),
                     shape = RoundedCornerShape(10.dp)
                 ) {
@@ -447,7 +450,7 @@ private fun CreateEditTemplateDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
+                                .padding(GymCoachSpacing.sm),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -481,8 +484,8 @@ private fun CreateEditTemplateDialog(
             Button(
                 onClick = { onSave(name, description, exercises) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = VoltAccent,
-                    contentColor = DarkVoltText
+                    containerColor = GymCoachColors.CyanAccent,
+                    contentColor = GymCoachColors.SurfaceCardElevated
                 )
             ) {
                 Text("Save Template", fontWeight = FontWeight.Bold)

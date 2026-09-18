@@ -43,14 +43,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.onboarding.components.EquipmentChecklist
 import com.gymcoach.app.presentation.onboarding.components.GoalSelectionCard
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.AccentBlueDim
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurfaceVariant
-import com.gymcoach.app.ui.theme.ErrorRed
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.*
+
 
 private val GOALS = listOf(
     "V-Taper Hypertrophy" to "Wide shoulders, tight waist. Lats and side delts lead.",
@@ -97,11 +91,11 @@ fun OnboardingScreen(
 
     BackHandler(enabled = state.step != OnboardingStep.WELCOME) { viewModel.back() }
 
-    Scaffold(containerColor = DarkBackground) { padding ->
+    Scaffold(containerColor = GymCoachColors.PureDark) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(DarkBackground)
+                .background(GymCoachColors.PureDark)
                 .padding(padding)
         ) {
             LinearProgressIndicator(
@@ -112,8 +106,8 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp),
-                color = AccentBlue,
-                trackColor = DarkSurfaceVariant
+                color = GymCoachColors.Primary,
+                trackColor = GymCoachColors.SurfaceCardElevated
             )
 
             Column(
@@ -146,7 +140,7 @@ fun OnboardingScreen(
                 }
                 state.error?.let { message ->
                     Spacer(Modifier.height(12.dp))
-                    Text(text = message, style = MaterialTheme.typography.bodyMedium, color = ErrorRed)
+                    Text(text = message, style = MaterialTheme.typography.bodyMedium, color = GymCoachColors.Danger)
                 }
             }
 
@@ -176,7 +170,7 @@ private fun StepHeader(title: String, description: String) {
         Text(
             text = description,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = GymCoachColors.TextSecondary
         )
         Spacer(Modifier.height(24.dp))
     }
@@ -197,7 +191,7 @@ private fun WelcomeStep() {
         Text(
             text = "Answer six quick questions and your first program is built around your goal, schedule, and equipment.",
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary
+            color = GymCoachColors.TextSecondary
         )
         Spacer(Modifier.height(28.dp))
         listOf(
@@ -208,7 +202,7 @@ private fun WelcomeStep() {
             Text(
                 text = line,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextTertiary,
+                color = GymCoachColors.TextMuted,
                 modifier = Modifier.padding(vertical = 6.dp)
             )
         }
@@ -218,7 +212,7 @@ private fun WelcomeStep() {
 @Composable
 private fun GoalStep(state: OnboardingUiState, onSelect: (String) -> Unit) {
     StepHeader("WHAT IS THE GOAL?", "Pick your primary target. Everything else tunes around it.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
         GOALS.forEach { (title, description) ->
             GoalSelectionCard(
                 goal = title,
@@ -233,7 +227,7 @@ private fun GoalStep(state: OnboardingUiState, onSelect: (String) -> Unit) {
 @Composable
 private fun ExperienceStep(state: OnboardingUiState, onSelect: (String) -> Unit) {
     StepHeader("TRAINING EXPERIENCE", "Sets, reps, and progression adapt to where you are.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
         EXPERIENCES.forEach { (title, description) ->
             GoalSelectionCard(
                 goal = title,
@@ -260,7 +254,7 @@ private fun PersonalInfoStep(
     Text(
         text = "AGE - ${state.age.toInt()} YEARS",
         style = MaterialTheme.typography.labelMedium,
-        color = TextSecondary,
+        color = GymCoachColors.TextSecondary,
         letterSpacing = 1.sp
     )
     Slider(
@@ -269,9 +263,9 @@ private fun PersonalInfoStep(
         valueRange = 14f..80f,
         steps = 65,
         colors = SliderDefaults.colors(
-            thumbColor = AccentBlue,
-            activeTrackColor = AccentBlue,
-            inactiveTrackColor = DarkSurfaceVariant
+            thumbColor = GymCoachColors.Primary,
+            activeTrackColor = GymCoachColors.Primary,
+            inactiveTrackColor = GymCoachColors.SurfaceCardElevated
         )
     )
 
@@ -314,7 +308,7 @@ private fun NumberField(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary,
+            color = GymCoachColors.TextSecondary,
             letterSpacing = 1.sp
         )
         Spacer(Modifier.height(8.dp))
@@ -329,11 +323,11 @@ private fun NumberField(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AccentBlue,
-                unfocusedBorderColor = DarkSurfaceVariant,
+                focusedBorderColor = GymCoachColors.Primary,
+                unfocusedBorderColor = GymCoachColors.SurfaceCardElevated,
                 focusedTextColor = WarmWhite,
                 unfocusedTextColor = WarmWhite,
-                cursorColor = AccentBlue
+                cursorColor = GymCoachColors.Primary
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -346,16 +340,16 @@ private fun SexSelection(
     onSelect: (String) -> Unit
 ) {
     var sex by remember { mutableStateOf(selectedSex) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
         SEXES.forEach { (label, _) ->
             FilterChip(
                 selected = sex == label,
                 onClick = { sex = label; onSelect(sex) },
-                label = { Text(label, color = if (sex == label) WarmWhite else TextSecondary) },
+                label = { Text(label, color = if (sex == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = DarkSurfaceVariant,
-                    selectedContainerColor = AccentBlueDim,
-                    labelColor = TextSecondary,
+                    containerColor = GymCoachColors.SurfaceCardElevated,
+                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
             )
@@ -369,16 +363,16 @@ private fun PreferredScheduleChipGroup(
     onSelect: (String) -> Unit
 ) {
     var schedule by remember { mutableStateOf(selectedSchedule) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
         PREFERRED_SCHEDULES.forEach { (label, _) ->
             FilterChip(
                 selected = schedule == label,
                 onClick = { schedule = label; onSelect(schedule) },
-                label = { Text(label, color = if (schedule == label) WarmWhite else TextSecondary) },
+                label = { Text(label, color = if (schedule == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = DarkSurfaceVariant,
-                    selectedContainerColor = AccentBlueDim,
-                    labelColor = TextSecondary,
+                    containerColor = GymCoachColors.SurfaceCardElevated,
+                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
             )
@@ -392,16 +386,16 @@ private fun LimitationsChipGroup(
     onSelect: (String) -> Unit
 ) {
     var limitation by remember { mutableStateOf(selectedLimitation) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
         LIMITATIONS.forEach { (label, _) ->
             FilterChip(
                 selected = limitation == label,
                 onClick = { limitation = label; onSelect(limitation) },
-                label = { Text(label, color = if (limitation == label) WarmWhite else TextSecondary) },
+                label = { Text(label, color = if (limitation == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = DarkSurfaceVariant,
-                    selectedContainerColor = AccentBlueDim,
-                    labelColor = TextSecondary,
+                    containerColor = GymCoachColors.SurfaceCardElevated,
+                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
             )
@@ -420,20 +414,20 @@ private fun ScheduleStep(
     Text(
         text = "DAYS PER WEEK",
         style = MaterialTheme.typography.labelMedium,
-        color = TextSecondary,
+        color = GymCoachColors.TextSecondary,
         letterSpacing = 1.sp
     )
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
         (2..6).forEach { days ->
             FilterChip(
                 selected = state.daysPerWeek == days,
                 onClick = { onDays(days) },
                 label = { Text("$days") },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = DarkSurfaceVariant,
-                    selectedContainerColor = AccentBlueDim,
-                    labelColor = TextSecondary,
+                    containerColor = GymCoachColors.SurfaceCardElevated,
+                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
             )
@@ -444,7 +438,7 @@ private fun ScheduleStep(
     Text(
         text = "SESSION LENGTH - ${state.sessionMinutes} MIN",
         style = MaterialTheme.typography.labelMedium,
-        color = TextSecondary,
+        color = GymCoachColors.TextSecondary,
         letterSpacing = 1.sp
     )
     Slider(
@@ -453,9 +447,9 @@ private fun ScheduleStep(
         valueRange = 30f..90f,
         steps = 3,
         colors = SliderDefaults.colors(
-            thumbColor = AccentBlue,
-            activeTrackColor = AccentBlue,
-            inactiveTrackColor = DarkSurfaceVariant
+            thumbColor = GymCoachColors.Primary,
+            activeTrackColor = GymCoachColors.Primary,
+            inactiveTrackColor = GymCoachColors.SurfaceCardElevated
         )
     )
 }
@@ -471,7 +465,7 @@ private fun EquipmentStep(state: OnboardingUiState, onToggle: (String) -> Unit) 
     Text(
         text = "No equipment yet? Bodyweight movements are always included.",
         style = MaterialTheme.typography.bodySmall,
-        color = TextTertiary
+        color = GymCoachColors.TextMuted
     )
 }
 
@@ -497,7 +491,7 @@ private fun ReviewStep(state: OnboardingUiState) {
 @Composable
 private fun ReviewRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = GymCoachColors.TextSecondary)
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
@@ -518,12 +512,12 @@ private fun BottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (state.step != OnboardingStep.WELCOME) {
             TextButton(onClick = onBack, enabled = !state.isGenerating) {
-                Text(text = "BACK", color = TextSecondary, fontWeight = FontWeight.SemiBold)
+                Text(text = "BACK", color = GymCoachColors.TextSecondary, fontWeight = FontWeight.SemiBold)
             }
         }
         Button(
@@ -531,9 +525,9 @@ private fun BottomBar(
             enabled = state.isStepValid && !state.isGenerating,
             shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = AccentBlue,
+                containerColor = GymCoachColors.Primary,
                 contentColor = WarmWhite,
-                disabledContainerColor = DarkSurfaceVariant
+                disabledContainerColor = GymCoachColors.SurfaceCardElevated
             ),
             modifier = Modifier
                 .weight(1f)

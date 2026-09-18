@@ -45,10 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.data.local.entity.ReadinessEntity
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.*
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,7 +73,7 @@ fun ReadinessScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showLogDialog() },
-                containerColor = AccentBlue
+                containerColor = GymCoachColors.Primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Log Readiness")
             }
@@ -107,13 +105,13 @@ fun ReadinessScreen(
                     } ?: run {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
                         ) {
-                            Column(modifier = Modifier.padding(24.dp)) {
+                            Column(modifier = Modifier.padding(GymCoachSpacing.xxl)) {
                                 Text(
                                     text = "NO READINESS DATA",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = AccentBlue,
+                                    color = GymCoachColors.Primary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(Modifier.height(8.dp))
@@ -132,13 +130,13 @@ fun ReadinessScreen(
                     state.latestReadiness?.let { latest ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
                                 Text(
                                     text = "TRAINING RECOMMENDATION",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = AccentBlue,
+                                    color = GymCoachColors.Primary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(Modifier.height(8.dp))
@@ -166,7 +164,7 @@ fun ReadinessScreen(
                         Text(
                             text = "LAST 7 DAYS",
                             style = MaterialTheme.typography.labelSmall,
-                            color = AccentBlue,
+                            color = GymCoachColors.Primary,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
@@ -201,13 +199,13 @@ fun ReadinessScreen(
 private fun ReadinessScoreCard(readiness: ReadinessEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.xxl)) {
             Text(
                 text = "READINESS SCORE",
                 style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(8.dp))
@@ -239,7 +237,7 @@ private fun MetricRow(icon: ImageVector, label: String, value: Int) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = AccentBlue,
+            tint = GymCoachColors.Primary,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(12.dp))
@@ -264,12 +262,12 @@ private fun ReadinessHistoryItem(readiness: ReadinessEntity) {
     
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(GymCoachSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -287,7 +285,7 @@ private fun ReadinessHistoryItem(readiness: ReadinessEntity) {
             Text(
                 text = "%.1f".format(readiness.readinessScore),
                 style = MaterialTheme.typography.titleLarge,
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -349,8 +347,8 @@ private fun SliderMetric(label: String, value: Int, onValueChange: (Int) -> Unit
             valueRange = 1f..5f,
             steps = 3,
             colors = SliderDefaults.colors(
-                thumbColor = AccentBlue,
-                activeTrackColor = AccentBlue
+                thumbColor = GymCoachColors.Primary,
+                activeTrackColor = GymCoachColors.Primary
             )
         )
     }

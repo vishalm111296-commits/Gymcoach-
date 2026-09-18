@@ -65,6 +65,7 @@ import java.util.Date
 import java.util.Locale
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
+import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
 import androidx.compose.foundation.background

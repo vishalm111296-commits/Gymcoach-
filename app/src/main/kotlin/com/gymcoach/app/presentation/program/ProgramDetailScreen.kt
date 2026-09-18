@@ -71,8 +71,8 @@ import com.gymcoach.app.data.local.entity.ProgramExerciseEntity
 import com.gymcoach.app.domain.repository.CustomRoutineDay
 import com.gymcoach.app.domain.repository.CustomRoutineExercise
 import com.gymcoach.app.domain.repository.ProgramRepository
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
+import com.gymcoach.app.ui.theme.*
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -244,7 +244,7 @@ fun ProgramDetailScreen(
     var showGenerateSheet by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         bottomBar = {
             GymCoachBottomNav(currentRoute = "program_detail", onNavigate = onNavigateBottomBar)
         },
@@ -261,7 +261,7 @@ fun ProgramDetailScreen(
                         Icon(Icons.Default.Add, contentDescription = "New Routine", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         }
     ) { padding ->
@@ -272,8 +272,8 @@ fun ProgramDetailScreen(
                 }
             }
             state.program == null -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.xxl), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)) {
                         Text(
                             "No active training program.",
                             style = MaterialTheme.typography.titleMedium,
@@ -298,15 +298,15 @@ fun ProgramDetailScreen(
                 val program = state.program!!
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
                 ) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+                            shape = GymCoachShapes.lg
                         ) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -328,7 +328,7 @@ fun ProgramDetailScreen(
                                     Text("Frequency: ${program.daysPerWeek} days/week", style = MaterialTheme.typography.labelMedium)
                                 }
                                 Spacer(Modifier.height(8.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
                                     Button(
                                         onClick = {
                                             val firstDay = state.daysWithExercises.firstOrNull()?.day?.id
@@ -356,10 +356,10 @@ fun ProgramDetailScreen(
                     items(state.daysWithExercises) { dayWithEx ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+                            shape = GymCoachShapes.lg
                         ) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -367,7 +367,7 @@ fun ProgramDetailScreen(
                                 ) {
                                     Text("Day ${dayWithEx.day.dayNumber}: ${dayWithEx.day.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(
@@ -388,12 +388,12 @@ fun ProgramDetailScreen(
                                     }
                                 }
 
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
                                     dayWithEx.exercises.forEachIndexed { idx, ex ->
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .clip(GymCoachShapes.sm)
                                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -530,7 +530,7 @@ private fun RoutineBuilderContent(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
     ) {
         Text(
             text = "Routine Builder",
@@ -547,7 +547,7 @@ private fun RoutineBuilderContent(
                     text = errorMessage ?: "",
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(GymCoachSpacing.md)
                 )
             }
         }
@@ -570,7 +570,7 @@ private fun RoutineBuilderContent(
 
         Text("Primary Goal", style = MaterialTheme.typography.titleSmall)
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm),
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
             listOf("Hypertrophy", "Strength", "Endurance", "Fat Loss").forEach { g ->
@@ -590,8 +590,8 @@ private fun RoutineBuilderContent(
 
         for ((dayIndex, day) in days.withIndex()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+                shape = GymCoachShapes.md,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -665,7 +665,7 @@ private fun RoutineBuilderContent(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = GymCoachShapes.sm,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(
@@ -707,7 +707,7 @@ private fun RoutineBuilderContent(
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
                                     ) {
                                         OutlinedTextField(
                                             value = ex.sets.toString(),
@@ -855,7 +855,7 @@ private fun RoutineBuilderContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(380.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
                 ) {
                     OutlinedTextField(
                         value = pickerSearch,
@@ -896,14 +896,14 @@ private fun RoutineBuilderContent(
                                     text = "No matching exercises found.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(16.dp)
+                                    modifier = Modifier.padding(GymCoachSpacing.lg)
                                 )
                             }
                         } else {
                             items(filteredExercises) { exercise ->
                                 Card(
-                                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+                                    shape = GymCoachShapes.sm,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
@@ -936,7 +936,7 @@ private fun RoutineBuilderContent(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
+                                            .padding(GymCoachSpacing.md),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -989,7 +989,7 @@ private fun GenerateProgramBottomSheet(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
     ) {
         Text(
             text = "Adaptive Program Generator",
@@ -998,7 +998,7 @@ private fun GenerateProgramBottomSheet(
         )
 
         Text("Primary Goal", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             listOf("Hypertrophy", "Strength", "Fat Loss", "Endurance").forEach { g ->
                 FilterChip(
                     selected = goal == g,
@@ -1009,7 +1009,7 @@ private fun GenerateProgramBottomSheet(
         }
 
         Text("Training Days / Week", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             listOf(2, 3, 4, 5, 6).forEach { f ->
                 FilterChip(
                     selected = frequency == f,
@@ -1020,7 +1020,7 @@ private fun GenerateProgramBottomSheet(
         }
 
         Text("Available Equipment", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(selected = equipment == "gym", onClick = { equipment = "gym" }, label = { Text("Full Gym") })
             FilterChip(selected = equipment == "home", onClick = { equipment = "home" }, label = { Text("Dumbbells/Bands") })
             FilterChip(selected = equipment == "custom", onClick = { equipment = "custom" }, label = { Text("Bodyweight") })

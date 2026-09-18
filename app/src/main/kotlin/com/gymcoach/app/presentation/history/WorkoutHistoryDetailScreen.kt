@@ -59,6 +59,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.PersonalRecord
@@ -226,14 +229,14 @@ fun WorkoutHistoryDetailScreen(
             }
             state.error != null -> {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.lg),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = state.error!!,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
+                        color = GymCoachColors.Danger
                     )
                 }
             }
@@ -280,7 +283,7 @@ fun WorkoutHistoryDetailScreen(
                             Text(
                                 text = "No muscle data available",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = GymCoachColors.TextSecondary
                             )
                         }
 
@@ -460,18 +463,18 @@ fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = GymCoachColors.SurfaceCardElevated
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(GymCoachSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
         ) {
             Text(
                 text = "Workout Summary",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = GymCoachColors.TextPrimary
             )
 
             Row(
@@ -503,12 +506,12 @@ private fun SummaryStatItem(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            color = GymCoachColors.TextPrimary
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            color = GymCoachColors.TextPrimary.copy(alpha = 0.7f)
         )
     }
 }
@@ -525,7 +528,7 @@ private fun MuscleGroupRow(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = GymCoachColors.SurfaceCard
         )
     ) {
         Row(
@@ -555,7 +558,7 @@ private fun MuscleGroupRow(
                 text = "%.0f kg".format(totalVolume),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
+                color = GymCoachColors.Primary,
                 modifier = Modifier.weight(0.2f)
             )
         }
@@ -567,10 +570,10 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = GymCoachColors.PureDark
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -583,13 +586,13 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
                 Text(
                     text = formatDate(workout.date),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
             ) {
                 StatItem(label = "Duration", value = formatDuration(workout.duration))
                 StatItem(label = "Completed", value = if (workout.completed) "Yes" else "No")
@@ -615,10 +618,10 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = GymCoachColors.SurfaceCard
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -631,7 +634,7 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                 Text(
                     text = exerciseWithSets.exercise.muscleGroup,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
@@ -706,7 +709,7 @@ fun SetRow(
             Text(
                 text = "✓",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = GymCoachColors.Primary,
                 modifier = Modifier.width(24.dp)
             )
         } else {
@@ -718,7 +721,7 @@ fun SetRow(
 @Composable
 fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
         Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
     }
 }
@@ -729,7 +732,7 @@ fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        color = GymCoachColors.Primary
     )
 }
 

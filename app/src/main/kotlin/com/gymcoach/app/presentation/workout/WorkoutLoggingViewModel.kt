@@ -240,7 +240,11 @@ class WorkoutLoggingViewModel @Inject constructor(
         _sessionVolume.value = volume
     }
 
+    @androidx.annotation.VisibleForTesting
+    var enableWorkoutTimer = true
+
     private fun startWorkoutTimer() {
+        if (!enableWorkoutTimer) return
         workoutTimerJob?.cancel()
         workoutTimerJob = viewModelScope.launch {
             while (true) {
@@ -710,6 +714,12 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to update set"
             }
         }
+    }
+
+    @androidx.annotation.VisibleForTesting
+    fun clearForTest() {
+        workoutCollectorJob?.cancel()
+        workoutTimerJob?.cancel()
     }
 
     override fun onCleared() {

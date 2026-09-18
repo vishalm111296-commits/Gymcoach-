@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.gymcoach.app.data.local.entity.ExerciseEntity
 import com.gymcoach.app.data.local.entity.ExerciseSubstitutionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,6 +18,13 @@ interface ExerciseSubstitutionDao {
 
     @Query("SELECT * FROM exercise_substitutions WHERE original_exercise_id = :exerciseId")
     fun getByExerciseId(exerciseId: Long): Flow<List<ExerciseSubstitutionEntity>>
+
+    @Query("""
+        SELECT e.* FROM exercises e
+        INNER JOIN exercise_substitutions es ON es.substitute_exercise_id = e.id
+        WHERE es.original_exercise_id = :exerciseId
+    """)
+    fun getSubstituteExercises(exerciseId: Long): Flow<List<ExerciseEntity>>
 
     @Query("SELECT * FROM exercise_substitutions WHERE substitute_exercise_id = :substituteId")
     fun getBySubstituteId(substituteId: Long): Flow<List<ExerciseSubstitutionEntity>>

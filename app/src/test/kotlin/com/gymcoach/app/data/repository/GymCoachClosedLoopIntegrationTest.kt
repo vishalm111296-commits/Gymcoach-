@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -78,7 +79,7 @@ class GymCoachClosedLoopIntegrationTest {
         // Step 1: Mock source historical workout details
         every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
         every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(sourceExerciseEntity))
-        every { workoutDao.getSetsForExercise(10L) } returns flowOf(listOf(sourceSet))
+        coEvery { workoutDao.getSetsForExercises(listOf(10L)) } returns listOf(sourceSet)
 
         val capturedWorkout = slot<WorkoutEntity>()
         val capturedExercisesWithSets = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()
@@ -139,4 +140,37 @@ class GymCoachClosedLoopIntegrationTest {
         assertEquals(1, balance.upperChestVolume.directSets)
         assertEquals(1, balance.tricepsVolume.indirectSets)
     }
+
+    @Test
+    fun `program day workout creation adapts prescribed weight from previous exercise performance`() = runTest {
+        val programDay = com.gymcoach.app.data.local.entity.ProgramDayEntity(
+            id = 1L, programId = 10L, dayNumber = 1, name = "Chest Day", targetMuscles = "Chest", isRestDay = false
+        )
+        val programExercises = listOf(
+            com.gymcoach.app.data.local.entity.ProgramExerciseEntity(
+                id = 11L, programDayId = 1L, exerciseId = 100L, orderIndex = 0, sets = 3, targetReps = "8-10", targetWeightKg = 0.0, restSeconds = 90
+            )
+        )
+
+        // Mock DAO transaction behavior directly testing weight adaptation logic
+        val capturedSets = mutableListOf<WorkoutSetEntity>()
+        coEvery { workoutDao.getIncompleteWorkout() } returns null
+        coEvery { workoutDao.insertWorkout(any()) } returns 500L
+        coEvery { workoutDao.insertWorkoutExercise(any()) } returns 600L
+        coEvery { workoutDao.insertWorkoutSet(capture(capturedSets)) } returns 700L
+        coEvery { workoutDao.getLastPerformancesForExercises(listOf(100L)) } returns listOf(
+            com.gymcoach.app.data.local.dao.LastPerformanceWithExercise(exerciseId = 100L, date = 1600000000000L, maxWeight = 82.5)
+        )
+
+        coEvery { workoutDao.createWorkoutFromProgramDayTransaction(any(), any()) } answers { callOriginal() }
+
+        // Call open suspend fun directly
+        val newWorkoutId = workoutDao.createWorkoutFromProgramDayTransaction(programDay, programExercises)
+
+        assertEquals(500L, newWorkoutId)
+        assertEquals(3, capturedSets.size)
+        // All prescribed sets must adapt to previous session's 82.5kg rather than 0.0kg!
+        assertTrue("All sets must prescribe historical max weight 82.5kg", capturedSets.all { it.weight == 82.5 })
+    }
 }
+

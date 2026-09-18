@@ -19,13 +19,29 @@ import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
 import com.gymcoach.app.domain.model.WorkoutWithDetails
 import java.time.Instant
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
-@org.junit.Ignore("Fails on aarch64 due to Robolectric missing native SQLite JNI libs.")
+@OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutLoggingViewModelCollectorTest {
+
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `loadOrStartWorkout cancels previous flow collector on re-entry`() = runTest {
@@ -45,17 +61,21 @@ class WorkoutLoggingViewModelCollectorTest {
             restTimer,
             progressionEngine,
             userProfileRepository
-        )
+        ).apply { enableWorkoutTimer = false }
 
-        // First invocation
-        viewModel.loadOrStartWorkout(10L)
+        try {
+            // First invocation
+            viewModel.loadOrStartWorkout(10L)
 
-        // Second invocation (e.g. config change / re-entry with new workoutId)
-        viewModel.loadOrStartWorkout(20L)
+            // Second invocation (e.g. config change / re-entry with new workoutId)
+            viewModel.loadOrStartWorkout(20L)
 
-        // Verify flowA and flowB called exactly once each
-        coVerify(exactly = 1) { workoutRepository.getWorkoutWithDetails(10L) }
-        coVerify(exactly = 1) { workoutRepository.getWorkoutWithDetails(20L) }
+            // Verify flowA and flowB called exactly once each
+            coVerify(exactly = 1) { workoutRepository.getWorkoutWithDetails(10L) }
+            coVerify(exactly = 1) { workoutRepository.getWorkoutWithDetails(20L) }
+        } finally {
+            viewModel.clearForTest()
+        }
     }
 
     @Test
@@ -100,28 +120,32 @@ class WorkoutLoggingViewModelCollectorTest {
             restTimer,
             progressionEngine,
             userProfileRepository
-        )
+        ).apply { enableWorkoutTimer = false }
 
-        viewModel.loadOrStartWorkout(55L)
-        kotlinx.coroutines.delay(100) // allow collection
+        try {
+            viewModel.loadOrStartWorkout(55L)
+            kotlinx.coroutines.delay(100) // allow collection
 
-        viewModel.applyCameraReps(exerciseIndex = 0, reps = 12)
+            viewModel.applyCameraReps(exerciseIndex = 0, reps = 12)
 
-        coVerify(exactly = 1) {
-            workoutRepository.updateSet(
-                match {
-                    it.id == 10L && it.reps == 12 && it.completed
-                }
-            )
-        }
+            coVerify(exactly = 1) {
+                workoutRepository.updateSet(
+                    match {
+                        it.id == 10L && it.reps == 12 && it.completed
+                    }
+                )
+            }
 
-        verify(exactly = 1) {
-            restTimer.start(
-                seconds = 90,
-                scope = any(),
-                nextSet = "Barbell Squat Set 2",
-                workoutId = 55L
-            )
+            verify(exactly = 1) {
+                restTimer.start(
+                    seconds = 90,
+                    scope = any(),
+                    nextSet = "Barbell Squat Set 2",
+                    workoutId = 55L
+                )
+            }
+        } finally {
+            viewModel.clearForTest()
         }
     }
 
@@ -167,18 +191,22 @@ class WorkoutLoggingViewModelCollectorTest {
             restTimer,
             progressionEngine,
             userProfileRepository
-        )
+        ).apply { enableWorkoutTimer = false }
 
-        viewModel.loadOrStartWorkout(55L)
-        viewModel.toggleSetCompletion(0, 0)
+        try {
+            viewModel.loadOrStartWorkout(55L)
+            viewModel.toggleSetCompletion(0, 0)
 
-        verify(exactly = 1) {
-            restTimer.start(
-                seconds = 90,
-                scope = any(),
-                nextSet = "Barbell Squat Set 2",
-                workoutId = 55L
-            )
+            verify(exactly = 1) {
+                restTimer.start(
+                    seconds = 90,
+                    scope = any(),
+                    nextSet = "Barbell Squat Set 2",
+                    workoutId = 55L
+                )
+            }
+        } finally {
+            viewModel.clearForTest()
         }
     }
 
@@ -243,26 +271,30 @@ class WorkoutLoggingViewModelCollectorTest {
             readinessRepository,
             personalRecordDao,
             prDetector
-        )
+        ).apply { enableWorkoutTimer = false }
 
-        viewModel.loadOrStartWorkout(55L)
+        try {
+            viewModel.loadOrStartWorkout(55L)
 
-        // Wait for flow to collect
-        kotlinx.coroutines.delay(100)
+            // Wait for flow to collect
+            kotlinx.coroutines.delay(100)
 
-        viewModel.completeWorkout()
+            viewModel.completeWorkout()
 
-        kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100)
 
-        coVerify(exactly = 1) { personalRecordDao.insert(any()) }
+            coVerify(exactly = 1) { personalRecordDao.insert(any()) }
 
-        val summary = viewModel.workoutSummary.value
-        org.junit.Assert.assertNotNull(summary)
-        org.junit.Assert.assertEquals(55L, summary?.workoutId)
-        org.junit.Assert.assertEquals("Workout", summary?.workoutName) // We updated completeWorkout to use "Workout" in viewmodel
-        org.junit.Assert.assertEquals(1, summary?.completedSetsCount)
-        org.junit.Assert.assertEquals(1, summary?.totalSetsCount)
-        org.junit.Assert.assertEquals(500.0, summary?.totalVolumeKg)
-        org.junit.Assert.assertEquals(1, summary?.newPRs?.size)
+            val summary = viewModel.workoutSummary.value
+            org.junit.Assert.assertNotNull(summary)
+            org.junit.Assert.assertEquals(55L, summary?.workoutId)
+            org.junit.Assert.assertEquals("Workout", summary?.workoutName) // We updated completeWorkout to use "Workout" in viewmodel
+            org.junit.Assert.assertEquals(1, summary?.completedSetsCount)
+            org.junit.Assert.assertEquals(1, summary?.totalSetsCount)
+            org.junit.Assert.assertEquals(500.0, summary?.totalVolumeKg)
+            org.junit.Assert.assertEquals(1, summary?.newPRs?.size)
+        } finally {
+            viewModel.clearForTest()
+        }
     }
 }

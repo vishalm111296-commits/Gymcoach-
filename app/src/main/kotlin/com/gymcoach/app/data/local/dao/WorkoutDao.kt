@@ -96,6 +96,12 @@ abstract class WorkoutDao {
             sourceType = "PROGRAM"
         )
         val newWorkoutId = insertWorkout(newWorkoutEntity)
+        val exerciseIds = exercises.map { it.exerciseId }
+        val lastPerformances = if (exerciseIds.isNotEmpty()) {
+            getLastPerformancesForExercises(exerciseIds).associateBy { it.exerciseId }
+        } else {
+            emptyMap()
+        }
         exercises.sortedBy { it.orderIndex }.forEachIndexed { index, pe ->
             val exerciseEntity = WorkoutExerciseEntity(
                 id = 0,
@@ -104,12 +110,17 @@ abstract class WorkoutDao {
                 orderIndex = index
             )
             val workoutExerciseId = insertWorkoutExercise(exerciseEntity)
+            val prescribedWeight = if (pe.targetWeightKg > 0.0) {
+                pe.targetWeightKg
+            } else {
+                lastPerformances[pe.exerciseId]?.maxWeight ?: 0.0
+            }
             for (setNum in 1..pe.sets.coerceAtLeast(1)) {
                 val setEntity = WorkoutSetEntity(
                     id = 0,
                     workoutExerciseId = workoutExerciseId,
                     setNumber = setNum,
-                    weight = 0.0,
+                    weight = prescribedWeight,
                     reps = pe.targetReps.split("-", "–", "to").firstOrNull()?.trim()?.toIntOrNull() ?: 10,
                     rpe = 0.0,
                     restSeconds = pe.restSeconds,
@@ -152,6 +163,12 @@ abstract class WorkoutDao {
             sourceType = "TEMPLATE"
         )
         val newWorkoutId = insertWorkout(newWorkoutEntity)
+        val exerciseIds = exercises.map { it.exerciseId }
+        val lastPerformances = if (exerciseIds.isNotEmpty()) {
+            getLastPerformancesForExercises(exerciseIds).associateBy { it.exerciseId }
+        } else {
+            emptyMap()
+        }
         exercises.sortedBy { it.orderIndex }.forEachIndexed { index, templateExercise ->
             val exerciseEntity = WorkoutExerciseEntity(
                 id = 0,
@@ -161,12 +178,17 @@ abstract class WorkoutDao {
             )
             val workoutExerciseId = insertWorkoutExercise(exerciseEntity)
             val targetReps = templateExercise.targetReps.split("-", "–", "to").firstOrNull()?.trim()?.toIntOrNull() ?: 10
+            val prescribedWeight = if (templateExercise.targetWeightKg > 0.0) {
+                templateExercise.targetWeightKg
+            } else {
+                lastPerformances[templateExercise.exerciseId]?.maxWeight ?: 0.0
+            }
             for (setNum in 1..templateExercise.targetSets.coerceAtLeast(1)) {
                 val setEntity = WorkoutSetEntity(
                     id = 0,
                     workoutExerciseId = workoutExerciseId,
                     setNumber = setNum,
-                    weight = templateExercise.targetWeightKg,
+                    weight = prescribedWeight,
                     reps = targetReps,
                     rpe = templateExercise.targetRpe ?: 8.0,
                     restSeconds = templateExercise.restSeconds,
@@ -240,6 +262,9 @@ abstract class WorkoutDao {
     // WorkoutSets
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :workoutExerciseId ORDER BY setNumber ASC")
     abstract fun getSetsForExercise(workoutExerciseId: Long): Flow<List<WorkoutSetEntity>>
+
+    @Query("SELECT * FROM workout_sets WHERE workoutExerciseId IN (:workoutExerciseIds) ORDER BY workoutExerciseId ASC, setNumber ASC")
+    abstract suspend fun getSetsForExercises(workoutExerciseIds: List<Long>): List<WorkoutSetEntity>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertWorkoutSet(set: WorkoutSetEntity): Long

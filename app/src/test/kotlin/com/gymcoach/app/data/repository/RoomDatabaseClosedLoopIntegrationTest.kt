@@ -33,7 +33,6 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
-@org.junit.Ignore("Fails on aarch64 due to Robolectric missing native SQLite JNI libs.")
 class RoomDatabaseClosedLoopIntegrationTest {
 
     private lateinit var db: GymCoachDatabase

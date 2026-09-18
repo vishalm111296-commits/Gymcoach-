@@ -150,9 +150,47 @@ class VolumeCalculatorTest {
         val balance = volumeCalculator.calculateWeeklyVolume(listOf(setWeek1, set1Week2, set2Week2), muscleMap)
         assertEquals("Back total direct sets across weeks", 3, balance.backVolume.directSets)
         assertEquals("Back total indirect sets across weeks", 0, balance.backVolume.indirectSets)
-        assertEquals("Back weekly sets total", 3, balance.backVolume.weeklySets)
+        assertEquals("Back weekly rate across 2 weeks (3 sets / 2 weeks = 1.5 -> 2)", 2, balance.backVolume.weeklySets)
+        assertEquals("Back total sets across weeks", 3, balance.backVolume.totalSets)
         assertEquals("Lats alias total direct sets across weeks", 3, balance.latVolume.directSets)
         assertEquals("Lats alias total indirect sets across weeks", 0, balance.latVolume.indirectSets)
-        assertEquals("Lats alias weekly sets total", 3, balance.latVolume.weeklySets)
+        assertEquals("Lats alias weekly rate across 2 weeks", 2, balance.latVolume.weeklySets)
+        assertEquals("Lats alias total sets across weeks", 3, balance.latVolume.totalSets)
+    }
+
+    @Test
+    fun `isoWeekKey correctly groups dates across year boundaries into same ISO week`() {
+        val zone = java.time.ZoneOffset.UTC
+        // 2024-12-30 (Mon) to 2025-01-05 (Sun) is ISO week 1 of week-based year 2025
+        val monDec30 = java.time.LocalDate.of(2024, 12, 30).atStartOfDay(zone).toInstant().toEpochMilli()
+        val tueDec31 = java.time.LocalDate.of(2024, 12, 31).atStartOfDay(zone).toInstant().toEpochMilli()
+        val wedJan01 = java.time.LocalDate.of(2025, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val sunJan05 = java.time.LocalDate.of(2025, 1, 5).atStartOfDay(zone).toInstant().toEpochMilli()
+        val monJan06 = java.time.LocalDate.of(2025, 1, 6).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val keyDec30 = volumeCalculator.isoWeekKey(monDec30, zone)
+        val keyDec31 = volumeCalculator.isoWeekKey(tueDec31, zone)
+        val keyJan01 = volumeCalculator.isoWeekKey(wedJan01, zone)
+        val keyJan05 = volumeCalculator.isoWeekKey(sunJan05, zone)
+        val keyJan06 = volumeCalculator.isoWeekKey(monJan06, zone)
+
+        assertEquals("Dec 30 2024 should be 202501", 202501, keyDec30)
+        assertEquals("Dec 31 2024 should be 202501", 202501, keyDec31)
+        assertEquals("Jan 01 2025 should be 202501", 202501, keyJan01)
+        assertEquals("Jan 05 2025 should be 202501", 202501, keyJan05)
+        assertEquals("Jan 06 2025 should be 202502", 202502, keyJan06)
+    }
+
+    @Test
+    fun `isoWeekKey separates Sunday from following Monday`() {
+        val zone = java.time.ZoneOffset.UTC
+        val sunDec29 = java.time.LocalDate.of(2024, 12, 29).atStartOfDay(zone).toInstant().toEpochMilli()
+        val monDec30 = java.time.LocalDate.of(2024, 12, 30).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val keySun = volumeCalculator.isoWeekKey(sunDec29, zone)
+        val keyMon = volumeCalculator.isoWeekKey(monDec30, zone)
+
+        assertEquals("Sunday Dec 29 2024 belongs to 202452", 202452, keySun)
+        assertEquals("Monday Dec 30 2024 belongs to 202501", 202501, keyMon)
     }
 }

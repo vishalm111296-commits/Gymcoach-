@@ -31,6 +31,7 @@ class ExerciseAssetJsonValidationTest {
         val categoryRegex = """"category"\s*:\s*"([^"]+)"""".toRegex()
 
         val seenIds = mutableMapOf<String, String>()
+        val seenNames = mutableMapOf<String, String>()
         var totalExercises = 0
 
         for (file in jsonFiles) {
@@ -52,9 +53,17 @@ class ExerciseAssetJsonValidationTest {
                 seenIds[id] = file.name
                 totalExercises++
             }
+
+            for (name in nameMatches) {
+                if (name in seenNames) {
+                    throw AssertionError("Duplicate exercise name '$name' found in ${file.name} (first seen in ${seenNames[name]})")
+                }
+                seenNames[name] = file.name
+            }
         }
 
         assertEquals("Total exercise count should equal unique ID count", totalExercises, seenIds.size)
+        assertEquals("Total exercise count should equal unique name count", totalExercises, seenNames.size)
         assertTrue("Should have at least 100 seeded exercises", seenIds.size >= 100)
     }
 }

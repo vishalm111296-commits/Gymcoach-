@@ -116,10 +116,10 @@ class ProgramDetailViewModel @Inject constructor(
             readinessRepository = object : com.gymcoach.app.domain.repository.ReadinessRepository {
                 override fun getAllReadiness() = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
                 override fun getLatestReadiness() = kotlinx.coroutines.flow.flowOf(null)
-                override fun getReadinessInRange(s: Long, e: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
-                override fun getRecentReadiness(s: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
-                override suspend fun saveReadiness(r: com.gymcoach.app.data.local.entity.ReadinessEntity) = 0L
-                override suspend fun updateReadiness(r: com.gymcoach.app.data.local.entity.ReadinessEntity) {}
+                override fun getReadinessInRange(startTime: Long, endTime: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
+                override fun getRecentReadiness(since: Long) = kotlinx.coroutines.flow.emptyFlow<List<com.gymcoach.app.data.local.entity.ReadinessEntity>>()
+                override suspend fun saveReadiness(readiness: com.gymcoach.app.data.local.entity.ReadinessEntity) = 0L
+                override suspend fun updateReadiness(readiness: com.gymcoach.app.data.local.entity.ReadinessEntity) {}
                 override suspend fun deleteReadiness(id: Long) {}
             }
         )
@@ -270,7 +270,7 @@ fun ProgramDetailScreen(
                             onClick = { showGenerateSheet = true },
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
-                            Text("AI Program Generator")
+                            Text("Adaptive Program Generator")
                         }
                     }
                 }
@@ -579,7 +579,7 @@ private fun GenerateProgramBottomSheet(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "AI Program Generator",
+            text = "Adaptive Program Generator",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )

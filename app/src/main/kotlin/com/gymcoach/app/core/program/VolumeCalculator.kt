@@ -1,8 +1,9 @@
 package com.gymcoach.app.core.program
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
-import java.util.Calendar
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.IsoFields
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,7 +15,8 @@ class VolumeCalculator @Inject constructor() {
         val weeklySets: Int,
         val directSets: Int,
         val indirectSets: Int,
-        val status: VolumeStatus
+        val status: VolumeStatus,
+        val totalSets: Int = directSets + indirectSets
     )
 
     enum class VolumeStatus(val label: String, val level: Int) {
@@ -135,7 +137,9 @@ class VolumeCalculator @Inject constructor() {
         }
 
         fun vol(muscle: String): MuscleVolume {
-            val totalSets = (directSetsByMuscle[muscle] ?: 0) + (indirectSetsByMuscle[muscle] ?: 0)
+            val totalDirect = directSetsByMuscle[muscle] ?: 0
+            val totalIndirect = indirectSetsByMuscle[muscle] ?: 0
+            val totalSets = totalDirect + totalIndirect
             val weeklyRate = if (weekBuckets.size > 1) {
                 Math.round(avgWeekly[muscle] ?: 0.0).toInt()
             } else {
@@ -143,10 +147,11 @@ class VolumeCalculator @Inject constructor() {
             }
             return MuscleVolume(
                 muscleName = muscle,
-                weeklySets = totalSets,
-                directSets = directSetsByMuscle[muscle] ?: 0,
-                indirectSets = indirectSetsByMuscle[muscle] ?: 0,
-                status = classify(weeklyRate)
+                weeklySets = weeklyRate,
+                directSets = totalDirect,
+                indirectSets = totalIndirect,
+                status = classify(weeklyRate),
+                totalSets = totalSets
             )
         }
 
@@ -208,11 +213,10 @@ class VolumeCalculator @Inject constructor() {
         }
     }
 
-    private fun isoWeekKey(dateMs: Long): Int {
-        val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = dateMs
-        val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-        val year = calendar.get(Calendar.YEAR)
-        return year * 100 + weekOfYear
+    fun isoWeekKey(dateMs: Long, zoneId: ZoneId = ZoneId.systemDefault()): Int {
+        val date = Instant.ofEpochMilli(dateMs).atZone(zoneId).toLocalDate()
+        val weekBasedYear = date.get(IsoFields.WEEK_BASED_YEAR)
+        val weekOfWeekBasedYear = date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        return weekBasedYear * 100 + weekOfWeekBasedYear
     }
 }

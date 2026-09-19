@@ -27,6 +27,7 @@ import com.gymcoach.app.presentation.program.ProgramDetailScreen
 import com.gymcoach.app.presentation.progress.ProgressDashboardScreen
 import com.gymcoach.app.presentation.progress.ProgressionAnalyticsScreen
 import com.gymcoach.app.presentation.readiness.ReadinessScreen
+import com.gymcoach.app.presentation.body.BodyCompositionScreen
 import com.gymcoach.app.presentation.template.WorkoutTemplateScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
 import com.gymcoach.app.presentation.gamification.StreakAndAchievementScreen
@@ -49,6 +50,7 @@ object Routes {
     const val PROGRESSION_ANALYTICS = "progression_analytics/{exerciseId}?exerciseName={exerciseName}"
     const val MUSCLE_BALANCE = "muscle_balance"
     const val STREAKS_AND_ACHIEVEMENTS = "streaks_and_achievements"
+    const val BODY_COMPOSITION = "body_composition"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -256,7 +258,16 @@ fun GymCoachNavHost(
                 onNavigateToProgressionAnalytics = { exerciseId, exerciseName ->
                     navController.navigate(Routes.progressionAnalytics(exerciseId, exerciseName))
                 },
+                onNavigateToBodyComposition = {
+                    navController.navigate(Routes.BODY_COMPOSITION)
+                },
                 onNavigateBottomBar = onBottomNavigate
+            )
+        }
+
+        composable(Routes.BODY_COMPOSITION) {
+            BodyCompositionScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.presentation.camera.CameraPreviewScreen
+import com.gymcoach.app.presentation.analytics.MuscleBalanceScreen
 import com.gymcoach.app.presentation.detail.ExerciseDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryDetailScreen
 import com.gymcoach.app.presentation.history.WorkoutHistoryScreen
@@ -45,6 +46,7 @@ object Routes {
     const val CAMERA = "camera/{exerciseType}"
     const val TEMPLATES = "templates"
     const val PROGRESSION_ANALYTICS = "progression_analytics/{exerciseId}?exerciseName={exerciseName}"
+    const val MUSCLE_BALANCE = "muscle_balance"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -348,6 +350,12 @@ fun GymCoachNavHost(
             ProgressionAnalyticsScreen(
                 exerciseId = exerciseId,
                 exerciseName = exerciseName,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.MUSCLE_BALANCE) {
+            MuscleBalanceScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

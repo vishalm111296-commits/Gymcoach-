@@ -49,6 +49,7 @@ object Routes {
     const val PROGRESSION_ANALYTICS = "progression_analytics/{exerciseId}?exerciseName={exerciseName}"
     const val MUSCLE_BALANCE = "muscle_balance"
     const val STREAKS_AND_ACHIEVEMENTS = "streaks_and_achievements"
+    const val V_TAPER_TRANSFORMATION = "v_taper_transformation"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -364,6 +365,12 @@ fun GymCoachNavHost(
 
         composable(Routes.STREAKS_AND_ACHIEVEMENTS) {
             StreakAndAchievementScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.V_TAPER_TRANSFORMATION) {
+            com.gymcoach.app.presentation.analytics.VTaperTransformationScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

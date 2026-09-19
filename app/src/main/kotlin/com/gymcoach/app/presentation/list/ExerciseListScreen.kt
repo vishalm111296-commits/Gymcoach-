@@ -218,6 +218,7 @@ fun AnimatedFilterChip(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExerciseListScreen(

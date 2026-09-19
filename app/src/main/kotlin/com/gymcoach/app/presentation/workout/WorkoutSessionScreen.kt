@@ -1645,23 +1645,13 @@ internal fun WorkoutCompletionView(
     onDone: () -> Unit,
     onViewHistoryDetail: (Long) -> Unit
 ) {
-    // Animated scale-in entrance with spring bounce
-    val enterScale = androidx.compose.runtime.remember { Animatable(0.75f) }
+    // Animated fade-in entrance
     val enterAlpha = androidx.compose.runtime.remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        launch {
-            enterAlpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 350)
-            )
-        }
-        enterScale.animateTo(
+        enterAlpha.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
+            animationSpec = tween(durationMillis = 350)
         )
     }
 
@@ -1703,20 +1693,18 @@ internal fun WorkoutCompletionView(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(20.dp)
                 .graphicsLayer {
-                    scaleX = enterScale.value
-                    scaleY = enterScale.value
                     alpha = enterAlpha.value
                 }
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Animated celebration sparkle badge with radiant halo & spring bounce
             Box(
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.size(64.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // Outer radiant halo
@@ -1735,7 +1723,7 @@ internal fun WorkoutCompletionView(
                 }
                 Box(
                     modifier = Modifier
-                        .size(96.dp)
+                        .size(60.dp)
                         .graphicsLayer {
                             scaleX = sparkleScale * 1.12f
                             scaleY = sparkleScale * 1.12f
@@ -1749,7 +1737,7 @@ internal fun WorkoutCompletionView(
                 // Central celebratory circle
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(48.dp)
                         .graphicsLayer {
                             scaleX = sparkleScale
                             scaleY = sparkleScale
@@ -1765,7 +1753,7 @@ internal fun WorkoutCompletionView(
                         contentDescription = "Celebration Sparkles",
                         tint = Color.White,
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(24.dp)
                             .graphicsLayer {
                                 rotationZ = sparkleRotation
                             }
@@ -1773,7 +1761,7 @@ internal fun WorkoutCompletionView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Workout Crushed! 🔥",
@@ -1782,7 +1770,7 @@ internal fun WorkoutCompletionView(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "${summary.workoutName} • ${java.time.LocalDate.now()}",
@@ -1790,12 +1778,12 @@ internal fun WorkoutCompletionView(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // 2x2 Grid using Rows and Columns
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
                     title = "Total Volume",
@@ -1809,11 +1797,11 @@ internal fun WorkoutCompletionView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
                     title = "Sets Completed",
@@ -1828,7 +1816,7 @@ internal fun WorkoutCompletionView(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (summary.newPRs.isNotEmpty()) {
                 Text(
@@ -1838,7 +1826,7 @@ internal fun WorkoutCompletionView(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.align(Alignment.Start)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 summary.newPRs.forEach { pr ->
                     PRCard(pr)
@@ -1846,31 +1834,31 @@ internal fun WorkoutCompletionView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = onDone,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Done", style = MaterialTheme.typography.titleMedium)
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedButton(
                 onClick = { onViewHistoryDetail(summary.workoutId) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("View Detailed Breakdown", style = MaterialTheme.typography.titleMedium)
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }

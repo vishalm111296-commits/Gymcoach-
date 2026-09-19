@@ -92,6 +92,7 @@ fun ProgressDashboardScreen(
     onNavigateToMuscleBalance: () -> Unit = {},
     onNavigateToStreaks: () -> Unit = {},
     onNavigateToVTaper: () -> Unit = {},
+    onNavigateToBodyComposition: () -> Unit = {},
     onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
@@ -222,7 +223,16 @@ fun ProgressDashboardScreen(
                     Spacer(Modifier.height(16.dp))
 
                     // Body Measurements
-                    SectionHeader("Body Measurements")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SectionHeader("Body Measurements")
+                        TextButton(onClick = onNavigateToBodyComposition) {
+                            Text("Full Details \u2192")
+                        }
+                    }
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),

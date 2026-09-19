@@ -52,6 +52,7 @@ object Routes {
     const val STREAKS_AND_ACHIEVEMENTS = "streaks_and_achievements"
     const val V_TAPER_TRANSFORMATION = "v_taper_transformation"
     const val BODY_COMPOSITION = "body_composition"
+    const val STRENGTH_STANDARDS = "strength_standards"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -269,7 +270,14 @@ fun GymCoachNavHost(
                 onNavigateToStreaks = { navController.navigate(Routes.STREAKS_AND_ACHIEVEMENTS) },
                 onNavigateToVTaper = { navController.navigate(Routes.V_TAPER_TRANSFORMATION) },
                 onNavigateToBodyComposition = { navController.navigate(Routes.BODY_COMPOSITION) },
+                onNavigateToStrengthStandards = { navController.navigate(Routes.STRENGTH_STANDARDS) },
                 onNavigateBottomBar = onBottomNavigate
+            )
+        }
+
+        composable(Routes.STRENGTH_STANDARDS) {
+            com.gymcoach.app.presentation.standards.StrengthStandardsScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

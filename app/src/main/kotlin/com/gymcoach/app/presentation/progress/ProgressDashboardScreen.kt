@@ -95,6 +95,7 @@ fun ProgressDashboardScreen(
     onNavigateToStreaks: () -> Unit = {},
     onNavigateToVTaper: () -> Unit = {},
     onNavigateToBodyComposition: () -> Unit = {},
+    onNavigateToStrengthStandards: () -> Unit = {},
     onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
@@ -200,7 +201,8 @@ fun ProgressDashboardScreen(
                     AdvancedAnalyticsHub(
                         onNavigateToVTaper = onNavigateToVTaper,
                         onNavigateToMuscleBalance = onNavigateToMuscleBalance,
-                        onNavigateToStreaks = onNavigateToStreaks
+                        onNavigateToStreaks = onNavigateToStreaks,
+                        onNavigateToStrengthStandards = onNavigateToStrengthStandards
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -1245,7 +1247,8 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
 private fun AdvancedAnalyticsHub(
     onNavigateToVTaper: () -> Unit,
     onNavigateToMuscleBalance: () -> Unit,
-    onNavigateToStreaks: () -> Unit
+    onNavigateToStreaks: () -> Unit,
+    onNavigateToStrengthStandards: () -> Unit
 ) {
     SectionHeader("Advanced Telemetry & Analytics")
     Spacer(Modifier.height(8.dp))
@@ -1267,6 +1270,20 @@ private fun AdvancedAnalyticsHub(
             icon = Icons.Filled.FitnessCenter,
             accentColor = Color(0xFF00F2FE),
             onClick = onNavigateToMuscleBalance,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AnalyticsFeatureCard(
+            title = "Standards",
+            subtitle = "Strength Tier & PRs",
+            icon = Icons.Filled.EmojiEvents,
+            accentColor = Color(0xFFFFB300),
+            onClick = onNavigateToStrengthStandards,
             modifier = Modifier.weight(1f)
         )
         AnalyticsFeatureCard(

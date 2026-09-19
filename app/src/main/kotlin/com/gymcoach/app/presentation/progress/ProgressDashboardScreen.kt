@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -1254,7 +1256,7 @@ private fun AdvancedAnalyticsHub(
         AnalyticsFeatureCard(
             title = "V-Taper",
             subtitle = "Adonis Telemetry",
-            icon = Icons.Default.LocalFireDepartment,
+            icon = Icons.Filled.Whatshot,
             accentColor = Color(0xFF6C63FF),
             onClick = onNavigateToVTaper,
             modifier = Modifier.weight(1f)
@@ -1262,7 +1264,7 @@ private fun AdvancedAnalyticsHub(
         AnalyticsFeatureCard(
             title = "Balance",
             subtitle = "Antagonist Ratios",
-            icon = Icons.Default.FitnessCenter,
+            icon = Icons.Filled.FitnessCenter,
             accentColor = Color(0xFF00F2FE),
             onClick = onNavigateToMuscleBalance,
             modifier = Modifier.weight(1f)
@@ -1270,7 +1272,7 @@ private fun AdvancedAnalyticsHub(
         AnalyticsFeatureCard(
             title = "Streaks",
             subtitle = "Consistency Badges",
-            icon = Icons.Default.EmojiEvents,
+            icon = Icons.Filled.EmojiEvents,
             accentColor = Color(0xFFFFB300),
             onClick = onNavigateToStreaks,
             modifier = Modifier.weight(1f)

@@ -297,4 +297,60 @@ class WorkoutLoggingViewModelCollectorTest {
             viewModel.clearForTest()
         }
     }
+
+    @Test
+    fun `swapExercise invokes repository swapExercise and refreshes performance stats`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(
+            id = 77L,
+            date = now,
+            startTime = now,
+            endTime = now,
+            duration = 0,
+            completed = false,
+            status = "ACTIVE",
+            notes = ""
+        )
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 101L, workoutId = 77L, exerciseId = 1L, orderIndex = 0),
+                    exercise = Exercise(id = 1L, name = "Barbell Bench Press", description = "Chest press", category = "push", muscleGroup = "Chest", equipment = "barbell", difficulty = "intermediate"),
+                    sets = emptyList()
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(77L) } returns flowOf(details)
+        coEvery { workoutRepository.getLastSetsForExercise(2L) } returns emptyList()
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.loadOrStartWorkout(77L)
+            kotlinx.coroutines.delay(100)
+
+            // Swap exercise 0 (exerciseId 1) with exerciseId 2 (Dumbbell Bench Press)
+            viewModel.swapExercise(exerciseIndex = 0, newExerciseId = 2L)
+            kotlinx.coroutines.delay(100)
+
+            coVerify(exactly = 1) { workoutRepository.swapExercise(101L, 2L) }
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
 }

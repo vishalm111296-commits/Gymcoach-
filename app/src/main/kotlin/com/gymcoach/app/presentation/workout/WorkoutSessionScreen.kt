@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.workout
 
+import com.gymcoach.app.presentation.workout.components.ExerciseSubstitutionDialog
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
 import com.gymcoach.app.presentation.workout.components.WarmupCalculatorDialog
 
@@ -47,6 +48,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
@@ -167,6 +169,9 @@ fun WorkoutSessionScreen(
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
     var warmupDialogData by rememberSaveable { mutableStateOf<Triple<Int, String, Double>?>(null) }
+    var substitutionDialogData by rememberSaveable { mutableStateOf<Triple<Int, Long, String>?>(null) }
+    val substitutes by viewModel.substitutes.collectAsState()
+    val isSubstitutionLoading by viewModel.isSubstitutionLoading.collectAsState()
     var pickerSearchQuery by rememberSaveable { mutableStateOf("") }
     var pickerSelectedCategory by rememberSaveable { mutableStateOf("All") }
     var showCreateCustomExerciseInWorkout by rememberSaveable { mutableStateOf(false) }
@@ -352,6 +357,10 @@ fun WorkoutSessionScreen(
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
                                onOpenPlateCalculator = { w -> plateCalcWeight = w },
                                onOpenWarmupCalculator = { w -> warmupDialogData = Triple(exIdx, we.exercise.name, w) },
+                               onSubstituteExercise = {
+                                   substitutionDialogData = Triple(exIdx, we.exercise.id, we.exercise.name)
+                                   viewModel.loadSubstitutesForExercise(we.exercise.id)
+                               },
                                onCameraClick = { type ->
                                    activeCameraExerciseIndex = exIdx
                                    onCameraClick(type)
@@ -436,6 +445,20 @@ fun WorkoutSessionScreen(
                 viewModel.addWarmupSets(exIdx, warmupSets)
             },
             onDismiss = { warmupDialogData = null }
+        )
+    }
+
+    if (substitutionDialogData != null) {
+        val (exIdx, _, exName) = substitutionDialogData!!
+        ExerciseSubstitutionDialog(
+            currentExerciseName = exName,
+            substitutes = substitutes,
+            isLoading = isSubstitutionLoading,
+            onSelectSubstitute = { newExerciseId ->
+                viewModel.swapExercise(exIdx, newExerciseId)
+                substitutionDialogData = null
+            },
+            onDismiss = { substitutionDialogData = null }
         )
     }
 
@@ -838,6 +861,7 @@ internal fun ExerciseSetCard(
     onToggleComplete: (Int) -> Unit,
     onOpenPlateCalculator: (Double) -> Unit = {},
     onOpenWarmupCalculator: (Double) -> Unit = {},
+    onSubstituteExercise: () -> Unit = {},
     onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
@@ -1000,6 +1024,13 @@ internal fun ExerciseSetCard(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = "Warm-Up Protocol",
                             tint = GymCoachColors.Primary
+                        )
+                    }
+                    IconButton(onClick = onSubstituteExercise) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "Substitute Exercise",
+                            tint = GymCoachColors.CyanAccent
                         )
                     }
                     IconButton(onClick = onRemoveExercise) {

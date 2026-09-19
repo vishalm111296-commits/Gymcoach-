@@ -102,6 +102,10 @@ class WorkoutRepositoryImpl @Inject constructor(
         entity?.let { workoutDao.deleteWorkoutExercise(it) }
     }
 
+    override suspend fun swapExercise(workoutExerciseId: Long, newExerciseId: Long) {
+        workoutDao.swapExerciseAtomic(workoutExerciseId, newExerciseId)
+    }
+
     override suspend fun addSetToExercise(workoutExerciseId: Long, set: WorkoutSet): Long {
         return workoutDao.addSetToExerciseAtomic(workoutExerciseId, set.toWorkoutSetEntity().copy(workoutExerciseId = workoutExerciseId))
     }

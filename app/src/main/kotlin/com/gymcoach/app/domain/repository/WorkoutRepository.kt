@@ -19,6 +19,7 @@ interface WorkoutRepository {
     suspend fun deleteWorkout(workoutId: Long)
     suspend fun addExerciseToWorkout(workoutId: Long, exerciseId: Long, orderIndex: Int): Long
     suspend fun removeExerciseFromWorkout(workoutExerciseId: Long)
+    suspend fun swapExercise(workoutExerciseId: Long, newExerciseId: Long)
     suspend fun addSetToExercise(workoutExerciseId: Long, set: WorkoutSet): Long
     suspend fun updateSet(set: WorkoutSet)
     suspend fun deleteSet(setId: Long)

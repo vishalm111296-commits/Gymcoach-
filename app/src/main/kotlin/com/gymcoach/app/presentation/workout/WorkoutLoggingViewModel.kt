@@ -44,7 +44,8 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val userProfileRepository: UserProfileRepository,
     private val readinessRepository: ReadinessRepository,
     private val personalRecordDao: com.gymcoach.app.data.local.dao.PersonalRecordDao,
-    private val prDetector: com.gymcoach.app.core.progression.PRDetector
+    private val prDetector: com.gymcoach.app.core.progression.PRDetector,
+    private val substitutionEngine: com.gymcoach.app.core.exercise.SubstitutionEngine? = null
 ) : ViewModel() {
 
     // Test backward compatibility constructor
@@ -78,7 +79,8 @@ class WorkoutLoggingViewModel @Inject constructor(
             override suspend fun getById(id: Long): com.gymcoach.app.data.local.entity.PersonalRecordEntity? = null
             override suspend fun deleteById(id: Long): Int = 0
         },
-        com.gymcoach.app.core.progression.PRDetector()
+        com.gymcoach.app.core.progression.PRDetector(),
+        null
     )
 
     val latestReadiness: StateFlow<ReadinessEntity?> = readinessRepository.getLatestReadiness()
@@ -142,6 +144,13 @@ class WorkoutLoggingViewModel @Inject constructor(
     // Progression recommendations: exerciseId -> recommendation
     private val _progressionRecommendations = MutableStateFlow<Map<Long, ProgressionRecommendation>>(emptyMap())
     val progressionRecommendations: StateFlow<Map<Long, ProgressionRecommendation>> = _progressionRecommendations.asStateFlow()
+
+    // Substitution state
+    private val _substitutes = MutableStateFlow<List<com.gymcoach.app.core.exercise.SubstitutionEngine.SubstitutionResult>>(emptyList())
+    val substitutes: StateFlow<List<com.gymcoach.app.core.exercise.SubstitutionEngine.SubstitutionResult>> = _substitutes.asStateFlow()
+
+    private val _isSubstitutionLoading = MutableStateFlow(false)
+    val isSubstitutionLoading: StateFlow<Boolean> = _isSubstitutionLoading.asStateFlow()
 
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
@@ -552,6 +561,70 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _progressionRecommendations.value = updated
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to remove exercise"
+            }
+        }
+    }
+
+    fun loadSubstitutesForExercise(exerciseId: Long) {
+        viewModelScope.launch {
+            _isSubstitutionLoading.value = true
+            val engine = substitutionEngine
+            if (engine == null) {
+                _substitutes.value = emptyList()
+                _isSubstitutionLoading.value = false
+                return@launch
+            }
+            val userProfile = userProfileRepository.getLatestProfile().firstOrNull()
+            val equipmentType = userProfile?.equipmentType ?: "gym"
+            try {
+                _substitutes.value = engine.findSubstitutes(exerciseId, equipmentType, maxResults = 5)
+            } catch (_: Exception) {
+                _substitutes.value = emptyList()
+            } finally {
+                _isSubstitutionLoading.value = false
+            }
+        }
+    }
+
+    suspend fun getSubstitutesForExercise(exerciseId: Long): List<com.gymcoach.app.core.exercise.SubstitutionEngine.SubstitutionResult> {
+        val engine = substitutionEngine ?: return emptyList()
+        val userProfile = userProfileRepository.getLatestProfile().firstOrNull()
+        val equipmentType = userProfile?.equipmentType ?: "gym"
+        return try {
+            engine.findSubstitutes(exerciseId, equipmentType, maxResults = 5)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    fun swapExercise(exerciseIndex: Int, newExerciseId: Long) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices) return
+        val we = workout.exercises[exerciseIndex]
+
+        viewModelScope.launch {
+            try {
+                addSetMutex.withLock {
+                    workoutRepository.swapExercise(we.workoutExercise.id, newExerciseId)
+
+                    // Refresh previous performance for the newly swapped exercise
+                    val lastSets = workoutRepository.getLastSetsForExercise(newExerciseId)
+                    if (lastSets.isNotEmpty()) {
+                        _previousPerformance.value = _previousPerformance.value + (newExerciseId to lastSets)
+                    }
+                    val lastPerf = workoutRepository.getLastPerformanceForExercise(newExerciseId)
+                    if (lastPerf != null) {
+                        _lastPerformanceSummary.value = _lastPerformanceSummary.value + (newExerciseId to lastPerf)
+                    }
+
+                    // Recalculate progression for updated workout
+                    val refreshed = _currentWorkout.value
+                    if (refreshed != null) {
+                        calculateProgressionRecommendations(refreshed.exercises)
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to substitute exercise"
             }
         }
     }

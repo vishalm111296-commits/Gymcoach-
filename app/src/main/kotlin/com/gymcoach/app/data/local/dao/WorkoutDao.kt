@@ -235,6 +235,12 @@ abstract class WorkoutDao {
     }
 
     @Transaction
+    open suspend fun swapExerciseAtomic(workoutExerciseId: Long, newExerciseId: Long) {
+        val existing = getWorkoutExerciseById(workoutExerciseId) ?: return
+        updateWorkoutExercise(existing.copy(exerciseId = newExerciseId))
+    }
+
+    @Transaction
     open suspend fun addSetToExerciseAtomic(workoutExerciseId: Long, set: WorkoutSetEntity): Long {
         val nextSetNumber = getNextSetNumberForExercise(workoutExerciseId)
         val entity = set.copy(setNumber = nextSetNumber)

@@ -1,7 +1,25 @@
 package com.gymcoach.app.presentation.list
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +48,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,22 +55,29 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,7 +101,124 @@ private fun ExerciseType.displayLabel(): String =
         .split('_')
         .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Animated filter chip with color blending, spring press scale,
+ * and a sliding/expanding selection indicator dot.
+ */
+@Composable
+fun AnimatedFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) AccentBlue else DarkSurface,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipBg"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) Color.White else TextSecondary,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipContent"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) AccentBlue else GymCoachColors.BorderSubtle,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipBorder"
+    )
+    val scale by animateFloatAsState(
+        targetValue = when {
+            isPressed -> 0.94f
+            selected -> 1.03f
+            else -> 1.0f
+        },
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "chipScale"
+    )
+
+    Surface(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(GymCoachShapes.pill)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Checkbox,
+                onClick = onClick
+            )
+            .semantics {
+                this.selected = selected
+            }
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ),
+        shape = GymCoachShapes.pill,
+        color = backgroundColor,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (selected) 14.dp else 12.dp,
+                vertical = 7.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            // Size / indicator slide when selected
+            AnimatedVisibility(
+                visible = selected,
+                enter = fadeIn(animationSpec = tween(150)) + expandHorizontally(
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    expandFrom = Alignment.Start
+                ),
+                exit = fadeOut(animationSpec = tween(100)) + shrinkHorizontally(
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    shrinkTowards = Alignment.Start
+                )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+            }
+
+            if (leadingIcon != null && !selected) {
+                leadingIcon()
+                Spacer(Modifier.width(4.dp))
+            }
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 13.sp
+                ),
+                color = contentColor
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExerciseListScreen(
     viewModel: ExerciseViewModel = hiltViewModel(),
@@ -104,6 +244,39 @@ fun ExerciseListScreen(
 
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" ||
             filterMovementPattern != "All" || showFavoritesOnly
+
+    val favTint by animateColorAsState(
+        targetValue = if (showFavoritesOnly) Color(0xFFF43F5E) else TextSecondary,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "favTint"
+    )
+    val favScale by animateFloatAsState(
+        targetValue = if (showFavoritesOnly) 1.2f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "favScale"
+    )
+
+    val filterBtnBg by animateColorAsState(
+        targetValue = if (hasActiveFilter) AccentBlue.copy(alpha = 0.18f) else DarkSurface,
+        animationSpec = tween(200),
+        label = "filterBtnBg"
+    )
+    val filterBtnTint by animateColorAsState(
+        targetValue = if (hasActiveFilter) AccentBlue else TextSecondary,
+        animationSpec = tween(200),
+        label = "filterBtnTint"
+    )
+    val filterDotScale by animateFloatAsState(
+        targetValue = if (hasActiveFilter) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "filterDotScale"
+    )
 
     Scaffold(
         containerColor = DarkBackground,
@@ -136,12 +309,16 @@ fun ExerciseListScreen(
                     }
                 },
                 actions = {
-                    // Favorites Toggle
+                    // Favorites Toggle with spring bounce
                     IconButton(onClick = { viewModel.toggleFavoritesOnly() }) {
                         Icon(
                             imageVector = if (showFavoritesOnly) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = "Toggle Favorites",
-                            tint = if (showFavoritesOnly) Color(0xFFF43F5E) else TextSecondary
+                            tint = favTint,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = favScale
+                                scaleY = favScale
+                            }
                         )
                     }
                     // Camera / Form Tracking
@@ -231,26 +408,30 @@ fun ExerciseListScreen(
                     )
                 )
 
-                // Dedicated Filter Trigger Button with Active State Dot
+                // Dedicated Filter Trigger Button with Animated Dot
                 Box {
                     IconButton(
                         onClick = { showFilterSheet = true },
                         modifier = Modifier
                             .clip(GymCoachShapes.md)
-                            .background(if (hasActiveFilter) AccentBlue.copy(alpha = 0.18f) else DarkSurface)
+                            .background(filterBtnBg)
                             .padding(4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "Filter",
-                            tint = if (hasActiveFilter) AccentBlue else TextSecondary,
+                            tint = filterBtnTint,
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    if (hasActiveFilter) {
+                    if (filterDotScale > 0.05f) {
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
+                                .graphicsLayer {
+                                    scaleX = filterDotScale
+                                    scaleY = filterDotScale
+                                }
                                 .clip(CircleShape)
                                 .background(AccentBlue)
                                 .align(Alignment.TopEnd)
@@ -259,7 +440,7 @@ fun ExerciseListScreen(
                 }
             }
 
-            // Category Chips Row (Horizontal Scroll)
+            // Category Chips Row (Horizontal Scroll with AnimatedFilterChip)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -270,114 +451,108 @@ fun ExerciseListScreen(
                 Spacer(Modifier.width(8.dp))
                 viewModel.categories.forEachIndexed { index, category ->
                     val isSelected = tabIndex == index
-                    FilterChip(
+                    AnimatedFilterChip(
                         selected = isSelected,
                         onClick = {
                             tabIndex = index
                             viewModel.onCategorySelected(category)
                         },
-                        label = {
-                            Text(
-                                text = category,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            )
-                        },
-                        shape = GymCoachShapes.pill,
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = DarkSurface,
-                            labelColor = TextSecondary,
-                            selectedContainerColor = AccentBlue,
-                            selectedLabelColor = Color.White
-                        ),
-                        border = if (isSelected) null else FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = false,
-                            borderColor = GymCoachColors.BorderSubtle
-                        )
+                        label = category
                     )
                 }
                 Spacer(Modifier.width(8.dp))
             }
 
-            // Main List or Empty State
-            if (exercises.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Main List or Empty State with AnimatedContent
+            AnimatedContent(
+                targetState = exercises.isEmpty(),
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(150))
+                },
+                label = "catalogContentAnim"
+            ) { isEmpty ->
+                if (isEmpty) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = TextTertiary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "No exercises found",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Try adjusting your search keywords or resetting filters.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
-                        if (hasActiveFilter) {
-                            Spacer(Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    viewModel.onDifficultySelected("All")
-                                    viewModel.onEquipmentSelected("All")
-                                    viewModel.onMovementPatternSelected("All")
-                                    if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
-                                    textFieldValue = ""
-                                    viewModel.onSearchQueryChange("")
-                                },
-                                shape = GymCoachShapes.pill
-                            ) {
-                                Text("Reset All Filters")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = TextTertiary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "No exercises found",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Try adjusting your search keywords or resetting filters.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                            if (hasActiveFilter) {
+                                Spacer(Modifier.height(8.dp))
+                                Button(
+                                    onClick = {
+                                        viewModel.onDifficultySelected("All")
+                                        viewModel.onEquipmentSelected("All")
+                                        viewModel.onMovementPatternSelected("All")
+                                        if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
+                                        textFieldValue = ""
+                                        viewModel.onSearchQueryChange("")
+                                    },
+                                    shape = GymCoachShapes.pill
+                                ) {
+                                    Text("Reset All Filters")
+                                }
                             }
                         }
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(exercises, key = { it.id }) { exercise ->
-                        val hasRealAnimation = animatedNames.contains(exercise.name.trim().lowercase()) ||
-                                !exercise.animationUrl.isNullOrBlank()
-                        ExerciseItemCard(
-                            name = exercise.name,
-                            muscleGroup = exercise.muscleGroup,
-                            difficulty = exercise.difficulty,
-                            equipment = exercise.equipment,
-                            movementPattern = exercise.movementPattern,
-                            isFavorite = exercise.isFavorite,
-                            hasAnimation = hasRealAnimation,
-                            isCustom = exercise.isCustom,
-                            onFavoriteToggle = { viewModel.toggleFavorite(exercise) },
-                            onClick = { onExerciseClick(exercise.id) }
-                        )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(exercises, key = { it.id }) { exercise ->
+                            val hasRealAnimation = animatedNames.contains(exercise.name.trim().lowercase()) ||
+                                    !exercise.animationUrl.isNullOrBlank()
+                            ExerciseItemCard(
+                                modifier = Modifier.animateItemPlacement(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                ),
+                                name = exercise.name,
+                                muscleGroup = exercise.muscleGroup,
+                                difficulty = exercise.difficulty,
+                                equipment = exercise.equipment,
+                                movementPattern = exercise.movementPattern,
+                                isFavorite = exercise.isFavorite,
+                                hasAnimation = hasRealAnimation,
+                                isCustom = exercise.isCustom,
+                                onFavoriteToggle = { viewModel.toggleFavorite(exercise) },
+                                onClick = { onExerciseClick(exercise.id) }
+                            )
+                        }
                     }
                 }
-
             }
         }
     }
 
-    // Filter Bottom Sheet
+    // Filter Bottom Sheet with AnimatedFilterChips
     if (showFilterSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
@@ -405,11 +580,10 @@ fun ExerciseListScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     viewModel.difficulties.forEach { diff ->
-                        FilterChip(
+                        AnimatedFilterChip(
                             selected = diff == filterDifficulty,
                             onClick = { viewModel.onDifficultySelected(diff) },
-                            label = { Text(diff) },
-                            shape = GymCoachShapes.pill
+                            label = diff
                         )
                     }
                 }
@@ -424,11 +598,10 @@ fun ExerciseListScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     viewModel.movementPatterns.forEach { pattern ->
-                        FilterChip(
+                        AnimatedFilterChip(
                             selected = pattern == filterMovementPattern,
                             onClick = { viewModel.onMovementPatternSelected(pattern) },
-                            label = { Text(pattern) },
-                            shape = GymCoachShapes.pill
+                            label = pattern
                         )
                     }
                 }
@@ -443,11 +616,10 @@ fun ExerciseListScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     viewModel.equipments.forEach { eq ->
-                        FilterChip(
+                        AnimatedFilterChip(
                             selected = eq == filterEquipment,
                             onClick = { viewModel.onEquipmentSelected(eq) },
-                            label = { Text(eq) },
-                            shape = GymCoachShapes.pill
+                            label = eq
                         )
                     }
                 }

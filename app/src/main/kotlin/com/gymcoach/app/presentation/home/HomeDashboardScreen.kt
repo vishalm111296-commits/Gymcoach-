@@ -27,6 +27,18 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,11 +49,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,64 +123,108 @@ fun HomeDashboardScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            GreetingHeader(state)
+            StaggeredDashboardItem(index = 0, isLoading = state.isLoading) {
+                GreetingHeader(state)
+            }
 
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = AccentBlue)
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = AccentBlue)
+                }
+            } else {
+                StaggeredDashboardItem(index = 1, isLoading = state.isLoading) {
+                    if (state.todayWorkout == null) {
+                        EmptyProgramCard(onViewProgram)
+                    } else {
+                        // Subtle pulsing glow and gentle breathing pulse on active workout card
+                        val infiniteTransition = rememberInfiniteTransition(label = "heroPulseTransition")
+                        val heroScale by infiniteTransition.animateFloat(
+                            initialValue = 1.0f,
+                            targetValue = 1.015f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "heroCardScale"
+                        )
+                        val heroBorderAlpha by infiniteTransition.animateFloat(
+                            initialValue = 0.35f,
+                            targetValue = 0.85f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "heroBorderAlpha"
+                        )
+
+                        TodayWorkoutCard(
+                            workoutName = state.todayWorkout?.name ?: "",
+                            targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
+                            exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
+                            estimatedDuration = state.todayWorkout?.estimatedDurationMin ?: 0,
+                            onStartClick = { viewModel.startTodayWorkout { id -> onStartWorkout(id) } },
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = heroScale
+                                    scaleY = heroScale
+                                }
+                                .drawWithContent {
+                                    drawContent()
+                                    drawRoundRect(
+                                        color = AccentBlue.copy(alpha = heroBorderAlpha),
+                                        cornerRadius = CornerRadius(18.dp.toPx()),
+                                        style = Stroke(width = 1.dp.toPx())
+                                    )
+                                }
+                        )
                     }
                 }
 
-                state.todayWorkout == null -> {
-                    EmptyProgramCard(onViewProgram)
+                // Recovery & Readiness Quick Card
+                StaggeredDashboardItem(index = 2, isLoading = state.isLoading) {
+                    ReadinessDashboardCard(
+                        readiness = state.latestReadiness,
+                        onClick = onNavigateToReadiness
+                    )
                 }
 
-                else -> {
-                    TodayWorkoutCard(
-                        workoutName = state.todayWorkout?.name ?: "",
-                        targetMuscles = state.todayWorkout?.targetMuscles ?: emptyList(),
-                        exerciseCount = state.todayWorkout?.exerciseCount ?: 0,
-                        estimatedDuration = state.todayWorkout?.estimatedDurationMin ?: 0,
-                        onStartClick = { viewModel.startTodayWorkout { id -> onStartWorkout(id) } }
+                // Weekly Consistency & PR Summary
+                StaggeredDashboardItem(index = 3, isLoading = state.isLoading) {
+                    WeeklyConsistencyCard(
+                        workoutsThisWeek = state.workoutsThisWeek,
+                        targetWorkouts = state.targetWorkouts,
+                        prCount = state.prCount
+                    )
+                }
+
+                // Coach Insight Card
+                if (state.coachInsight.isNotBlank()) {
+                    StaggeredDashboardItem(index = 4, isLoading = state.isLoading) {
+                        CoachInsightCard(state.coachInsight)
+                    }
+                }
+
+                // V-Taper Focus if available
+                if (state.vtaperBars.isNotEmpty()) {
+                    StaggeredDashboardItem(index = 5, isLoading = state.isLoading) {
+                        VtaperFocusCard(muscleData = state.vtaperBars)
+                    }
+                }
+
+                // Quick Actions: Blank Workout, Templates, Exercise Library
+                StaggeredDashboardItem(index = 6, isLoading = state.isLoading) {
+                    QuickActionsSection(
+                        onStartBlankWorkout = { onStartWorkout(null) },
+                        onNavigateToTemplates = onNavigateToTemplates,
+                        onNavigateToExercises = onNavigateToExercises
                     )
                 }
             }
-
-            // Recovery & Readiness Quick Card
-            ReadinessDashboardCard(
-                readiness = state.latestReadiness,
-                onClick = onNavigateToReadiness
-            )
-
-            // Weekly Consistency & PR Summary
-            WeeklyConsistencyCard(
-                workoutsThisWeek = state.workoutsThisWeek,
-                targetWorkouts = state.targetWorkouts,
-                prCount = state.prCount
-            )
-
-            // Coach Insight Card
-            if (state.coachInsight.isNotBlank()) {
-                CoachInsightCard(state.coachInsight)
-            }
-
-            // V-Taper Focus if available
-            if (state.vtaperBars.isNotEmpty()) {
-                VtaperFocusCard(muscleData = state.vtaperBars)
-            }
-
-            // Quick Actions: Blank Workout, Templates, Exercise Library
-            QuickActionsSection(
-                onStartBlankWorkout = { onStartWorkout(null) },
-                onNavigateToTemplates = onNavigateToTemplates,
-                onNavigateToExercises = onNavigateToExercises
-            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -218,6 +282,17 @@ private fun ReadinessDashboardCard(
     val isToday = readiness?.isRecordedToday == true
     val score = readiness?.readinessScore ?: 0.0
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val cardScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "readinessPressScale"
+    )
+
     val (badgeColor, statusLabel) = when {
         !isToday || readiness == null -> Pair(TextTertiary, "Check-in Pending")
         score >= 4.0 -> Pair(GymCoachColors.Success, "Optimal Recovery")
@@ -226,10 +301,22 @@ private fun ReadinessDashboardCard(
         else -> Pair(GymCoachColors.Danger, "Rest Advised")
     }
 
+    val targetProgress = (score / 5.0).toFloat().coerceIn(0.05f, 1.0f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = targetProgress,
+        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
+        label = "readinessProgressAnim"
+    )
+
     Card(
         onClick = onClick,
+        interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
             .clip(GymCoachShapes.md)
             .border(GymCoachBorders.subtle, GymCoachShapes.md),
         colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
@@ -283,7 +370,7 @@ private fun ReadinessDashboardCard(
                 if (isToday && readiness != null) {
                     Spacer(Modifier.height(4.dp))
                     LinearProgressIndicator(
-                        progress = { (score / 5.0).toFloat().coerceIn(0.05f, 1.0f) },
+                        progress = { animatedProgress },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp)
@@ -310,6 +397,35 @@ private fun WeeklyConsistencyCard(
     targetWorkouts: Int,
     prCount: Int
 ) {
+    val maxTarget = targetWorkouts.coerceIn(1, 7)
+    val weeklyFraction = (workoutsThisWeek.toFloat() / maxTarget).coerceIn(0f, 1f)
+    val animatedWeeklyProgress by animateFloatAsState(
+        targetValue = weeklyFraction,
+        animationSpec = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+        label = "weeklyGoalProgressAnim"
+    )
+
+    // Subtle pulsing glow for streak / PR achievement
+    val infiniteTransition = rememberInfiniteTransition(label = "weeklyStreakInfinite")
+    val prPulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "prPulseScale"
+    )
+    val prGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "prGlowAlpha"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -352,22 +468,55 @@ private fun WeeklyConsistencyCard(
                     )
                 }
 
-                // Progress Indicator Dots
+                // Progress Indicator Dots with animated scale & color
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val maxTarget = targetWorkouts.coerceIn(1, 7)
                     for (i in 1..maxTarget) {
                         val isDone = i <= workoutsThisWeek
+                        val dotScale by animateFloatAsState(
+                            targetValue = if (isDone) 1f else 0.85f,
+                            animationSpec = tween(
+                                durationMillis = 400,
+                                delayMillis = (i - 1) * 70,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "dotScale_$i"
+                        )
+                        val dotColor by animateColorAsState(
+                            targetValue = if (isDone) AccentBlue else DarkSurface,
+                            animationSpec = tween(
+                                durationMillis = 400,
+                                delayMillis = (i - 1) * 70,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "dotColor_$i"
+                        )
                         Box(
                             modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = dotScale
+                                    scaleY = dotScale
+                                }
                                 .size(width = 16.dp, height = 5.dp)
                                 .clip(CircleShape)
-                                .background(if (isDone) AccentBlue else DarkSurface)
+                                .background(dotColor)
                         )
                     }
                 }
+
+                Spacer(Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { animatedWeeklyProgress },
+                    modifier = Modifier
+                        .width(130.dp)
+                        .height(3.dp)
+                        .clip(CircleShape),
+                    color = AccentBlue,
+                    trackColor = GymCoachColors.SurfaceInput
+                )
             }
 
             // PR Count if any
@@ -384,7 +533,13 @@ private fun WeeklyConsistencyCard(
                             imageVector = Icons.Default.EmojiEvents,
                             contentDescription = null,
                             tint = GymCoachColors.GoldAccent,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier
+                                .size(17.dp)
+                                .graphicsLayer {
+                                    scaleX = prPulseScale
+                                    scaleY = prPulseScale
+                                    alpha = prGlowAlpha
+                                }
                         )
                         Text(
                             text = "$prCount PRs",
@@ -501,9 +656,25 @@ private fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val tileScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.93f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "actionTileScale"
+    )
+
     Card(
         onClick = onClick,
+        interactionSource = interactionSource,
         modifier = modifier
+            .graphicsLayer {
+                scaleX = tileScale
+                scaleY = tileScale
+            }
             .clip(GymCoachShapes.sm)
             .border(GymCoachBorders.subtle, GymCoachShapes.sm),
         colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
@@ -534,6 +705,17 @@ private fun ActionTile(
 
 @Composable
 private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
+    val btnInteractionSource = remember { MutableInteractionSource() }
+    val isPressed by btnInteractionSource.collectIsPressedAsState()
+    val btnScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "emptyProgramBtnScale"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -566,14 +748,69 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
             )
             Button(
                 onClick = onSetUpPlan,
+                interactionSource = btnInteractionSource,
                 shape = GymCoachShapes.md,
                 colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
+                    .graphicsLayer {
+                        scaleX = btnScale
+                        scaleY = btnScale
+                    }
             ) {
                 Text("Generate or Build Program", fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+/**
+ * Staggered entrance animation wrapper for dashboard sections.
+ * Combines a subtle vertical translation with fade-in based on item index.
+ */
+@Composable
+private fun StaggeredDashboardItem(
+    index: Int,
+    isLoading: Boolean = false,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            visible = true
+        }
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 420,
+            delayMillis = index * 55,
+            easing = FastOutSlowInEasing
+        ),
+        label = "staggeredAlpha_$index"
+    )
+
+    val translateY by animateFloatAsState(
+        targetValue = if (visible) 0f else 26f,
+        animationSpec = tween(
+            durationMillis = 450,
+            delayMillis = index * 55,
+            easing = FastOutSlowInEasing
+        ),
+        label = "staggeredTranslateY_$index"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                this.alpha = alpha
+                this.translationY = translateY
+            }
+    ) {
+        content()
     }
 }

@@ -86,6 +86,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -103,7 +104,40 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutSessionScreen(
     onBackClick: () -> Unit,
@@ -259,20 +293,32 @@ fun WorkoutSessionScreen(
 
                     // Rest timer card with preset buttons
                     if (restTimerState.isRunning) {
-                        item {
-                            RestTimerCard(
-                                timeRemaining = restTimerState.timeRemaining,
-                                totalDuration = restTimerState.totalDuration,
-                                isPaused = restTimerState.isPaused,
-                                onPauseResume = {
-                                    if (restTimerState.isPaused) viewModel.resumeRestTimer()
-                                    else viewModel.pauseRestTimer()
-                                },
-                                onSkip = { viewModel.stopRestTimer() },
-                                onAddFifteen = { viewModel.adjustRestTimer(15) },
-                                onSubtractFifteen = { viewModel.adjustRestTimer(-15) },
-                                onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
-                            )
+                        item(key = "rest_timer_card") {
+                            AnimatedVisibility(
+                                visible = restTimerState.isRunning,
+                                enter = fadeIn() + expandVertically(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                ),
+                                exit = fadeOut() + shrinkVertically(),
+                                modifier = Modifier.animateItemPlacement()
+                            ) {
+                                RestTimerCard(
+                                    timeRemaining = restTimerState.timeRemaining,
+                                    totalDuration = restTimerState.totalDuration,
+                                    isPaused = restTimerState.isPaused,
+                                    onPauseResume = {
+                                        if (restTimerState.isPaused) viewModel.resumeRestTimer()
+                                        else viewModel.pauseRestTimer()
+                                    },
+                                    onSkip = { viewModel.stopRestTimer() },
+                                    onAddFifteen = { viewModel.adjustRestTimer(15) },
+                                    onSubtractFifteen = { viewModel.adjustRestTimer(-15) },
+                                    onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
+                                )
+                            }
                         }
                     }
 
@@ -284,6 +330,7 @@ fun WorkoutSessionScreen(
                             val lastPerf = lastPerformanceSummary[we.exercise.id]
 
                             ExerciseSetCard(
+                               modifier = Modifier.animateItemPlacement(),
                                exerciseName = we.exercise.name,
                                muscleGroup = we.exercise.muscleGroup,
                                sets = we.sets,
@@ -503,7 +550,7 @@ fun WorkoutSessionScreen(
     }
 }
 
-// Rest timer card with progress bar and quick-select preset buttons.
+// Rest timer card with circular progress sweep, resting pulse, and quick-select preset buttons.
 @Composable
 private fun RestTimerCard(
     timeRemaining: Int,
@@ -515,6 +562,46 @@ private fun RestTimerCard(
     onSubtractFifteen: () -> Unit,
     onPresetTap: (Int) -> Unit
 ) {
+    val targetProgress = if (totalDuration > 0) (timeRemaining.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
+    val animatedProgress by animateFloatAsState(
+        targetValue = targetProgress,
+        animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+        label = "restCircularProgress"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "restingPulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (!isPaused && timeRemaining > 0) 1.14f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = if (!isPaused && timeRemaining > 0) 0.45f else 0.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    val cardBorderColor by animateColorAsState(
+        targetValue = if (!isPaused && timeRemaining > 0) AccentBlue.copy(alpha = 0.65f)
+                      else GymCoachColors.BorderSubtle,
+        animationSpec = tween(durationMillis = 300),
+        label = "restCardBorderColor"
+    )
+
+    val timerProgressBrush = remember {
+        Brush.sweepGradient(
+            listOf(AccentBlue, GymCoachColors.CyanAccent, AccentBlue)
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -523,7 +610,7 @@ private fun RestTimerCard(
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCardElevated
         ),
-        border = GymCoachBorders.primary
+        border = androidx.compose.foundation.BorderStroke(1.dp, cardBorderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -532,31 +619,84 @@ private fun RestTimerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Circular countdown progress sweep with athletic resting pulse
                     Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                AccentBlue.copy(alpha = 0.2f),
-                                shape = androidx.compose.foundation.shape.CircleShape
-                            ),
+                        modifier = Modifier.size(54.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            if (isPaused) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Rest",
-                            tint = AccentBlue
+                        // Resting pulse halo
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .graphicsLayer {
+                                    scaleX = pulseScale
+                                    scaleY = pulseScale
+                                    alpha = pulseAlpha * 0.35f
+                                }
+                                .background(
+                                    AccentBlue,
+                                    shape = androidx.compose.foundation.shape.CircleShape
+                                )
                         )
+                        // Circular progress canvas
+                        Canvas(modifier = Modifier.size(48.dp)) {
+                            val strokeWidth = 3.5.dp.toPx()
+                            val diameter = size.minDimension - strokeWidth
+                            val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
+                            val arcSize = Size(diameter, diameter)
+
+                            // Background circular track
+                            drawArc(
+                                color = GymCoachColors.SurfaceDeep,
+                                startAngle = 0f,
+                                sweepAngle = 360f,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+                            // Animated progress sweep arc
+                            drawArc(
+                                brush = timerProgressBrush,
+                                startAngle = -90f,
+                                sweepAngle = 360f * animatedProgress,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+                        }
+                        // Center Play/Pause button
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(
+                                    if (isPaused) GymCoachColors.SurfaceDeep
+                                    else AccentBlue.copy(alpha = 0.2f)
+                                )
+                                .clickable { onPauseResume() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                contentDescription = if (isPaused) "Resume Rest" else "Pause Rest",
+                                tint = AccentBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
+
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "REST INTERVAL",
+                            text = if (isPaused) "REST PAUSED" else "REST INTERVAL",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp,
                                 fontSize = 10.sp
                             ),
-                            color = AccentBlue
+                            color = if (isPaused) TextSecondary else AccentBlue
                         )
                         Text(
                             text = "${timeRemaining}s",
@@ -611,9 +751,7 @@ private fun RestTimerCard(
             }
             Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
-                progress = {
-                    if (totalDuration > 0) (timeRemaining.toFloat() / totalDuration).coerceIn(0f, 1f) else 0f
-                },
+                progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
@@ -672,6 +810,7 @@ internal fun ExerciseSetCard(
     lastPerformance: com.gymcoach.app.data.local.dao.LastPerformance?,
     instructions: String,
     recommendation: com.gymcoach.app.core.progression.ProgressionEngine.ProgressionRecommendation? = null,
+    modifier: Modifier = Modifier,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,
@@ -685,13 +824,33 @@ internal fun ExerciseSetCard(
     onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
+    val isExerciseActive = sets.isNotEmpty() && sets.any { !it.completed }
+    val isExerciseCompleted = sets.isNotEmpty() && sets.all { it.completed }
+
+    val cardBorderColor by animateColorAsState(
+        targetValue = when {
+            isExerciseCompleted -> GymCoachColors.Success.copy(alpha = 0.55f)
+            isExerciseActive -> AccentBlue.copy(alpha = 0.65f)
+            else -> GymCoachColors.BorderSubtle
+        },
+        animationSpec = tween(durationMillis = 350),
+        label = "exerciseCardBorderColor"
+    )
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCard
         ),
-        border = GymCoachBorders.subtle
+        border = androidx.compose.foundation.BorderStroke(1.dp, cardBorderColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -709,22 +868,90 @@ internal fun ExerciseSetCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(Modifier.height(2.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(GymCoachShapes.xs)
-                            .background(AccentBlue.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    Spacer(Modifier.height(3.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = muscleGroup.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                                letterSpacing = 0.5.sp
-                            ),
-                            color = AccentBlue
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(GymCoachShapes.xs)
+                                .background(AccentBlue.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = muscleGroup.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = AccentBlue
+                            )
+                        }
+
+                        AnimatedContent(
+                            targetState = when {
+                                isExerciseCompleted -> "COMPLETED"
+                                isExerciseActive -> "ACTIVE"
+                                else -> null
+                            },
+                            transitionSpec = {
+                                (fadeIn(tween(200)) + scaleIn(initialScale = 0.85f))
+                                    .togetherWith(fadeOut(tween(150)))
+                            },
+                            label = "exerciseStatusBadge"
+                        ) { status ->
+                            when (status) {
+                                "COMPLETED" -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(GymCoachShapes.xs)
+                                            .background(GymCoachColors.Success.copy(alpha = 0.15f))
+                                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = GymCoachColors.Success,
+                                                modifier = Modifier.size(11.dp)
+                                            )
+                                            Text(
+                                                text = "COMPLETED",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 9.sp
+                                                ),
+                                                color = GymCoachColors.Success
+                                            )
+                                        }
+                                    }
+                                }
+                                "ACTIVE" -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(GymCoachShapes.xs)
+                                            .background(AccentBlue.copy(alpha = 0.18f))
+                                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(
+                                            text = "CURRENT",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp,
+                                                letterSpacing = 0.5.sp
+                                            ),
+                                            color = AccentBlue
+                                        )
+                                    }
+                                }
+                                else -> {}
+                            }
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -921,20 +1148,29 @@ internal fun ExerciseSetCard(
             }
 
 
-            // Instructions expander
+            // Instructions expander with smooth expansion transition
             if (instructions.isNotEmpty()) {
                 TextButton(
                     onClick = { showInstructions = !showInstructions },
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(
-                        if (showInstructions) "Hide Instructions" else "View Technique Guide",
+                        if (showInstructions) "Hide Instructions" else "View Instructions",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
     
-                if (showInstructions) {
+                AnimatedVisibility(
+                    visible = showInstructions,
+                    enter = fadeIn() + expandVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    ),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = GymCoachShapes.sm,
@@ -945,7 +1181,7 @@ internal fun ExerciseSetCard(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                "Technique & Form",
+                                "Instructions",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1119,26 +1355,70 @@ private fun SetRow(
         else -> "${index + 1}"
     }
 
-    val completeScale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (completed) 1.1f else 1.0f,
-        animationSpec = androidx.compose.animation.core.spring(
-            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
-        ),
-        label = "completeScale"
+    // Tactile checkmark pop: spring bounce scale from 0.8f to 1.2f to 1.0f upon checking off a set
+    val checkScale = androidx.compose.runtime.remember { Animatable(1.0f) }
+    LaunchedEffect(completed) {
+        if (completed) {
+            checkScale.snapTo(0.8f)
+            checkScale.animateTo(
+                targetValue = 1.2f,
+                animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+            )
+            checkScale.animateTo(
+                targetValue = 1.0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            )
+        } else {
+            checkScale.animateTo(
+                targetValue = 1.0f,
+                animationSpec = tween(durationMillis = 150)
+            )
+        }
+    }
+
+    // Smooth color transitions upon checking off a set
+    val rowBackgroundColor by animateColorAsState(
+        targetValue = if (completed) GymCoachColors.Success.copy(alpha = 0.09f)
+                      else GymCoachColors.SurfaceDeep,
+        animationSpec = tween(durationMillis = 280),
+        label = "rowBgColor"
+    )
+    val rowBorderColor by animateColorAsState(
+        targetValue = if (completed) GymCoachColors.Success.copy(alpha = 0.65f)
+                      else GymCoachColors.BorderSubtle,
+        animationSpec = tween(durationMillis = 280),
+        label = "rowBorderColor"
+    )
+    val checkButtonBgColor by animateColorAsState(
+        targetValue = if (completed) GymCoachColors.Success
+                      else GymCoachColors.SurfaceCardElevated,
+        animationSpec = tween(durationMillis = 220),
+        label = "checkButtonBgColor"
+    )
+    val checkIconColor by animateColorAsState(
+        targetValue = if (completed) Color.White
+                      else TextTertiary,
+        animationSpec = tween(durationMillis = 220),
+        label = "checkIconColor"
+    )
+    val checkBorderColor by animateColorAsState(
+        targetValue = if (completed) GymCoachColors.Success
+                      else GymCoachColors.BorderSubtle,
+        animationSpec = tween(durationMillis = 220),
+        label = "checkBorderColor"
     )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GymCoachShapes.sm)
-            .background(
-                if (completed) GymCoachColors.Success.copy(alpha = 0.08f)
-                else GymCoachColors.SurfaceDeep
-            )
+            .background(rowBackgroundColor)
             .border(
-                if (completed) GymCoachBorders.success
-                else GymCoachBorders.subtle,
+                1.dp,
+                rowBorderColor,
                 GymCoachShapes.sm
             )
             .padding(vertical = 4.dp, horizontal = 6.dp),
@@ -1277,15 +1557,15 @@ private fun SetRow(
             Box(
                 modifier = Modifier
                     .size(34.dp)
-                    .scale(completeScale)
+                    .graphicsLayer {
+                        scaleX = checkScale.value
+                        scaleY = checkScale.value
+                    }
                     .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(
-                        if (completed) GymCoachColors.Success
-                        else GymCoachColors.SurfaceCardElevated
-                    )
+                    .background(checkButtonBgColor)
                     .border(
-                        if (completed) GymCoachBorders.success
-                        else GymCoachBorders.subtle,
+                        1.dp,
+                        checkBorderColor,
                         androidx.compose.foundation.shape.CircleShape
                     )
                     .clickable {
@@ -1297,8 +1577,7 @@ private fun SetRow(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = if (completed) "Set Completed" else "Mark Set Complete",
-                    tint = if (completed) androidx.compose.ui.graphics.Color.White
-                           else TextTertiary,
+                    tint = checkIconColor,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -1366,6 +1645,56 @@ internal fun WorkoutCompletionView(
     onDone: () -> Unit,
     onViewHistoryDetail: (Long) -> Unit
 ) {
+    // Animated scale-in entrance with spring bounce
+    val enterScale = androidx.compose.runtime.remember { Animatable(0.75f) }
+    val enterAlpha = androidx.compose.runtime.remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch {
+            enterAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 350)
+            )
+        }
+        enterScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+
+    // Celebration sparkle / bounce animation
+    val sparkleTransition = rememberInfiniteTransition(label = "sparkles")
+    val sparkleScale by sparkleTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.14f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "sparkleScale"
+    )
+    val sparkleRotation by sparkleTransition.animateFloat(
+        initialValue = -12f,
+        targetValue = 12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "sparkleRotation"
+    )
+    val celebrationRingAlpha by sparkleTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "celebrationRingAlpha"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1375,10 +1704,76 @@ internal fun WorkoutCompletionView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp)
+                .graphicsLayer {
+                    scaleX = enterScale.value
+                    scaleY = enterScale.value
+                    alpha = enterAlpha.value
+                }
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Animated celebration sparkle badge with radiant halo & spring bounce
+            Box(
+                modifier = Modifier.size(100.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Outer radiant halo
+                val celebrationHaloBrush = remember {
+                    Brush.radialGradient(
+                        listOf(
+                            AccentBlue,
+                            Color.Transparent
+                        )
+                    )
+                }
+                val celebrationCircleBrush = remember {
+                    Brush.linearGradient(
+                        listOf(AccentBlue, GymCoachColors.CyanAccent)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .graphicsLayer {
+                            scaleX = sparkleScale * 1.12f
+                            scaleY = sparkleScale * 1.12f
+                            alpha = celebrationRingAlpha * 0.45f
+                        }
+                        .background(
+                            brush = celebrationHaloBrush,
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        )
+                )
+                // Central celebratory circle
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .graphicsLayer {
+                            scaleX = sparkleScale
+                            scaleY = sparkleScale
+                        }
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(
+                            brush = celebrationCircleBrush
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "Celebration Sparkles",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .graphicsLayer {
+                                rotationZ = sparkleRotation
+                            }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Workout Crushed! 🔥",
@@ -1395,7 +1790,7 @@ internal fun WorkoutCompletionView(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // 2x2 Grid using Rows and Columns
             Row(
@@ -1505,7 +1900,7 @@ private fun StatCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = title.uppercase(),
+                text = title,
                 style = MaterialTheme.typography.labelSmall,
                 color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,

@@ -1,5 +1,10 @@
 package com.gymcoach.app.ui
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +54,8 @@ object Routes {
         "progression_analytics/$exerciseId?exerciseName=${java.net.URLEncoder.encode(exerciseName, "UTF-8")}"
 }
 
+private const val NAV_TRANSITION_DURATION_MS = 300
+
 @Composable
 fun GymCoachNavHost(
     navController: NavHostController,
@@ -68,9 +75,45 @@ fun GymCoachNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        enterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+        },
+        popEnterTransition = {
+            if (initialState.destination.route == Routes.CAMERA) {
+                fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            } else {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            }
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+        }
     ) {
-        composable(Routes.ONBOARDING) {
+        composable(
+            route = Routes.ONBOARDING,
+            enterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            }
+        ) {
             OnboardingScreen(
                 onComplete = {
                     navController.navigate(Routes.HOME) {
@@ -241,7 +284,28 @@ fun GymCoachNavHost(
                     type = NavType.StringType
                     defaultValue = ExerciseType.BICEP_CURL.name
                 }
-            )
+            ),
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(durationMillis = NAV_TRANSITION_DURATION_MS))
+            }
         ) { backStackEntry ->
             val rawType = backStackEntry.arguments?.getString("exerciseType")
                 ?: ExerciseType.BICEP_CURL.name

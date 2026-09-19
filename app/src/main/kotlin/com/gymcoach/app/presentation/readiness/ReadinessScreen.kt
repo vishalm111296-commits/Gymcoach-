@@ -45,6 +45,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.ui.theme.*
 
@@ -205,58 +230,355 @@ private fun ReadinessScoreCard(readiness: ReadinessEntity) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
-        Column(modifier = Modifier.padding(GymCoachSpacing.xxl)) {
-            Text(
-                text = "READINESS SCORE",
-                style = MaterialTheme.typography.labelSmall,
-                color = GymCoachColors.Primary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "%.1f / 5.0".format(readiness.readinessScore),
-                style = MaterialTheme.typography.displaySmall,
-                color = WarmWhite,
-                fontWeight = FontWeight.Bold
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(GymCoachSpacing.lg),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "BIOMETRIC READINESS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = GymCoachColors.Primary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                BiometricBeacon(score = readiness.readinessScore)
+            }
+
             Spacer(Modifier.height(16.dp))
-            
-            // Metric breakdown
-            MetricRow(icon = Icons.Default.Bedtime, label = "Sleep", value = readiness.sleepQuality)
-            MetricRow(icon = Icons.Default.FitnessCenter, label = "Soreness", value = readiness.soreness)
-            MetricRow(icon = Icons.Default.Bolt, label = "Energy", value = readiness.energy)
-            MetricRow(icon = Icons.Default.LocalFireDepartment, label = "Motivation", value = readiness.motivation)
+
+            // Recovery gauge sweep with biometric breathing pulse
+            ReadinessGauge(
+                score = readiness.readinessScore,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Metric breakdown with animated progress bars
+            MetricRow(icon = Icons.Default.Bedtime, label = "Sleep Quality", value = readiness.sleepQuality, delayIndex = 0)
+            MetricRow(icon = Icons.Default.FitnessCenter, label = "Muscle Recovery", value = readiness.soreness, delayIndex = 1)
+            MetricRow(icon = Icons.Default.Bolt, label = "Energy Level", value = readiness.energy, delayIndex = 2)
+            MetricRow(icon = Icons.Default.LocalFireDepartment, label = "Neural Drive", value = readiness.motivation, delayIndex = 3)
         }
     }
 }
 
 @Composable
-private fun MetricRow(icon: ImageVector, label: String, value: Int) {
+private fun ReadinessGauge(
+    score: Double,
+    modifier: Modifier = Modifier
+) {
+    val animatedProgress = remember { Animatable(0f) }
+    LaunchedEffect(score) {
+        animatedProgress.animateTo(
+            targetValue = (score / 5.0).toFloat().coerceIn(0f, 1f),
+            animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing)
+        )
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "biometricBreathing")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+    val ringScale by infiniteTransition.animateFloat(
+        initialValue = 1.02f,
+        targetValue = 1.20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, delayMillis = 200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ringScale"
+    )
+    val ringAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, delayMillis = 200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ringAlpha"
+    )
+
+    val (gaugeColorStart, gaugeColorEnd) = when {
+        score >= 4.0 -> GymCoachColors.CyanAccent to GymCoachColors.Success
+        score >= 3.0 -> GymCoachColors.Primary to GymCoachColors.CyanAccent
+        score >= 2.0 -> GymCoachColors.Warning to GymCoachColors.GoldAccent
+        else -> GymCoachColors.Danger to Color(0xFFFF6B6B)
+    }
+
+    val statusLabel = when {
+        score >= 4.0 -> "OPTIMAL RECOVERY"
+        score >= 3.0 -> "GOOD RECOVERY"
+        score >= 2.0 -> "MODERATE FATIGUE"
+        else -> "REST RECOMMENDED"
+    }
+
+    val sweepColors = remember(gaugeColorStart, gaugeColorEnd) {
+        listOf(gaugeColorStart, gaugeColorEnd, gaugeColorStart)
+    }
+
+    Box(
+        modifier = modifier.size(210.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = 14.dp.toPx()
+            val arcPadding = 26.dp.toPx()
+            val diameter = size.minDimension - (arcPadding * 2)
+            val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+            val arcSize = Size(diameter, diameter)
+            val centerOffset = Offset(size.width / 2f, size.height / 2f)
+            val radius = diameter / 2f
+
+            // Biometric breathing pulse outer aura
+            drawCircle(
+                color = gaugeColorStart.copy(alpha = ringAlpha),
+                radius = radius * ringScale,
+                center = centerOffset,
+                style = Stroke(width = 3.dp.toPx())
+            )
+
+            // Biometric breathing pulse inner glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        gaugeColorStart.copy(alpha = pulseAlpha),
+                        gaugeColorEnd.copy(alpha = pulseAlpha * 0.25f),
+                        Color.Transparent
+                    ),
+                    center = centerOffset,
+                    radius = (radius * pulseScale).coerceAtLeast(1f)
+                ),
+                radius = radius * pulseScale,
+                center = centerOffset
+            )
+
+            // Background Track Arc (240 degrees from 150° to 390°)
+            val startAngle = 150f
+            val maxSweepAngle = 240f
+            drawArc(
+                color = GymCoachColors.SurfaceCardElevated,
+                startAngle = startAngle,
+                sweepAngle = maxSweepAngle,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+
+            // Foreground Sweep Progress Arc
+            val currentSweep = maxSweepAngle * animatedProgress.value
+            if (currentSweep > 0.5f) {
+                drawArc(
+                    brush = Brush.sweepGradient(
+                        colors = sweepColors,
+                        center = centerOffset
+                    ),
+                    startAngle = startAngle,
+                    sweepAngle = currentSweep,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
+        }
+
+        // Center Biometric Score & Status text
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val displayScore = score * animatedProgress.value
+            Text(
+                text = "%.1f".format(displayScore),
+                style = MaterialTheme.typography.displayMedium,
+                color = WarmWhite,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = "OUT OF 5.0",
+                style = MaterialTheme.typography.labelSmall,
+                color = GymCoachColors.TextSecondary,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp
+            )
+            Spacer(Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(gaugeColorStart.copy(alpha = 0.15f))
+                    .padding(horizontal = 10.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = statusLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = gaugeColorStart,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BiometricBeacon(score: Double) {
+    val infiniteTransition = rememberInfiniteTransition(label = "beaconPulse")
+    val beaconScale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "beaconScale"
+    )
+    val beaconAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "beaconAlpha"
+    )
+
+    val color = when {
+        score >= 4.0 -> GymCoachColors.Success
+        score >= 3.0 -> GymCoachColors.CyanAccent
+        score >= 2.0 -> GymCoachColors.Warning
+        else -> GymCoachColors.Danger
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .graphicsLayer {
+                        scaleX = beaconScale
+                        scaleY = beaconScale
+                        alpha = beaconAlpha
+                    }
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+        }
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = "HRV / REST ACTIVE",
+            style = MaterialTheme.typography.labelSmall,
+            color = GymCoachColors.TextSecondary,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun MetricRow(
+    icon: ImageVector,
+    label: String,
+    value: Int,
+    delayIndex: Int = 0
+) {
+    val animatedFill by animateFloatAsState(
+        targetValue = (value / 5f).coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 800, delayMillis = delayIndex * 100, easing = FastOutSlowInEasing),
+        label = "metric_fill_$label"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = GymCoachColors.Primary,
-            modifier = Modifier.size(20.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(GymCoachColors.SurfaceCardElevated),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = GymCoachColors.Primary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
         Spacer(Modifier.width(12.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = "$value / 5",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = WarmWhite
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "$value / 5",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WarmWhite
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(GymCoachColors.SurfaceCardElevated)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedFill)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(GymCoachColors.Primary, GymCoachColors.CyanAccent)
+                            )
+                        )
+                )
+            }
+        }
     }
 }
 

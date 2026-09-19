@@ -69,9 +69,20 @@ import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -292,18 +303,28 @@ fun ProgressDashboardScreen(
                     Spacer(Modifier.height(16.dp))
 
                     // Training Time & Averages
+                    val animAvgDuration by animateIntAsState(
+                        targetValue = state.averageWorkoutDurationMinutes.toInt(),
+                        animationSpec = tween(800, easing = FastOutSlowInEasing),
+                        label = "avg_duration_anim"
+                    )
+                    val animAvgVolume by animateFloatAsState(
+                        targetValue = state.averageWorkoutVolume.toFloat(),
+                        animationSpec = tween(850, easing = FastOutSlowInEasing),
+                        label = "avg_volume_anim"
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatCard(
                             label = "Avg Duration",
-                            value = "${state.averageWorkoutDurationMinutes}m",
+                            value = "${animAvgDuration}m",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             label = "Avg Volume",
-                            value = "%.1f kg".format(state.averageWorkoutVolume),
+                            value = "%.1f kg".format(Locale.getDefault(), animAvgVolume),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -311,18 +332,23 @@ fun ProgressDashboardScreen(
                     Spacer(Modifier.height(16.dp))
 
                     // Workout Frequency & Weekly Trend
+                    val animWorkoutFreq by animateIntAsState(
+                        targetValue = state.workoutFrequency,
+                        animationSpec = tween(800, easing = FastOutSlowInEasing),
+                        label = "workout_freq_anim"
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatCard(
                             label = "Weekly Workouts",
-                            value = "${state.workoutFrequency}",
+                            value = "$animWorkoutFreq",
                             modifier = Modifier.weight(1f)
                         )
                         val trendSymbol = when {
-                            state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(state.weeklyTrend)
-                            state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(state.weeklyTrend)
+                            state.weeklyTrend > 0 -> "\u25b2 +%.1f%%".format(Locale.getDefault(), state.weeklyTrend)
+                            state.weeklyTrend < 0 -> "\u25bc %.1f%%".format(Locale.getDefault(), state.weeklyTrend)
                             else -> "\u2022 0.0%%"
                         }
                         StatCard(
@@ -491,6 +517,17 @@ private fun WorkoutAdherenceCard(
     targetSessionsPerWeek: Int,
     adherence: Float
 ) {
+    val animatedAdherence by animateFloatAsState(
+        targetValue = adherence.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
+        label = "adherence_bar_anim"
+    )
+    val animatedPercent by animateIntAsState(
+        targetValue = (adherence * 100).toInt(),
+        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
+        label = "adherence_pct_anim"
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.Card,
@@ -533,7 +570,7 @@ private fun WorkoutAdherenceCard(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "${(adherence * 100).toInt()}%",
+                        text = "$animatedPercent%",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
                         color = if (adherence >= 0.8f) Color(0xFF10B981) else MaterialTheme.colorScheme.primary
@@ -542,7 +579,7 @@ private fun WorkoutAdherenceCard(
             }
             Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress = { adherence.coerceIn(0f, 1f) },
+                progress = { animatedAdherence },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
@@ -573,6 +610,19 @@ private fun StrengthLineChart(
         val lineColor = MaterialTheme.colorScheme.primary
         val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
+        val animProgress by animateFloatAsState(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            label = "strength_chart_anim"
+        )
+
+        val (minVal, _, range) = remember(data) {
+            val values = data.map { it.value }
+            val min = values.minOrNull() ?: 0.0
+            val max = values.maxOrNull() ?: 1.0
+            Triple(min, max, (max - min).coerceAtLeast(1.0))
+        }
+
         Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             if (data.size < 2) return@Canvas
 
@@ -580,11 +630,6 @@ private fun StrengthLineChart(
             val paddingBottom = 12f
             val chartWidth = size.width - paddingLeft
             val chartHeight = size.height - paddingBottom
-
-            val values = data.map { it.value }
-            val minVal = values.min()
-            val maxVal = values.max()
-            val range = (maxVal - minVal).coerceAtLeast(1.0)
 
             for (i in 0..3) {
                 val y = chartHeight - (chartHeight * i / 3f)
@@ -598,12 +643,30 @@ private fun StrengthLineChart(
 
             val path = Path()
             val stepX = chartWidth / (data.size - 1).toFloat()
+            val baselineY = chartHeight
 
             data.forEachIndexed { index, point ->
                 val x = paddingLeft + index * stepX
-                val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+                val targetY = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+                val y = baselineY - (baselineY - targetY) * animProgress
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
+
+            // Area fill under line
+            val fillPath = Path().apply {
+                addPath(path)
+                lineTo(paddingLeft + (data.size - 1) * stepX, chartHeight)
+                lineTo(paddingLeft, chartHeight)
+                close()
+            }
+            drawPath(
+                path = fillPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(lineColor.copy(alpha = 0.22f * animProgress), Color.Transparent),
+                    startY = 0f,
+                    endY = chartHeight
+                )
+            )
 
             drawPath(
                 path = path,
@@ -613,9 +676,10 @@ private fun StrengthLineChart(
 
             data.forEachIndexed { index, point ->
                 val x = paddingLeft + index * stepX
-                val y = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
-                drawCircle(color = lineColor, radius = 5f, center = Offset(x, y))
-                drawCircle(color = Color.White, radius = 2.5f, center = Offset(x, y))
+                val targetY = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
+                val y = baselineY - (baselineY - targetY) * animProgress
+                drawCircle(color = lineColor, radius = 5f * animProgress, center = Offset(x, y))
+                drawCircle(color = Color.White, radius = 2.5f * animProgress, center = Offset(x, y))
             }
         }
     }
@@ -684,9 +748,20 @@ private fun MuscleVolumeBar(
     targetMin: Int,
     targetMax: Int
 ) {
-    val progress = (currentSets.toFloat() / targetMax.toFloat()).coerceIn(0f, 1f)
+    val targetProgress = (currentSets.toFloat() / targetMax.toFloat()).coerceIn(0f, 1f)
     val inRange = currentSets in targetMin..targetMax
     val isOver = currentSets > targetMax
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = targetProgress,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "muscle_bar_anim"
+    )
+    val animatedSets by animateIntAsState(
+        targetValue = currentSets,
+        animationSpec = tween(durationMillis = 750, easing = FastOutSlowInEasing),
+        label = "muscle_sets_anim"
+    )
 
     Card(
         modifier = Modifier
@@ -714,7 +789,7 @@ private fun MuscleVolumeBar(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "$currentSets / $targetMax sets",
+                        text = "$animatedSets / $targetMax sets",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -751,7 +826,7 @@ private fun MuscleVolumeBar(
             }
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp),
@@ -772,6 +847,22 @@ private fun PRCard(
     achievement: String,
     date: LocalDate
 ) {
+    val scaleAnim = remember { Animatable(0.2f) }
+    val alphaAnim = remember { Animatable(0f) }
+
+    LaunchedEffect(exerciseName, achievement) {
+        launch {
+            alphaAnim.animateTo(1f, animationSpec = tween(350))
+        }
+        scaleAnim.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -790,25 +881,52 @@ private fun PRCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFFFFD54F).copy(alpha = 0.15f), shape = CircleShape),
+                    .graphicsLayer {
+                        scaleX = scaleAnim.value
+                        scaleY = scaleAnim.value
+                        alpha = alphaAnim.value
+                    }
+                    .size(42.dp)
+                    .background(Color(0xFFFFD54F).copy(alpha = 0.2f), shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = "PR",
                     tint = Color(0xFFFFD54F),
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = exerciseName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = exerciseName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = scaleAnim.value
+                                scaleY = scaleAnim.value
+                            }
+                            .background(Color(0xFFFFD54F).copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "PR",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 9.sp,
+                            color = Color(0xFFFFD54F)
+                        )
+                    }
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = achievement,
@@ -913,6 +1031,19 @@ private fun VolumeLineChart(
         val lineColor = MaterialTheme.colorScheme.primary
         val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
+        val animProgress by animateFloatAsState(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            label = "volume_chart_anim"
+        )
+
+        val (minVal, _, range) = remember(data) {
+            val values = data.map { it.second }
+            val min = values.minOrNull() ?: 0.0
+            val max = values.maxOrNull() ?: 1.0
+            Triple(min, max, (max - min).coerceAtLeast(1.0))
+        }
+
         Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             if (data.size < 2) return@Canvas
 
@@ -920,11 +1051,6 @@ private fun VolumeLineChart(
             val paddingBottom = 12f
             val chartWidth = size.width - paddingLeft
             val chartHeight = size.height - paddingBottom
-
-            val values = data.map { it.second }
-            val minVal = values.min()
-            val maxVal = values.max()
-            val range = (maxVal - minVal).coerceAtLeast(1.0)
 
             for (i in 0..3) {
                 val y = chartHeight - (chartHeight * i / 3f)
@@ -938,12 +1064,30 @@ private fun VolumeLineChart(
 
             val path = Path()
             val stepX = chartWidth / (data.size - 1).toFloat()
+            val baselineY = chartHeight
 
             data.forEachIndexed { index, point ->
                 val x = paddingLeft + index * stepX
-                val y = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
+                val targetY = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
+                val y = baselineY - (baselineY - targetY) * animProgress
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
+
+            // Area gradient fill under line
+            val fillPath = Path().apply {
+                addPath(path)
+                lineTo(paddingLeft + (data.size - 1) * stepX, chartHeight)
+                lineTo(paddingLeft, chartHeight)
+                close()
+            }
+            drawPath(
+                path = fillPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(lineColor.copy(alpha = 0.22f * animProgress), Color.Transparent),
+                    startY = 0f,
+                    endY = chartHeight
+                )
+            )
 
             drawPath(
                 path = path,
@@ -953,9 +1097,10 @@ private fun VolumeLineChart(
 
             data.forEachIndexed { index, point ->
                 val x = paddingLeft + index * stepX
-                val y = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
-                drawCircle(color = lineColor, radius = 5f, center = Offset(x, y))
-                drawCircle(color = Color.White, radius = 2.5f, center = Offset(x, y))
+                val targetY = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
+                val y = baselineY - (baselineY - targetY) * animProgress
+                drawCircle(color = lineColor, radius = 5f * animProgress, center = Offset(x, y))
+                drawCircle(color = Color.White, radius = 2.5f * animProgress, center = Offset(x, y))
             }
         }
     }
@@ -983,34 +1128,44 @@ private fun StatsOverview(
     totalVolume: Double,
     totalTrainingTimeMinutes: Long
 ) {
+    val animWorkouts by animateIntAsState(targetValue = totalWorkouts, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_total_workouts")
+    val animToday by animateIntAsState(targetValue = todayWorkouts, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_today_workouts")
+    val animWeek by animateIntAsState(targetValue = weekWorkouts, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_week_workouts")
+    val animMonth by animateIntAsState(targetValue = monthWorkouts, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_month_workouts")
+    val animExercises by animateIntAsState(targetValue = totalExercises, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_total_exercises")
+    val animSets by animateIntAsState(targetValue = totalSets, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_total_sets")
+    val animReps by animateIntAsState(targetValue = totalReps, animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_total_reps")
+    val animVolume by animateFloatAsState(targetValue = totalVolume.toFloat(), animationSpec = tween(950, easing = FastOutSlowInEasing), label = "stats_total_volume")
+    val animTime by animateIntAsState(targetValue = totalTrainingTimeMinutes.toInt(), animationSpec = tween(800, easing = FastOutSlowInEasing), label = "stats_training_time")
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(label = "Workouts", value = "$totalWorkouts", modifier = Modifier.weight(1f))
-            StatCard(label = "Today", value = "$todayWorkouts", modifier = Modifier.weight(1f))
+            StatCard(label = "Workouts", value = "$animWorkouts", modifier = Modifier.weight(1f))
+            StatCard(label = "Today", value = "$animToday", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(label = "Week", value = "$weekWorkouts", modifier = Modifier.weight(1f))
-            StatCard(label = "Month", value = "$monthWorkouts", modifier = Modifier.weight(1f))
+            StatCard(label = "Week", value = "$animWeek", modifier = Modifier.weight(1f))
+            StatCard(label = "Month", value = "$animMonth", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(label = "Exercises", value = "$totalExercises", modifier = Modifier.weight(1f))
-            StatCard(label = "Sets", value = "$totalSets", modifier = Modifier.weight(1f))
+            StatCard(label = "Exercises", value = "$animExercises", modifier = Modifier.weight(1f))
+            StatCard(label = "Sets", value = "$animSets", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCard(label = "Reps", value = "$totalReps", modifier = Modifier.weight(1f))
-            StatCard(label = "Volume", value = "%.1f kg".format(totalVolume), modifier = Modifier.weight(1f))
+            StatCard(label = "Reps", value = "$animReps", modifier = Modifier.weight(1f))
+            StatCard(label = "Volume", value = "%.1f kg".format(Locale.getDefault(), animVolume), modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1018,10 +1173,10 @@ private fun StatsOverview(
         ) {
             StatCard(
                 label = "Time",
-                value = "${totalTrainingTimeMinutes}m",
+                value = "${animTime}m",
                 modifier = Modifier.weight(1f)
             )
-            val avgSessionMinutes = if (totalWorkouts > 0) totalTrainingTimeMinutes / totalWorkouts else 0
+            val avgSessionMinutes = if (animWorkouts > 0) animTime / animWorkouts else 0
             StatCard(
                 label = "Avg. Duration",
                 value = "${avgSessionMinutes}m",

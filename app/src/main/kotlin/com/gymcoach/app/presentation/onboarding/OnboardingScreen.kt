@@ -39,11 +39,41 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.onboarding.components.EquipmentChecklist
 import com.gymcoach.app.presentation.onboarding.components.GoalSelectionCard
 import com.gymcoach.app.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 private val GOALS = listOf(
@@ -88,6 +118,17 @@ fun OnboardingScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val order = OnboardingStep.entries
     val stepIndex = order.indexOf(state.step)
+    val contentSteps = remember {
+        listOf(
+            OnboardingStep.WELCOME,
+            OnboardingStep.GOAL,
+            OnboardingStep.EXPERIENCE,
+            OnboardingStep.PERSONAL_INFO,
+            OnboardingStep.SCHEDULE,
+            OnboardingStep.EQUIPMENT,
+            OnboardingStep.REVIEW
+        )
+    }
 
     BackHandler(enabled = state.step != OnboardingStep.WELCOME) { viewModel.back() }
 
@@ -110,33 +151,72 @@ fun OnboardingScreen(
                 trackColor = GymCoachColors.SurfaceCardElevated
             )
 
+            // Step Indicator with animated dot width morphing
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "STEP ${stepIndex + 1} OF ${contentSteps.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = GymCoachColors.TextSecondary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                OnboardingPageIndicator(
+                    steps = contentSteps,
+                    currentStep = state.step
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
             ) {
-                when (state.step) {
-                    OnboardingStep.WELCOME -> WelcomeStep()
-                    OnboardingStep.GOAL -> GoalStep(state, viewModel::selectGoal)
-                    OnboardingStep.EXPERIENCE -> ExperienceStep(state, viewModel::selectExperience)
-                    OnboardingStep.PERSONAL_INFO -> PersonalInfoStep(
-                        state,
-                        viewModel::setAge,
-                        viewModel::setHeight,
-                        viewModel::setWeight,
-                        viewModel::setSex,
-                        viewModel::setPreferredSchedule,
-                        viewModel::setLimitationsPreferences
-                    )
-                    OnboardingStep.SCHEDULE -> ScheduleStep(
-                        state,
-                        viewModel::setDaysPerWeek,
-                        viewModel::setSessionMinutes
-                    )
-                    OnboardingStep.EQUIPMENT -> EquipmentStep(state, viewModel::toggleEquipment)
-                    OnboardingStep.REVIEW -> ReviewStep(state)
-                    OnboardingStep.COMPLETE -> Unit
+                AnimatedContent(
+                    targetState = state.step,
+                    transitionSpec = {
+                        val targetIndex = order.indexOf(targetState)
+                        val initialIndex = order.indexOf(initialState)
+                        if (targetIndex >= initialIndex) {
+                            (slideInHorizontally { width -> (width * 0.35f).toInt() } + fadeIn(tween(250)))
+                                .togetherWith(slideOutHorizontally { width -> (-width * 0.35f).toInt() } + fadeOut(tween(180)))
+                        } else {
+                            (slideInHorizontally { width -> (-width * 0.35f).toInt() } + fadeIn(tween(250)))
+                                .togetherWith(slideOutHorizontally { width -> (width * 0.35f).toInt() } + fadeOut(tween(180)))
+                        }
+                    },
+                    label = "onboarding_step_pager"
+                ) { currentStep ->
+                    Column {
+                        when (currentStep) {
+                            OnboardingStep.WELCOME -> WelcomeStep()
+                            OnboardingStep.GOAL -> GoalStep(state, viewModel::selectGoal)
+                            OnboardingStep.EXPERIENCE -> ExperienceStep(state, viewModel::selectExperience)
+                            OnboardingStep.PERSONAL_INFO -> PersonalInfoStep(
+                                state,
+                                viewModel::setAge,
+                                viewModel::setHeight,
+                                viewModel::setWeight,
+                                viewModel::setSex,
+                                viewModel::setPreferredSchedule,
+                                viewModel::setLimitationsPreferences
+                            )
+                            OnboardingStep.SCHEDULE -> ScheduleStep(
+                                state,
+                                viewModel::setDaysPerWeek,
+                                viewModel::setSessionMinutes
+                            )
+                            OnboardingStep.EQUIPMENT -> EquipmentStep(state, viewModel::toggleEquipment)
+                            OnboardingStep.REVIEW -> ReviewStep(state)
+                            OnboardingStep.COMPLETE -> Unit
+                        }
+                    }
                 }
                 state.error?.let { message ->
                     Spacer(Modifier.height(12.dp))
@@ -177,9 +257,57 @@ private fun StepHeader(title: String, description: String) {
 }
 
 @Composable
+private fun OnboardingPageIndicator(
+    steps: List<OnboardingStep>,
+    currentStep: OnboardingStep,
+    modifier: Modifier = Modifier
+) {
+    val currentIndex = steps.indexOf(currentStep).coerceAtLeast(0)
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        steps.forEachIndexed { index, _ ->
+            val isSelected = index == currentIndex
+            val isPassed = index < currentIndex
+
+            val targetWidth = if (isSelected) 26.dp else 7.dp
+            val animatedWidth by animateDpAsState(
+                targetValue = targetWidth,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "page_indicator_width_$index"
+            )
+
+            val targetColor = when {
+                isSelected -> GymCoachColors.Primary
+                isPassed -> GymCoachColors.PrimaryLight.copy(alpha = 0.5f)
+                else -> GymCoachColors.SurfaceCardElevated
+            }
+            val animatedColor by animateColorAsState(
+                targetValue = targetColor,
+                animationSpec = tween(durationMillis = 300),
+                label = "page_indicator_color_$index"
+            )
+
+            Box(
+                modifier = Modifier
+                    .height(6.dp)
+                    .width(animatedWidth)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(animatedColor)
+            )
+        }
+    }
+}
+
+@Composable
 private fun WelcomeStep() {
     Column {
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(32.dp))
         Text(
             text = "BUILD YOUR\nV-TAPER",
             style = MaterialTheme.typography.displaySmall,
@@ -187,24 +315,125 @@ private fun WelcomeStep() {
             fontWeight = FontWeight.Black,
             lineHeight = 40.sp
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
         Text(
             text = "Answer six quick questions and your first program is built around your goal, schedule, and equipment.",
             style = MaterialTheme.typography.bodyLarge,
             color = GymCoachColors.TextSecondary
         )
-        Spacer(Modifier.height(28.dp))
-        listOf(
-            "Programs matched to the equipment you have",
-            "Weekly volume tuned to evidence-based ranges",
-            "Your first session ready in minutes"
-        ).forEach { line ->
-            Text(
-                text = line,
-                style = MaterialTheme.typography.bodyMedium,
-                color = GymCoachColors.TextMuted,
-                modifier = Modifier.padding(vertical = 6.dp)
+        Spacer(Modifier.height(24.dp))
+
+        val features = remember {
+            listOf(
+                Triple(
+                    Icons.Default.FitnessCenter,
+                    "Equipment-Adaptive Programs",
+                    "Programs matched precisely to the equipment you have available."
+                ),
+                Triple(
+                    Icons.Default.Bolt,
+                    "Evidence-Based Volume",
+                    "Weekly sets tuned to scientific hypertrophy and strength ranges."
+                ),
+                Triple(
+                    Icons.Default.Bedtime,
+                    "Biometric Recovery Pacing",
+                    "Readiness & fatigue tracking keeps workouts productive without burnout."
+                ),
+                Triple(
+                    Icons.Default.LocalFireDepartment,
+                    "Instant First Session",
+                    "Your customized training routine is generated and ready in minutes."
+                )
             )
+        }
+
+        features.forEachIndexed { index, (icon, title, desc) ->
+            AnimatedFeatureItem(
+                icon = icon,
+                title = title,
+                description = desc,
+                delayIndex = index
+            )
+            Spacer(Modifier.height(10.dp))
+        }
+    }
+}
+
+@Composable
+private fun AnimatedFeatureItem(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    delayIndex: Int
+) {
+    val animOffset = remember { Animatable(80f) }
+    val animAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        delay(delayIndex * 90L + 80L)
+        launch {
+            animOffset.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+        }
+        launch {
+            animAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 350)
+            )
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                translationX = animOffset.value
+                alpha = animAlpha.value
+            },
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(GymCoachColors.SurfaceCardElevated),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = GymCoachColors.Primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = WarmWhite,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GymCoachColors.TextSecondary
+                )
+            }
         }
     }
 }

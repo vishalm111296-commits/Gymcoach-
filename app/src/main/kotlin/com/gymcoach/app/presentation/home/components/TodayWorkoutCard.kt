@@ -22,15 +22,29 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,8 +92,33 @@ fun TodayWorkoutCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val dotTransition = rememberInfiniteTransition(label = "liveDotPulse")
+                    val dotAlpha by dotTransition.animateFloat(
+                        initialValue = 0.4f,
+                        targetValue = 1.0f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dotAlpha"
+                    )
+                    val dotScale by dotTransition.animateFloat(
+                        initialValue = 0.85f,
+                        targetValue = 1.15f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dotScale"
+                    )
+
                     Box(
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = dotScale
+                                scaleY = dotScale
+                                alpha = dotAlpha
+                            }
                             .size(8.dp)
                             .clip(CircleShape)
                             .background(AccentBlue)
@@ -164,9 +203,21 @@ fun TodayWorkoutCard(
 
             Spacer(Modifier.height(4.dp))
 
+            val btnInteractionSource = remember { MutableInteractionSource() }
+            val isPressed by btnInteractionSource.collectIsPressedAsState()
+            val btnScale by animateFloatAsState(
+                targetValue = if (isPressed) 0.95f else 1.0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                label = "startBtnScale"
+            )
+
             // High-impact Start CTA
             Button(
                 onClick = onStartClick,
+                interactionSource = btnInteractionSource,
                 shape = GymCoachShapes.md,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentBlue,
@@ -175,6 +226,10 @@ fun TodayWorkoutCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .graphicsLayer {
+                        scaleX = btnScale
+                        scaleY = btnScale
+                    }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

@@ -1,9 +1,28 @@
 package com.gymcoach.app.presentation.detail
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,14 +41,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Refresh
@@ -47,6 +63,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -57,11 +74,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,6 +91,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.animation.AnimationPhase
 import com.gymcoach.app.core.animation.AnimationRepository
 import com.gymcoach.app.core.animation.ExerciseAnimationDefinition
 import com.gymcoach.app.core.exercise.SubstitutionEngine
@@ -155,6 +178,320 @@ class ExerciseDetailViewModel @Inject constructor(
     }
 }
 
+/**
+ * Animated muscle group badge with an ambient neon highlight glow aura.
+ */
+@Composable
+private fun MuscleGroupHighlightBadge(
+    muscleGroup: String,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "muscleGlowTransition")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+    val glowSpread by infiniteTransition.animateFloat(
+        initialValue = 1.5f,
+        targetValue = 5.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowSpread"
+    )
+
+    Box(
+        modifier = modifier
+            .drawBehind {
+                val cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
+                // Outer ambient glow
+                drawRoundRect(
+                    color = AccentBlue.copy(alpha = glowAlpha * 0.35f),
+                    cornerRadius = cornerRadius,
+                    size = androidx.compose.ui.geometry.Size(
+                        size.width + glowSpread * 2,
+                        size.height + glowSpread * 2
+                    ),
+                    topLeft = androidx.compose.ui.geometry.Offset(-glowSpread, -glowSpread)
+                )
+                // Badge background fill
+                drawRoundRect(
+                    color = AccentBlue.copy(alpha = 0.12f + glowAlpha * 0.08f),
+                    cornerRadius = cornerRadius,
+                    size = size
+                )
+                // Badge border stroke
+                drawRoundRect(
+                    color = AccentBlue.copy(alpha = 0.35f + glowAlpha * 0.65f),
+                    cornerRadius = cornerRadius,
+                    size = size,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx())
+                )
+            }
+            .clip(GymCoachShapes.xs)
+            .padding(horizontal = 9.dp, vertical = 3.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .graphicsLayer {
+                        alpha = glowAlpha
+                    }
+                    .clip(CircleShape)
+                    .background(AccentBlue)
+            )
+            Text(
+                text = muscleGroup,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                ),
+                color = AccentBlue
+            )
+        }
+    }
+}
+
+/**
+ * Animated biomechanical phase badges with color transitions, spring scale,
+ * sliding indicator dot, and interactive phase coaching cues.
+ */
+@Composable
+private fun AnimatedPhaseBadgesSection() {
+    val phases = listOf(
+        Triple(
+            AnimationPhase.SETUP,
+            "Setup",
+            "Establish solid foot placement, abdominal brace, and joint alignment before commencing tension."
+        ),
+        Triple(
+            AnimationPhase.ECCENTRIC,
+            "Eccentric",
+            "Control the 2–3s lowering phase under active muscular load. Avoid dropping weights abruptly."
+        ),
+        Triple(
+            AnimationPhase.BOTTOM,
+            "Bottom",
+            "Hold active stretch without losing tension or bouncing at end-range joint positions."
+        ),
+        Triple(
+            AnimationPhase.CONCENTRIC,
+            "Concentric",
+            "Drive powerfully through the concentric phase while exhaling steadily through the sticking point."
+        ),
+        Triple(
+            AnimationPhase.END,
+            "Lockout",
+            "Achieve peak contraction and squeeze target muscles without hyperextending joints."
+        )
+    )
+
+    var activePhase by rememberSaveable { mutableStateOf(AnimationPhase.ECCENTRIC) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Biomechanical Phase Breakdown",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = AccentBlue
+                    )
+                )
+                Text(
+                    text = "Tap phase to inspect",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        color = TextTertiary
+                    )
+                )
+            }
+
+            // Phase badges row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                phases.forEach { (phase, label, _) ->
+                    val isSelected = activePhase == phase
+
+                    val phaseColor = when (phase) {
+                        AnimationPhase.SETUP -> Color(0xFF38BDF8)     // Sky blue
+                        AnimationPhase.ECCENTRIC -> Color(0xFFFBBF24) // Amber
+                        AnimationPhase.BOTTOM -> Color(0xFFF43F5E)    // Rose
+                        AnimationPhase.CONCENTRIC -> Color(0xFF34D399)// Emerald
+                        AnimationPhase.END -> Color(0xFFA78BFA)       // Violet
+                        else -> AccentBlue
+                    }
+
+                    val badgeBg by animateColorAsState(
+                        targetValue = if (isSelected) phaseColor.copy(alpha = 0.22f) else DarkSurface,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "phaseBadgeBg"
+                    )
+                    val badgeBorder by animateColorAsState(
+                        targetValue = if (isSelected) phaseColor else GymCoachColors.BorderSubtle,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "phaseBadgeBorder"
+                    )
+                    val badgeText by animateColorAsState(
+                        targetValue = if (isSelected) phaseColor else TextSecondary,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "phaseBadgeText"
+                    )
+                    val badgeScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.05f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        ),
+                        label = "phaseBadgeScale"
+                    )
+
+                    Surface(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = badgeScale
+                                scaleY = badgeScale
+                            }
+                            .clip(GymCoachShapes.pill)
+                            .clickable { activePhase = phase }
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            ),
+                        shape = GymCoachShapes.pill,
+                        color = badgeBg,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, badgeBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(
+                                horizontal = if (isSelected) 12.dp else 10.dp,
+                                vertical = 6.dp
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            AnimatedVisibility(
+                                visible = isSelected,
+                                enter = fadeIn(animationSpec = tween(150)) + expandHorizontally(),
+                                exit = fadeOut(animationSpec = tween(100)) + shrinkHorizontally()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(phaseColor)
+                                )
+                            }
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 12.sp
+                                ),
+                                color = badgeText
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Animated cue description card for active phase
+            AnimatedContent(
+                targetState = activePhase,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
+                },
+                label = "phaseCueAnim"
+            ) { selected ->
+                val activeInfo = phases.firstOrNull { it.first == selected }
+                if (activeInfo != null) {
+                    val phaseColor = when (selected) {
+                        AnimationPhase.SETUP -> Color(0xFF38BDF8)
+                        AnimationPhase.ECCENTRIC -> Color(0xFFFBBF24)
+                        AnimationPhase.BOTTOM -> Color(0xFFF43F5E)
+                        AnimationPhase.CONCENTRIC -> Color(0xFF34D399)
+                        AnimationPhase.END -> Color(0xFFA78BFA)
+                        else -> AccentBlue
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(GymCoachShapes.sm)
+                            .background(phaseColor.copy(alpha = 0.08f))
+                            .border(1.dp, phaseColor.copy(alpha = 0.25f), GymCoachShapes.sm)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(phaseColor)
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "${activeInfo.second} Execution Cue",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                ),
+                                color = phaseColor
+                            )
+                            Text(
+                                text = activeInfo.third,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    lineHeight = 18.sp,
+                                    fontSize = 12.sp
+                                ),
+                                color = TextPrimary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseDetailScreen(
@@ -173,6 +510,20 @@ fun ExerciseDetailScreen(
     LaunchedEffect(exerciseId) {
         viewModel.loadExercise(exerciseId)
     }
+
+    val favTint by animateColorAsState(
+        targetValue = if (isFavorite) Color(0xFFF43F5E) else TextSecondary,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "favTint"
+    )
+    val favScale by animateFloatAsState(
+        targetValue = if (isFavorite) 1.25f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "favScale"
+    )
 
     Scaffold(
         containerColor = DarkBackground,
@@ -200,7 +551,11 @@ fun ExerciseDetailScreen(
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = if (isFavorite) "Unfavorite" else "Favorite",
-                            tint = if (isFavorite) Color(0xFFF43F5E) else TextSecondary
+                            tint = favTint,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = favScale
+                                scaleY = favScale
+                            }
                         )
                     }
                 },
@@ -209,6 +564,34 @@ fun ExerciseDetailScreen(
         }
     ) { padding ->
         exercise?.let { ex ->
+            // Smooth animated entry for exercise media and diagram
+            var mediaVisible by remember(ex.id) { mutableStateOf(false) }
+            LaunchedEffect(ex.id) {
+                mediaVisible = true
+            }
+
+            val mediaAlpha by animateFloatAsState(
+                targetValue = if (mediaVisible) 1f else 0f,
+                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+                label = "mediaAlpha"
+            )
+            val mediaScale by animateFloatAsState(
+                targetValue = if (mediaVisible) 1f else 0.93f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "mediaScale"
+            )
+            val mediaTranslationY by animateFloatAsState(
+                targetValue = if (mediaVisible) 0f else 24f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "mediaTranslationY"
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -217,8 +600,8 @@ fun ExerciseDetailScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Header Titles
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Header Titles with Muscle Group Highlight Glow
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = ex.name,
                         style = MaterialTheme.typography.headlineMedium.copy(
@@ -231,18 +614,9 @@ fun ExerciseDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(GymCoachShapes.xs)
-                                .background(AccentBlue.copy(alpha = 0.15f))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = ex.muscleGroup,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = AccentBlue
-                            )
-                        }
+                        // Muscle group badge with glowing animated aura
+                        MuscleGroupHighlightBadge(muscleGroup = ex.muscleGroup)
+
                         Text(
                             text = "•",
                             color = TextTertiary
@@ -269,130 +643,152 @@ fun ExerciseDetailScreen(
                         (ex.videoUrl.startsWith("http://") || ex.videoUrl.startsWith("https://") || ex.videoUrl.startsWith("android.resource://"))
                 val hasAnimation = animationDefinition != null
 
-                if (hasPlayableVideo && hasAnimation) {
-                    var showVideo by remember { mutableStateOf(false) }
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.lg)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = { showVideo = !showVideo }) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayCircleOutline,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = AccentBlue
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = if (showVideo) "View Stickman Form Animation" else "Watch Video Demo",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = AccentBlue
-                                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            alpha = mediaAlpha
+                            scaleX = mediaScale
+                            scaleY = mediaScale
+                            translationY = mediaTranslationY
+                        }
+                ) {
+                    if (hasPlayableVideo && hasAnimation) {
+                        var showVideo by remember { mutableStateOf(false) }
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(GymCoachShapes.lg)
+                                .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { showVideo = !showVideo }) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayCircleOutline,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = AccentBlue
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = if (showVideo) "View Stickman Form Animation" else "Watch Video Demo",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = AccentBlue
+                                        )
+                                    }
+                                }
+                                AnimatedContent(
+                                    targetState = showVideo,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(150))
+                                    },
+                                    label = "videoSwitchAnim"
+                                ) { isVideo ->
+                                    if (isVideo) {
+                                        ExerciseVideoPlayer(
+                                            videoUri = Uri.parse(ex.videoUrl),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(GymCoachShapes.md)
+                                        )
+                                    } else {
+                                        ExerciseAnimationPlayer(
+                                            definition = animationDefinition!!,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(260.dp)
+                                        )
+                                    }
                                 }
                             }
-                            if (showVideo) {
-                                ExerciseVideoPlayer(
-                                    videoUri = Uri.parse(ex.videoUrl),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(GymCoachShapes.md)
-                                )
-                            } else {
-                                ExerciseAnimationPlayer(
-                                    definition = animationDefinition!!,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(260.dp)
-                                )
-                            }
                         }
-                    }
-                } else if (hasAnimation) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.lg)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-                    ) {
-                        ExerciseAnimationPlayer(
-                            definition = animationDefinition!!,
+                    } else if (hasAnimation) {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(260.dp)
-                                .padding(12.dp)
-                        )
-                    }
-                } else if (hasPlayableVideo) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.lg)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-                    ) {
-                        ExerciseVideoPlayer(
-                            videoUri = Uri.parse(ex.videoUrl),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(GymCoachShapes.md)
-                        )
-                    }
-                } else {
-                    // Meaningful Exercise Glyph & Anatomy Placeholder (Zero fake 0:00 / 0:00 players!)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.lg)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                                .clip(GymCoachShapes.lg)
+                                .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
                         ) {
-                            Box(
+                            ExerciseAnimationPlayer(
+                                definition = animationDefinition!!,
                                 modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentBlue.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .height(260.dp)
+                                    .padding(12.dp)
+                            )
+                        }
+                    } else if (hasPlayableVideo) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(GymCoachShapes.lg)
+                                .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                        ) {
+                            ExerciseVideoPlayer(
+                                videoUri = Uri.parse(ex.videoUrl),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(GymCoachShapes.md)
+                            )
+                        }
+                    } else {
+                        // Meaningful Exercise Glyph & Anatomy Placeholder (Zero fake 0:00 / 0:00 players!)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(GymCoachShapes.lg)
+                                .border(GymCoachBorders.subtle, GymCoachShapes.lg),
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.FitnessCenter,
-                                    contentDescription = null,
-                                    tint = AccentBlue,
-                                    modifier = Modifier.size(32.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(AccentBlue.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FitnessCenter,
+                                        contentDescription = null,
+                                        tint = AccentBlue,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    text = "Technical Movement Profile",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = TextPrimary
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Biomechanical form notes and coaching cues detailed below",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
                                 )
                             }
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = "Technical Movement Profile",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "Biomechanical form notes and coaching cues detailed below",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
                         }
                     }
                 }
 
-                // 2. PRIMARY ACTIONS ROW (Start Form Check + View Progress)
+                // 2. BIOMECHANICAL PHASE BADGES SECTION
+                AnimatedPhaseBadgesSection()
+
+                // 3. PRIMARY ACTIONS ROW (Start Form Check + View Progress)
                 val matchedType = com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(ex.name)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -432,7 +828,7 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 3. QUICK SPECIFICATIONS GRID (Target Reps, Rest, Difficulty, Equipment)
+                // 4. QUICK SPECIFICATIONS GRID (Target Reps, Rest, Difficulty, Equipment)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -474,7 +870,7 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 4. OVERVIEW / DESCRIPTION
+                // 5. OVERVIEW / DESCRIPTION
                 if (ex.description.isNotBlank()) {
                     Card(
                         modifier = Modifier
@@ -501,7 +897,7 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 5. COACHING CUES (Bullet Points with Green Checkmarks)
+                // 6. COACHING CUES (Bullet Points with Green Checkmarks)
                 val cuesList = ex.tips.split(";").map { it.trim() }.filter { it.isNotBlank() }
                 if (cuesList.isNotEmpty()) {
                     Card(
@@ -544,7 +940,7 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 6. HOW TO PERFORM / EXECUTION GUIDE
+                // 7. HOW TO PERFORM / EXECUTION GUIDE
                 val setup = ex.setupInstructions.ifBlank { "" }
                 val execution = ex.executionInstructions.ifBlank { ex.instructions }
                 if (setup.isNotBlank() || execution.isNotBlank()) {
@@ -600,7 +996,7 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 7. COMMON MISTAKES
+                // 8. COMMON MISTAKES
                 val mistakesList = ex.commonMistakes.split(";").map { it.trim() }.filter { it.isNotBlank() }
                 if (mistakesList.isNotEmpty()) {
                     Card(
@@ -651,10 +1047,10 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 8. TARGET MUSCLES & V-TAPER
+                // 9. TARGET MUSCLES & V-TAPER
                 VTaperScoresSection(exercise = ex)
 
-                // 9. SUGGESTED SUBSTITUTIONS
+                // 10. SUGGESTED SUBSTITUTIONS
                 if (substitutes.isNotEmpty()) {
                     SubstitutionSection(
                         substitutes = substitutes,
@@ -712,7 +1108,7 @@ private fun SpecBadge(label: String, value: String, icon: ImageVector) {
     }
 }
 
-// --- V-Taper Scores Section ---
+// --- V-Taper Scores Section with Muscle Highlight Glow ---
 
 @Composable
 private fun VTaperScoresSection(exercise: Exercise) {
@@ -747,19 +1143,40 @@ private fun VTaperScoresSection(exercise: Exercise) {
             }
 
             if (exercise.secondaryMuscles.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Secondary: ${exercise.secondaryMuscles}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "Secondary:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                    exercise.secondaryMuscles.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { secMuscle ->
+                        Box(
+                            modifier = Modifier
+                                .clip(GymCoachShapes.pill)
+                                .background(DarkSurface)
+                                .border(1.dp, AccentBlue.copy(alpha = 0.35f), GymCoachShapes.pill)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = secMuscle,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = TextPrimary
+                            )
+                        }
+                    }
+                }
             }
 
             if (scores.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 scores.forEach { (label, score) ->
                     VTaperBar(label = label, score = score, maxScore = 10)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                 }
             }
         }
@@ -769,6 +1186,28 @@ private fun VTaperScoresSection(exercise: Exercise) {
 @Composable
 private fun VTaperBar(label: String, score: Int, maxScore: Int) {
     val progress = score.toFloat() / maxScore
+    val isHighImpact = score >= 7
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "vTaperProgress"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "barGlowTransition")
+    val barGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "barGlowAlpha"
+    )
+
     val color = when {
         score >= 8 -> GymCoachColors.Success
         score >= 5 -> AccentBlue
@@ -781,25 +1220,41 @@ private fun VTaperBar(label: String, score: Int, maxScore: Int) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.width(90.dp),
-            color = TextSecondary
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = if (isHighImpact) FontWeight.SemiBold else FontWeight.Normal
+            ),
+            modifier = Modifier.width(95.dp),
+            color = if (isHighImpact) TextPrimary else TextSecondary
         )
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { animatedProgress },
             modifier = Modifier
                 .weight(1f)
-                .height(6.dp)
-                .clip(CircleShape),
+                .height(7.dp)
+                .clip(CircleShape)
+                .then(
+                    if (isHighImpact) {
+                        Modifier.drawWithContent {
+                            drawContent()
+                            drawRoundRect(
+                                color = color.copy(alpha = barGlowAlpha * 0.7f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2),
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                            )
+                        }
+                    } else Modifier
+                ),
             color = color,
             trackColor = DarkSurface
         )
         Spacer(Modifier.width(10.dp))
         Text(
             text = "$score/$maxScore",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.width(36.dp),
-            color = TextPrimary
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = if (isHighImpact) color else TextPrimary
+            ),
+            modifier = Modifier.width(36.dp)
         )
     }
 }

@@ -445,6 +445,44 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Batch insert scientific warm-up sets for an exercise.
+     */
+    fun addWarmupSets(
+        exerciseIndex: Int,
+        warmupSets: List<com.gymcoach.app.core.progression.WarmupCalculator.WarmupSetProtocol>
+    ) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices || warmupSets.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                addSetMutex.withLock {
+                    val latestWorkout = _currentWorkout.value ?: return@withLock
+                    val latestWe = latestWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                    var currentMaxSetNumber = latestWe.sets.maxOfOrNull { it.setNumber } ?: 0
+
+                    for (ws in warmupSets) {
+                        currentMaxSetNumber++
+                        val newSet = WorkoutSet(
+                            workoutExerciseId = latestWe.workoutExercise.id,
+                            setNumber = currentMaxSetNumber,
+                            weight = ws.weight,
+                            reps = ws.reps,
+                            rpe = 0.0,
+                            restSeconds = ws.restSeconds,
+                            completed = false,
+                            setType = SetType.WARMUP
+                        )
+                        workoutRepository.addSetToExercise(latestWe.workoutExercise.id, newSet)
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to add warm-up sets"
+            }
+        }
+    }
+
     fun updateSetReps(exerciseIndex: Int, setIndex: Int, reps: Int) {
         updateSetField(exerciseIndex, setIndex) { it.copy(reps = reps) }
     }
@@ -506,9 +544,9 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun removeExercise(exerciseIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
-        val we = workout.exercises[exerciseIndex]
         viewModelScope.launch {
             try {
+                val we = workout.exercises[exerciseIndex]
                 workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
                 val updated = _progressionRecommendations.value - we.exercise.id
                 _progressionRecommendations.value = updated

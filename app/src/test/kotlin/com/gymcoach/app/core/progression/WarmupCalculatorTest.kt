@@ -1,0 +1,83 @@
+package com.gymcoach.app.core.progression
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class WarmupCalculatorTest {
+
+    @Test
+    fun testStandardBenchPressWarmup100kg() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 100.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+
+        assertEquals(100.0, plan.workingWeight, 0.001)
+        assertEquals(20.0, plan.barWeight, 0.001)
+        assertEquals(4, plan.sets.size)
+
+        // Set 1: Empty bar (20kg) x 10 reps
+        val set1 = plan.sets[0]
+        assertEquals(1, set1.setNumber)
+        assertEquals(20.0, set1.weight, 0.001)
+        assertEquals(10, set1.reps)
+
+        // Set 2: 50% = 50kg x 5 reps
+        val set2 = plan.sets[1]
+        assertEquals(2, set2.setNumber)
+        assertEquals(50.0, set2.weight, 0.001)
+        assertEquals(5, set2.reps)
+
+        // Set 3: 70% = 70kg x 3 reps
+        val set3 = plan.sets[2]
+        assertEquals(3, set3.setNumber)
+        assertEquals(70.0, set3.weight, 0.001)
+        assertEquals(3, set3.reps)
+
+        // Set 4: 85% = 85kg x 1 rep
+        val set4 = plan.sets[3]
+        assertEquals(4, set4.setNumber)
+        assertEquals(85.0, set4.weight, 0.001)
+        assertEquals(1, set4.reps)
+
+        assertTrue(plan.estimatedDurationMinutes in 5..8)
+    }
+
+    @Test
+    fun testHeavySquatWarmup160kgIncludesPotentiationSet() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 160.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+
+        // Should include 5 sets: bar, 50% (80kg), 70% (112.5kg), 85% (135kg), 92% (147.5kg)
+        assertEquals(5, plan.sets.size)
+        val set5 = plan.sets.last()
+        assertEquals(5, set5.setNumber)
+        assertEquals(1, set5.reps)
+        assertTrue(set5.weight >= 145.0 && set5.weight <= 150.0)
+        assertEquals("Post-activation potentiation", set5.purpose)
+    }
+
+    @Test
+    fun testWorkingWeightEqualsBarWeight() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 20.0,
+            barWeight = 20.0
+        )
+
+        assertEquals(1, plan.sets.size)
+        assertEquals(20.0, plan.sets[0].weight, 0.001)
+        assertEquals(10, plan.sets[0].reps)
+    }
+
+    @Test
+    fun testRoundingToPlateSteps() {
+        val rounded = WarmupCalculator.roundToStep(61.8, 20.0, 2.5)
+        // 61.8 - 20 = 41.8 / 2.5 = 16.72 -> round is 17 -> 17*2.5 = 42.5 + 20 = 62.5
+        assertEquals(62.5, rounded, 0.001)
+    }
+}

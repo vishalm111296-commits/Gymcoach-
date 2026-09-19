@@ -1,6 +1,7 @@
 package com.gymcoach.app.presentation.workout
 
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
+import com.gymcoach.app.presentation.workout.components.WarmupCalculatorDialog
 
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -45,6 +46,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
@@ -164,6 +166,7 @@ fun WorkoutSessionScreen(
     var dismissReadinessAdvisory by rememberSaveable { mutableStateOf(false) }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
+    var warmupDialogData by rememberSaveable { mutableStateOf<Triple<Int, String, Double>?>(null) }
     var pickerSearchQuery by rememberSaveable { mutableStateOf("") }
     var pickerSelectedCategory by rememberSaveable { mutableStateOf("All") }
     var showCreateCustomExerciseInWorkout by rememberSaveable { mutableStateOf(false) }
@@ -348,6 +351,7 @@ fun WorkoutSessionScreen(
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
                                onOpenPlateCalculator = { w -> plateCalcWeight = w },
+                               onOpenWarmupCalculator = { w -> warmupDialogData = Triple(exIdx, we.exercise.name, w) },
                                onCameraClick = { type ->
                                    activeCameraExerciseIndex = exIdx
                                    onCameraClick(type)
@@ -420,6 +424,18 @@ fun WorkoutSessionScreen(
         PlateCalculatorDialog(
             targetWeight = plateCalcWeight!!,
             onDismiss = { plateCalcWeight = null }
+        )
+    }
+
+    if (warmupDialogData != null) {
+        val (exIdx, exName, targetWeight) = warmupDialogData!!
+        WarmupCalculatorDialog(
+            exerciseName = exName,
+            targetWeight = targetWeight,
+            onInsertWarmupSets = { warmupSets ->
+                viewModel.addWarmupSets(exIdx, warmupSets)
+            },
+            onDismiss = { warmupDialogData = null }
         )
     }
 
@@ -821,6 +837,7 @@ internal fun ExerciseSetCard(
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: (Int) -> Unit,
     onOpenPlateCalculator: (Double) -> Unit = {},
+    onOpenWarmupCalculator: (Double) -> Unit = {},
     onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
@@ -973,6 +990,16 @@ internal fun ExerciseSetCard(
                             imageVector = Icons.Default.FitnessCenter,
                             contentDescription = "Plate Calculator",
                             tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = {
+                        val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
+                        onOpenWarmupCalculator(maxWeight)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Whatshot,
+                            contentDescription = "Warm-Up Protocol",
+                            tint = GymCoachColors.Primary
                         )
                     }
                     IconButton(onClick = onRemoveExercise) {

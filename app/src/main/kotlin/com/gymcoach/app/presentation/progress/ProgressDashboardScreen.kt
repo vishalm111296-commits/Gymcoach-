@@ -89,6 +89,9 @@ import kotlinx.coroutines.launch
 fun ProgressDashboardScreen(
     onBackClick: () -> Unit,
     onNavigateToProgressionAnalytics: (Long, String) -> Unit = { _, _ -> },
+    onNavigateToMuscleBalance: () -> Unit = {},
+    onNavigateToStreaks: () -> Unit = {},
+    onNavigateToVTaper: () -> Unit = {},
     onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
@@ -186,6 +189,15 @@ fun ProgressDashboardScreen(
                     DateRangeSelector(
                         selected = state.dateRange,
                         onSelect = { viewModel.selectDateRange(it) }
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Advanced Analytics & Telemetry Hub
+                    AdvancedAnalyticsHub(
+                        onNavigateToVTaper = onNavigateToVTaper,
+                        onNavigateToMuscleBalance = onNavigateToMuscleBalance,
+                        onNavigateToStreaks = onNavigateToStreaks
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -1216,3 +1228,95 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
         }
     }
 }
+
+@Composable
+private fun AdvancedAnalyticsHub(
+    onNavigateToVTaper: () -> Unit,
+    onNavigateToMuscleBalance: () -> Unit,
+    onNavigateToStreaks: () -> Unit
+) {
+    SectionHeader("Advanced Telemetry & Analytics")
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AnalyticsFeatureCard(
+            title = "V-Taper",
+            subtitle = "Adonis Telemetry",
+            icon = Icons.Default.LocalFireDepartment,
+            accentColor = Color(0xFF6C63FF),
+            onClick = onNavigateToVTaper,
+            modifier = Modifier.weight(1f)
+        )
+        AnalyticsFeatureCard(
+            title = "Balance",
+            subtitle = "Antagonist Ratios",
+            icon = Icons.Default.FitnessCenter,
+            accentColor = Color(0xFF00F2FE),
+            onClick = onNavigateToMuscleBalance,
+            modifier = Modifier.weight(1f)
+        )
+        AnalyticsFeatureCard(
+            title = "Streaks",
+            subtitle = "Consistency Badges",
+            icon = Icons.Default.EmojiEvents,
+            accentColor = Color(0xFFFFB300),
+            onClick = onNavigateToStreaks,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun AnalyticsFeatureCard(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(
+            containerColor = DarkSurface
+        ),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(accentColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextTertiary,
+                maxLines = 1
+            )
+        }
+    }
+}
+

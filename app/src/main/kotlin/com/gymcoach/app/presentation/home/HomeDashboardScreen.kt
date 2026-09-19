@@ -92,6 +92,8 @@ fun HomeDashboardScreen(
     onNavigateToReadiness: () -> Unit = {},
     onNavigateToExercises: () -> Unit = {},
     onNavigateToTemplates: () -> Unit = {},
+    onNavigateToStreaks: () -> Unit = {},
+    onNavigateToVTaper: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -198,7 +200,8 @@ fun HomeDashboardScreen(
                     WeeklyConsistencyCard(
                         workoutsThisWeek = state.workoutsThisWeek,
                         targetWorkouts = state.targetWorkouts,
-                        prCount = state.prCount
+                        prCount = state.prCount,
+                        onClick = onNavigateToStreaks
                     )
                 }
 
@@ -212,7 +215,9 @@ fun HomeDashboardScreen(
                 // V-Taper Focus if available
                 if (state.vtaperBars.isNotEmpty()) {
                     StaggeredDashboardItem(index = 5, isLoading = state.isLoading) {
-                        VtaperFocusCard(muscleData = state.vtaperBars)
+                        Box(modifier = Modifier.clickable(onClick = onNavigateToVTaper)) {
+                            VtaperFocusCard(muscleData = state.vtaperBars)
+                        }
                     }
                 }
 
@@ -395,7 +400,8 @@ private fun ReadinessDashboardCard(
 private fun WeeklyConsistencyCard(
     workoutsThisWeek: Int,
     targetWorkouts: Int,
-    prCount: Int
+    prCount: Int,
+    onClick: () -> Unit = {}
 ) {
     val maxTarget = targetWorkouts.coerceIn(1, 7)
     val weeklyFraction = (workoutsThisWeek.toFloat() / maxTarget).coerceIn(0f, 1f)
@@ -430,7 +436,8 @@ private fun WeeklyConsistencyCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(GymCoachShapes.md)
-            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+            .border(GymCoachBorders.subtle, GymCoachShapes.md)
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
         shape = GymCoachShapes.md
     ) {

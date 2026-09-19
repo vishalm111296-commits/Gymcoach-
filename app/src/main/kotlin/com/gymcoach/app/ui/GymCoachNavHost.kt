@@ -151,6 +151,12 @@ fun GymCoachNavHost(
                 },
                 onNavigateToTemplates = {
                     navController.navigate(Routes.TEMPLATES)
+                },
+                onNavigateToStreaks = {
+                    navController.navigate(Routes.STREAKS_AND_ACHIEVEMENTS)
+                },
+                onNavigateToVTaper = {
+                    navController.navigate(Routes.V_TAPER_TRANSFORMATION)
                 }
             )
         }
@@ -257,6 +263,9 @@ fun GymCoachNavHost(
                 onNavigateToProgressionAnalytics = { exerciseId, exerciseName ->
                     navController.navigate(Routes.progressionAnalytics(exerciseId, exerciseName))
                 },
+                onNavigateToMuscleBalance = { navController.navigate(Routes.MUSCLE_BALANCE) },
+                onNavigateToStreaks = { navController.navigate(Routes.STREAKS_AND_ACHIEVEMENTS) },
+                onNavigateToVTaper = { navController.navigate(Routes.V_TAPER_TRANSFORMATION) },
                 onNavigateBottomBar = onBottomNavigate
             )
         }

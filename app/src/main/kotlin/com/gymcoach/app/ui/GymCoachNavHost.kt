@@ -53,6 +53,7 @@ object Routes {
     const val V_TAPER_TRANSFORMATION = "v_taper_transformation"
     const val BODY_COMPOSITION = "body_composition"
     const val STRENGTH_STANDARDS = "strength_standards"
+    const val DELOAD_PERIODIZATION = "deload_periodization"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -271,12 +272,19 @@ fun GymCoachNavHost(
                 onNavigateToVTaper = { navController.navigate(Routes.V_TAPER_TRANSFORMATION) },
                 onNavigateToBodyComposition = { navController.navigate(Routes.BODY_COMPOSITION) },
                 onNavigateToStrengthStandards = { navController.navigate(Routes.STRENGTH_STANDARDS) },
+                onNavigateToDeloadPeriodization = { navController.navigate(Routes.DELOAD_PERIODIZATION) },
                 onNavigateBottomBar = onBottomNavigate
             )
         }
 
         composable(Routes.STRENGTH_STANDARDS) {
             com.gymcoach.app.presentation.standards.StrengthStandardsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.DELOAD_PERIODIZATION) {
+            com.gymcoach.app.presentation.program.DeloadPeriodizationScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

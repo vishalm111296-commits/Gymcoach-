@@ -12,6 +12,7 @@ import com.gymcoach.app.data.local.dao.LastSetData
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.model.SetType
+import com.gymcoach.app.domain.model.SupersetGroup
 import com.gymcoach.app.domain.model.Workout
 import com.gymcoach.app.domain.model.WorkoutExerciseWithSets
 import com.gymcoach.app.domain.model.WorkoutSet
@@ -33,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -155,6 +157,9 @@ class WorkoutLoggingViewModel @Inject constructor(
     // Accumulated volume for the current workout session
     private val _sessionVolume = MutableStateFlow(0.0)
     val sessionVolume: StateFlow<Double> = _sessionVolume.asStateFlow()
+
+    private val _supersetGroups = MutableStateFlow<List<SupersetGroup>>(emptyList())
+    val supersetGroups: StateFlow<List<SupersetGroup>> = _supersetGroups.asStateFlow()
 
     /**
      * F-WORKOUT-1 fix: serialise addSet calls so that nextSetNumber is always
@@ -629,6 +634,61 @@ class WorkoutLoggingViewModel @Inject constructor(
         }
     }
 
+    fun linkExercisesAsSuperset(exerciseIndexA: Int, exerciseIndexB: Int) {
+        val remaining = _supersetGroups.value.filter {
+            exerciseIndexA !in it.exerciseIndices && exerciseIndexB !in it.exerciseIndices
+        }
+        val newGroup = SupersetGroup(
+            id = "SS_${UUID.randomUUID().toString().take(8)}",
+            label = "Superset ${'A' + remaining.size}",
+            exerciseIndices = listOf(exerciseIndexA, exerciseIndexB).sorted()
+        )
+        _supersetGroups.value = remaining + newGroup
+    }
+
+    fun unlinkSuperset(exerciseIndex: Int) {
+        _supersetGroups.value = _supersetGroups.value.filter { exerciseIndex !in it.exerciseIndices }
+    }
+
+    fun getSupersetForExercise(exerciseIndex: Int): SupersetGroup? {
+        return _supersetGroups.value.firstOrNull { exerciseIndex in it.exerciseIndices }
+    }
+
+    fun logSet(exerciseIndex: Int, setIndex: Int) {
+        val workout = _currentWorkout.value ?: return
+        if (exerciseIndex !in workout.exercises.indices) return
+        val we = workout.exercises[exerciseIndex]
+        if (setIndex !in we.sets.indices) return
+        val set = we.sets[setIndex]
+        val updated = set.copy(completed = true)
+        viewModelScope.launch {
+            try {
+                workoutRepository.updateSet(updated)
+                val refreshed = _currentWorkout.value
+                calculateSessionVolume(refreshed)
+                if (refreshed != null) {
+                    calculateProgressionRecommendations(refreshed.exercises)
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to log set"
+            }
+        }
+        val supersetGroup = getSupersetForExercise(exerciseIndex)
+        val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
+            ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
+        val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
+        restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+    }
+
+    fun logSet(exerciseIndex: Int) {
+        val workout = _currentWorkout.value ?: return
+        val we = workout.exercises.getOrNull(exerciseIndex) ?: return
+        val targetIndex = we.sets.indexOfFirst { !it.completed }.let { if (it == -1) we.sets.lastIndex else it }
+        if (targetIndex in we.sets.indices) {
+            logSet(exerciseIndex, targetIndex)
+        }
+    }
+
     fun toggleSetCompletion(exerciseIndex: Int, setIndex: Int) {
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
@@ -649,8 +709,9 @@ class WorkoutLoggingViewModel @Inject constructor(
             }
         }
         if (updated.completed) {
-            val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
-            val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
+            val supersetGroup = getSupersetForExercise(exerciseIndex)
+            val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
+                ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
             val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
             restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
         } else {
@@ -674,6 +735,19 @@ class WorkoutLoggingViewModel @Inject constructor(
         exerciseIndex: Int,
         setIndex: Int
     ): String {
+        val superset = getSupersetForExercise(exerciseIndex)
+        if (superset != null) {
+            val nextExIdx = superset.getNextExerciseIndex(exerciseIndex)
+            if (nextExIdx != null) {
+                val nextWe = workout.exercises.getOrNull(nextExIdx)
+                if (nextWe != null) {
+                    val nextIncompleteSet = nextWe.sets.firstOrNull { !it.completed }
+                    if (nextIncompleteSet != null) {
+                        return "${nextWe.exercise.name} Set ${nextIncompleteSet.setNumber}"
+                    }
+                }
+            }
+        }
         val currentWe = workout.exercises.getOrNull(exerciseIndex) ?: return ""
         val nextSetInSameExercise = currentWe.sets.getOrNull(setIndex + 1)
         if (nextSetInSameExercise != null) {

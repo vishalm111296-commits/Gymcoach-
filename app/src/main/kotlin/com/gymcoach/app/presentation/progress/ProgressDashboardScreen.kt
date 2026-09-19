@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
@@ -96,6 +97,7 @@ fun ProgressDashboardScreen(
     onNavigateToVTaper: () -> Unit = {},
     onNavigateToBodyComposition: () -> Unit = {},
     onNavigateToStrengthStandards: () -> Unit = {},
+    onNavigateToDeloadPeriodization: () -> Unit = {},
     onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
@@ -202,7 +204,8 @@ fun ProgressDashboardScreen(
                         onNavigateToVTaper = onNavigateToVTaper,
                         onNavigateToMuscleBalance = onNavigateToMuscleBalance,
                         onNavigateToStreaks = onNavigateToStreaks,
-                        onNavigateToStrengthStandards = onNavigateToStrengthStandards
+                        onNavigateToStrengthStandards = onNavigateToStrengthStandards,
+                        onNavigateToDeloadPeriodization = onNavigateToDeloadPeriodization
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -1248,7 +1251,8 @@ private fun AdvancedAnalyticsHub(
     onNavigateToVTaper: () -> Unit,
     onNavigateToMuscleBalance: () -> Unit,
     onNavigateToStreaks: () -> Unit,
-    onNavigateToStrengthStandards: () -> Unit
+    onNavigateToStrengthStandards: () -> Unit,
+    onNavigateToDeloadPeriodization: () -> Unit
 ) {
     SectionHeader("Advanced Telemetry & Analytics")
     Spacer(Modifier.height(8.dp))
@@ -1294,6 +1298,21 @@ private fun AdvancedAnalyticsHub(
             onClick = onNavigateToStreaks,
             modifier = Modifier.weight(1f)
         )
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AnalyticsFeatureCard(
+            title = "Periodization",
+            subtitle = "Mesocycle & Deload",
+            icon = Icons.Filled.Timeline,
+            accentColor = GymCoachColors.Success,
+            onClick = onNavigateToDeloadPeriodization,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

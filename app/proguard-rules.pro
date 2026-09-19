@@ -72,3 +72,25 @@
 # ── Hilt Android & ViewModels ────────────────────────
 -keep @dagger.hilt.android.HiltAndroidApp class *
 -keep class * extends dagger.hilt.android.lifecycle.HiltViewModel { *; }
+
+# ── Compose Runtime & Animation ──────────────────────
+-keep class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.animation.** { *; }
+-keep class com.gymcoach.app.ui.** { *; }
+
+# ── Kotlinx Serialization & Gson ─────────────────────
+# Guard rules for Kotlinx Serialization
+-dontwarn kotlinx.serialization.**
+-keepclassmembers class * {
+    @kotlinx.serialization.SerialName <fields>;
+}
+-keepattributes *Annotation*
+
+# Guard rules for Gson
+-dontwarn com.google.gson.**
+-keep class com.google.gson.** { *; }
+-keepclassmembers enum * { *; }
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+

@@ -29,6 +29,7 @@ import com.gymcoach.app.presentation.progress.ProgressionAnalyticsScreen
 import com.gymcoach.app.presentation.readiness.ReadinessScreen
 import com.gymcoach.app.presentation.template.WorkoutTemplateScreen
 import com.gymcoach.app.presentation.workout.WorkoutSessionScreen
+import com.gymcoach.app.presentation.gamification.StreakAndAchievementScreen
 
 object Routes {
     const val HOME = "home"
@@ -47,6 +48,7 @@ object Routes {
     const val TEMPLATES = "templates"
     const val PROGRESSION_ANALYTICS = "progression_analytics/{exerciseId}?exerciseName={exerciseName}"
     const val MUSCLE_BALANCE = "muscle_balance"
+    const val STREAKS_AND_ACHIEVEMENTS = "streaks_and_achievements"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -356,6 +358,12 @@ fun GymCoachNavHost(
 
         composable(Routes.MUSCLE_BALANCE) {
             MuscleBalanceScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.STREAKS_AND_ACHIEVEMENTS) {
+            StreakAndAchievementScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

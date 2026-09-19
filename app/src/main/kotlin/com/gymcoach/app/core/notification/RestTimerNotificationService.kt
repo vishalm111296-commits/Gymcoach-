@@ -44,6 +44,7 @@ class RestTimerNotificationService : Service() {
         const val EXTRA_DELTA = "extra_delta"
 
         private val stateMachine = RestTimerStateMachine()
+        private val audioCoach = com.gymcoach.app.core.audio.RestAudioCoach(com.gymcoach.app.core.audio.RestAudioCueEvaluator())
 
         val remainingSeconds: StateFlow<Int> = stateMachine.remainingSeconds
         val isPaused: StateFlow<Boolean> = stateMachine.isPaused
@@ -221,6 +222,7 @@ class RestTimerNotificationService : Service() {
             override fun onTick(millisUntilFinished: Long) {
                 val sec = (millisUntilFinished / 1000L).toInt()
                 stateMachine.tick(sec)
+                audioCoach.onTick(sec)
                 updateNotification()
             }
 
@@ -294,6 +296,7 @@ class RestTimerNotificationService : Service() {
         RestTimerPreferences.clear(this)
         if (isCompleted) {
             triggerCompletionHaptics()
+            audioCoach.onComplete()
             stateMachine.complete()
         } else {
             stateMachine.cancel()

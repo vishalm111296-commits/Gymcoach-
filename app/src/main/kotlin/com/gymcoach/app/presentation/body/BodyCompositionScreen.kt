@@ -258,7 +258,7 @@ fun MetricCard(part: BodyPart, delta: com.gymcoach.app.core.body.MetricDelta?, m
         border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(GymCoachSpacing.md)) {
-            Text(part.name.capitalize(Locale.US), color = GymCoachColors.TextSecondary, style = MaterialTheme.typography.labelSmall)
+            Text(part.name.lowercase(Locale.US).replaceFirstChar { it.titlecase(Locale.US) }, color = GymCoachColors.TextSecondary, style = MaterialTheme.typography.labelSmall)
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val value = delta?.currentCm ?: 0.0

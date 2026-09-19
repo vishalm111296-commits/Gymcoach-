@@ -163,7 +163,7 @@ private fun HeroCard(profile: OverallStrengthProfile) {
                 color = GymCoachColors.TextPrimary
             )
 
-            Divider(color = GymCoachColors.BorderSubtle, modifier = Modifier.padding(vertical = GymCoachSpacing.sm))
+            HorizontalDivider(color = GymCoachColors.BorderSubtle, modifier = Modifier.padding(vertical = GymCoachSpacing.sm))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

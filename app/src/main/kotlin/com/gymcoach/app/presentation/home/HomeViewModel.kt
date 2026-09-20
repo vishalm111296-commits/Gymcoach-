@@ -67,7 +67,8 @@ class HomeViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     private val volumeCalculator: VolumeCalculator,
     analyticsRepository: AnalyticsRepository,
-    private val readinessRepository: ReadinessRepository
+    private val readinessRepository: ReadinessRepository,
+    private val nutritionRepository: com.gymcoach.app.domain.repository.NutritionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -75,6 +76,13 @@ class HomeViewModel @Inject constructor(
 
     val weeklyWorkoutCount: StateFlow<Int> = _uiState
         .map { it.workoutsThisWeek }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
+
+    val todayCalories: StateFlow<Int> = nutritionRepository.getLogsForDay(
+        startOfDay = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+        endOfDay = java.time.LocalDate.now().plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    )
+        .map { logs -> logs.sumOf { it.calories } }
         .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     val latestReadiness: StateFlow<Int> = _uiState

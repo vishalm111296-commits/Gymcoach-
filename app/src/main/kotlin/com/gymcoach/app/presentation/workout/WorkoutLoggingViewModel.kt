@@ -78,6 +78,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             override suspend fun update(record: com.gymcoach.app.data.local.entity.PersonalRecordEntity): Int = 0
             override fun getByExerciseId(exerciseId: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.PersonalRecordEntity>())
             override fun getAll() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.PersonalRecordEntity>())
+            override fun getAllWithExerciseName() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.PersonalRecordWithExercise>())
             override suspend fun getById(id: Long): com.gymcoach.app.data.local.entity.PersonalRecordEntity? = null
             override suspend fun deleteById(id: Long): Int = 0
         },

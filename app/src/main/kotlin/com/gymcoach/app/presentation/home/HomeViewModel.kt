@@ -19,12 +19,14 @@ import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class TodayWorkoutUiModel(
@@ -70,6 +72,14 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    val weeklyWorkoutCount: StateFlow<Int> = _uiState
+        .map { it.workoutsThisWeek }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
+
+    val latestReadiness: StateFlow<Int> = _uiState
+        .map { it.latestReadiness?.readinessScore?.toInt() ?: 0 }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     private val _prCount = MutableStateFlow(0)
 

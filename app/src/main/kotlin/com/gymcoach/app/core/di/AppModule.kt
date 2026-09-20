@@ -111,4 +111,9 @@ object AppModule {
     @Singleton
     fun provideRestTimerManager(@ApplicationContext ctx: android.content.Context): RestTimerManager =
         RestTimerManager(ctx)
+
+    @Provides
+    @Singleton
+    fun provideNutritionLogDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.NutritionLogDao =
+        database.nutritionLogDao()
 }

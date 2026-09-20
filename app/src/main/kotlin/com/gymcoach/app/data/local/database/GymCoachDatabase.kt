@@ -30,9 +30,10 @@ import com.gymcoach.app.data.local.dao.*
         UserProfileEntity::class,
         ReadinessEntity::class,
         WorkoutTemplateEntity::class,
-        TemplateExerciseEntity::class
+        TemplateExerciseEntity::class,
+        NutritionLogEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 abstract class GymCoachDatabase : RoomDatabase() {
@@ -53,6 +54,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
     abstract fun exerciseEquipmentDao(): ExerciseEquipmentDao
     abstract fun exerciseAliasDao(): ExerciseAliasDao
     abstract fun readinessDao(): ReadinessDao
+    abstract fun nutritionLogDao(): NutritionLogDao
 
     companion object {
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
@@ -514,6 +516,25 @@ abstract class GymCoachDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_14_15 = object : androidx.room.migration.Migration(14, 15) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `nutrition_logs` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` INTEGER NOT NULL DEFAULT 0,
+                        `mealName` TEXT NOT NULL DEFAULT 'Meal',
+                        `calories` INTEGER NOT NULL DEFAULT 0,
+                        `proteinGrams` REAL NOT NULL DEFAULT 0,
+                        `carbsGrams` REAL NOT NULL DEFAULT 0,
+                        `fatGrams` REAL NOT NULL DEFAULT 0,
+                        `fiberGrams` REAL NOT NULL DEFAULT 0,
+                        `waterMl` INTEGER NOT NULL DEFAULT 0,
+                        `notes` TEXT NOT NULL DEFAULT ''
+                    )
+                """)
+            }
+        }
+
         fun create(context: Context): GymCoachDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
@@ -524,7 +545,7 @@ abstract class GymCoachDatabase : RoomDatabase() {
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
                     MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
-                    MIGRATION_13_14
+                    MIGRATION_13_14, MIGRATION_14_15
                 )
                 .build()
         }

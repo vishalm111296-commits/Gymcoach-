@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.workout
 
 import com.gymcoach.app.presentation.workout.components.ExerciseSubstitutionDialog
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
+import com.gymcoach.app.presentation.workout.components.SupersetLinkDialog
 import com.gymcoach.app.presentation.workout.components.WarmupCalculatorDialog
 
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -53,6 +54,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -75,6 +78,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -176,6 +180,8 @@ fun WorkoutSessionScreen(
     var pickerSelectedCategory by rememberSaveable { mutableStateOf("All") }
     var showCreateCustomExerciseInWorkout by rememberSaveable { mutableStateOf(false) }
     var activeCameraExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val supersetGroups by viewModel.supersetGroups.collectAsState()
+    var supersetDialogExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -364,7 +370,9 @@ fun WorkoutSessionScreen(
                                onCameraClick = { type ->
                                    activeCameraExerciseIndex = exIdx
                                    onCameraClick(type)
-                               }
+                               },
+                               supersetGroup = supersetGroups.firstOrNull { exIdx in it.exerciseIndices },
+                               onOpenSupersetDialog = { supersetDialogExerciseIndex = exIdx }
                             )
                         }
 
@@ -585,6 +593,25 @@ fun WorkoutSessionScreen(
                 )
                 showCreateCustomExerciseInWorkout = false
             }
+        )
+    }
+
+    supersetDialogExerciseIndex?.let { exIdx ->
+        val exercises = currentWorkout?.exercises ?: emptyList()
+        SupersetLinkDialog(
+            currentExerciseIndex = exIdx,
+            currentExerciseName = exercises.getOrNull(exIdx)?.exercise?.name ?: "",
+            exercises = exercises.mapIndexed { idx, we -> Pair(idx, we.exercise.name) },
+            existingGroup = viewModel.getSupersetForExercise(exIdx),
+            onLink = { targetIdx ->
+                viewModel.linkExercisesAsSuperset(exIdx, targetIdx)
+                supersetDialogExerciseIndex = null
+            },
+            onUnlink = {
+                viewModel.unlinkSuperset(exIdx)
+                supersetDialogExerciseIndex = null
+            },
+            onDismiss = { supersetDialogExerciseIndex = null }
         )
     }
 }
@@ -862,7 +889,9 @@ internal fun ExerciseSetCard(
     onOpenPlateCalculator: (Double) -> Unit = {},
     onOpenWarmupCalculator: (Double) -> Unit = {},
     onSubstituteExercise: () -> Unit = {},
-    onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null
+    onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null,
+    supersetGroup: com.gymcoach.app.domain.model.SupersetGroup? = null,
+    onOpenSupersetDialog: () -> Unit = {}
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     val isExerciseActive = sets.isNotEmpty() && sets.any { !it.completed }
@@ -993,6 +1022,23 @@ internal fun ExerciseSetCard(
                                 else -> {}
                             }
                         }
+
+                        // Superset badge
+                        if (supersetGroup != null) {
+                            Surface(
+                                shape = GymCoachShapes.pill,
+                                color = GymCoachColors.Primary.copy(alpha = 0.15f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.Primary.copy(alpha = 0.4f))
+                            ) {
+                                Text(
+                                    text = supersetGroup.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GymCoachColors.Primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(GymCoachSpacing.xs))
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1024,6 +1070,13 @@ internal fun ExerciseSetCard(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = "Warm-Up Protocol",
                             tint = GymCoachColors.Primary
+                        )
+                    }
+                    IconButton(onClick = onOpenSupersetDialog) {
+                        Icon(
+                            imageVector = if (supersetGroup != null) Icons.Default.LinkOff else Icons.Default.Link,
+                            contentDescription = if (supersetGroup != null) "Manage Superset" else "Pair as Superset",
+                            tint = if (supersetGroup != null) GymCoachColors.Primary else GymCoachColors.CyanAccent
                         )
                     }
                     IconButton(onClick = onSubstituteExercise) {

@@ -22,9 +22,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -171,19 +174,43 @@ fun WorkoutHistoryDetailScreen(
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit = {},
     onPerformAgainClick: (Long) -> Unit = {},
-    viewModel: WorkoutHistoryDetailViewModel = hiltViewModel()
+    viewModel: WorkoutHistoryDetailViewModel = hiltViewModel(),
+    shareViewModel: WorkoutShareViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val shareState by shareViewModel.shareState.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    
     var showEditNotesDialog by remember { mutableStateOf(false) }
     var editedNotes by remember { mutableStateOf("") }
 
     LaunchedEffect(workoutId) {
         viewModel.loadWorkout(workoutId)
     }
+    
+    LaunchedEffect(shareState) {
+        when (val s = shareState) {
+            is ShareState.Success -> {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(Intent.EXTRA_STREAM, s.uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share Workout Story"))
+                shareViewModel.resetState()
+            }
+            is ShareState.Error -> {
+                snackbarHostState.showSnackbar(s.msg)
+                shareViewModel.resetState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Workout Details") },
@@ -193,7 +220,22 @@ fun WorkoutHistoryDetailScreen(
                     }
                 },
                 actions = {
-                    // Share button
+                    // Share as Story Card button
+                    IconButton(
+                        onClick = { shareViewModel.generateStoryCard(workoutId, context) },
+                        enabled = shareState !is ShareState.Rendering
+                    ) {
+                        if (shareState is ShareState.Rendering) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Share as Story Card")
+                        }
+                    }
+                    // Share text button
                     IconButton(onClick = {
                         state.workout?.let { workout ->
                             shareWorkoutSummary(context, workout)

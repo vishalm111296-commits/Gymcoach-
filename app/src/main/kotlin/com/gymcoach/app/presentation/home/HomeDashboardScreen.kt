@@ -16,17 +16,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.LocalDining
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -94,9 +99,13 @@ fun HomeDashboardScreen(
     onNavigateToTemplates: () -> Unit = {},
     onNavigateToStreaks: () -> Unit = {},
     onNavigateToVTaper: () -> Unit = {},
+    onNavigateToTrainingFrequency: () -> Unit = {},
+    onNavigateToNutrition: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val weeklyWorkoutCount by viewModel.weeklyWorkoutCount.collectAsStateWithLifecycle()
+    val latestReadiness by viewModel.latestReadiness.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = DarkBackground,
@@ -129,6 +138,16 @@ fun HomeDashboardScreen(
                 GreetingHeader(state)
             }
 
+            StaggeredDashboardItem(index = 1, isLoading = state.isLoading) {
+                QuickStatsRow(
+                    weeklyWorkoutCount = weeklyWorkoutCount,
+                    latestReadiness = latestReadiness,
+                    onNavigateToTrainingFrequency = onNavigateToTrainingFrequency,
+                    onNavigateToReadiness = onNavigateToReadiness,
+                    onNavigateToNutrition = onNavigateToNutrition
+                )
+            }
+
             if (state.isLoading) {
                 Box(
                     modifier = Modifier
@@ -139,7 +158,7 @@ fun HomeDashboardScreen(
                     CircularProgressIndicator(color = AccentBlue)
                 }
             } else {
-                StaggeredDashboardItem(index = 1, isLoading = state.isLoading) {
+                StaggeredDashboardItem(index = 2, isLoading = state.isLoading) {
                     if (state.todayWorkout == null) {
                         EmptyProgramCard(onViewProgram)
                     } else {
@@ -188,7 +207,7 @@ fun HomeDashboardScreen(
                 }
 
                 // Recovery & Readiness Quick Card
-                StaggeredDashboardItem(index = 2, isLoading = state.isLoading) {
+                StaggeredDashboardItem(index = 3, isLoading = state.isLoading) {
                     ReadinessDashboardCard(
                         readiness = state.latestReadiness,
                         onClick = onNavigateToReadiness
@@ -196,7 +215,7 @@ fun HomeDashboardScreen(
                 }
 
                 // Weekly Consistency & PR Summary
-                StaggeredDashboardItem(index = 3, isLoading = state.isLoading) {
+                StaggeredDashboardItem(index = 4, isLoading = state.isLoading) {
                     WeeklyConsistencyCard(
                         workoutsThisWeek = state.workoutsThisWeek,
                         targetWorkouts = state.targetWorkouts,
@@ -207,14 +226,14 @@ fun HomeDashboardScreen(
 
                 // Coach Insight Card
                 if (state.coachInsight.isNotBlank()) {
-                    StaggeredDashboardItem(index = 4, isLoading = state.isLoading) {
+                    StaggeredDashboardItem(index = 5, isLoading = state.isLoading) {
                         CoachInsightCard(state.coachInsight)
                     }
                 }
 
                 // V-Taper Focus if available
                 if (state.vtaperBars.isNotEmpty()) {
-                    StaggeredDashboardItem(index = 5, isLoading = state.isLoading) {
+                    StaggeredDashboardItem(index = 6, isLoading = state.isLoading) {
                         Box(modifier = Modifier.clickable(onClick = onNavigateToVTaper)) {
                             VtaperFocusCard(muscleData = state.vtaperBars)
                         }
@@ -222,7 +241,7 @@ fun HomeDashboardScreen(
                 }
 
                 // Quick Actions: Blank Workout, Templates, Exercise Library
-                StaggeredDashboardItem(index = 6, isLoading = state.isLoading) {
+                StaggeredDashboardItem(index = 7, isLoading = state.isLoading) {
                     QuickActionsSection(
                         onStartBlankWorkout = { onStartWorkout(null) },
                         onNavigateToTemplates = onNavigateToTemplates,
@@ -235,6 +254,76 @@ fun HomeDashboardScreen(
         }
     }
 }
+
+@Composable
+private fun QuickStatsRow(
+    weeklyWorkoutCount: Int,
+    latestReadiness: Int,
+    onNavigateToTrainingFrequency: () -> Unit,
+    onNavigateToReadiness: () -> Unit,
+    onNavigateToNutrition: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        QuickStatChip(
+            icon = Icons.Filled.DateRange,
+            text = "$weeklyWorkoutCount Workouts",
+            onClick = onNavigateToTrainingFrequency,
+            modifier = Modifier.weight(1f)
+        )
+        QuickStatChip(
+            icon = Icons.Filled.Favorite,
+            text = "$latestReadiness Readiness",
+            onClick = onNavigateToReadiness,
+            modifier = Modifier.weight(1f)
+        )
+        QuickStatChip(
+            icon = Icons.Filled.LocalDining,
+            text = "0 kcal today",
+            onClick = onNavigateToNutrition,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickStatChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = DarkSurface,
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        Row(
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = GymCoachColors.Primary,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary,
+                maxLines = 1,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun GreetingHeader(state: HomeUiState) {

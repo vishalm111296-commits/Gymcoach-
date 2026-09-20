@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -98,6 +99,9 @@ fun ProgressDashboardScreen(
     onNavigateToBodyComposition: () -> Unit = {},
     onNavigateToStrengthStandards: () -> Unit = {},
     onNavigateToDeloadPeriodization: () -> Unit = {},
+    onNavigateToTrainingFrequency: () -> Unit = {},
+    onNavigateToPersonalRecords: () -> Unit = {},
+    onNavigateToNutrition: () -> Unit = {},
     onNavigateBottomBar: (String) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
@@ -205,7 +209,10 @@ fun ProgressDashboardScreen(
                         onNavigateToMuscleBalance = onNavigateToMuscleBalance,
                         onNavigateToStreaks = onNavigateToStreaks,
                         onNavigateToStrengthStandards = onNavigateToStrengthStandards,
-                        onNavigateToDeloadPeriodization = onNavigateToDeloadPeriodization
+                        onNavigateToDeloadPeriodization = onNavigateToDeloadPeriodization,
+                        onNavigateToTrainingFrequency = onNavigateToTrainingFrequency,
+                        onNavigateToPersonalRecords = onNavigateToPersonalRecords,
+                        onNavigateToNutrition = onNavigateToNutrition
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -1252,7 +1259,10 @@ private fun AdvancedAnalyticsHub(
     onNavigateToMuscleBalance: () -> Unit,
     onNavigateToStreaks: () -> Unit,
     onNavigateToStrengthStandards: () -> Unit,
-    onNavigateToDeloadPeriodization: () -> Unit
+    onNavigateToDeloadPeriodization: () -> Unit,
+    onNavigateToTrainingFrequency: () -> Unit,
+    onNavigateToPersonalRecords: () -> Unit = {},
+    onNavigateToNutrition: () -> Unit = {}
 ) {
     SectionHeader("Advanced Telemetry & Analytics")
     Spacer(Modifier.height(8.dp))
@@ -1312,7 +1322,36 @@ private fun AdvancedAnalyticsHub(
             onClick = onNavigateToDeloadPeriodization,
             modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.weight(1f))
+        AnalyticsFeatureCard(
+            title = "Frequency",
+            subtitle = "Training Calendar",
+            icon = Icons.Filled.DateRange,
+            accentColor = Color(0xFF10B981),
+            onClick = onNavigateToTrainingFrequency,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AnalyticsFeatureCard(
+            title = "Hall of Fame",
+            subtitle = "Personal Records",
+            icon = Icons.Filled.EmojiEvents,
+            accentColor = Color(0xFFFFB300),
+            onClick = onNavigateToPersonalRecords,
+            modifier = Modifier.weight(1f)
+        )
+        AnalyticsFeatureCard(
+            title = "Nutrition",
+            subtitle = "Macros & Calories",
+            icon = Icons.Filled.FitnessCenter,
+            accentColor = Color(0xFF00F2FE),
+            onClick = onNavigateToNutrition,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 

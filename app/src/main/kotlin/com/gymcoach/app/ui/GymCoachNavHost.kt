@@ -54,6 +54,9 @@ object Routes {
     const val BODY_COMPOSITION = "body_composition"
     const val STRENGTH_STANDARDS = "strength_standards"
     const val DELOAD_PERIODIZATION = "deload_periodization"
+    const val TRAINING_FREQUENCY = "training_frequency"
+    const val NUTRITION = "nutrition"
+    const val PERSONAL_RECORDS = "personal_records"
 
     fun exerciseDetail(exerciseId: Long) = "exercise_detail/$exerciseId"
     fun workoutHistoryDetail(workoutId: Long) = "workout_history_detail/$workoutId"
@@ -161,6 +164,12 @@ fun GymCoachNavHost(
                 },
                 onNavigateToVTaper = {
                     navController.navigate(Routes.V_TAPER_TRANSFORMATION)
+                },
+                onNavigateToTrainingFrequency = {
+                    navController.navigate(Routes.TRAINING_FREQUENCY)
+                },
+                onNavigateToNutrition = {
+                    navController.navigate(Routes.NUTRITION)
                 }
             )
         }
@@ -273,7 +282,28 @@ fun GymCoachNavHost(
                 onNavigateToBodyComposition = { navController.navigate(Routes.BODY_COMPOSITION) },
                 onNavigateToStrengthStandards = { navController.navigate(Routes.STRENGTH_STANDARDS) },
                 onNavigateToDeloadPeriodization = { navController.navigate(Routes.DELOAD_PERIODIZATION) },
+                onNavigateToTrainingFrequency = { navController.navigate(Routes.TRAINING_FREQUENCY) },
+                onNavigateToPersonalRecords = { navController.navigate(Routes.PERSONAL_RECORDS) },
+                onNavigateToNutrition = { navController.navigate(Routes.NUTRITION) },
                 onNavigateBottomBar = onBottomNavigate
+            )
+        }
+
+        composable(Routes.PERSONAL_RECORDS) {
+            com.gymcoach.app.presentation.progress.PersonalRecordsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.NUTRITION) {
+            com.gymcoach.app.presentation.nutrition.NutritionScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.TRAINING_FREQUENCY) {
+            com.gymcoach.app.presentation.progress.TrainingFrequencyScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

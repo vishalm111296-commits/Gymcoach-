@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.nutrition
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -114,6 +115,10 @@ fun NutritionScreen(
 
                     item {
                         MacroBreakdownRow(uiState.dailySummary)
+                    }
+
+                    item {
+                        WaterIntakeCard(totalWaterMl = uiState.dailySummary.totalWaterMl, onLogWater = { viewModel.logWater(it) })
                     }
 
                     item {
@@ -573,4 +578,97 @@ private fun AddEditMealDialog(
             }
         }
     )
+}
+
+@Composable
+private fun WaterIntakeCard(
+    totalWaterMl: Int,
+    onLogWater: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        shape = GymCoachShapes.md
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.WaterDrop,
+                    contentDescription = null,
+                    tint = GymCoachColors.CyanAccent,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "DAILY HYDRATION",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    ),
+                    color = GymCoachColors.CyanAccent
+                )
+            }
+
+            Text(
+                text = "${totalWaterMl} / 3000 ml",
+                style = MaterialTheme.typography.bodyLarge,
+                color = GymCoachColors.TextPrimary
+            )
+
+            LinearProgressIndicator(
+                progress = { (totalWaterMl.toFloat() / 3000f).coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(CircleShape),
+                color = GymCoachColors.CyanAccent,
+                trackColor = GymCoachColors.CyanAccent.copy(alpha = 0.2f),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onLogWater(250) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = GymCoachColors.CyanAccent.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = "+250 ml (Glass)",
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = GymCoachColors.CyanAccent
+                    )
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onLogWater(500) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = GymCoachColors.CyanAccent.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = "+500 ml (Bottle)",
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = GymCoachColors.CyanAccent
+                    )
+                }
+            }
+        }
+    }
 }

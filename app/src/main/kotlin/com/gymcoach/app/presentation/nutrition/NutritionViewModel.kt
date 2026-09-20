@@ -88,6 +88,27 @@ class NutritionViewModel @Inject constructor(
         _uiState.update { it.copy(showAddDialog = true, editingLog = log) }
     }
 
+    fun logWater(amountMl: Int) {
+        viewModelScope.launch {
+            val zone = java.time.ZoneId.systemDefault()
+            val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() +
+                (System.currentTimeMillis() % 86_400_000L)
+
+            val log = com.gymcoach.app.data.local.entity.NutritionLogEntity(
+                date = dateMillis,
+                mealName = "Water",
+                calories = 0,
+                proteinGrams = 0f,
+                carbsGrams = 0f,
+                fatGrams = 0f,
+                fiberGrams = 0f,
+                waterMl = amountMl,
+                notes = "Hydration"
+            )
+            nutritionRepository.addLog(log)
+        }
+    }
+
     fun saveLog(
         mealName: String,
         calories: Int,

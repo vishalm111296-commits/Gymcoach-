@@ -100,4 +100,17 @@ class NutritionViewModelTest {
 
         coVerify { nutritionRepository.addLog(match { it.mealName == "Dinner" && it.calories == 600 }) }
     }
+
+    @Test
+    fun `logWater calls addLog with water amount`() = runTest(testDispatcher) {
+        every { nutritionRepository.getLogsForDay(any(), any()) } returns flowOf(emptyList())
+
+        val viewModel = NutritionViewModel(nutritionRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.logWater(500)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { nutritionRepository.addLog(match { it.mealName == "Water" && it.waterMl == 500 }) }
+    }
 }

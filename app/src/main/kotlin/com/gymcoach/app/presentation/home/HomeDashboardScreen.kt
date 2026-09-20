@@ -106,6 +106,7 @@ fun HomeDashboardScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val weeklyWorkoutCount by viewModel.weeklyWorkoutCount.collectAsStateWithLifecycle()
     val latestReadiness by viewModel.latestReadiness.collectAsStateWithLifecycle()
+    val todayCalories by viewModel.todayCalories.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = DarkBackground,
@@ -142,6 +143,7 @@ fun HomeDashboardScreen(
                 QuickStatsRow(
                     weeklyWorkoutCount = weeklyWorkoutCount,
                     latestReadiness = latestReadiness,
+                    todayCalories = todayCalories,
                     onNavigateToTrainingFrequency = onNavigateToTrainingFrequency,
                     onNavigateToReadiness = onNavigateToReadiness,
                     onNavigateToNutrition = onNavigateToNutrition
@@ -259,6 +261,7 @@ fun HomeDashboardScreen(
 private fun QuickStatsRow(
     weeklyWorkoutCount: Int,
     latestReadiness: Int,
+    todayCalories: Int,
     onNavigateToTrainingFrequency: () -> Unit,
     onNavigateToReadiness: () -> Unit,
     onNavigateToNutrition: () -> Unit
@@ -281,7 +284,7 @@ private fun QuickStatsRow(
         )
         QuickStatChip(
             icon = Icons.Filled.LocalDining,
-            text = "0 kcal today",
+            text = "$todayCalories kcal today",
             onClick = onNavigateToNutrition,
             modifier = Modifier.weight(1f)
         )

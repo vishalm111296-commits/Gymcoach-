@@ -460,8 +460,6 @@ private fun AddEditMealDialog(
     var fat by remember { mutableStateOf(if ((initialLog?.fatGrams ?: 0f) > 0f) initialLog?.fatGrams.toString() else "") }
     var notes by remember { mutableStateOf(initialLog?.notes ?: "") }
 
-    val presetMeals = listOf("Breakfast", "Lunch", "Dinner", "Snack", "Pre-workout", "Post-workout")
-
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = GymCoachColors.SurfaceCard,
@@ -476,39 +474,7 @@ private fun AddEditMealDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Meal Type", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextMuted)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    presetMeals.take(3).forEach { meal ->
-                        FilterChip(
-                            selected = mealName == meal,
-                            onClick = { mealName = meal },
-                            label = { Text(meal, fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = GymCoachColors.Primary,
-                                selectedLabelColor = GymCoachColors.TextPrimary
-                            )
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    presetMeals.drop(3).forEach { meal ->
-                        FilterChip(
-                            selected = mealName == meal,
-                            onClick = { mealName = meal },
-                            label = { Text(meal, fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = GymCoachColors.Primary,
-                                selectedLabelColor = GymCoachColors.TextPrimary
-                            )
-                        )
-                    }
-                }
+                MealTypeSelector(selectedMeal = mealName, onSelectMeal = { mealName = it })
 
                 OutlinedTextField(
                     value = calories,
@@ -519,35 +485,14 @@ private fun AddEditMealDialog(
                     singleLine = true
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = protein,
-                        onValueChange = { protein = it },
-                        label = { Text("Protein (g)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = carbs,
-                        onValueChange = { carbs = it },
-                        label = { Text("Carbs (g)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = fat,
-                        onValueChange = { fat = it },
-                        label = { Text("Fat (g)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                }
+                MacroInputFields(
+                    protein = protein,
+                    onProteinChange = { protein = it },
+                    carbs = carbs,
+                    onCarbsChange = { carbs = it },
+                    fat = fat,
+                    onFatChange = { fat = it }
+                )
 
                 OutlinedTextField(
                     value = notes,
@@ -578,6 +523,87 @@ private fun AddEditMealDialog(
             }
         }
     )
+}
+
+@Composable
+private fun MealTypeSelector(
+    selectedMeal: String,
+    onSelectMeal: (String) -> Unit
+) {
+    val presetMeals = listOf("Breakfast", "Lunch", "Dinner", "Snack", "Pre-workout", "Post-workout")
+    Text("Meal Type", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextMuted)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        presetMeals.take(3).forEach { meal ->
+            FilterChip(
+                selected = selectedMeal == meal,
+                onClick = { onSelectMeal(meal) },
+                label = { Text(meal, fontSize = 11.sp) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = GymCoachColors.Primary,
+                    selectedLabelColor = GymCoachColors.TextPrimary
+                )
+            )
+        }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        presetMeals.drop(3).forEach { meal ->
+            FilterChip(
+                selected = selectedMeal == meal,
+                onClick = { onSelectMeal(meal) },
+                label = { Text(meal, fontSize = 11.sp) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = GymCoachColors.Primary,
+                    selectedLabelColor = GymCoachColors.TextPrimary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun MacroInputFields(
+    protein: String,
+    onProteinChange: (String) -> Unit,
+    carbs: String,
+    onCarbsChange: (String) -> Unit,
+    fat: String,
+    onFatChange: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedTextField(
+            value = protein,
+            onValueChange = onProteinChange,
+            label = { Text("Protein (g)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f),
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = carbs,
+            onValueChange = onCarbsChange,
+            label = { Text("Carbs (g)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f),
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = fat,
+            onValueChange = onFatChange,
+            label = { Text("Fat (g)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f),
+            singleLine = true
+        )
+    }
 }
 
 @Composable

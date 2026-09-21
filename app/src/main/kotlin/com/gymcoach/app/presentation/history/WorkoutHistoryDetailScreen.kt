@@ -196,9 +196,13 @@ fun WorkoutHistoryDetailScreen(
                 val intent = Intent(Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(Intent.EXTRA_STREAM, s.uri)
+                    clipData = android.content.ClipData.newUri(context.contentResolver, "Workout Story", s.uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(Intent.createChooser(intent, "Share Workout Story"))
+                val chooser = Intent.createChooser(intent, "Share Workout Story").apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(chooser)
                 shareViewModel.resetState()
             }
             is ShareState.Error -> {

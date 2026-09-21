@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Warning
@@ -42,7 +42,7 @@ fun DeloadPeriodizationScreen(
                 title = { Text("Mesocycle & Periodization", color = GymCoachColors.TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = GymCoachColors.TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GymCoachColors.TextPrimary)
                     }
                 },
                 actions = {

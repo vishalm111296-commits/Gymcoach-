@@ -11,6 +11,8 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.toColorInt
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -25,16 +27,16 @@ class WorkoutShareCardRenderer @Inject constructor() {
         const val CARD_HEIGHT = 1350
 
         // GymCoach Color Palette
-        val COLOR_BG = Color.parseColor("#0F131C")
-        val COLOR_CARD_BG = Color.parseColor("#171D2B")
-        val COLOR_CARD_BORDER = Color.parseColor("#273248")
-        val COLOR_ELECTRIC_VIOLET = Color.parseColor("#6C63FF")
-        val COLOR_CYAN = Color.parseColor("#00F2FE")
-        val COLOR_GOLD = Color.parseColor("#FFB300")
-        val COLOR_TEXT_PRIMARY = Color.parseColor("#FFFFFF")
-        val COLOR_TEXT_SECONDARY = Color.parseColor("#8E9AA8")
-        val COLOR_TEXT_MUTED = Color.parseColor("#5A677B")
-        val COLOR_PILL_BG = Color.parseColor("#1F2739")
+        val COLOR_BG = "#0F131C".toColorInt()
+        val COLOR_CARD_BG = "#171D2B".toColorInt()
+        val COLOR_CARD_BORDER = "#273248".toColorInt()
+        val COLOR_ELECTRIC_VIOLET = "#6C63FF".toColorInt()
+        val COLOR_CYAN = "#00F2FE".toColorInt()
+        val COLOR_GOLD = "#FFB300".toColorInt()
+        val COLOR_TEXT_PRIMARY = "#FFFFFF".toColorInt()
+        val COLOR_TEXT_SECONDARY = "#8E9AA8".toColorInt()
+        val COLOR_TEXT_MUTED = "#5A677B".toColorInt()
+        val COLOR_PILL_BG = "#1F2739".toColorInt()
 
         fun renderToBitmap(data: WorkoutShareCardData): Bitmap =
             WorkoutShareCardRenderer().renderToBitmap(data)
@@ -44,7 +46,7 @@ class WorkoutShareCardRenderer @Inject constructor() {
     }
 
     fun renderToBitmap(data: WorkoutShareCardData): Bitmap {
-        val bitmap = Bitmap.createBitmap(CARD_WIDTH, CARD_HEIGHT, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(CARD_WIDTH, CARD_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
         // 1. Draw Background
@@ -58,7 +60,7 @@ class WorkoutShareCardRenderer @Inject constructor() {
         val glowPaint = Paint().apply {
             shader = LinearGradient(
                 0f, 0f, CARD_WIDTH.toFloat(), 400f,
-                Color.parseColor("#256C63FF"), Color.TRANSPARENT,
+                "#256C63FF".toColorInt(), Color.TRANSPARENT,
                 Shader.TileMode.CLAMP
             )
         }
@@ -105,7 +107,7 @@ class WorkoutShareCardRenderer @Inject constructor() {
         // 5. Motivational Quote Banner
         val quoteBannerRect = RectF(marginX, currentY, marginX + contentWidth, currentY + 68f)
         val quoteBannerBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1C2333")
+            color = "#1C2333".toColorInt()
             style = Paint.Style.FILL
         }
         val quoteBannerBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

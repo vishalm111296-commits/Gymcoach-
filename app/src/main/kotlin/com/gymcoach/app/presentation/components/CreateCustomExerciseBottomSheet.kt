@@ -43,12 +43,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
-private val VoltAccent = Color(0xFFD4FF32)
-private val DarkVoltText = Color(0xFF121316)
+private val AccentColor = GymCoachColors.Primary
+private val AccentTextColor = GymCoachColors.TextPrimary
 
 /**
- * Obsidian Volt styled Bottom Sheet for creating a custom exercise.
+ * Bottom Sheet for creating a custom exercise.
  * Designed to seamlessly blend into GymCoach's dark-mode-first aesthetic.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -129,8 +131,8 @@ fun CreateCustomExerciseBottomSheet(
                 supportingText = errorMessage?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = VoltAccent,
-                    focusedLabelColor = VoltAccent
+                    focusedBorderColor = AccentColor,
+                    focusedLabelColor = AccentColor
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -157,8 +159,8 @@ fun CreateCustomExerciseBottomSheet(
                         onClick = { muscleGroup = option },
                         label = { Text(option) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = VoltAccent.copy(alpha = 0.2f),
-                            selectedLabelColor = VoltAccent
+                            selectedContainerColor = AccentColor.copy(alpha = 0.2f),
+                            selectedLabelColor = AccentColor
                         )
                     )
                 }
@@ -186,8 +188,8 @@ fun CreateCustomExerciseBottomSheet(
                         onClick = { equipment = option },
                         label = { Text(option) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = VoltAccent.copy(alpha = 0.2f),
-                            selectedLabelColor = VoltAccent
+                            selectedContainerColor = AccentColor.copy(alpha = 0.2f),
+                            selectedLabelColor = AccentColor
                         )
                     )
                 }
@@ -211,8 +213,8 @@ fun CreateCustomExerciseBottomSheet(
                         onClick = { difficulty = option },
                         label = { Text(option) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = VoltAccent.copy(alpha = 0.2f),
-                            selectedLabelColor = VoltAccent
+                            selectedContainerColor = AccentColor.copy(alpha = 0.2f),
+                            selectedLabelColor = AccentColor
                         )
                     )
                 }
@@ -230,8 +232,8 @@ fun CreateCustomExerciseBottomSheet(
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = VoltAccent,
-                    focusedLabelColor = VoltAccent
+                    focusedBorderColor = AccentColor,
+                    focusedLabelColor = AccentColor
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -262,8 +264,8 @@ fun CreateCustomExerciseBottomSheet(
                     },
                     modifier = Modifier.weight(1.5f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = VoltAccent,
-                        contentColor = DarkVoltText
+                        containerColor = AccentColor,
+                        contentColor = AccentTextColor
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {

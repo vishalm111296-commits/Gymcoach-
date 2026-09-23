@@ -25,6 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+
 private const val RingSizeDp = 220
 
 @Composable
@@ -40,6 +45,13 @@ fun RestTimerOverlay(
     modifier: Modifier = Modifier,
     isPaused: Boolean = false
 ) {
+    val targetProgress = if (totalTime > 0) (timeRemaining.toFloat() / totalTime).coerceIn(0f, 1f) else 0f
+    val animatedProgress by animateFloatAsState(
+        targetValue = targetProgress,
+        animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing),
+        label = "RestProgress"
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -50,7 +62,7 @@ fun RestTimerOverlay(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
-                    progress = { if (totalTime > 0) timeRemaining.toFloat() / totalTime else 0f },
+                    progress = { animatedProgress },
                     modifier = Modifier.size(RingSizeDp.dp),
                     strokeWidth = 8.dp,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant

@@ -1,5 +1,8 @@
 package com.gymcoach.app.presentation.progress.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,6 +24,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +51,16 @@ fun StrengthProgressChart(
     dataPoints: List<ProgressPoint>,
     modifier: Modifier = Modifier
 ) {
+    val drawProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(dataPoints) {
+        drawProgress.snapTo(0f)
+        drawProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+        )
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -110,35 +126,43 @@ fun StrengthProgressChart(
                         Offset(PAD_LEFT + index * stepX, yFor(point.value))
                     }
 
-                    // Fill under the line
-                    val fillPath = Path()
-                    coordinates.forEachIndexed { index, c ->
-                        if (index == 0) fillPath.moveTo(c.x, c.y) else fillPath.lineTo(c.x, c.y)
-                    }
-                    fillPath.lineTo(coordinates.last().x, size.height - PAD_BOTTOM)
-                    fillPath.lineTo(coordinates.first().x, size.height - PAD_BOTTOM)
-                    fillPath.close()
-                    drawPath(path = fillPath, color = VolumeChartFill)
+                    val currentProgress = drawProgress.value
 
-                    // Line
-                    val linePath = Path()
-                    coordinates.forEachIndexed { index, c ->
-                        if (index == 0) linePath.moveTo(c.x, c.y) else linePath.lineTo(c.x, c.y)
-                    }
-                    drawPath(
-                        path = linePath,
-                        color = VolumeChartLine,
-                        style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    )
+                    clipRect(right = PAD_LEFT + chartWidth * currentProgress + 4f) {
+                        // Fill under the line
+                        val fillPath = Path()
+                        coordinates.forEachIndexed { index, c ->
+                            if (index == 0) fillPath.moveTo(c.x, c.y) else fillPath.lineTo(c.x, c.y)
+                        }
+                        fillPath.lineTo(coordinates.last().x, size.height - PAD_BOTTOM)
+                        fillPath.lineTo(coordinates.first().x, size.height - PAD_BOTTOM)
+                        fillPath.close()
+                        drawPath(path = fillPath, color = VolumeChartFill)
 
-                    // Points; highlight latest
-                    coordinates.forEachIndexed { _, c ->
-                        drawCircle(color = VolumeChartLine, radius = 4f, center = c)
+                        // Line
+                        val linePath = Path()
+                        coordinates.forEachIndexed { index, c ->
+                            if (index == 0) linePath.moveTo(c.x, c.y) else linePath.lineTo(c.x, c.y)
+                        }
+                        drawPath(
+                            path = linePath,
+                            color = VolumeChartLine,
+                            style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                        )
+
+                        // Points; highlight latest
+                        coordinates.forEachIndexed { _, c ->
+                            if (c.x <= PAD_LEFT + chartWidth * currentProgress) {
+                                drawCircle(color = VolumeChartLine, radius = 4f, center = c)
+                            }
+                        }
+                        val last = coordinates.last()
+                        if (currentProgress >= 0.95f) {
+                            drawCircle(color = VolumeChartLine.copy(alpha = 0.25f), radius = 9f, center = last)
+                            drawCircle(color = VolumeChartLine, radius = 5f, center = last)
+                            drawCircle(color = TextPrimary, radius = 2f, center = last)
+                        }
                     }
-                    val last = coordinates.last()
-                    drawCircle(color = VolumeChartLine.copy(alpha = 0.25f), radius = 9f, center = last)
-                    drawCircle(color = VolumeChartLine, radius = 5f, center = last)
-                    drawCircle(color = TextPrimary, radius = 2f, center = last)
                 }
             }
         }

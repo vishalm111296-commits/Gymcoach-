@@ -55,8 +55,14 @@ class WorkoutTemplateRepositoryImpl @Inject constructor(
 
     private fun getTemplateWithExercisesFlow(templateEntity: WorkoutTemplateEntity): Flow<WorkoutTemplate> {
         return workoutTemplateDao.getTemplateExercises(templateEntity.id).map { exEntities ->
+            val exerciseIds = exEntities.map { it.exerciseId }.distinct()
+            val exerciseMap = if (exerciseIds.isNotEmpty()) {
+                exerciseDao.getByIdsSync(exerciseIds).associateBy { it.id }
+            } else {
+                emptyMap()
+            }
             val exercises = exEntities.map { exEntity ->
-                val exerciseEntity = exerciseDao.getById(exEntity.exerciseId).first()
+                val exerciseEntity = exerciseMap[exEntity.exerciseId]
                 TemplateExercise(
                     id = exEntity.id,
                     templateId = exEntity.templateId,
@@ -91,8 +97,9 @@ class WorkoutTemplateRepositoryImpl @Inject constructor(
         exercises: List<TemplateExercise>
     ): Long {
         val now = System.currentTimeMillis()
-        val templateId = if (template.id == 0L) {
-            val entity = WorkoutTemplateEntity(
+        val isUpdate = template.id > 0L
+        val entity = if (!isUpdate) {
+            WorkoutTemplateEntity(
                 name = template.name.trim(),
                 description = template.description.trim(),
                 isArchived = false,
@@ -100,9 +107,8 @@ class WorkoutTemplateRepositoryImpl @Inject constructor(
                 createdAt = now,
                 updatedAt = now
             )
-            workoutTemplateDao.insertTemplate(entity)
         } else {
-            val entity = WorkoutTemplateEntity(
+            WorkoutTemplateEntity(
                 id = template.id,
                 name = template.name.trim(),
                 description = template.description.trim(),
@@ -111,14 +117,11 @@ class WorkoutTemplateRepositoryImpl @Inject constructor(
                 createdAt = template.createdAt,
                 updatedAt = now
             )
-            workoutTemplateDao.updateTemplate(entity)
-            workoutTemplateDao.deleteTemplateExercisesForTemplate(template.id)
-            template.id
         }
 
         val exerciseEntities = exercises.mapIndexed { index, ex ->
             TemplateExerciseEntity(
-                templateId = templateId,
+                templateId = template.id,
                 exerciseId = ex.exerciseId,
                 orderIndex = index,
                 targetSets = ex.targetSets,
@@ -129,33 +132,11 @@ class WorkoutTemplateRepositoryImpl @Inject constructor(
                 notes = ex.notes
             )
         }
-        if (exerciseEntities.isNotEmpty()) {
-            workoutTemplateDao.insertTemplateExercises(exerciseEntities)
-        }
-        return templateId
+        return workoutTemplateDao.saveTemplateAtomic(entity, exerciseEntities, isUpdate)
     }
 
     override suspend fun duplicateTemplate(templateId: Long): Long {
-        val source = workoutTemplateDao.getTemplateByIdSync(templateId) ?: return 0L
-        val sourceExercises = workoutTemplateDao.getTemplateExercisesSync(templateId)
-        val now = System.currentTimeMillis()
-
-        val copyEntity = WorkoutTemplateEntity(
-            name = "${source.name} (Copy)",
-            description = source.description,
-            isArchived = false,
-            version = 1,
-            createdAt = now,
-            updatedAt = now
-        )
-        val newId = workoutTemplateDao.insertTemplate(copyEntity)
-        val newExercises = sourceExercises.map { ex ->
-            ex.copy(id = 0, templateId = newId)
-        }
-        if (newExercises.isNotEmpty()) {
-            workoutTemplateDao.insertTemplateExercises(newExercises)
-        }
-        return newId
+        return workoutTemplateDao.duplicateTemplateAtomic(templateId)
     }
 
     override suspend fun archiveTemplate(templateId: Long) {

@@ -53,6 +53,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,6 +64,9 @@ import com.gymcoach.app.core.animation.AnimationPhase
 import com.gymcoach.app.core.animation.ExerciseAnimationDefinition
 import com.gymcoach.app.core.animation.SkeletalRenderer
 import com.gymcoach.app.core.animation.rememberAnimationController
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 @Composable
 fun ExerciseAnimationPlayer(
@@ -69,31 +74,30 @@ fun ExerciseAnimationPlayer(
     modifier: Modifier = Modifier,
     controller: AnimationController = rememberAnimationController(definition)
 ) {
-    val frame = controller.currentFrame
     val phase = controller.currentPhase
     val cue = controller.currentCue
 
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val jointColor = MaterialTheme.colorScheme.tertiary
-    val equipmentColor = MaterialTheme.colorScheme.secondary
+    val primaryColor = GymCoachColors.Primary
+    val jointColor = GymCoachColors.CyanAccent
+    val equipmentColor = GymCoachColors.GoldAccent
 
     val phaseBadgeColor by animateColorAsState(
         targetValue = when (phase) {
-            AnimationPhase.SETUP -> MaterialTheme.colorScheme.secondary
-            AnimationPhase.START -> MaterialTheme.colorScheme.primary
-            AnimationPhase.ECCENTRIC -> Color(0xFFFFA000) // Amber
-            AnimationPhase.BOTTOM -> Color(0xFFE91E63) // Pink/Red peak tension
-            AnimationPhase.CONCENTRIC -> Color(0xFF4CAF50) // Green drive
-            AnimationPhase.END -> MaterialTheme.colorScheme.primary
+            AnimationPhase.SETUP -> GymCoachColors.CyanAccent
+            AnimationPhase.START -> GymCoachColors.Primary
+            AnimationPhase.ECCENTRIC -> GymCoachColors.Warning
+            AnimationPhase.BOTTOM -> GymCoachColors.Danger
+            AnimationPhase.CONCENTRIC -> GymCoachColors.Success
+            AnimationPhase.END -> GymCoachColors.Primary
         },
         label = "phaseColor"
     )
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+            containerColor = GymCoachColors.SurfaceCardElevated
         )
     ) {
         Column(
@@ -110,7 +114,7 @@ fun ExerciseAnimationPlayer(
             ) {
                 // Phase Badge
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = GymCoachShapes.sm,
                     color = phaseBadgeColor.copy(alpha = 0.2f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, phaseBadgeColor)
                 ) {
@@ -178,23 +182,18 @@ fun ExerciseAnimationPlayer(
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (frame != null) {
-                    Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                    val current = controller.currentFrame
+                    if (current != null) {
                         SkeletalRenderer.drawSkeleton(
                             drawScope = this,
-                            frame = frame,
+                            frame = current,
                             perspective = definition.perspective,
                             primaryColor = primaryColor,
                             jointColor = jointColor,
                             equipmentColor = equipmentColor
                         )
                     }
-                } else {
-                    Text(
-                        text = "Loading demonstration...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
                 }
 
                 // Subtle watermark / badge indicating vector demo
@@ -231,7 +230,10 @@ fun ExerciseAnimationPlayer(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 8.dp)
+                    .semantics {
+                        contentDescription = "Animation progress scrubber"
+                    },
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
                     activeTrackColor = MaterialTheme.colorScheme.primary,

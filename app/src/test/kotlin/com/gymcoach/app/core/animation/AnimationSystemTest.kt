@@ -80,6 +80,49 @@ class AnimationSystemTest {
         val frameAtMid = def.interpolateAt(0.5f)
         assertEquals(0.5f, frameAtMid.joints["hand"]?.x ?: 0f, 0.01f)
         assertEquals(0.5f, frameAtMid.joints["hand"]?.y ?: 0f, 0.01f)
+
+        // Test non-linear cosine easing at 0.25f progress
+        // Eased localT = (1 - cos(0.25 * PI)) / 2 ≈ 0.1464466
+        // Expected X = 0.2 + (0.8 - 0.2) * 0.1464466 ≈ 0.287868
+        val frameAtQuarter = def.interpolateAt(0.25f)
+        val quarterX = frameAtQuarter.joints["hand"]?.x ?: 0f
+        assertEquals(0.2878f, quarterX, 0.01f)
+        assertTrue("Cosine eased X at 0.25 ($quarterX) must be strictly less than linear 0.35", quarterX < 0.35f)
+    }
+
+    @Test
+    fun testMultiKeyframeContinuousProgression() {
+        val kf0 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            cue = "Start",
+            joints = mapOf("hand" to JointPoint(0.0f, 0.0f))
+        )
+        val kf1 = SkeletalKeyframe(
+            progress = 0.5f,
+            phase = AnimationPhase.ECCENTRIC,
+            cue = "Mid",
+            joints = mapOf("hand" to JointPoint(0.5f, 0.5f))
+        )
+        val kf2 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.END,
+            cue = "End",
+            joints = mapOf("hand" to JointPoint(1.0f, 1.0f))
+        )
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "multi_keyframe_test",
+            exerciseName = "Multi Keyframe Test",
+            perspective = ViewPerspective.SIDE,
+            durationMs = 1000,
+            keyframes = listOf(kf0, kf1, kf2)
+        )
+
+        // For >=3 keyframes, interpolation is continuous linear per segment
+        // At progress 0.25f (midway between 0.0 and 0.5), localT = 0.5, expected X = 0.25f
+        val frameAtQuarter = def.interpolateAt(0.25f)
+        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.x ?: 0f, 0.001f)
+        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.y ?: 0f, 0.001f)
     }
 
     @Test

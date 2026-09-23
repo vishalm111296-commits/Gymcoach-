@@ -1,7 +1,11 @@
 package com.gymcoach.app.presentation.progress.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,6 +88,14 @@ private fun MuscleBar(
     muscle: MuscleVolumeData,
     onMuscleClick: ((String) -> Unit)?
 ) {
+    val denom = maxOf(muscle.targetMax, muscle.currentSets).coerceAtLeast(1)
+    val targetFraction = (muscle.currentSets.toFloat() / denom).coerceIn(0f, 1f)
+    val animatedFraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        label = "MuscleBarFraction"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -109,7 +121,6 @@ private fun MuscleBar(
                 .weight(1f)
                 .height(12.dp)
         ) {
-            val denom = maxOf(muscle.targetMax, muscle.currentSets).coerceAtLeast(1)
             val w = size.width
             val h = size.height
             val radius = CornerRadius(h / 2f)
@@ -118,9 +129,8 @@ private fun MuscleBar(
             drawRoundRect(color = MuscleRest, topLeft = Offset.Zero, size = Size(w, h), cornerRadius = radius)
 
             // Achieved sets
-            val fraction = (muscle.currentSets.toFloat() / denom).coerceIn(0f, 1f)
-            if (fraction > 0f) {
-                val activeWidth = (w * fraction).coerceAtLeast(h)
+            if (animatedFraction > 0f) {
+                val activeWidth = (w * animatedFraction).coerceAtLeast(h)
                 drawRoundRect(color = MuscleActive, topLeft = Offset.Zero, size = Size(activeWidth, h), cornerRadius = radius)
             }
 

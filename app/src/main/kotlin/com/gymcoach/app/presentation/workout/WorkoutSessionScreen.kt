@@ -14,6 +14,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
@@ -1661,13 +1666,21 @@ private fun SetRow(
         // Tactile set completion button
         Box(
             modifier = Modifier
-                .width(44.dp)
-                .height(38.dp),
+                .size(48.dp)
+                .semantics {
+                    role = Role.Checkbox
+                    selected = completed
+                    contentDescription = if (completed) "Set completed" else "Mark set complete"
+                }
+                .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleComplete()
+                },
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .graphicsLayer {
                         scaleX = checkScale.value
                         scaleY = checkScale.value
@@ -1678,16 +1691,12 @@ private fun SetRow(
                         1.dp,
                         checkBorderColor,
                         androidx.compose.foundation.shape.CircleShape
-                    )
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onToggleComplete()
-                    },
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = if (completed) "Set Completed" else "Mark Set Complete",
+                    contentDescription = null,
                     tint = checkIconColor,
                     modifier = Modifier.size(18.dp)
                 )

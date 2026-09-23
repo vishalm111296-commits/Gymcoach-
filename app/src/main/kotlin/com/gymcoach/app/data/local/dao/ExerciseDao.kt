@@ -12,6 +12,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE id = :id")
     fun getById(id: Long): Flow<ExerciseEntity?>
 
+    @Query("SELECT * FROM exercises WHERE id IN (:ids)")
+    suspend fun getByIdsSync(ids: List<Long>): List<ExerciseEntity>
+
     @Query("""
         SELECT * FROM exercises 
         WHERE (:muscle IS NULL OR LOWER(muscleGroup) = LOWER(:muscle))

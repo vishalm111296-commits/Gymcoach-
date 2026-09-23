@@ -1,8 +1,12 @@
 package com.gymcoach.app.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -111,6 +115,14 @@ fun GymCoachBottomNav(
                         animationSpec = tween(durationMillis = 200),
                         label = "bgColor"
                     )
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (active) 1.12f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        ),
+                        label = "iconScale"
+                    )
 
                     Box(
                         modifier = Modifier
@@ -141,7 +153,12 @@ fun GymCoachBottomNav(
                                 imageVector = item.icon,
                                 contentDescription = null,
                                 tint = iconTint,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    }
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(

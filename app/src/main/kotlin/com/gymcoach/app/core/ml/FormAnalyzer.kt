@@ -80,7 +80,8 @@ class FormAnalyzer(
         holdDurationMs = 0
     )
 ) {
-    private var repCount = 0
+    var repCount = 0
+        private set
     private var lastPhase: RepPhase? = null
     private var lastAngle: Double = 0.0
     private var lastValidAngle: Double = 0.0
@@ -337,7 +338,7 @@ class FormAnalyzer(
         if (!allLandmarksVisible(pose, requiredLandmarks)) {
             lowConfidenceFrames++
             if (lowConfidenceFrames >= lowConfidenceThreshold) {
-                reset()
+                resetTransientTracking()
                 lowConfidenceFrames = 0
             }
             return null
@@ -351,7 +352,7 @@ class FormAnalyzer(
         if (validation.state == MovementState.INVALID) {
             consecutiveInvalidCount++
             if (consecutiveInvalidCount >= maxConsecutiveInvalidBeforeReset) {
-                reset()
+                resetTransientTracking()
                 consecutiveInvalidCount = 0
             }
             return AnalysisResult(
@@ -411,6 +412,14 @@ class FormAnalyzer(
             currentPhase = phase,
             confidence = confidence
         )
+    }
+
+    fun resetTransientTracking() = synchronized(this) {
+        lastPhase = null
+        lastAngle = 0.0
+        lastValidAngle = 0.0
+        history.clear()
+        consecutiveInvalidCount = 0
     }
 
     fun reset() = synchronized(this) {

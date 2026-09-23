@@ -60,4 +60,46 @@ interface WorkoutTemplateDao {
 
     @Query("DELETE FROM template_exercises WHERE template_id = :templateId")
     suspend fun deleteTemplateExercisesForTemplate(templateId: Long): Int
+
+    @Transaction
+    suspend fun saveTemplateAtomic(
+        template: WorkoutTemplateEntity,
+        exercises: List<TemplateExerciseEntity>,
+        isUpdate: Boolean
+    ): Long {
+        val templateId = if (isUpdate) {
+            updateTemplate(template)
+            deleteTemplateExercisesForTemplate(template.id)
+            template.id
+        } else {
+            insertTemplate(template)
+        }
+        val mappedExercises = exercises.map { it.copy(templateId = templateId) }
+        if (mappedExercises.isNotEmpty()) {
+            insertTemplateExercises(mappedExercises)
+        }
+        return templateId
+    }
+
+    @Transaction
+    suspend fun duplicateTemplateAtomic(templateId: Long, now: Long = System.currentTimeMillis()): Long {
+        val source = getTemplateByIdSync(templateId) ?: return 0L
+        val sourceExercises = getTemplateExercisesSync(templateId)
+        val newTemplate = WorkoutTemplateEntity(
+            name = "${source.name} (Copy)",
+            description = source.description,
+            isArchived = false,
+            version = 1,
+            createdAt = now,
+            updatedAt = now
+        )
+        val newId = insertTemplate(newTemplate)
+        val newExercises = sourceExercises.map {
+            it.copy(id = 0L, templateId = newId)
+        }
+        if (newExercises.isNotEmpty()) {
+            insertTemplateExercises(newExercises)
+        }
+        return newId
+    }
 }

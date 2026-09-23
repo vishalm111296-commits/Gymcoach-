@@ -22,18 +22,23 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gymcoach.app.domain.repository.MuscleGroupStats
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 val defaultMuscleColors = listOf(
-    Color(0xFFFF6B6B), // Primary / Chest
-    Color(0xFF4ECDC4), // Back
-    Color(0xFFFFD166), // Shoulders
-    Color(0xFF06D6A0), // Legs
-    Color(0xFF118AB2), // Arms
-    Color(0xFF073B4C), // Core
-    Color(0xFF9D4EDD)  // Other
+    GymCoachColors.Primary,
+    GymCoachColors.CyanAccent,
+    GymCoachColors.GoldAccent,
+    GymCoachColors.Success,
+    GymCoachColors.PrimaryLight,
+    Color(0xFF9D4EDD), // Kinetic Purple Accent
+    GymCoachColors.TextMuted
 )
 
 @Composable
@@ -43,8 +48,9 @@ fun MuscleDistributionPieChart(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = GymCoachColors.SurfaceCard
         )
     ) {
         Column(
@@ -84,15 +90,18 @@ fun MuscleDistributionPieChart(
                         modifier = Modifier
                             .size(140.dp)
                             .padding(8.dp)
+                            .semantics {
+                                contentDescription = "Muscle distribution donut chart showing workout volume by muscle group"
+                            }
                     ) {
                         var startAngle = -90f
                         val strokeWidth = 24.dp.toPx()
                         val diameter = size.minDimension - strokeWidth
-                        val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
+                        val topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f)
                         val arcSize = Size(diameter, diameter)
 
                         stats.forEachIndexed { index, stat ->
-                            val sweepAngle = (stat.totalReps.toFloat() / totalReps) * 360f
+                            val sweepAngle = (stat.totalReps.toFloat() / totalReps.toFloat()) * 360f
                             val color = defaultMuscleColors.getOrElse(index) { Color.Gray }
 
                             drawArc(
@@ -116,7 +125,7 @@ fun MuscleDistributionPieChart(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         stats.take(5).forEachIndexed { index, stat ->
-                            val percentage = (stat.totalReps.toDouble() / totalReps * 100)
+                            val percentage = (stat.totalReps.toDouble() / totalReps.toDouble() * 100.0)
                             val color = defaultMuscleColors.getOrElse(index) { Color.Gray }
 
                             Row(

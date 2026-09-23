@@ -108,12 +108,12 @@ class AnimationController(
         }
     }
 
-    fun advance(deltaTimeMs: Long) {
+    fun advance(deltaTimeMs: Float) {
         val def = definition ?: return
         if (!isPlaying) return
 
-        val duration = def.durationMs.coerceAtLeast(100L)
-        val deltaProgress = (deltaTimeMs * speed) / duration.toFloat()
+        val duration = def.durationMs.coerceAtLeast(100L).toFloat()
+        val deltaProgress = (deltaTimeMs * speed) / duration
         var newProgress = progress + deltaProgress
 
         if (newProgress >= 1.0f) {
@@ -125,6 +125,10 @@ class AnimationController(
             }
         }
         progress = newProgress.coerceIn(0.0f, 1.0f)
+    }
+
+    fun advance(deltaTimeMs: Long) {
+        advance(deltaTimeMs.toFloat())
     }
 }
 
@@ -139,15 +143,20 @@ fun rememberAnimationController(
         controller.updateDefinition(definition)
     }
 
-    // High performance animation loop ticking every ~16ms (60 FPS)
+    // Hardware-synchronized VSYNC animation loop (60Hz / 90Hz / 120Hz smooth rendering)
     LaunchedEffect(controller.isPlaying, controller.speed) {
-        var lastTime = System.currentTimeMillis()
+        if (!controller.isPlaying) return@LaunchedEffect
+        var lastFrameNanos = 0L
         while (isActive && controller.isPlaying) {
-            delay(16L)
-            val now = System.currentTimeMillis()
-            val delta = now - lastTime
-            lastTime = now
-            controller.advance(delta)
+            androidx.compose.runtime.withFrameNanos { frameTimeNanos ->
+                if (lastFrameNanos != 0L) {
+                    val deltaNanos = frameTimeNanos - lastFrameNanos
+                    val deltaMs = deltaNanos / 1_000_000f
+                    // Clamp delta to avoid massive jump if frame was paused/delayed
+                    controller.advance(deltaMs.coerceIn(0.0f, 100.0f))
+                }
+                lastFrameNanos = frameTimeNanos
+            }
         }
     }
 

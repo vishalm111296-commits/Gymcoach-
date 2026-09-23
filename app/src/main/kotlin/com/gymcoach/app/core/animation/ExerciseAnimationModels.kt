@@ -96,8 +96,14 @@ data class ExerciseAnimationDefinition(
         val range = next.progress - prev.progress
         val localT = if (range <= 0.0001f) 0.0f else ((clamped - prev.progress) / range).coerceIn(0.0f, 1.0f)
 
-        // Smooth cosine easing for natural human motion
-        val eased = (1.0f - kotlin.math.cos(localT * Math.PI.toFloat())) / 2.0f
+        // For 2-keyframe start/end movements, apply cosine easing.
+        // For multi-keyframe biomechanical paths (>=3 waypoints), use continuous progression
+        // to prevent velocity dropping to zero at every intermediate keyframe boundary.
+        val eased = if (keyframes.size == 2) {
+            (1.0f - kotlin.math.cos(localT * Math.PI.toFloat())) / 2.0f
+        } else {
+            localT
+        }
 
         val interpolatedJoints = mutableMapOf<String, JointPoint>()
         for ((name, p1) in prev.joints) {

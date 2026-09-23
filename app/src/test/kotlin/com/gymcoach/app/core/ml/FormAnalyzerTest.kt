@@ -92,4 +92,37 @@ class FormAnalyzerTest {
         assertNull(ExerciseType.fromExerciseName("Calf Raise"))
         assertNull(ExerciseType.fromExerciseName("Unknown Exercise"))
     }
+
+    @Test
+    fun `resetTransientTracking preserves rep count but clears tracking state`() {
+        // Perform 1 full rep
+        for (i in 0..4) analyzer.analyze(createPose(160.0))
+        for (i in 0..4) analyzer.analyze(createPose(80.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = analyzer.analyze(createPose(160.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+        assertEquals(1, analyzer.repCount)
+
+        // Reset transient tracking (simulating temporary low confidence or occlusion)
+        analyzer.resetTransientTracking()
+
+        // Rep count must be preserved
+        assertEquals(1, analyzer.repCount)
+    }
+
+    @Test
+    fun `full reset clears rep count and state`() {
+        for (i in 0..4) analyzer.analyze(createPose(160.0))
+        for (i in 0..4) analyzer.analyze(createPose(80.0))
+        for (i in 0..4) analyzer.analyze(createPose(160.0))
+        assertEquals(1, analyzer.repCount)
+
+        // Full reset
+        analyzer.reset()
+
+        assertEquals(0, analyzer.repCount)
+    }
 }

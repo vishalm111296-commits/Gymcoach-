@@ -346,7 +346,7 @@ private fun TemplateCard(
                         containerColor = GymCoachColors.CyanAccent,
                         contentColor = GymCoachColors.SurfaceCardElevated
                     ),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = GymCoachShapes.sm
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,

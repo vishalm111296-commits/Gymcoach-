@@ -6,6 +6,7 @@ import com.gymcoach.app.domain.model.TemplateExercise
 import com.gymcoach.app.domain.model.WorkoutTemplate
 import com.gymcoach.app.domain.repository.WorkoutTemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -50,9 +51,43 @@ class WorkoutTemplateViewModel @Inject constructor(
             if (ex.targetSets <= 0) {
                 errors["exercise_$index"] = "Sets must be at least 1"
             }
+            if (ex.targetWeightKg < 0) {
+                errors["exercise_${index}_weight"] = "Target weight cannot be negative"
+            }
+            if (ex.restSeconds < 0) {
+                errors["exercise_${index}_rest"] = "Rest seconds cannot be negative"
+            }
+            if (ex.targetRpe != null && (ex.targetRpe <= 0.0 || ex.targetRpe > 10.0)) {
+                errors["exercise_${index}_rpe"] = "RPE must be between 1.0 and 10.0"
+            }
         }
         _validationErrors.value = errors
         return errors.isEmpty()
+    }
+
+    fun reorderExercises(exercises: List<TemplateExercise>, fromIndex: Int, toIndex: Int): List<TemplateExercise> {
+        if (fromIndex !in exercises.indices || toIndex !in exercises.indices || fromIndex == toIndex) {
+            return exercises
+        }
+        val mutable = exercises.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+        return mutable.mapIndexed { index, ex ->
+            ex.copy(orderIndex = index)
+        }
+    }
+
+    fun addExerciseToTemplate(exercises: List<TemplateExercise>, newExercise: TemplateExercise): List<TemplateExercise> {
+        return exercises + newExercise.copy(orderIndex = exercises.size)
+    }
+
+    fun removeExerciseFromTemplate(exercises: List<TemplateExercise>, indexToRemove: Int): List<TemplateExercise> {
+        if (indexToRemove !in exercises.indices) return exercises
+        val mutable = exercises.toMutableList()
+        mutable.removeAt(indexToRemove)
+        return mutable.mapIndexed { index, ex ->
+            ex.copy(orderIndex = index)
+        }
     }
 
     fun saveTemplate(
@@ -67,6 +102,8 @@ class WorkoutTemplateViewModel @Inject constructor(
             try {
                 val id = repository.saveTemplate(template, exercises)
                 onSuccess(id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to save template"
             } finally {
@@ -85,6 +122,8 @@ class WorkoutTemplateViewModel @Inject constructor(
                 } else {
                     _errorMessage.value = "Failed to duplicate template"
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to duplicate template"
             } finally {
@@ -97,6 +136,8 @@ class WorkoutTemplateViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.archiveTemplate(templateId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to archive template"
             }
@@ -107,6 +148,8 @@ class WorkoutTemplateViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.unarchiveTemplate(templateId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to unarchive template"
             }
@@ -117,6 +160,8 @@ class WorkoutTemplateViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.deleteTemplate(templateId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to delete template"
             }
@@ -129,6 +174,8 @@ class WorkoutTemplateViewModel @Inject constructor(
             try {
                 val workoutId = repository.startWorkoutFromTemplate(templateId)
                 onWorkoutStarted(workoutId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to start workout from template"
             } finally {

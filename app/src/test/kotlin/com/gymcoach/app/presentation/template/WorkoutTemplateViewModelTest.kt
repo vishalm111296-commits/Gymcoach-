@@ -193,4 +193,78 @@ class WorkoutTemplateViewModelTest {
         coVerify(exactly = 1) { repository.startWorkoutFromTemplate(10L) }
         assertFalse(viewModel.isLoading.value)
     }
+
+    @Test
+    fun validateTemplate_withNegativeWeight_returnsFalse() {
+        val invalidExercise = sampleExercise.copy(targetWeightKg = -5.0)
+        val isValid = viewModel.validateTemplate("Push Day", listOf(invalidExercise))
+        assertFalse(isValid)
+        assertEquals("Target weight cannot be negative", viewModel.validationErrors.value["exercise_0_weight"])
+    }
+
+    @Test
+    fun validateTemplate_withNegativeRestSeconds_returnsFalse() {
+        val invalidExercise = sampleExercise.copy(restSeconds = -30)
+        val isValid = viewModel.validateTemplate("Push Day", listOf(invalidExercise))
+        assertFalse(isValid)
+        assertEquals("Rest seconds cannot be negative", viewModel.validationErrors.value["exercise_0_rest"])
+    }
+
+    @Test
+    fun validateTemplate_withInvalidRpe_returnsFalse() {
+        val invalidExercise = sampleExercise.copy(targetRpe = 11.5)
+        val isValid = viewModel.validateTemplate("Push Day", listOf(invalidExercise))
+        assertFalse(isValid)
+        assertEquals("RPE must be between 1.0 and 10.0", viewModel.validationErrors.value["exercise_0_rpe"])
+    }
+
+    @Test
+    fun reorderExercises_movesItemAndReindexesCorrectly() {
+        val ex1 = sampleExercise.copy(id = 1L, exerciseName = "Bench Press", orderIndex = 0)
+        val ex2 = sampleExercise.copy(id = 2L, exerciseName = "Incline Dumbbell", orderIndex = 1)
+        val ex3 = sampleExercise.copy(id = 3L, exerciseName = "Cable Flyes", orderIndex = 2)
+
+        val reordered = viewModel.reorderExercises(listOf(ex1, ex2, ex3), fromIndex = 2, toIndex = 0)
+
+        assertEquals(3, reordered.size)
+        assertEquals("Cable Flyes", reordered[0].exerciseName)
+        assertEquals(0, reordered[0].orderIndex)
+        assertEquals("Bench Press", reordered[1].exerciseName)
+        assertEquals(1, reordered[1].orderIndex)
+        assertEquals("Incline Dumbbell", reordered[2].exerciseName)
+        assertEquals(2, reordered[2].orderIndex)
+    }
+
+    @Test
+    fun reorderExercises_withOutOfBounds_returnsOriginalList() {
+        val ex1 = sampleExercise.copy(id = 1L, orderIndex = 0)
+        val list = listOf(ex1)
+
+        val result = viewModel.reorderExercises(list, fromIndex = 0, toIndex = 5)
+        assertEquals(list, result)
+    }
+
+    @Test
+    fun addExerciseToTemplate_appendsAndSetsOrderIndex() {
+        val ex1 = sampleExercise.copy(id = 1L, orderIndex = 0)
+        val newEx = sampleExercise.copy(id = 2L, orderIndex = 99)
+
+        val updated = viewModel.addExerciseToTemplate(listOf(ex1), newEx)
+        assertEquals(2, updated.size)
+        assertEquals(1, updated[1].orderIndex)
+    }
+
+    @Test
+    fun removeExerciseFromTemplate_removesAndReindexesOrder() {
+        val ex1 = sampleExercise.copy(id = 1L, exerciseName = "Squat", orderIndex = 0)
+        val ex2 = sampleExercise.copy(id = 2L, exerciseName = "Leg Press", orderIndex = 1)
+        val ex3 = sampleExercise.copy(id = 3L, exerciseName = "Calf Raise", orderIndex = 2)
+
+        val updated = viewModel.removeExerciseFromTemplate(listOf(ex1, ex2, ex3), indexToRemove = 1)
+        assertEquals(2, updated.size)
+        assertEquals("Squat", updated[0].exerciseName)
+        assertEquals(0, updated[0].orderIndex)
+        assertEquals("Calf Raise", updated[1].exerciseName)
+        assertEquals(1, updated[1].orderIndex)
+    }
 }

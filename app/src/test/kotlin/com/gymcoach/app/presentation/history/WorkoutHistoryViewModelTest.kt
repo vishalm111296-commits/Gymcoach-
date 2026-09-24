@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -171,5 +172,34 @@ class WorkoutHistoryViewModelTest {
 
         viewModel.clearExportResult()
         assertNull(viewModel.exportResult.value)
+    }
+
+    @Test
+    fun `filter and sort options update state cleanly`() = runTest {
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        viewModel.onFilterChange(WorkoutHistoryViewModel.FilterOption.THIS_MONTH)
+        assertEquals(WorkoutHistoryViewModel.FilterOption.THIS_MONTH, viewModel.filterOption.value)
+
+        viewModel.onSortChange(WorkoutHistoryViewModel.SortOption.VOLUME_DESC)
+        assertEquals(WorkoutHistoryViewModel.SortOption.VOLUME_DESC, viewModel.sortOption.value)
+
+        viewModel.onSearchQueryChange("Squat")
+        assertEquals("Squat", viewModel.searchQuery.value)
+    }
+
+    @Test
+    fun `importWorkoutsFromJson handles invalid json with descriptive error`() = runTest {
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        viewModel.importWorkoutsFromJson("invalid json structure")
+
+        val state = viewModel.importUiState.value
+        assertFalse(state.isImporting)
+        assertNotNull(state.error)
+        assertNull(state.message)
+
+        viewModel.clearImportUiState()
+        assertNull(viewModel.importUiState.value.error)
     }
 }

@@ -13,6 +13,7 @@ import com.gymcoach.app.domain.model.WorkoutWithDetails
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -72,31 +73,34 @@ class WorkoutHistoryViewModel @Inject constructor(
     enum class FilterOption { ALL, TODAY, THIS_WEEK, THIS_MONTH, CUSTOM }
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _filterOption = MutableStateFlow(FilterOption.ALL)
-    val filterOption: StateFlow<FilterOption> = _filterOption
+    val filterOption: StateFlow<FilterOption> = _filterOption.asStateFlow()
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val _sortOption = MutableStateFlow(SortOption.NEWEST)
-    val sortOption: StateFlow<SortOption> = _sortOption
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
     private val _customStartDate = MutableStateFlow<Long?>(null)
-    val customStartDate: StateFlow<Long?> = _customStartDate
+    val customStartDate: StateFlow<Long?> = _customStartDate.asStateFlow()
 
     private val _customEndDate = MutableStateFlow<Long?>(null)
-    val customEndDate: StateFlow<Long?> = _customEndDate
+    val customEndDate: StateFlow<Long?> = _customEndDate.asStateFlow()
 
     private val _selectedWorkout = MutableStateFlow<Long?>(null)
 
     private val _incompleteWorkout = MutableStateFlow<Workout?>(null)
-    val incompleteWorkout: StateFlow<Workout?> = _incompleteWorkout
+    val incompleteWorkout: StateFlow<Workout?> = _incompleteWorkout.asStateFlow()
 
     private val _deleteTarget = MutableStateFlow<Long?>(null)
-    val deleteTarget: StateFlow<Long?> = _deleteTarget
+    val deleteTarget: StateFlow<Long?> = _deleteTarget.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _workouts = MutableStateFlow<List<WorkoutWithStats>>(emptyList())
-    val workouts: StateFlow<List<WorkoutWithStats>> = _workouts
+    val workouts: StateFlow<List<WorkoutWithStats>> = _workouts.asStateFlow()
 
     init {
         observeWorkouts()
@@ -173,6 +177,7 @@ class WorkoutHistoryViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collect { workouts ->
                     _workouts.value = workouts
+                    _isLoading.value = false
                 }
         }
     }
@@ -260,6 +265,10 @@ class WorkoutHistoryViewModel @Inject constructor(
                     )
                 }
                 _exportResult.value = result
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _exportResult.value = null
             } finally {
                 _isExporting.value = false
             }
@@ -300,6 +309,8 @@ class WorkoutHistoryViewModel @Inject constructor(
                     isImporting = false,
                     message = msg.toString()
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _importUiState.value = ImportUiState(
                     isImporting = false,

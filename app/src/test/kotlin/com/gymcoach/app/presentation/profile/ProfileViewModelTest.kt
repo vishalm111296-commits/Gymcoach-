@@ -191,4 +191,23 @@ class ProfileViewModelTest {
             })
         }
     }
+
+    @Test
+    fun `importWorkoutsFromJson sets error state on invalid json`() = kotlinx.coroutines.test.runTest {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+        val mockWorkoutRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.WorkoutRepository>(relaxed = true)
+
+        val viewModel = ProfileViewModel(
+            userProfileRepository = mockRepo,
+            bodyMeasurementDao = mockDao,
+            workoutRepository = mockWorkoutRepo,
+            workoutDataImporter = com.gymcoach.app.core.export.WorkoutDataImporter()
+        )
+
+        viewModel.importWorkoutsFromJson("invalid json string")
+
+        assertTrue(viewModel.importUiState.value.error != null)
+        assertEquals(false, viewModel.importUiState.value.isImporting)
+    }
 }

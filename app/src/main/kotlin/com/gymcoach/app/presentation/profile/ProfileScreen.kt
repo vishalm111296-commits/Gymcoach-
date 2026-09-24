@@ -71,12 +71,15 @@ import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -158,6 +161,7 @@ class ProfileViewModel @Inject constructor(
                 if (stats.workoutsSkipped > 0) msg.append(" Skipped ${stats.workoutsSkipped} duplicate(s).")
                 _importUiState.value = ProfileImportUiState(isImporting = false, message = msg.toString())
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _importUiState.value = ProfileImportUiState(isImporting = false, error = e.message ?: "Import error")
             }
         }
@@ -679,7 +683,10 @@ private fun ProfileInfoRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 3.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$label: $value"
+            },
         shape = GymCoachShapes.sm,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -703,7 +710,7 @@ private fun ProfileInfoRow(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = label,
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )

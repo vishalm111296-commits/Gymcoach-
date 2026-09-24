@@ -72,6 +72,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.ui.theme.*
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -340,7 +342,11 @@ private fun ReadinessGauge(
     }
 
     Box(
-        modifier = modifier.size(210.dp),
+        modifier = modifier
+            .size(210.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Readiness gauge: %.1f out of 5.0, status: %s".format(score, statusLabel)
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {

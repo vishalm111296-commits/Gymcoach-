@@ -50,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -315,7 +317,7 @@ fun WorkoutHistoryDetailScreen(
                         // Muscle Group Breakdown
                         SectionHeader("Muscle Groups")
                         Spacer(Modifier.height(8.dp))
-                        val muscleBreakdown = calculateMuscleBreakdown(workout)
+                        val muscleBreakdown = remember(workout) { calculateMuscleBreakdown(workout) }
                         if (muscleBreakdown.isNotEmpty()) {
                             muscleBreakdown.forEach { (muscle, data) ->
                                 MuscleGroupRow(
@@ -494,17 +496,19 @@ private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, M
 @Composable
 fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
     val w = workout.workout
-    var totalSets = 0
-    var totalReps = 0
-    var totalVolume = 0.0
-    val exerciseCount = workout.exercises.size
-
-    workout.exercises.forEach { entry ->
-        val doneSets = entry.sets.filter { it.completed }
-        totalSets += doneSets.size
-        totalReps += doneSets.sumOf { it.reps }
-        totalVolume += doneSets.sumOf { it.weight * it.reps }
+    val (totalSets, totalReps, totalVolume) = remember(workout) {
+        var sets = 0
+        var reps = 0
+        var volume = 0.0
+        workout.exercises.forEach { entry ->
+            val doneSets = entry.sets.filter { it.completed }
+            sets += doneSets.size
+            reps += doneSets.sumOf { it.reps }
+            volume += doneSets.sumOf { it.weight * it.reps }
+        }
+        Triple(sets, reps, volume)
     }
+    val exerciseCount = workout.exercises.size
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -697,7 +701,10 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                 Spacer(modifier = Modifier.width(24.dp))
             }
 
-            exerciseWithSets.sets.sortedBy { it.setNumber }.forEach { set ->
+            val sortedSets = remember(exerciseWithSets) {
+                exerciseWithSets.sets.sortedBy { it.setNumber }
+            }
+            sortedSets.forEach { set ->
                 SetRow(
                     setNumber = set.setNumber,
                     weight = set.weight,
@@ -720,8 +727,14 @@ fun SetRow(
     restSeconds: Int,
     completed: Boolean
 ) {
+    val completionText = if (completed) "completed" else "incomplete"
+    val rowDescription = "Set $setNumber, %.1f kg, $reps reps, RPE %.1f, rest $restSeconds seconds, $completionText".format(weight, rpe)
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = rowDescription
+            },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

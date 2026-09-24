@@ -76,16 +76,9 @@ import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.presentation.home.components.TodayWorkoutCard
 import com.gymcoach.app.presentation.home.components.VtaperFocusCard
 import com.gymcoach.app.ui.GymCoachBottomNav
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
 import java.time.LocalTime
 
 @Composable
@@ -109,7 +102,7 @@ fun HomeDashboardScreen(
     val todayCalories by viewModel.todayCalories.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         bottomBar = {
             GymCoachBottomNav(
                 currentRoute = "home",
@@ -129,7 +122,7 @@ fun HomeDashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(DarkBackground)
+                .background(GymCoachColors.PureDark)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -157,7 +150,7 @@ fun HomeDashboardScreen(
                         .padding(vertical = 48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = AccentBlue)
+                    CircularProgressIndicator(color = GymCoachColors.Primary)
                 }
             } else {
                 StaggeredDashboardItem(index = 2, isLoading = state.isLoading) {
@@ -199,7 +192,7 @@ fun HomeDashboardScreen(
                                 .drawWithContent {
                                     drawContent()
                                     drawRoundRect(
-                                        color = AccentBlue.copy(alpha = heroBorderAlpha),
+                                        color = GymCoachColors.Primary.copy(alpha = heroBorderAlpha),
                                         cornerRadius = CornerRadius(18.dp.toPx()),
                                         style = Stroke(width = 1.dp.toPx())
                                     )
@@ -301,7 +294,7 @@ private fun QuickStatChip(
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        color = DarkSurface,
+        color = GymCoachColors.SurfaceDeep,
         border = GymCoachBorders.subtleBorder()
     ) {
         Row(
@@ -319,7 +312,7 @@ private fun QuickStatChip(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
+                color = GymCoachColors.TextSecondary,
                 maxLines = 1,
                 fontSize = 10.sp
             )
@@ -358,7 +351,7 @@ private fun GreetingHeader(state: HomeUiState) {
                 letterSpacing = 2.sp,
                 fontSize = 11.sp
             ),
-            color = TextTertiary
+            color = GymCoachColors.TextMuted
         )
         Text(
             text = dynamicStatus,
@@ -366,7 +359,7 @@ private fun GreetingHeader(state: HomeUiState) {
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             ),
-            color = TextPrimary
+            color = GymCoachColors.TextPrimary
         )
     }
 }
@@ -391,9 +384,9 @@ private fun ReadinessDashboardCard(
     )
 
     val (badgeColor, statusLabel) = when {
-        !isToday || readiness == null -> Pair(TextTertiary, "Check-in Pending")
+        !isToday || readiness == null -> Pair(GymCoachColors.TextMuted, "Check-in Pending")
         score >= 4.0 -> Pair(GymCoachColors.Success, "Optimal Recovery")
-        score >= 3.0 -> Pair(AccentBlue, "Good Readiness")
+        score >= 3.0 -> Pair(GymCoachColors.Primary, "Good Readiness")
         score >= 2.0 -> Pair(GymCoachColors.Warning, "Moderate Fatigue")
         else -> Pair(GymCoachColors.Danger, "Rest Advised")
     }
@@ -437,7 +430,7 @@ private fun ReadinessDashboardCard(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.2.sp
                         ),
-                        color = AccentBlue
+                        color = GymCoachColors.Primary
                     )
                     Box(
                         modifier = Modifier
@@ -460,7 +453,7 @@ private fun ReadinessDashboardCard(
                         "Tap to log sleep, soreness & energy to calibrate workout loads"
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = GymCoachColors.TextSecondary,
                     maxLines = 2
                 )
 
@@ -481,7 +474,7 @@ private fun ReadinessDashboardCard(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = "Open Readiness",
-                tint = TextTertiary,
+                tint = GymCoachColors.TextMuted,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -548,7 +541,7 @@ private fun WeeklyConsistencyCard(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp
                     ),
-                    color = TextTertiary
+                    color = GymCoachColors.TextMuted
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
@@ -557,12 +550,12 @@ private fun WeeklyConsistencyCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
                         ),
-                        color = AccentBlue
+                        color = GymCoachColors.Primary
                     )
                     Text(
                         text = " / ${targetWorkouts.coerceAtLeast(1)} sessions",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = GymCoachColors.TextSecondary,
                         modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
                     )
                 }
@@ -585,7 +578,7 @@ private fun WeeklyConsistencyCard(
                             label = "dotScale_$i"
                         )
                         val dotColor by animateColorAsState(
-                            targetValue = if (isDone) AccentBlue else DarkSurface,
+                            targetValue = if (isDone) GymCoachColors.Primary else GymCoachColors.SurfaceDeep,
                             animationSpec = tween(
                                 durationMillis = 400,
                                 delayMillis = (i - 1) * 70,
@@ -613,7 +606,7 @@ private fun WeeklyConsistencyCard(
                         .width(130.dp)
                         .height(3.dp)
                         .clip(CircleShape),
-                    color = AccentBlue,
+                    color = GymCoachColors.Primary,
                     trackColor = GymCoachColors.SurfaceInput
                 )
             }
@@ -649,7 +642,7 @@ private fun WeeklyConsistencyCard(
                     Text(
                         text = "new bests logged",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextTertiary
+                        color = GymCoachColors.TextMuted
                     )
                 }
             }
@@ -676,13 +669,13 @@ private fun CoachInsightCard(insight: String) {
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(AccentBlue.copy(alpha = 0.15f)),
+                    .background(GymCoachColors.Primary.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
                     contentDescription = null,
-                    tint = AccentBlue,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -694,12 +687,12 @@ private fun CoachInsightCard(insight: String) {
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp
                     ),
-                    color = AccentBlue
+                    color = GymCoachColors.Primary
                 )
                 Text(
                     text = insight,
                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
             }
         }
@@ -719,7 +712,7 @@ private fun QuickActionsSection(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.2.sp
             ),
-            color = TextTertiary
+            color = GymCoachColors.TextMuted
         )
 
         Row(
@@ -789,13 +782,13 @@ private fun ActionTile(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = AccentBlue,
+                tint = GymCoachColors.Primary,
                 modifier = Modifier.size(20.dp)
             )
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = TextPrimary,
+                color = GymCoachColors.TextPrimary,
                 maxLines = 1
             )
         }
@@ -833,23 +826,23 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
                     letterSpacing = 1.5.sp,
                     fontWeight = FontWeight.Bold
                 ),
-                color = AccentBlue
+                color = GymCoachColors.Primary
             )
             Text(
                 text = "No Active Program",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimary
+                color = GymCoachColors.TextPrimary
             )
             Text(
                 text = "Generate an adaptive multi-day routine calibrated to your goals, schedule, and available gym equipment.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
             Button(
                 onClick = onSetUpPlan,
                 interactionSource = btnInteractionSource,
                 shape = GymCoachShapes.md,
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)

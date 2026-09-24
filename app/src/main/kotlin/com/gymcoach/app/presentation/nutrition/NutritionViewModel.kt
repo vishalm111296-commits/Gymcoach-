@@ -2,8 +2,15 @@ package com.gymcoach.app.presentation.nutrition
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.nutrition.ActivityLevel
+import com.gymcoach.app.core.nutrition.BiologicalSex
+import com.gymcoach.app.core.nutrition.NutritionGoal
+import com.gymcoach.app.core.nutrition.TdeeMacroCalculator
+import com.gymcoach.app.core.nutrition.TdeeProfile
 import com.gymcoach.app.data.local.entity.NutritionLogEntity
+import com.gymcoach.app.data.local.entity.UserProfileEntity
 import com.gymcoach.app.domain.repository.NutritionRepository
+import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +31,10 @@ data class DailyNutritionSummary(
     val calorieGoal: Int = 2500,
     val proteinGoalGrams: Float = 160f,
     val carbsGoalGrams: Float = 275f,
-    val fatGoalGrams: Float = 70f
+    val fatGoalGrams: Float = 70f,
+    val fiberGoalGrams: Float = 35f,
+    val waterGoalMl: Int = 3000,
+    val tdeeProfile: TdeeProfile? = null
 )
 
 data class NutritionUiState(
@@ -33,6 +43,9 @@ data class NutritionUiState(
     val todayLogs: List<NutritionLogEntity> = emptyList(),
     val dailySummary: DailyNutritionSummary = DailyNutritionSummary(),
     val showAddDialog: Boolean = false,
+    val showTdeeCalculatorSheet: Boolean = false,
+    val selectedGoalOverride: NutritionGoal? = null,
+    val selectedActivityOverride: ActivityLevel? = null,
     val editingLog: NutritionLogEntity? = null,
     val error: String? = null
 )
@@ -40,13 +53,13 @@ data class NutritionUiState(
 @HiltViewModel
 class NutritionViewModel @Inject constructor(
     private val nutritionRepository: NutritionRepository,
-    private val userProfileRepository: com.gymcoach.app.domain.repository.UserProfileRepository? = null
+    private val userProfileRepository: UserProfileRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NutritionUiState())
     val uiState: StateFlow<NutritionUiState> = _uiState.asStateFlow()
 
-    private var cachedProfile: com.gymcoach.app.data.local.entity.UserProfileEntity? = null
+    private var cachedProfile: UserProfileEntity? = null
 
     init {
         viewModelScope.launch {
@@ -60,7 +73,11 @@ class NutritionViewModel @Inject constructor(
 
     private fun recalculateSummaryWithCurrentLogs() {
         val logs = _uiState.value.todayLogs
-        val goals = calculateGoalsFromProfile(cachedProfile)
+        val tdeeProfile = computeTdeeProfile(
+            profile = cachedProfile,
+            goalOverride = _uiState.value.selectedGoalOverride,
+            activityOverride = _uiState.value.selectedActivityOverride
+        )
         val summary = DailyNutritionSummary(
             totalCalories = logs.sumOf { it.calories },
             totalProtein = logs.sumOf { it.proteinGrams.toDouble() }.toFloat(),
@@ -68,32 +85,61 @@ class NutritionViewModel @Inject constructor(
             totalFat = logs.sumOf { it.fatGrams.toDouble() }.toFloat(),
             totalFiber = logs.sumOf { it.fiberGrams.toDouble() }.toFloat(),
             totalWaterMl = logs.sumOf { it.waterMl },
-            calorieGoal = goals.first,
-            proteinGoalGrams = goals.second,
-            carbsGoalGrams = goals.third,
-            fatGoalGrams = goals.fourth
+            calorieGoal = tdeeProfile.targetCalories,
+            proteinGoalGrams = tdeeProfile.macroSplit.proteinGrams,
+            carbsGoalGrams = tdeeProfile.macroSplit.carbsGrams,
+            fatGoalGrams = tdeeProfile.macroSplit.fatGrams,
+            fiberGoalGrams = tdeeProfile.fiberGrams,
+            waterGoalMl = tdeeProfile.waterMlTarget,
+            tdeeProfile = tdeeProfile
         )
         _uiState.update { it.copy(dailySummary = summary) }
     }
 
-    private fun calculateGoalsFromProfile(profile: com.gymcoach.app.data.local.entity.UserProfileEntity?): Quadruple<Int, Float, Float, Float> {
-        val weight = (profile?.weightKg?.takeIf { it > 30.0 } ?: 70.0)
-        val goal = (profile?.goal ?: "Hypertrophy").lowercase()
-        val baseCalories = when {
-            goal.contains("cut") || goal.contains("fat loss") || goal.contains("weight loss") ->
-                (weight * 28.0).toInt().coerceIn(1600, 3200)
-            goal.contains("bulk") || goal.contains("mass") || goal.contains("muscle") ->
-                (weight * 36.0).toInt().coerceIn(2400, 4200)
-            else ->
-                (weight * 32.0).toInt().coerceIn(2000, 3600)
-        }
-        val proteinGoal = (weight * 2.0).toFloat().coerceIn(120f, 240f)
-        val fatGoal = ((baseCalories * 0.25f) / 9f).coerceIn(50f, 100f)
-        val carbsGoal = ((baseCalories - (proteinGoal * 4f) - (fatGoal * 9f)) / 4f).coerceIn(150f, 500f)
-        return Quadruple(baseCalories, proteinGoal, carbsGoal, fatGoal)
+    fun computeTdeeProfile(
+        profile: UserProfileEntity?,
+        goalOverride: NutritionGoal? = null,
+        activityOverride: ActivityLevel? = null
+    ): TdeeProfile {
+        val weight = profile?.weightKg?.takeIf { it > 30.0 } ?: 75.0
+        val height = profile?.heightCm?.takeIf { it > 100.0 } ?: 175.0
+        val age = profile?.age?.takeIf { it in 14..100 } ?: 25
+        val sex = BiologicalSex.fromString(profile?.sex ?: "")
+        val trainingDays = profile?.trainingDaysPerWeek ?: 4
+        val sessionLength = profile?.sessionLengthMinutes ?: 60
+
+        val goal = goalOverride ?: NutritionGoal.fromString(profile?.goal ?: "Hypertrophy")
+        val activity = activityOverride ?: ActivityLevel.inferFromTraining(trainingDays, sessionLength)
+
+        return TdeeMacroCalculator.calculate(
+            weightKg = weight,
+            heightCm = height,
+            age = age,
+            sex = sex,
+            goal = goal,
+            activityLevel = activity,
+            trainingDaysPerWeek = trainingDays,
+            sessionLengthMinutes = sessionLength
+        )
     }
 
-    private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+    fun selectGoalOverride(goal: NutritionGoal?) {
+        _uiState.update { it.copy(selectedGoalOverride = goal) }
+        recalculateSummaryWithCurrentLogs()
+    }
+
+    fun selectActivityOverride(activity: ActivityLevel?) {
+        _uiState.update { it.copy(selectedActivityOverride = activity) }
+        recalculateSummaryWithCurrentLogs()
+    }
+
+    fun showTdeeSheet() {
+        _uiState.update { it.copy(showTdeeCalculatorSheet = true) }
+    }
+
+    fun hideTdeeSheet() {
+        _uiState.update { it.copy(showTdeeCalculatorSheet = false) }
+    }
 
     fun loadDay(date: LocalDate) {
         val zone = ZoneId.systemDefault()
@@ -103,7 +149,11 @@ class NutritionViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, selectedDate = date) }
             nutritionRepository.getLogsForDay(startOfDay, endOfDay).collect { logs ->
-                val goals = calculateGoalsFromProfile(cachedProfile)
+                val tdeeProfile = computeTdeeProfile(
+                    profile = cachedProfile,
+                    goalOverride = _uiState.value.selectedGoalOverride,
+                    activityOverride = _uiState.value.selectedActivityOverride
+                )
                 val summary = DailyNutritionSummary(
                     totalCalories = logs.sumOf { it.calories },
                     totalProtein = logs.sumOf { it.proteinGrams.toDouble() }.toFloat(),
@@ -111,10 +161,13 @@ class NutritionViewModel @Inject constructor(
                     totalFat = logs.sumOf { it.fatGrams.toDouble() }.toFloat(),
                     totalFiber = logs.sumOf { it.fiberGrams.toDouble() }.toFloat(),
                     totalWaterMl = logs.sumOf { it.waterMl },
-                    calorieGoal = goals.first,
-                    proteinGoalGrams = goals.second,
-                    carbsGoalGrams = goals.third,
-                    fatGoalGrams = goals.fourth
+                    calorieGoal = tdeeProfile.targetCalories,
+                    proteinGoalGrams = tdeeProfile.macroSplit.proteinGrams,
+                    carbsGoalGrams = tdeeProfile.macroSplit.carbsGrams,
+                    fatGoalGrams = tdeeProfile.macroSplit.fatGrams,
+                    fiberGoalGrams = tdeeProfile.fiberGrams,
+                    waterGoalMl = tdeeProfile.waterMlTarget,
+                    tdeeProfile = tdeeProfile
                 )
                 _uiState.update {
                     it.copy(
@@ -141,11 +194,11 @@ class NutritionViewModel @Inject constructor(
 
     fun logWater(amountMl: Int) {
         viewModelScope.launch {
-            val zone = java.time.ZoneId.systemDefault()
+            val zone = ZoneId.systemDefault()
             val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() +
                 (System.currentTimeMillis() % 86_400_000L)
 
-            val log = com.gymcoach.app.data.local.entity.NutritionLogEntity(
+            val log = NutritionLogEntity(
                 date = dateMillis,
                 mealName = "Water",
                 calories = 0,

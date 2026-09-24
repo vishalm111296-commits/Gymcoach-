@@ -51,7 +51,9 @@ import com.gymcoach.app.core.nutrition.ActivityLevel
 import com.gymcoach.app.core.nutrition.NutritionGoal
 import com.gymcoach.app.core.nutrition.TdeeProfile
 import com.gymcoach.app.data.local.entity.NutritionLogEntity
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale

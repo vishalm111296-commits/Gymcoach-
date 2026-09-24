@@ -24,7 +24,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.gamification.*
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

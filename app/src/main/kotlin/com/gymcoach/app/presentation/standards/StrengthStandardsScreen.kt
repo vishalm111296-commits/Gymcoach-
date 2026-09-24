@@ -31,7 +31,10 @@ import com.gymcoach.app.core.standards.LiftStandard
 import com.gymcoach.app.core.standards.OverallStrengthProfile
 import com.gymcoach.app.core.standards.StrengthTier
 import com.gymcoach.app.domain.repository.PersonalRecord
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

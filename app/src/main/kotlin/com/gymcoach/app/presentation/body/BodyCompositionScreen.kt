@@ -24,7 +24,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.body.BodyMetricTrend
 import com.gymcoach.app.core.body.BodyPart
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt

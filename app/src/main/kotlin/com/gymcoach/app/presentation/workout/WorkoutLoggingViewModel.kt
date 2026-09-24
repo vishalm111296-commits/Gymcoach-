@@ -23,6 +23,7 @@ import com.gymcoach.app.data.local.entity.ReadinessEntity
 import com.gymcoach.app.domain.repository.ReadinessRepository
 import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -203,6 +204,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to load workout"
             }
         }
@@ -221,13 +223,15 @@ class WorkoutLoggingViewModel @Inject constructor(
 
         val perfMap = try {
             workoutRepository.getLastSetsForExercises(exerciseIds)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
             emptyMap<Long, List<LastSetData>>()
         }
 
         val summaryMap = try {
             workoutRepository.getLastPerformancesForExercises(exerciseIds)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
             emptyMap<Long, LastPerformance>()
         }
 
@@ -277,6 +281,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             try {
                 startNewWorkoutInternal()
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to start workout"
             }
         }
@@ -312,13 +317,15 @@ class WorkoutLoggingViewModel @Inject constructor(
             try {
                 workoutRepository.updateWorkout(current.copy(notes = notes))
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to update notes"
             }
         }
     }
 
     fun updateSetRpe(exerciseIndex: Int, setIndex: Int, rpe: Double) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(rpe = rpe) }
+        val validRpe = rpe.coerceIn(0.0, 10.0)
+        updateSetField(exerciseIndex, setIndex) { it.copy(rpe = validRpe) }
     }
 
     fun showExercisePicker() {
@@ -370,6 +377,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to add exercise"
             }
         }
@@ -396,6 +404,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     addExerciseToWorkout(created)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to create and add custom exercise"
             }
         }
@@ -455,6 +464,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     workoutRepository.addSetToExercise(latestWe.workoutExercise.id, newSet)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to add set"
             }
         }
@@ -482,10 +492,10 @@ class WorkoutLoggingViewModel @Inject constructor(
                         val newSet = WorkoutSet(
                             workoutExerciseId = latestWe.workoutExercise.id,
                             setNumber = currentMaxSetNumber,
-                            weight = ws.weight,
-                            reps = ws.reps,
+                            weight = maxOf(0.0, ws.weight),
+                            reps = maxOf(0, ws.reps),
                             rpe = 0.0,
-                            restSeconds = ws.restSeconds,
+                            restSeconds = maxOf(0, ws.restSeconds),
                             completed = false,
                             setType = SetType.WARMUP
                         )
@@ -493,21 +503,25 @@ class WorkoutLoggingViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to add warm-up sets"
             }
         }
     }
 
     fun updateSetReps(exerciseIndex: Int, setIndex: Int, reps: Int) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(reps = reps) }
+        val validReps = maxOf(0, reps)
+        updateSetField(exerciseIndex, setIndex) { it.copy(reps = validReps) }
     }
 
     fun updateSetWeight(exerciseIndex: Int, setIndex: Int, weight: Double) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(weight = weight) }
+        val validWeight = maxOf(0.0, weight)
+        updateSetField(exerciseIndex, setIndex) { it.copy(weight = validWeight) }
     }
 
     fun updateSetRestSeconds(exerciseIndex: Int, setIndex: Int, restSeconds: Int) {
-        updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = restSeconds) }
+        val validRest = maxOf(0, restSeconds)
+        updateSetField(exerciseIndex, setIndex) { it.copy(restSeconds = validRest) }
     }
 
     fun updateSetType(exerciseIndex: Int, setIndex: Int, setType: SetType) {
@@ -515,6 +529,7 @@ class WorkoutLoggingViewModel @Inject constructor(
     }
 
     fun applyCameraReps(exerciseIndex: Int, reps: Int, setIndex: Int? = null) {
+        val validReps = maxOf(0, reps)
         val workout = _currentWorkout.value ?: return
         if (exerciseIndex !in workout.exercises.indices) return
         val we = workout.exercises[exerciseIndex]
@@ -522,7 +537,7 @@ class WorkoutLoggingViewModel @Inject constructor(
         val targetSetIndex = setIndex ?: we.sets.indexOfFirst { !it.completed }.let { if (it == -1) we.sets.lastIndex else it }
         if (targetSetIndex !in we.sets.indices) return
         val set = we.sets[targetSetIndex]
-        val updated = set.copy(reps = reps, completed = true)
+        val updated = set.copy(reps = validReps, completed = true)
         viewModelScope.launch {
             try {
                 workoutRepository.updateSet(updated)
@@ -532,6 +547,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     calculateProgressionRecommendations(refreshed.exercises)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to apply camera reps"
             }
         }
@@ -551,6 +567,7 @@ class WorkoutLoggingViewModel @Inject constructor(
             try {
                 workoutRepository.deleteSet(set.id)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to remove set"
             }
         }
@@ -565,10 +582,23 @@ class WorkoutLoggingViewModel @Inject constructor(
                 workoutRepository.removeExerciseFromWorkout(we.workoutExercise.id)
                 val updated = _progressionRecommendations.value - we.exercise.id
                 _progressionRecommendations.value = updated
+                onExerciseRemovedFromSupersets(exerciseIndex)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to remove exercise"
             }
         }
+    }
+
+    private fun onExerciseRemovedFromSupersets(removedIndex: Int) {
+        _supersetGroups.value = _supersetGroups.value
+            .filter { removedIndex !in it.exerciseIndices }
+            .map { group ->
+                val updatedIndices = group.exerciseIndices.map { idx ->
+                    if (idx > removedIndex) idx - 1 else idx
+                }
+                group.copy(exerciseIndices = updatedIndices)
+            }
     }
 
     fun loadSubstitutesForExercise(exerciseId: Long) {
@@ -584,7 +614,8 @@ class WorkoutLoggingViewModel @Inject constructor(
             val equipmentType = userProfile?.equipmentType ?: "gym"
             try {
                 _substitutes.value = engine.findSubstitutes(exerciseId, equipmentType, maxResults = 5)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _substitutes.value = emptyList()
             } finally {
                 _isSubstitutionLoading.value = false
@@ -598,7 +629,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         val equipmentType = userProfile?.equipmentType ?: "gym"
         return try {
             engine.findSubstitutes(exerciseId, equipmentType, maxResults = 5)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
             emptyList()
         }
     }
@@ -630,12 +662,18 @@ class WorkoutLoggingViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to substitute exercise"
             }
         }
     }
 
     fun linkExercisesAsSuperset(exerciseIndexA: Int, exerciseIndexB: Int) {
+        if (exerciseIndexA == exerciseIndexB || exerciseIndexA < 0 || exerciseIndexB < 0) return
+        val currentExercises = _currentWorkout.value?.exercises
+        if (currentExercises != null && (exerciseIndexA !in currentExercises.indices || exerciseIndexB !in currentExercises.indices)) {
+            return
+        }
         val remaining = _supersetGroups.value.filter {
             exerciseIndexA !in it.exerciseIndices && exerciseIndexB !in it.exerciseIndices
         }
@@ -671,6 +709,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     calculateProgressionRecommendations(refreshed.exercises)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to log set"
             }
         }
@@ -706,6 +745,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     calculateProgressionRecommendations(refreshed.exercises)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to update set"
             }
         }
@@ -726,6 +766,10 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun adjustRestTimer(deltaSeconds: Int) { restTimer.adjust(deltaSeconds) }
 
     fun changeRestTimerDuration(seconds: Int) {
+        if (seconds <= 0) {
+            restTimer.stop()
+            return
+        }
         val workout = _currentWorkout.value
         val workoutId = workout?.workout?.id ?: -1L
         restTimer.start(seconds, viewModelScope, workoutId = workoutId)
@@ -843,6 +887,7 @@ class WorkoutLoggingViewModel @Inject constructor(
 
                 _completed.value = true
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to complete workout"
             }
         }
@@ -850,33 +895,37 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private fun calculateProgressionRecommendations(exercises: List<WorkoutExerciseWithSets>) {
         viewModelScope.launch {
-            val profile = userProfileRepository.getLatestProfile().firstOrNull()
-            val equipmentType = profile?.equipmentType ?: "home"
-            val currentReadiness = latestReadiness.value?.readinessScore
-            val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
-            for (we in exercises) {
-                val exercise = we.exercise
-                val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
-                if (normalSets.isNotEmpty()) {
-                    val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
-                    val recommendation = progressionEngine.calculateProgressionForExercise(
-                        exercise = exercise,
-                        previousSets = lastSets.map {
-                            WorkoutSetEntity(
-                                workoutExerciseId = 0, setNumber = 0,
-                                weight = it.weight, reps = it.reps, rpe = it.rpe,
-                                restSeconds = it.restSeconds, completed = true,
-                                setType = it.setType
-                            )
-                        },
-                        currentSets = normalSets.map { it.toEntity() },
-                        equipmentType = equipmentType,
-                        readinessScore = currentReadiness
-                    )
-                    recommendations[exercise.id] = recommendation
+            try {
+                val profile = userProfileRepository.getLatestProfile().firstOrNull()
+                val equipmentType = profile?.equipmentType ?: "home"
+                val currentReadiness = latestReadiness.value?.readinessScore
+                val recommendations = mutableMapOf<Long, ProgressionRecommendation>()
+                for (we in exercises) {
+                    val exercise = we.exercise
+                    val normalSets = we.sets.filter { it.completed && it.setType == SetType.NORMAL }
+                    if (normalSets.isNotEmpty()) {
+                        val lastSets = _previousPerformance.value[exercise.id] ?: emptyList()
+                        val recommendation = progressionEngine.calculateProgressionForExercise(
+                            exercise = exercise,
+                            previousSets = lastSets.map {
+                                WorkoutSetEntity(
+                                    workoutExerciseId = 0, setNumber = 0,
+                                    weight = it.weight, reps = it.reps, rpe = it.rpe,
+                                    restSeconds = it.restSeconds, completed = true,
+                                    setType = it.setType
+                                )
+                            },
+                            currentSets = normalSets.map { it.toEntity() },
+                            equipmentType = equipmentType,
+                            readinessScore = currentReadiness
+                        )
+                        recommendations[exercise.id] = recommendation
+                    }
                 }
+                _progressionRecommendations.value = recommendations
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
             }
-            _progressionRecommendations.value = recommendations
         }
     }
 
@@ -899,6 +948,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                     calculateProgressionRecommendations(refreshed.exercises)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to update set"
             }
         }
@@ -908,11 +958,13 @@ class WorkoutLoggingViewModel @Inject constructor(
     fun clearForTest() {
         workoutCollectorJob?.cancel()
         workoutTimerJob?.cancel()
+        restTimer.stop()
     }
 
     override fun onCleared() {
         super.onCleared()
         workoutCollectorJob?.cancel()
         workoutTimerJob?.cancel()
+        restTimer.stop()
     }
 }

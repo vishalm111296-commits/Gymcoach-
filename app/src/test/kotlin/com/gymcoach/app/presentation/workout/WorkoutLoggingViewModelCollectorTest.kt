@@ -353,4 +353,251 @@ class WorkoutLoggingViewModelCollectorTest {
             viewModel.clearForTest()
         }
     }
+
+    @Test
+    fun `updateSetRpe clamps out-of-range values to valid RPE bounds`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(id = 88L, date = now, startTime = now, endTime = now, duration = 0, completed = false, status = "ACTIVE", notes = "")
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 88L, exerciseId = 10L, orderIndex = 0),
+                    exercise = Exercise(id = 10L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "Barbell", difficulty = "Intermediate"),
+                    sets = listOf(
+                        WorkoutSet(id = 101L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = false, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(88L) } returns flowOf(details)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.loadOrStartWorkout(88L)
+
+            // Attempt to update with negative RPE
+            viewModel.updateSetRpe(exerciseIndex = 0, setIndex = 0, rpe = -3.5)
+            coVerify { workoutRepository.updateSet(match { it.id == 101L && it.rpe == 0.0 }) }
+
+            // Attempt to update with excessive RPE > 10.0
+            viewModel.updateSetRpe(exerciseIndex = 0, setIndex = 0, rpe = 14.0)
+            coVerify { workoutRepository.updateSet(match { it.id == 101L && it.rpe == 10.0 }) }
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
+
+    @Test
+    fun `updateSetReps and updateSetWeight clamp negative values to zero`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(id = 89L, date = now, startTime = now, endTime = now, duration = 0, completed = false, status = "ACTIVE", notes = "")
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 89L, exerciseId = 10L, orderIndex = 0),
+                    exercise = Exercise(id = 10L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "Barbell", difficulty = "Intermediate"),
+                    sets = listOf(
+                        WorkoutSet(id = 201L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = false, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(89L) } returns flowOf(details)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.loadOrStartWorkout(89L)
+
+            viewModel.updateSetReps(exerciseIndex = 0, setIndex = 0, reps = -10)
+            coVerify { workoutRepository.updateSet(match { it.id == 201L && it.reps == 0 }) }
+
+            viewModel.updateSetWeight(exerciseIndex = 0, setIndex = 0, weight = -50.0)
+            coVerify { workoutRepository.updateSet(match { it.id == 201L && it.weight == 0.0 }) }
+
+            viewModel.updateSetRestSeconds(exerciseIndex = 0, setIndex = 0, restSeconds = -30)
+            coVerify { workoutRepository.updateSet(match { it.id == 201L && it.restSeconds == 0 }) }
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
+
+    @Test
+    fun `changeRestTimerDuration stops timer when seconds is non-positive`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.changeRestTimerDuration(0)
+            verify(exactly = 1) { restTimer.stop() }
+
+            viewModel.changeRestTimerDuration(-15)
+            verify(exactly = 2) { restTimer.stop() }
+
+            viewModel.changeRestTimerDuration(60)
+            verify(exactly = 1) { restTimer.start(60, any(), any(), any()) }
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
+
+    @Test
+    fun `linkExercisesAsSuperset validates distinct indices and bounds`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(id = 90L, date = now, startTime = now, endTime = now, duration = 0, completed = false, status = "ACTIVE", notes = "")
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 90L, exerciseId = 10L, orderIndex = 0),
+                    exercise = Exercise(id = 10L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "Barbell", difficulty = "Intermediate"),
+                    sets = emptyList()
+                ),
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 2L, workoutId = 90L, exerciseId = 20L, orderIndex = 1),
+                    exercise = Exercise(id = 20L, name = "Calf Raise", description = "", muscleGroup = "Calves", equipment = "Machine", difficulty = "Beginner"),
+                    sets = emptyList()
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(90L) } returns flowOf(details)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.loadOrStartWorkout(90L)
+
+            // Self-link attempt should be ignored
+            viewModel.linkExercisesAsSuperset(0, 0)
+            org.junit.Assert.assertTrue(viewModel.supersetGroups.value.isEmpty())
+
+            // Out of bounds link attempt should be ignored
+            viewModel.linkExercisesAsSuperset(0, 5)
+            org.junit.Assert.assertTrue(viewModel.supersetGroups.value.isEmpty())
+
+            // Valid link
+            viewModel.linkExercisesAsSuperset(0, 1)
+            org.junit.Assert.assertEquals(1, viewModel.supersetGroups.value.size)
+            org.junit.Assert.assertEquals(listOf(0, 1), viewModel.supersetGroups.value[0].exerciseIndices)
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
+
+    @Test
+    fun `removeExercise removes exercise and reindexes subsequent superset indices`() = runTest {
+        val workoutRepository = mockk<WorkoutRepository>(relaxed = true)
+        val exerciseRepository = mockk<ExerciseRepository>(relaxed = true)
+        val userProfileRepository = mockk<UserProfileRepository>(relaxed = true)
+        val progressionEngine = mockk<ProgressionEngine>(relaxed = true)
+        val restTimer = mockk<RestTimerManager>(relaxed = true)
+
+        val now = Instant.now()
+        val sampleWorkout = Workout(id = 91L, date = now, startTime = now, endTime = now, duration = 0, completed = false, status = "ACTIVE", notes = "")
+        val details = WorkoutWithDetails(
+            workout = sampleWorkout,
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 1L, workoutId = 91L, exerciseId = 10L, orderIndex = 0),
+                    exercise = Exercise(id = 10L, name = "Bench Press", description = "", muscleGroup = "Chest", equipment = "Barbell", difficulty = "Intermediate"),
+                    sets = emptyList()
+                ),
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 2L, workoutId = 91L, exerciseId = 20L, orderIndex = 1),
+                    exercise = Exercise(id = 20L, name = "Incline Dumbbell Press", description = "", muscleGroup = "Chest", equipment = "Dumbbell", difficulty = "Intermediate"),
+                    sets = emptyList()
+                ),
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(id = 3L, workoutId = 91L, exerciseId = 30L, orderIndex = 2),
+                    exercise = Exercise(id = 30L, name = "Tricep Pushdown", description = "", muscleGroup = "Triceps", equipment = "Cable", difficulty = "Beginner"),
+                    sets = emptyList()
+                )
+            )
+        )
+
+        coEvery { exerciseRepository.getAllExercises() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getWorkoutWithDetails(91L) } returns flowOf(details)
+
+        val viewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimer,
+            progressionEngine,
+            userProfileRepository
+        ).apply { enableWorkoutTimer = false }
+
+        try {
+            viewModel.loadOrStartWorkout(91L)
+
+            // Link exercise 1 and exercise 2
+            viewModel.linkExercisesAsSuperset(1, 2)
+            org.junit.Assert.assertEquals(1, viewModel.supersetGroups.value.size)
+            org.junit.Assert.assertEquals(listOf(1, 2), viewModel.supersetGroups.value[0].exerciseIndices)
+
+            // Remove exercise 0 (Bench Press)
+            viewModel.removeExercise(0)
+
+            // The remaining superset (formerly 1, 2) should shift to (0, 1)
+            org.junit.Assert.assertEquals(1, viewModel.supersetGroups.value.size)
+            org.junit.Assert.assertEquals(listOf(0, 1), viewModel.supersetGroups.value[0].exerciseIndices)
+        } finally {
+            viewModel.clearForTest()
+        }
+    }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
+import com.gymcoach.app.core.progression.OneRepMaxCalculator
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -236,6 +237,20 @@ fun ProgressionAnalyticsScreen(
                                     }
                                     item {
                                         E1RMChart(dataPoints = state.e1rmTrend)
+                                    }
+                                }
+                                if (state.oneRepMaxProfile != null) {
+                                    item {
+                                        SectionHeader("1RM SCIENTIFIC FORMULA COMPARISON")
+                                    }
+                                    item {
+                                        OneRepMaxFormulaComparisonCard(profile = state.oneRepMaxProfile!!)
+                                    }
+                                    item {
+                                        SectionHeader("ESTIMATED TRAINING INTENSITY ZONES")
+                                    }
+                                    item {
+                                        TrainingIntensityZonesCard(zones = state.oneRepMaxProfile!!.zones)
                                     }
                                 }
                                 item { Spacer(Modifier.height(32.dp)) }
@@ -844,6 +859,233 @@ private fun WeeklyVolumeChart(entries: List<WeeklyVolumeEntry>) {
                 style = MaterialTheme.typography.bodySmall,
                 color = GymCoachColors.TextSecondary
             )
+        }
+    }
+}
+
+/**
+ * Scientific 1RM formula comparison card displaying Epley, Brzycki, Lombardi, Mayhew, and Wathen values.
+ */
+@Composable
+private fun OneRepMaxFormulaComparisonCard(profile: OneRepMaxCalculator.OneRepMaxProfile) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ESTIMATED 1RM COMPARISON",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = GymCoachColors.Primary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Surface(
+                    shape = GymCoachShapes.pill,
+                    color = GymCoachColors.PrimaryGlow
+                ) {
+                    Text(
+                        text = "Basis: ${profile.weight.toInt()} kg × ${profile.reps} reps",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = GymCoachColors.PrimaryLight,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // Average Highlight Box
+            Surface(
+                shape = GymCoachShapes.md,
+                color = GymCoachColors.SurfaceCardElevated,
+                border = GymCoachBorders.primary,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "COMPOSITE CONSENSUS AVERAGE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GymCoachColors.TextMuted,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "5-Formula Weighted Benchmark",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GymCoachColors.TextSecondary
+                        )
+                    }
+                    Text(
+                        text = "%.1f kg".format(Locale.getDefault(), profile.average1RM),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = GymCoachColors.CyanAccent
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Formula Matrix Grid
+            val formulas = listOf(
+                Triple("Epley", profile.epley1RM, "w × (1 + r/30)"),
+                Triple("Brzycki", profile.brzycki1RM, "w × (36 / (37 - r))"),
+                Triple("Lombardi", profile.lombardi1RM, "w × r^0.10"),
+                Triple("Mayhew", profile.mayhew1RM, "100w / (52.2 + 41.9e^-0.055r)"),
+                Triple("Wathen", profile.wathen1RM, "100w / (48.8 + 53.8e^-0.075r)")
+            )
+
+            formulas.chunked(2).forEach { pair ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    pair.forEach { (name, value, formulaStr) ->
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            shape = GymCoachShapes.sm,
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep),
+                            border = GymCoachBorders.subtleBorder()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = name,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "%.1f kg".format(Locale.getDefault(), value),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GymCoachColors.PrimaryLight
+                                    )
+                                }
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = formulaStr,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GymCoachColors.TextMuted,
+                                    fontSize = 9.sp
+                                )
+                            }
+                        }
+                    }
+                    if (pair.size == 1) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Periodized training intensity percentage zones card.
+ */
+@Composable
+private fun TrainingIntensityZonesCard(zones: List<OneRepMaxCalculator.TrainingZone>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.lg,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        border = GymCoachBorders.subtleBorder()
+    ) {
+        Column(
+            modifier = Modifier.padding(GymCoachSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "INTENSITY PERCENTAGE TARGETS",
+                style = MaterialTheme.typography.labelSmall,
+                color = GymCoachColors.Primary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+
+            zones.forEach { zone ->
+                val barColor = when {
+                    zone.percentage >= 90 -> GymCoachColors.Danger
+                    zone.percentage >= 80 -> GymCoachColors.Warning
+                    zone.percentage >= 70 -> GymCoachColors.Primary
+                    else -> GymCoachColors.Success
+                }
+
+                Surface(
+                    shape = GymCoachShapes.sm,
+                    color = GymCoachColors.SurfaceDeep,
+                    border = GymCoachBorders.subtleBorder(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = GymCoachShapes.xs,
+                                color = barColor.copy(alpha = 0.2f),
+                                modifier = Modifier.widthIn(min = 44.dp)
+                            ) {
+                                Text(
+                                    text = "${zone.percentage}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = barColor,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 3.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = zone.trainingGoal,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = GymCoachColors.TextPrimary
+                                )
+                                Text(
+                                    text = "${zone.repRange} reps",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GymCoachColors.TextSecondary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "%.1f kg".format(Locale.getDefault(), zone.weight),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         }
     }
 }

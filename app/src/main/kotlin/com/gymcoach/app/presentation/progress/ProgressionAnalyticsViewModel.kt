@@ -2,6 +2,7 @@ package com.gymcoach.app.presentation.progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymcoach.app.core.progression.OneRepMaxCalculator
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.core.progression.PRDetector
 import com.gymcoach.app.domain.repository.ExerciseRepository
@@ -44,6 +45,7 @@ data class ProgressionAnalyticsUiState(
     val peakE1RM: Double = 0.0,
     val recentE1RM: Double = 0.0,
     val totalSessions: Int = 0,
+    val oneRepMaxProfile: OneRepMaxCalculator.OneRepMaxProfile? = null,
     val isLoading: Boolean = true,
     val isEmpty: Boolean = false
 )
@@ -161,6 +163,12 @@ class ProgressionAnalyticsViewModel @Inject constructor(
         val recentE1RM = e1rmBySession.lastOrNull()?.e1rm ?: 0.0
         val totalSessions = e1rmBySession.size
 
+        val mostRecentSessionSets = exerciseSets.filter { it.workoutDate == exerciseSets.last().workoutDate }
+        val bestSetInRecentSession = mostRecentSessionSets.maxByOrNull { prDetector.calculateEstimated1RM(it.set.weight, it.set.reps) }
+        val oneRepMaxProfile = if (bestSetInRecentSession != null && bestSetInRecentSession.set.weight > 0.0 && bestSetInRecentSession.set.reps > 0) {
+            OneRepMaxCalculator.calculateProfile(bestSetInRecentSession.set.weight, bestSetInRecentSession.set.reps)
+        } else null
+
         return ProgressionAnalyticsUiState(
             exerciseId = exerciseId,
             exerciseName = exerciseName,
@@ -170,6 +178,7 @@ class ProgressionAnalyticsViewModel @Inject constructor(
             peakE1RM = peakE1RM,
             recentE1RM = recentE1RM,
             totalSessions = totalSessions,
+            oneRepMaxProfile = oneRepMaxProfile,
             isLoading = false,
             isEmpty = false
         )

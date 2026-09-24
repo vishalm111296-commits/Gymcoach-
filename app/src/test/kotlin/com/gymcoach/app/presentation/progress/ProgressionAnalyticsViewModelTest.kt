@@ -245,4 +245,33 @@ class ProgressionAnalyticsViewModelTest {
         assertEquals(1200.0, state.weeklyVolume.first().volumeKg, 0.01)
         collectJob.cancel()
     }
+
+    @Test
+    fun loadExercise_withValidSets_computesOneRepMaxProfileAndZones() = runTest {
+        val sets = listOf(
+            makeSet(exerciseId = 1L, weight = 100.0, reps = 5, workoutDate = 1_000_000L)
+        )
+        every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(sets)
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
+
+        val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+        viewModel.loadExercise(1L, "Bench Press")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.oneRepMaxProfile)
+        val profile = state.oneRepMaxProfile!!
+        assertEquals(100.0, profile.weight, 0.01)
+        assertEquals(5, profile.reps)
+        assertTrue("Average 1RM must be greater than working weight 100kg", profile.average1RM > 100.0)
+        assertTrue("Epley 1RM must be positive", profile.epley1RM > 100.0)
+        assertTrue("Brzycki 1RM must be positive", profile.brzycki1RM > 100.0)
+        assertTrue("Lombardi 1RM must be positive", profile.lombardi1RM > 100.0)
+        assertTrue("Mayhew 1RM must be positive", profile.mayhew1RM > 100.0)
+        assertTrue("Wathen 1RM must be positive", profile.wathen1RM > 100.0)
+        assertEquals(8, profile.zones.size)
+        assertEquals(95, profile.zones[0].percentage)
+        assertEquals(60, profile.zones[7].percentage)
+        collectJob.cancel()
+    }
 }

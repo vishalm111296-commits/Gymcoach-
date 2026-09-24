@@ -349,11 +349,11 @@ private fun AnimatedPhaseBadgesSection() {
                     val isSelected = activePhase == phase
 
                     val phaseColor = when (phase) {
-                        AnimationPhase.SETUP -> Color(0xFF38BDF8)     // Sky blue
-                        AnimationPhase.ECCENTRIC -> Color(0xFFFBBF24) // Amber
-                        AnimationPhase.BOTTOM -> Color(0xFFF43F5E)    // Rose
-                        AnimationPhase.CONCENTRIC -> Color(0xFF34D399)// Emerald
-                        AnimationPhase.END -> Color(0xFFA78BFA)       // Violet
+                        AnimationPhase.SETUP -> GymCoachColors.PhaseSetup
+                        AnimationPhase.ECCENTRIC -> GymCoachColors.PhaseEccentric
+                        AnimationPhase.BOTTOM -> GymCoachColors.PhaseBottom
+                        AnimationPhase.CONCENTRIC -> GymCoachColors.PhaseConcentric
+                        AnimationPhase.END -> GymCoachColors.PhaseEnd
                         else -> AccentBlue
                     }
 
@@ -443,11 +443,11 @@ private fun AnimatedPhaseBadgesSection() {
                 val activeInfo = phases.firstOrNull { it.first == selected }
                 if (activeInfo != null) {
                     val phaseColor = when (selected) {
-                        AnimationPhase.SETUP -> Color(0xFF38BDF8)
-                        AnimationPhase.ECCENTRIC -> Color(0xFFFBBF24)
-                        AnimationPhase.BOTTOM -> Color(0xFFF43F5E)
-                        AnimationPhase.CONCENTRIC -> Color(0xFF34D399)
-                        AnimationPhase.END -> Color(0xFFA78BFA)
+                        AnimationPhase.SETUP -> GymCoachColors.PhaseSetup
+                        AnimationPhase.ECCENTRIC -> GymCoachColors.PhaseEccentric
+                        AnimationPhase.BOTTOM -> GymCoachColors.PhaseBottom
+                        AnimationPhase.CONCENTRIC -> GymCoachColors.PhaseConcentric
+                        AnimationPhase.END -> GymCoachColors.PhaseEnd
                         else -> AccentBlue
                     }
 

@@ -236,6 +236,8 @@ fun ExerciseListScreen(
     val filterEquipment by viewModel.filterEquipment.collectAsState()
     val filterMovementPattern by viewModel.filterMovementPattern.collectAsState()
     val showFavoritesOnly by viewModel.showFavoritesOnly.collectAsState()
+    val showAnimationOnly by viewModel.showAnimationOnly.collectAsState()
+    val showCameraCoachOnly by viewModel.showCameraCoachOnly.collectAsState()
 
     var textFieldValue by rememberSaveable { mutableStateOf("") }
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -244,7 +246,7 @@ fun ExerciseListScreen(
     var showCreateCustomExerciseSheet by rememberSaveable { mutableStateOf(false) }
 
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" ||
-            filterMovementPattern != "All" || showFavoritesOnly
+            filterMovementPattern != "All" || showFavoritesOnly || showAnimationOnly || showCameraCoachOnly
 
     val favTint by animateColorAsState(
         targetValue = if (showFavoritesOnly) Color(0xFFF43F5E) else TextSecondary,
@@ -509,6 +511,8 @@ fun ExerciseListScreen(
                                         viewModel.onEquipmentSelected("All")
                                         viewModel.onMovementPatternSelected("All")
                                         if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
+                                        if (showAnimationOnly) viewModel.toggleAnimationOnly()
+                                        if (showCameraCoachOnly) viewModel.toggleCameraCoachOnly()
                                         textFieldValue = ""
                                         viewModel.onSearchQueryChange("")
                                     },
@@ -528,6 +532,7 @@ fun ExerciseListScreen(
                         items(exercises, key = { it.id }) { exercise ->
                             val hasRealAnimation = animatedNames.contains(exercise.name.trim().lowercase()) ||
                                     !exercise.animationUrl.isNullOrBlank()
+                            val hasCameraCoach = ExerciseType.fromExerciseName(exercise.name) != null
                             ExerciseItemCard(
                                 modifier = Modifier.animateItemPlacement(
                                     animationSpec = spring(
@@ -542,6 +547,7 @@ fun ExerciseListScreen(
                                 movementPattern = exercise.movementPattern,
                                 isFavorite = exercise.isFavorite,
                                 hasAnimation = hasRealAnimation,
+                                hasCameraCoach = hasCameraCoach,
                                 isCustom = exercise.isCustom,
                                 onFavoriteToggle = { viewModel.toggleFavorite(exercise) },
                                 onClick = { onExerciseClick(exercise.id) }
@@ -625,6 +631,25 @@ fun ExerciseListScreen(
                     }
                 }
 
+                Spacer(Modifier.height(18.dp))
+                Text("Special Features & AI", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AnimatedFilterChip(
+                        selected = showAnimationOnly,
+                        onClick = { viewModel.toggleAnimationOnly() },
+                        label = "3D Animation"
+                    )
+                    AnimatedFilterChip(
+                        selected = showCameraCoachOnly,
+                        onClick = { viewModel.toggleCameraCoachOnly() },
+                        label = "AI Camera Coach"
+                    )
+                }
+
                 Spacer(Modifier.height(28.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -636,6 +661,8 @@ fun ExerciseListScreen(
                         viewModel.onEquipmentSelected("All")
                         viewModel.onMovementPatternSelected("All")
                         if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
+                        if (showAnimationOnly) viewModel.toggleAnimationOnly()
+                        if (showCameraCoachOnly) viewModel.toggleCameraCoachOnly()
                     }) {
                         Text("Reset All", color = TextSecondary)
                     }

@@ -70,6 +70,13 @@ object GymCoachColors {
     val Danger = Color(0xFFEF4444)
     val DangerBg = Color(0xFF7F1D1D)
 
+    // Animation & Biomechanical Phases
+    val PhaseSetup = Color(0xFF38BDF8)     // Sky blue
+    val PhaseEccentric = Color(0xFFFBBF24) // Amber
+    val PhaseBottom = Color(0xFFF43F5E)    // Rose
+    val PhaseConcentric = Color(0xFF34D399)// Emerald
+    val PhaseEnd = Color(0xFFA78BFA)       // Violet
+
     // Gradients
     val PrimaryGradient = Brush.horizontalGradient(
         colors = listOf(Primary, Color(0xFF8B85FF))

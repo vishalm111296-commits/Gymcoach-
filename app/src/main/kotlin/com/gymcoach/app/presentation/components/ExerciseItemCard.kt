@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -89,6 +90,7 @@ fun ExerciseItemCard(
     movementPattern: String = "",
     isFavorite: Boolean = false,
     hasAnimation: Boolean = false,
+    hasCameraCoach: Boolean = false,
     isCustom: Boolean = false,
     onFavoriteToggle: (() -> Unit)? = null,
     onClick: () -> Unit = {}
@@ -379,6 +381,40 @@ fun ExerciseItemCard(
                                 contentDescription = null,
                                 tint = TextTertiary,
                                 modifier = Modifier.size(10.dp)
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = hasCameraCoach,
+                        enter = fadeIn(animationSpec = tween(200)) + expandHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        ),
+                        exit = fadeOut(animationSpec = tween(150)) + shrinkHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .clip(GymCoachShapes.pill)
+                                .background(GymCoachColors.SurfaceCardElevated)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "AI Camera Form Coach available",
+                                tint = GymCoachColors.CyanAccent,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "AI Coach",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = TextPrimary
                             )
                         }
                     }

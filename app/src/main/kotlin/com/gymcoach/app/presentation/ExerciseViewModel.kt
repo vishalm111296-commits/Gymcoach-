@@ -31,20 +31,54 @@ class ExerciseViewModel @Inject constructor(
     val filterEquipment = MutableStateFlow("All")
     val filterMovementPattern = MutableStateFlow("All")
     val showFavoritesOnly = MutableStateFlow(false)
+    val showAnimationOnly = MutableStateFlow(false)
+    val showCameraCoachOnly = MutableStateFlow(false)
 
     val categories = listOf("All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Full Body")
     val difficulties = listOf("All", "Beginner", "Intermediate", "Advanced")
     val equipments = listOf("All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Resistance Band")
     val movementPatterns = listOf("All", "Squat", "Hinge", "Push", "Pull", "Lunge", "Carry", "Isolation")
 
-    private val filterGroup = combine(
+    private data class BaseFilters(
+        val category: String,
+        val difficulty: String,
+        val equipment: String,
+        val movementPattern: String
+    )
+
+    private data class ToggleFilters(
+        val favoritesOnly: Boolean,
+        val animationOnly: Boolean,
+        val cameraCoachOnly: Boolean
+    )
+
+    private val baseFilters = combine(
         filterCategory,
         filterDifficulty,
         filterEquipment,
-        filterMovementPattern,
-        showFavoritesOnly
-    ) { cat, diff, equip, pattern, favsOnly ->
-        SubFilters(cat, diff, equip, pattern, favsOnly)
+        filterMovementPattern
+    ) { cat, diff, equip, pattern ->
+        BaseFilters(cat, diff, equip, pattern)
+    }
+
+    private val toggleFilters = combine(
+        showFavoritesOnly,
+        showAnimationOnly,
+        showCameraCoachOnly
+    ) { favs, anim, cam ->
+        ToggleFilters(favs, anim, cam)
+    }
+
+    private val filterGroup = combine(baseFilters, toggleFilters) { base, toggles ->
+        SubFilters(
+            category = base.category,
+            difficulty = base.difficulty,
+            equipment = base.equipment,
+            movementPattern = base.movementPattern,
+            favoritesOnly = toggles.favoritesOnly,
+            animationOnly = toggles.animationOnly,
+            cameraCoachOnly = toggles.cameraCoachOnly
+        )
     }
 
     @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
@@ -52,7 +86,7 @@ class ExerciseViewModel @Inject constructor(
         searchQuery.debounce(300),
         filterGroup
     ) { q, sub ->
-        FilterState(q, sub.category, sub.difficulty, sub.equipment, sub.movementPattern, sub.favoritesOnly)
+        FilterState(q, sub.category, sub.difficulty, sub.equipment, sub.movementPattern, sub.favoritesOnly, sub.animationOnly, sub.cameraCoachOnly)
     }.flatMapLatest { filters ->
         val baseFlow = if (filters.query.isNotBlank()) {
             repository.searchExercises(filters.query)
@@ -70,7 +104,9 @@ class ExerciseViewModel @Inject constructor(
                 val matchesEquipment = filters.equipment == "All" || exercise.equipment.contains(filters.equipment, ignoreCase = true)
                 val matchesPattern = filters.movementPattern == "All" || exercise.movementPattern.equals(filters.movementPattern, ignoreCase = true)
                 val matchesFav = !filters.favoritesOnly || exercise.isFavorite
-                matchesCategory && matchesDifficulty && matchesEquipment && matchesPattern && matchesFav
+                val matchesAnim = !filters.animationOnly || (_animatedExerciseNames.value.contains(exercise.name.trim().lowercase()) || !exercise.animationUrl.isNullOrBlank())
+                val matchesCamera = !filters.cameraCoachOnly || (com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(exercise.name) != null)
+                matchesCategory && matchesDifficulty && matchesEquipment && matchesPattern && matchesFav && matchesAnim && matchesCamera
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -80,7 +116,9 @@ class ExerciseViewModel @Inject constructor(
         val difficulty: String,
         val equipment: String,
         val movementPattern: String,
-        val favoritesOnly: Boolean
+        val favoritesOnly: Boolean,
+        val animationOnly: Boolean,
+        val cameraCoachOnly: Boolean
     )
 
     private data class FilterState(
@@ -89,7 +127,9 @@ class ExerciseViewModel @Inject constructor(
         val difficulty: String,
         val equipment: String,
         val movementPattern: String,
-        val favoritesOnly: Boolean
+        val favoritesOnly: Boolean,
+        val animationOnly: Boolean,
+        val cameraCoachOnly: Boolean
     )
 
     fun onSearchQueryChange(query: String) {
@@ -114,6 +154,14 @@ class ExerciseViewModel @Inject constructor(
 
     fun toggleFavoritesOnly() {
         showFavoritesOnly.value = !showFavoritesOnly.value
+    }
+
+    fun toggleAnimationOnly() {
+        showAnimationOnly.value = !showAnimationOnly.value
+    }
+
+    fun toggleCameraCoachOnly() {
+        showCameraCoachOnly.value = !showCameraCoachOnly.value
     }
 
     fun toggleFavorite(exercise: Exercise) {

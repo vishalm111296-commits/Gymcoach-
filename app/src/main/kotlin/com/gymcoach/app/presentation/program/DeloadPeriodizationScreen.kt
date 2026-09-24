@@ -3,23 +3,28 @@ package com.gymcoach.app.presentation.program
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.program.DeloadReason
 import com.gymcoach.app.core.program.DeloadStatus
@@ -35,19 +40,26 @@ fun DeloadPeriodizationScreen(
     viewModel: DeloadPeriodizationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Mesocycle & Periodization", color = GymCoachColors.TextPrimary) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GymCoachColors.TextPrimary)
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.semantics { contentDescription = "Navigate back" }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = GymCoachColors.TextPrimary)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Show info dialog */ }) {
-                        Icon(Icons.Default.Info, contentDescription = "Info", tint = GymCoachColors.Primary)
+                    IconButton(
+                        onClick = { showInfoDialog = true },
+                        modifier = Modifier.semantics { contentDescription = "Open periodization science info" }
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = GymCoachColors.Primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -71,7 +83,8 @@ fun DeloadPeriodizationScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = GymCoachSpacing.lg),
+                    .padding(horizontal = GymCoachSpacing.lg)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
             ) {
                 ProgressionTracker(uiState.currentBlockWeek, uiState.totalBlockWeeks)
@@ -86,9 +99,18 @@ fun DeloadPeriodizationScreen(
                 }
 
                 if (uiState.isDeloadActive) {
-                    WorkoutScalingPreview()
+                    WorkoutScalingPreview(
+                        volumeReduction = uiState.deloadStatus?.volumeReductionPercent ?: 50,
+                        intensityReduction = uiState.deloadStatus?.intensityReductionPercent ?: 10
+                    )
                 }
+
+                Spacer(Modifier.height(24.dp))
             }
+        }
+
+        if (showInfoDialog) {
+            PeriodizationInfoDialog(onDismiss = { showInfoDialog = false })
         }
     }
 }
@@ -309,7 +331,10 @@ fun MicroCard(title: String, subtitle: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun WorkoutScalingPreview() {
+fun WorkoutScalingPreview(
+    volumeReduction: Int = 50,
+    intensityReduction: Int = 10
+) {
     Card(
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
@@ -328,14 +353,68 @@ fun WorkoutScalingPreview() {
             )
             Spacer(modifier = Modifier.height(GymCoachSpacing.sm))
 
-            // Mock preview
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Barbell Squat", color = GymCoachColors.TextSecondary, style = MaterialTheme.typography.bodyMedium)
+                Column {
+                    Text("Barbell Squat", color = GymCoachColors.TextPrimary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text("-$volumeReduction% Volume, -$intensityReduction% Load", color = GymCoachColors.TextMuted, style = MaterialTheme.typography.labelSmall)
+                }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("4 sets × 100kg", color = GymCoachColors.TextMuted, style = MaterialTheme.typography.bodySmall, textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough)
-                    Text("2 sets × 90kg", color = GymCoachColors.Success, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    val scaledSets = (4 * (100 - volumeReduction) / 100).coerceAtLeast(1)
+                    val scaledWeight = (100.0 * (100 - intensityReduction) / 100.0)
+                    Text("$scaledSets sets × ${scaledWeight.toInt()}kg", color = GymCoachColors.Success, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun PeriodizationInfoDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = GymCoachColors.SurfaceCard,
+        titleContentColor = GymCoachColors.TextPrimary,
+        icon = {
+            Icon(Icons.Default.Science, contentDescription = null, tint = GymCoachColors.Primary)
+        },
+        title = {
+            Text("Periodization & Deload Science", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "• Week 1 (Accumulation): Establish baseline motor patterns and progressive volume.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GymCoachColors.TextSecondary
+                )
+                Text(
+                    "• Week 2 (Overload): Increase intensity and working loads progressively.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GymCoachColors.TextSecondary
+                )
+                Text(
+                    "• Week 3 (Peak Volume): Maximum adaptive volume stimulus with high effort.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GymCoachColors.TextSecondary
+                )
+                Text(
+                    "• Week 4 (Deload): 50% volume drop and 10% load reduction to clear fatigue, restore connective tissues, and prepare for the next mesocycle.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GymCoachColors.TextSecondary
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
+            ) {
+                Text("Got It")
+            }
+        }
+    )
 }

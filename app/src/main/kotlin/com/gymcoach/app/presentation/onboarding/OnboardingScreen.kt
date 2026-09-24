@@ -71,7 +71,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymcoach.app.presentation.onboarding.components.EquipmentChecklist
 import com.gymcoach.app.presentation.onboarding.components.GoalSelectionCard
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -243,7 +246,7 @@ private fun StepHeader(title: String, description: String) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = WarmWhite,
+            color = GymCoachColors.TextPrimary,
             fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.height(8.dp))
@@ -311,7 +314,7 @@ private fun WelcomeStep() {
         Text(
             text = "BUILD YOUR\nV-TAPER",
             style = MaterialTheme.typography.displaySmall,
-            color = WarmWhite,
+            color = GymCoachColors.TextPrimary,
             fontWeight = FontWeight.Black,
             lineHeight = 40.sp
         )
@@ -424,7 +427,7 @@ private fun AnimatedFeatureItem(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = WarmWhite,
+                    color = GymCoachColors.TextPrimary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(2.dp))
@@ -554,8 +557,8 @@ private fun NumberField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = GymCoachColors.Primary,
                 unfocusedBorderColor = GymCoachColors.SurfaceCardElevated,
-                focusedTextColor = WarmWhite,
-                unfocusedTextColor = WarmWhite,
+                focusedTextColor = GymCoachColors.TextPrimary,
+                unfocusedTextColor = GymCoachColors.TextPrimary,
                 cursorColor = GymCoachColors.Primary
             ),
             modifier = Modifier.fillMaxWidth()
@@ -574,12 +577,12 @@ private fun SexSelection(
             FilterChip(
                 selected = sex == label,
                 onClick = { sex = label; onSelect(sex) },
-                label = { Text(label, color = if (sex == label) WarmWhite else GymCoachColors.TextSecondary) },
+                label = { Text(label, color = if (sex == label) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
                     selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
-                    selectedLabelColor = WarmWhite
+                    selectedLabelColor = GymCoachColors.TextPrimary
                 )
             )
         }
@@ -597,12 +600,12 @@ private fun PreferredScheduleChipGroup(
             FilterChip(
                 selected = schedule == label,
                 onClick = { schedule = label; onSelect(schedule) },
-                label = { Text(label, color = if (schedule == label) WarmWhite else GymCoachColors.TextSecondary) },
+                label = { Text(label, color = if (schedule == label) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
                     selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
-                    selectedLabelColor = WarmWhite
+                    selectedLabelColor = GymCoachColors.TextPrimary
                 )
             )
         }
@@ -620,12 +623,12 @@ private fun LimitationsChipGroup(
             FilterChip(
                 selected = limitation == label,
                 onClick = { limitation = label; onSelect(limitation) },
-                label = { Text(label, color = if (limitation == label) WarmWhite else GymCoachColors.TextSecondary) },
+                label = { Text(label, color = if (limitation == label) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
                     selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
-                    selectedLabelColor = WarmWhite
+                    selectedLabelColor = GymCoachColors.TextPrimary
                 )
             )
         }
@@ -657,7 +660,7 @@ private fun ScheduleStep(
                     containerColor = GymCoachColors.SurfaceCardElevated,
                     selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
-                    selectedLabelColor = WarmWhite
+                    selectedLabelColor = GymCoachColors.TextPrimary
                 )
             )
         }
@@ -724,7 +727,7 @@ private fun ReviewRow(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = WarmWhite,
+            color = GymCoachColors.TextPrimary,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.End
         )
@@ -755,7 +758,7 @@ private fun BottomBar(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GymCoachColors.Primary,
-                contentColor = WarmWhite,
+                contentColor = GymCoachColors.TextPrimary,
                 disabledContainerColor = GymCoachColors.SurfaceCardElevated
             ),
             modifier = Modifier
@@ -765,7 +768,7 @@ private fun BottomBar(
             if (state.isGenerating) {
                 CircularProgressIndicator(
                     modifier = Modifier.height(22.dp),
-                    color = WarmWhite,
+                    color = GymCoachColors.TextPrimary,
                     strokeWidth = 2.dp
                 )
             } else {

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -18,15 +17,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.AccentBlueDim
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.DarkSurfaceVariant
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 /**
  * Equipment options matching ExerciseEntity.equipment values in the database.
@@ -60,14 +55,15 @@ fun EquipmentChecklist(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 72.dp)
+                    .clip(GymCoachShapes.md)
                     .clickable { onToggle(name) },
-                shape = RoundedCornerShape(16.dp),
+                shape = GymCoachShapes.md,
                 colors = CardDefaults.cardColors(
-                    containerColor = if (checked) AccentBlueDim else DarkSurface
+                    containerColor = if (checked) GymCoachColors.Primary.copy(alpha = 0.15f) else GymCoachColors.SurfaceCard
                 ),
                 border = BorderStroke(
                     width = if (checked) 2.dp else 1.dp,
-                    color = if (checked) AccentBlue else DarkSurfaceVariant
+                    color = if (checked) GymCoachColors.Primary else GymCoachColors.BorderSubtle
                 )
             ) {
                 Row(
@@ -79,22 +75,22 @@ fun EquipmentChecklist(
                         checked = checked,
                         onCheckedChange = { onToggle(name) },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = AccentBlue,
-                            checkmarkColor = WarmWhite,
-                            uncheckedColor = TextTertiary
+                            checkedColor = GymCoachColors.Primary,
+                            checkmarkColor = GymCoachColors.TextPrimary,
+                            uncheckedColor = GymCoachColors.TextMuted
                         )
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             text = name,
                             style = MaterialTheme.typography.titleMedium,
-                            color = WarmWhite,
+                            color = GymCoachColors.TextPrimary,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 }

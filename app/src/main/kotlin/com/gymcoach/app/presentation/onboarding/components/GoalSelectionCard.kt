@@ -12,13 +12,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -27,19 +26,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.AccentBlueDim
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.DarkSurfaceVariant
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 /**
  * Large selection card for onboarding steps.
- * Selected: AccentBlue border + background tint. Unselected: DarkSurfaceVariant border.
+ * Selected: Primary border + background tint. Unselected: BorderSubtle.
  */
 @Composable
 fun GoalSelectionCard(
@@ -53,14 +49,15 @@ fun GoalSelectionCard(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 80.dp)
+            .clip(GymCoachShapes.md)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = GymCoachShapes.md,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) AccentBlueDim else DarkSurface
+            containerColor = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.15f) else GymCoachColors.SurfaceCard
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) AccentBlue else DarkSurfaceVariant
+            color = if (isSelected) GymCoachColors.Primary else GymCoachColors.BorderSubtle
         )
     ) {
         Row(
@@ -72,7 +69,7 @@ fun GoalSelectionCard(
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        color = if (isSelected) AccentBlue else DarkSurfaceVariant,
+                        color = if (isSelected) GymCoachColors.Primary else GymCoachColors.SurfaceInput,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -80,7 +77,7 @@ fun GoalSelectionCard(
                 Icon(
                     imageVector = iconFor(goal),
                     contentDescription = null,
-                    tint = if (isSelected) WarmWhite else TextSecondary,
+                    tint = if (isSelected) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -88,13 +85,13 @@ fun GoalSelectionCard(
                 Text(
                     text = goal,
                     style = MaterialTheme.typography.titleMedium,
-                    color = WarmWhite,
+                    color = GymCoachColors.TextPrimary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
         }

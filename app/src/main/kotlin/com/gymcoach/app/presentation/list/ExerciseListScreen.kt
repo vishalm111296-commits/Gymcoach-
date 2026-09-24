@@ -87,14 +87,8 @@ import com.gymcoach.app.presentation.ExerciseViewModel
 import com.gymcoach.app.presentation.components.CreateCustomExerciseBottomSheet
 import com.gymcoach.app.presentation.components.ExerciseItemCard
 import com.gymcoach.app.ui.GymCoachBottomNav
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
 
 private fun ExerciseType.displayLabel(): String =
     name.lowercase()
@@ -117,17 +111,17 @@ fun AnimatedFilterChip(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (selected) AccentBlue else DarkSurface,
+        targetValue = if (selected) GymCoachColors.Primary else GymCoachColors.SurfaceDeep,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "chipBg"
     )
     val contentColor by animateColorAsState(
-        targetValue = if (selected) Color.White else TextSecondary,
+        targetValue = if (selected) Color.White else GymCoachColors.TextSecondary,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "chipContent"
     )
     val borderColor by animateColorAsState(
-        targetValue = if (selected) AccentBlue else GymCoachColors.BorderSubtle,
+        targetValue = if (selected) GymCoachColors.Primary else GymCoachColors.BorderSubtle,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "chipBorder"
     )
@@ -249,7 +243,7 @@ fun ExerciseListScreen(
             filterMovementPattern != "All" || showFavoritesOnly || showAnimationOnly || showCameraCoachOnly
 
     val favTint by animateColorAsState(
-        targetValue = if (showFavoritesOnly) Color(0xFFF43F5E) else TextSecondary,
+        targetValue = if (showFavoritesOnly) Color(0xFFF43F5E) else GymCoachColors.TextSecondary,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "favTint"
     )
@@ -263,12 +257,12 @@ fun ExerciseListScreen(
     )
 
     val filterBtnBg by animateColorAsState(
-        targetValue = if (hasActiveFilter) AccentBlue.copy(alpha = 0.18f) else DarkSurface,
+        targetValue = if (hasActiveFilter) GymCoachColors.Primary.copy(alpha = 0.18f) else GymCoachColors.SurfaceDeep,
         animationSpec = tween(200),
         label = "filterBtnBg"
     )
     val filterBtnTint by animateColorAsState(
-        targetValue = if (hasActiveFilter) AccentBlue else TextSecondary,
+        targetValue = if (hasActiveFilter) GymCoachColors.Primary else GymCoachColors.TextSecondary,
         animationSpec = tween(200),
         label = "filterBtnTint"
     )
@@ -282,7 +276,7 @@ fun ExerciseListScreen(
     )
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         topBar = {
             TopAppBar(
                 title = {
@@ -293,12 +287,12 @@ fun ExerciseListScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp
                             ),
-                            color = TextPrimary
+                            color = GymCoachColors.TextPrimary
                         )
                         Text(
                             text = "${exercises.size} movements available",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 },
@@ -307,7 +301,7 @@ fun ExerciseListScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                 },
@@ -329,7 +323,7 @@ fun ExerciseListScreen(
                         Icon(
                             imageVector = Icons.Filled.CameraAlt,
                             contentDescription = "Form Tracking",
-                            tint = TextSecondary
+                            tint = GymCoachColors.TextSecondary
                         )
                     }
                     // Create Custom Exercise
@@ -337,11 +331,11 @@ fun ExerciseListScreen(
                         Icon(
                             imageVector = Icons.Filled.Add,
                             contentDescription = "Add Custom Exercise",
-                            tint = AccentBlue
+                            tint = GymCoachColors.Primary
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         },
         bottomBar = {
@@ -375,14 +369,14 @@ fun ExerciseListScreen(
                         Text(
                             "Search exercise, muscle, equipment...",
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                            color = TextTertiary
+                            color = GymCoachColors.TextMuted
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = TextSecondary
+                            tint = GymCoachColors.TextSecondary
                         )
                     },
                     trailingIcon = {
@@ -394,7 +388,7 @@ fun ExerciseListScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear",
-                                    tint = TextSecondary
+                                    tint = GymCoachColors.TextSecondary
                                 )
                             }
                         }
@@ -402,12 +396,12 @@ fun ExerciseListScreen(
                     singleLine = true,
                     shape = GymCoachShapes.md,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = DarkSurface,
-                        unfocusedContainerColor = DarkSurface,
-                        focusedBorderColor = AccentBlue,
+                        focusedContainerColor = GymCoachColors.SurfaceDeep,
+                        unfocusedContainerColor = GymCoachColors.SurfaceDeep,
+                        focusedBorderColor = GymCoachColors.Primary,
                         unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
+                        focusedTextColor = GymCoachColors.TextPrimary,
+                        unfocusedTextColor = GymCoachColors.TextPrimary
                     )
                 )
 
@@ -436,7 +430,7 @@ fun ExerciseListScreen(
                                     scaleY = filterDotScale
                                 }
                                 .clip(CircleShape)
-                                .background(AccentBlue)
+                                .background(GymCoachColors.Primary)
                                 .align(Alignment.TopEnd)
                         )
                     }
@@ -488,19 +482,19 @@ fun ExerciseListScreen(
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                tint = TextTertiary,
+                                tint = GymCoachColors.TextMuted,
                                 modifier = Modifier.size(48.dp)
                             )
                             Text(
                                 text = "No exercises found",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                             Text(
                                 text = "Try adjusting your search keywords or resetting filters.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary,
+                                color = GymCoachColors.TextSecondary,
                                 modifier = Modifier.padding(horizontal = 24.dp)
                             )
                             if (hasActiveFilter) {
@@ -565,7 +559,7 @@ fun ExerciseListScreen(
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
             sheetState = sheetState,
-            containerColor = DarkSurface
+            containerColor = GymCoachColors.SurfaceDeep
         ) {
             Column(
                 modifier = Modifier
@@ -576,11 +570,11 @@ fun ExerciseListScreen(
                 Text(
                     text = "Filter Exercises",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
 
                 Spacer(Modifier.height(18.dp))
-                Text("Difficulty", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                Text("Difficulty", style = MaterialTheme.typography.titleSmall, color = GymCoachColors.TextPrimary)
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -596,7 +590,7 @@ fun ExerciseListScreen(
                 }
 
                 Spacer(Modifier.height(18.dp))
-                Text("Movement Pattern", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                Text("Movement Pattern", style = MaterialTheme.typography.titleSmall, color = GymCoachColors.TextPrimary)
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
@@ -614,7 +608,7 @@ fun ExerciseListScreen(
                 }
 
                 Spacer(Modifier.height(18.dp))
-                Text("Equipment", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                Text("Equipment", style = MaterialTheme.typography.titleSmall, color = GymCoachColors.TextPrimary)
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
@@ -632,7 +626,7 @@ fun ExerciseListScreen(
                 }
 
                 Spacer(Modifier.height(18.dp))
-                Text("Special Features & AI", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                Text("Special Features & AI", style = MaterialTheme.typography.titleSmall, color = GymCoachColors.TextPrimary)
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -664,7 +658,7 @@ fun ExerciseListScreen(
                         if (showAnimationOnly) viewModel.toggleAnimationOnly()
                         if (showCameraCoachOnly) viewModel.toggleCameraCoachOnly()
                     }) {
-                        Text("Reset All", color = TextSecondary)
+                        Text("Reset All", color = GymCoachColors.TextSecondary)
                     }
 
                     Button(
@@ -685,7 +679,7 @@ fun ExerciseListScreen(
         ModalBottomSheet(
             onDismissRequest = { showCameraPicker = false },
             sheetState = pickerSheetState,
-            containerColor = DarkSurface
+            containerColor = GymCoachColors.SurfaceDeep
         ) {
             Column(
                 modifier = Modifier
@@ -697,12 +691,12 @@ fun ExerciseListScreen(
                 Text(
                     text = "Live Camera Form Analysis",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
                 Text(
                     text = "Select an exercise for real-time computer-vision rep counting and joint angle verification:",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
                 Spacer(Modifier.height(8.dp))
                 ExerciseType.entries.forEach { type ->

@@ -48,13 +48,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
 
 /**
  * Premium Hero Workout Card for Home Dashboard.
@@ -121,7 +117,7 @@ fun TodayWorkoutCard(
                             }
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(AccentBlue)
+                            .background(GymCoachColors.Primary)
                     )
                     Text(
                         text = "TODAY'S WORKOUT",
@@ -130,7 +126,7 @@ fun TodayWorkoutCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
                         ),
-                        color = AccentBlue
+                        color = GymCoachColors.Primary
                     )
                 }
 
@@ -144,7 +140,7 @@ fun TodayWorkoutCard(
                         Text(
                             text = targetMuscles.firstOrNull() ?: "",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = TextSecondary
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 }
@@ -157,7 +153,7 @@ fun TodayWorkoutCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp
                 ),
-                color = TextPrimary
+                color = GymCoachColors.TextPrimary
             )
 
             // Metrics row
@@ -173,13 +169,13 @@ fun TodayWorkoutCard(
                     Icon(
                         imageVector = Icons.Default.FitnessCenter,
                         contentDescription = null,
-                        tint = TextTertiary,
+                        tint = GymCoachColors.TextMuted,
                         modifier = Modifier.size(15.dp)
                     )
                     Text(
                         text = "$exerciseCount exercises",
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                 }
 
@@ -190,13 +186,13 @@ fun TodayWorkoutCard(
                     Icon(
                         imageVector = Icons.Default.Timer,
                         contentDescription = null,
-                        tint = TextTertiary,
+                        tint = GymCoachColors.TextMuted,
                         modifier = Modifier.size(15.dp)
                     )
                     Text(
                         text = "~$estimatedDuration min",
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -220,7 +216,7 @@ fun TodayWorkoutCard(
                 interactionSource = btnInteractionSource,
                 shape = GymCoachShapes.md,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentBlue,
+                    containerColor = GymCoachColors.Primary,
                     contentColor = Color.White
                 ),
                 modifier = Modifier

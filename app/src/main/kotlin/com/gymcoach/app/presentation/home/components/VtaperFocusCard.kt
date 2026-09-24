@@ -1,5 +1,9 @@
 package com.gymcoach.app.presentation.home.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,9 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -24,13 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.MuscleActive
-import com.gymcoach.app.ui.theme.MuscleRest
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
-import com.gymcoach.app.ui.theme.WarmWhite
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 /** Transparent volume metric - no composite "score". */
 data class VtaperMuscleData(
@@ -41,7 +38,7 @@ data class VtaperMuscleData(
 
 /**
  * Horizontal volume bars for the V-taper priority muscles.
- * MuscleActive fill for achieved, MuscleRest track for remaining.
+ * Primary fill for achieved, SurfaceInput track for remaining.
  */
 @Composable
 fun VtaperFocusCard(
@@ -49,22 +46,25 @@ fun VtaperFocusCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(GymCoachShapes.md)
+            .border(GymCoachBorders.subtle, GymCoachShapes.md),
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = "V-TAPER FOCUS",
                 style = MaterialTheme.typography.labelSmall,
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 letterSpacing = 1.5.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Planned weekly sets vs optimal band ($TARGET_SETS_LABEL)",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextTertiary,
+                color = GymCoachColors.TextMuted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
             )
             muscleData.forEach { data ->
@@ -78,7 +78,7 @@ fun VtaperFocusCard(
                     Text(
                         text = data.label,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = GymCoachColors.TextSecondary,
                         modifier = Modifier.width(110.dp)
                     )
                     val targetFraction = if (data.target > 0) {
@@ -91,8 +91,8 @@ fun VtaperFocusCard(
                     )
                     LinearProgressIndicator(
                         progress = { animatedBarProgress },
-                        color = MuscleActive,
-                        trackColor = MuscleRest,
+                        color = GymCoachColors.Primary,
+                        trackColor = GymCoachColors.SurfaceInput,
                         modifier = Modifier
                             .weight(1f)
                             .size(height = 8.dp, width = 0.dp)
@@ -100,8 +100,8 @@ fun VtaperFocusCard(
                     )
                     Text(
                         text = "${data.current}/${data.target}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = WarmWhite,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = GymCoachColors.TextPrimary,
                         modifier = Modifier.width(44.dp)
                     )
                 }

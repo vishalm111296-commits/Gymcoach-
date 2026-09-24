@@ -21,10 +21,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gymcoach.app.presentation.progress.PersonalRecordItem
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.PRHighlight
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -42,8 +40,8 @@ fun PRListCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -54,14 +52,14 @@ fun PRListCard(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
 
             if (prs.isEmpty()) {
                 Text(
                     text = "No PRs yet \u2014 log your lifts",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             } else {
@@ -81,7 +79,7 @@ fun PRListCard(
                                 text = pr.exerciseName,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextPrimary,
+                                color = GymCoachColors.TextPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -89,7 +87,7 @@ fun PRListCard(
                             Text(
                                 text = pr.date.format(PR_DATE_FORMAT),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                         Spacer(Modifier.padding(start = 8.dp))
@@ -97,7 +95,7 @@ fun PRListCard(
                             text = pr.achievement,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = PRHighlight
+                            color = GymCoachColors.GoldAccent
                         )
                     }
                 }

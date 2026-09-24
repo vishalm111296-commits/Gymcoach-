@@ -69,7 +69,6 @@ import java.util.Date
 import java.util.Locale
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
-import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
@@ -123,7 +122,7 @@ fun ProgressDashboardScreen(
     }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         bottomBar = {
             com.gymcoach.app.ui.GymCoachBottomNav(currentRoute = "progress", onNavigate = onNavigateBottomBar)
         },
@@ -133,7 +132,7 @@ fun ProgressDashboardScreen(
                     Text(
                         text = "Progress & Analytics",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = GymCoachColors.TextPrimary
                     )
                 },
                 navigationIcon = {
@@ -141,17 +140,17 @@ fun ProgressDashboardScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showMeasurementDialog() },
-                containerColor = AccentBlue,
+                containerColor = GymCoachColors.Primary,
                 contentColor = androidx.compose.ui.graphics.Color.White
             ) {
                 Icon(
@@ -1368,7 +1367,7 @@ private fun AnalyticsFeatureCard(
         modifier = modifier.clickable(onClick = onClick),
         shape = GymCoachShapes.md,
         colors = CardDefaults.cardColors(
-            containerColor = DarkSurface
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -1395,12 +1394,12 @@ private fun AnalyticsFeatureCard(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = GymCoachColors.TextPrimary
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextTertiary,
+                color = GymCoachColors.TextMuted,
                 maxLines = 1
             )
         }

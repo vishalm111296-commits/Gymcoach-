@@ -22,10 +22,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -34,8 +32,8 @@ private const val CELL_SIZE_DP = 14
 
 /**
  * GitHub-style contribution grid: last 12 weeks, Monday-first columns.
- * AccentBlue cells mark completed workout days; rest days sit on DarkSurface
- * against the DarkBackground card so they stay visible.
+ * Primary cells mark completed workout days; rest days sit on SurfaceDeep
+ * against the PureDark card so they stay visible.
  */
 @Composable
 fun CalendarHeatmap(
@@ -45,8 +43,8 @@ fun CalendarHeatmap(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkBackground)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.PureDark)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -59,7 +57,7 @@ fun CalendarHeatmap(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.5.sp,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -69,12 +67,12 @@ fun CalendarHeatmap(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(AccentBlue)
+                            .background(GymCoachColors.Primary)
                     )
                     Text(
                         text = "Workout",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -95,7 +93,7 @@ fun CalendarHeatmap(
                                 modifier = Modifier
                                     .size(CELL_SIZE_DP.dp)
                                     .clip(RoundedCornerShape(3.dp))
-                                    .background(if (isWorkoutDay) AccentBlue else DarkSurface)
+                                    .background(if (isWorkoutDay) GymCoachColors.Primary else GymCoachColors.SurfaceDeep)
                             )
                         }
                     }

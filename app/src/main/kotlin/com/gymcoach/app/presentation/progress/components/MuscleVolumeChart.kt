@@ -31,18 +31,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.presentation.progress.MuscleVolumeData
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.MuscleActive
-import com.gymcoach.app.ui.theme.MuscleRest
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 private const val BAR_LABEL_WIDTH_DP = 84
 private const val BAR_VALUE_WIDTH_DP = 56
 
 /**
- * Horizontal bars per muscle group: achieved sets (MuscleActive) over the
- * remaining track (MuscleRest), with the weekly target range drawn as a
+ * Horizontal bars per muscle group: achieved sets over the
+ * remaining track, with the weekly target range drawn as a
  * subtle overlay. Rows are tappable.
  */
 @Composable
@@ -53,8 +50,8 @@ fun MuscleVolumeChart(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -65,14 +62,14 @@ fun MuscleVolumeChart(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
 
             if (muscleData.isEmpty()) {
                 Text(
                     text = "No sets logged this week",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             } else {
                 muscleData.forEach { muscle ->
@@ -108,7 +105,7 @@ private fun MuscleBar(
             text = muscle.muscleName.uppercase(),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = TextSecondary,
+            color = GymCoachColors.TextSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.width(BAR_LABEL_WIDTH_DP.dp)
@@ -126,12 +123,12 @@ private fun MuscleBar(
             val radius = CornerRadius(h / 2f)
 
             // Rest track
-            drawRoundRect(color = MuscleRest, topLeft = Offset.Zero, size = Size(w, h), cornerRadius = radius)
+            drawRoundRect(color = GymCoachColors.BorderSubtle, topLeft = Offset.Zero, size = Size(w, h), cornerRadius = radius)
 
             // Achieved sets
             if (animatedFraction > 0f) {
                 val activeWidth = (w * animatedFraction).coerceAtLeast(h)
-                drawRoundRect(color = MuscleActive, topLeft = Offset.Zero, size = Size(activeWidth, h), cornerRadius = radius)
+                drawRoundRect(color = GymCoachColors.Primary, topLeft = Offset.Zero, size = Size(activeWidth, h), cornerRadius = radius)
             }
 
             // Target range overlay
@@ -141,7 +138,7 @@ private fun MuscleBar(
             val bandWidth = (w * maxFraction - bandStart).coerceAtLeast(0f)
             if (bandWidth > 0f) {
                 drawRoundRect(
-                    color = TextPrimary.copy(alpha = 0.10f),
+                    color = GymCoachColors.TextPrimary.copy(alpha = 0.10f),
                     topLeft = Offset(bandStart, 0f),
                     size = Size(bandWidth, h),
                     cornerRadius = radius
@@ -155,7 +152,7 @@ private fun MuscleBar(
             text = "${muscle.currentSets}/${muscle.targetMax} sets",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimary,
+            color = GymCoachColors.TextPrimary,
             textAlign = TextAlign.End,
             modifier = Modifier.width(BAR_VALUE_WIDTH_DP.dp)
         )

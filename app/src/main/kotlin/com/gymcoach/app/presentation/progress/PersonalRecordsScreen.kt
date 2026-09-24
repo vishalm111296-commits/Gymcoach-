@@ -50,12 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.data.local.entity.PersonalRecordWithExercise
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -87,7 +83,7 @@ fun PersonalRecordsScreen(
                             text = "Personal Records",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = GymCoachColors.TextPrimary
                         )
                         Spacer(Modifier.size(8.dp))
                         Icon(
@@ -103,16 +99,16 @@ fun PersonalRecordsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBackground
+                    containerColor = GymCoachColors.PureDark
                 )
             )
         },
-        containerColor = DarkBackground
+        containerColor = GymCoachColors.PureDark
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -202,8 +198,8 @@ private fun SortChipRow(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = GoldColor.copy(alpha = 0.18f),
                     selectedLabelColor = GoldColor,
-                    containerColor = DarkSurface,
-                    labelColor = TextSecondary
+                    containerColor = GymCoachColors.SurfaceCard,
+                    labelColor = GymCoachColors.TextSecondary
                 ),
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true,
@@ -274,7 +270,7 @@ private fun PRHallOfFameCard(
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.md,
         colors = CardDefaults.cardColors(
-            containerColor = DarkSurface
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
@@ -310,7 +306,7 @@ private fun PRHallOfFameCard(
                     text = record.exerciseName.ifBlank { "Unknown Exercise" },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = GymCoachColors.TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -330,7 +326,7 @@ private fun PRHallOfFameCard(
                 Text(
                     text = "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} kg  •  $dateStr",
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
         }
@@ -354,12 +350,12 @@ private fun EmptyState(modifier: Modifier = Modifier) {
                 text = "Your Hall of Fame awaits!",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = GymCoachColors.TextPrimary
             )
             Text(
                 text = "Start lifting to set your first records!",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
         }
     }

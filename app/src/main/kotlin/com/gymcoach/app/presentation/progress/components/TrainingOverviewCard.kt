@@ -21,11 +21,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.MuscleRest
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import kotlin.math.roundToInt
 
 /**
@@ -43,8 +41,9 @@ fun TrainingOverviewCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
@@ -52,7 +51,7 @@ fun TrainingOverviewCard(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
 
             Spacer(Modifier.height(16.dp))
@@ -91,13 +90,13 @@ fun TrainingOverviewCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
                 Text(
                     text = "${(adherence.coerceIn(0f, 1f) * 100).roundToInt()}%",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = AccentBlue
+                    color = GymCoachColors.Primary
                 )
             }
 
@@ -108,14 +107,14 @@ fun TrainingOverviewCard(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(MuscleRest)
+                    .background(GymCoachColors.BorderSubtle)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(adherence.coerceIn(0f, 1f))
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(AccentBlue)
+                        .background(GymCoachColors.Primary)
                 )
             }
         }
@@ -129,14 +128,14 @@ private fun StatCell(value: String, label: String, modifier: Modifier = Modifier
             text = value,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            color = GymCoachColors.TextPrimary
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             letterSpacing = 1.sp,
-            color = TextSecondary
+            color = GymCoachColors.TextSecondary
         )
     }
 }

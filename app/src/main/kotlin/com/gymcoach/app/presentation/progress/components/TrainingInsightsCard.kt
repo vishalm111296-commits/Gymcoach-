@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.presentation.progress.InsightType
 import com.gymcoach.app.presentation.progress.TrainingInsight
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 @Composable
 fun TrainingInsightsCard(
@@ -47,8 +47,9 @@ fun TrainingInsightsCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -61,7 +62,7 @@ fun TrainingInsightsCard(
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
                     contentDescription = "Training Insights",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -69,24 +70,24 @@ fun TrainingInsightsCard(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.5.sp,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
             insights.forEach { insight ->
                 val (tintColor, icon) = when (insight.type) {
-                    InsightType.ACHIEVEMENT -> Color(0xFFFFD54F) to Icons.Default.EmojiEvents
-                    InsightType.VOLUME_PROGRESSION -> MaterialTheme.colorScheme.primary to Icons.AutoMirrored.Filled.TrendingUp
-                    InsightType.FATIGUE_WARNING -> Color(0xFFFF7043) to Icons.Default.Warning
-                    InsightType.CONSISTENCY_STREAK -> Color(0xFF66BB6A) to Icons.Default.Info
-                    InsightType.ANATOMY_BALANCE -> MaterialTheme.colorScheme.tertiary to Icons.Default.Info
+                    InsightType.ACHIEVEMENT -> GymCoachColors.GoldAccent to Icons.Default.EmojiEvents
+                    InsightType.VOLUME_PROGRESSION -> GymCoachColors.Primary to Icons.AutoMirrored.Filled.TrendingUp
+                    InsightType.FATIGUE_WARNING -> GymCoachColors.Warning to Icons.Default.Warning
+                    InsightType.CONSISTENCY_STREAK -> GymCoachColors.Success to Icons.Default.Info
+                    InsightType.ANATOMY_BALANCE -> GymCoachColors.Primary to Icons.Default.Info
                 }
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .clip(GymCoachShapes.sm)
+                        .background(GymCoachColors.SurfaceDeep)
                         .padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.Top
@@ -111,13 +112,13 @@ fun TrainingInsightsCard(
                             text = insight.title,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = GymCoachColors.TextPrimary
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = insight.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = GymCoachColors.TextSecondary,
                             lineHeight = 18.sp
                         )
                     }

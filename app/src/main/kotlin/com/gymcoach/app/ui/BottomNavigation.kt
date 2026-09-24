@@ -52,13 +52,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.AccentBlueLight
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 private data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
 
@@ -90,7 +85,7 @@ fun GymCoachBottomNav(
         )
 
         Surface(
-            color = DarkSurface,
+            color = GymCoachColors.SurfaceDeep,
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -106,12 +101,12 @@ fun GymCoachBottomNav(
                 BOTTOM_NAV_ITEMS.forEach { item ->
                     val active = currentRoute == item.route
                     val iconTint by animateColorAsState(
-                        targetValue = if (active) AccentBlueLight else TextSecondary,
+                        targetValue = if (active) GymCoachColors.PrimaryLight else GymCoachColors.TextSecondary,
                         animationSpec = tween(durationMillis = 200),
                         label = "iconTint"
                     )
                     val bgColor by animateColorAsState(
-                        targetValue = if (active) AccentBlue.copy(alpha = 0.16f) else Color.Transparent,
+                        targetValue = if (active) GymCoachColors.Primary.copy(alpha = 0.16f) else Color.Transparent,
                         animationSpec = tween(durationMillis = 200),
                         label = "bgColor"
                     )
@@ -126,7 +121,7 @@ fun GymCoachBottomNav(
 
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(GymCoachShapes.sm)
                             .background(bgColor)
                             .semantics(mergeDescendants = true) {
                                 role = Role.Tab
@@ -175,7 +170,7 @@ fun GymCoachBottomNav(
                                     modifier = Modifier
                                         .size(width = 12.dp, height = 2.dp)
                                         .clip(CircleShape)
-                                        .background(AccentBlue)
+                                        .background(GymCoachColors.Primary)
                                 )
                             }
                         }

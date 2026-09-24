@@ -34,12 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.presentation.progress.TrendDirection
 import com.gymcoach.app.presentation.progress.TrendPoint
-import com.gymcoach.app.ui.theme.DarkSurface
-import com.gymcoach.app.ui.theme.SuccessGreen
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.WarningAmber
-import com.gymcoach.app.ui.theme.VolumeChartGrid
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 
 /**
  * Compact measurement card (bodyweight, waist, ...) with current value,
@@ -60,9 +56,9 @@ fun BodyMeasurementTrend(
     goodWhenDown: Boolean = false
 ) {
     val trendColor = when {
-        trend == TrendDirection.STABLE -> TextSecondary
-        (trend == TrendDirection.DOWN) == goodWhenDown -> SuccessGreen
-        else -> WarningAmber
+        trend == TrendDirection.STABLE -> GymCoachColors.TextSecondary
+        (trend == TrendDirection.DOWN) == goodWhenDown -> GymCoachColors.Success
+        else -> GymCoachColors.Warning
     }
     val trendIcon: ImageVector = when (trend) {
         TrendDirection.UP -> Icons.AutoMirrored.Filled.TrendingUp
@@ -72,8 +68,8 @@ fun BodyMeasurementTrend(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -86,7 +82,7 @@ fun BodyMeasurementTrend(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
                 Icon(
                     imageVector = trendIcon,
@@ -103,13 +99,13 @@ fun BodyMeasurementTrend(
                     text = "%.1f".format(currentValue),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = unit,
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
@@ -123,7 +119,7 @@ fun BodyMeasurementTrend(
                 if (dataPoints.size < 2) {
                     val midY = size.height / 2f
                     drawLine(
-                        color = VolumeChartGrid,
+                        color = GymCoachColors.BorderSubtle,
                         start = Offset(0f, midY),
                         end = Offset(size.width, midY),
                         strokeWidth = 2f,

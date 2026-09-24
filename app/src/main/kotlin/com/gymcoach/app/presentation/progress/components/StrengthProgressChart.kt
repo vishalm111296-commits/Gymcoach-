@@ -30,11 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gymcoach.app.presentation.progress.ProgressPoint
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.VolumeChartFill
-import com.gymcoach.app.ui.theme.VolumeChartGrid
-import com.gymcoach.app.ui.theme.VolumeChartLine
+import com.gymcoach.app.ui.theme.GymCoachColors
 
 private const val PAD_LEFT = 8f
 private const val PAD_RIGHT = 8f
@@ -67,7 +63,7 @@ fun StrengthProgressChart(
                 text = exerciseName,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                color = GymCoachColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -77,7 +73,7 @@ fun StrengthProgressChart(
                     text = "BEST %.0f kg".format(dataPoints.last().value),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = VolumeChartLine
+                    color = GymCoachColors.Primary
                 )
             }
         }
@@ -93,7 +89,7 @@ fun StrengthProgressChart(
                 Text(
                     text = "Not enough data yet",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = GymCoachColors.TextSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -114,7 +110,7 @@ fun StrengthProgressChart(
                     for (i in 0..3) {
                         val y = PAD_TOP + chartHeight * i / 3f
                         drawLine(
-                            color = VolumeChartGrid,
+                            color = GymCoachColors.BorderSubtle,
                             start = Offset(PAD_LEFT, y),
                             end = Offset(size.width - PAD_RIGHT, y),
                             strokeWidth = 1f
@@ -137,7 +133,7 @@ fun StrengthProgressChart(
                         fillPath.lineTo(coordinates.last().x, size.height - PAD_BOTTOM)
                         fillPath.lineTo(coordinates.first().x, size.height - PAD_BOTTOM)
                         fillPath.close()
-                        drawPath(path = fillPath, color = VolumeChartFill)
+                        drawPath(path = fillPath, color = GymCoachColors.PrimaryGlow)
 
                         // Line
                         val linePath = Path()
@@ -146,21 +142,21 @@ fun StrengthProgressChart(
                         }
                         drawPath(
                             path = linePath,
-                            color = VolumeChartLine,
+                            color = GymCoachColors.Primary,
                             style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
 
                         // Points; highlight latest
                         coordinates.forEachIndexed { _, c ->
                             if (c.x <= PAD_LEFT + chartWidth * currentProgress) {
-                                drawCircle(color = VolumeChartLine, radius = 4f, center = c)
+                                drawCircle(color = GymCoachColors.Primary, radius = 4f, center = c)
                             }
                         }
                         val last = coordinates.last()
                         if (currentProgress >= 0.95f) {
-                            drawCircle(color = VolumeChartLine.copy(alpha = 0.25f), radius = 9f, center = last)
-                            drawCircle(color = VolumeChartLine, radius = 5f, center = last)
-                            drawCircle(color = TextPrimary, radius = 2f, center = last)
+                            drawCircle(color = GymCoachColors.Primary.copy(alpha = 0.25f), radius = 9f, center = last)
+                            drawCircle(color = GymCoachColors.Primary, radius = 5f, center = last)
+                            drawCircle(color = GymCoachColors.TextPrimary, radius = 2f, center = last)
                         }
                     }
                 }

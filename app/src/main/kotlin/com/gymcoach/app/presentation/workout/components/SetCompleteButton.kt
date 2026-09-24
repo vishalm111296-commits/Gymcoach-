@@ -37,9 +37,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import kotlinx.coroutines.launch
-
-private val SuccessGreen = Color(0xFF4CAF50)
 
 @Composable
 fun SetCompleteButton(
@@ -58,8 +58,8 @@ fun SetCompleteButton(
                 scaleX = buttonScale.value
                 scaleY = buttonScale.value
             }
-            .clip(RoundedCornerShape(16.dp))
-            .background(SuccessGreen)
+            .clip(GymCoachShapes.md)
+            .background(GymCoachColors.Success)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

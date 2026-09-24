@@ -20,10 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
-import com.gymcoach.app.ui.theme.TextSecondary
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -48,11 +45,11 @@ fun TrainingFrequencyScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBackground
+                    containerColor = GymCoachColors.PureDark
                 )
             )
         },
-        containerColor = DarkBackground
+        containerColor = GymCoachColors.PureDark
     ) { innerPadding ->
         if (state.isLoading) {
             Box(
@@ -115,7 +112,7 @@ private fun StatCard(title: String, value: String, modifier: Modifier = Modifier
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -130,7 +127,7 @@ private fun StatCard(title: String, value: String, modifier: Modifier = Modifier
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = GymCoachColors.TextSecondary,
                 textAlign = TextAlign.Center
             )
         }
@@ -149,7 +146,7 @@ private fun CustomCalendarHeatmap(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -157,7 +154,7 @@ private fun CustomCalendarHeatmap(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
 
             Spacer(Modifier.padding(top = 14.dp))
@@ -197,7 +194,7 @@ private fun MonthlyBreakdownChart(monthlyData: Map<Month, Int>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -205,7 +202,7 @@ private fun MonthlyBreakdownChart(monthlyData: Map<Month, Int>) {
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
             Spacer(Modifier.padding(top = 14.dp))
             
@@ -228,7 +225,7 @@ private fun MonthlyBreakdownChart(monthlyData: Map<Month, Int>) {
                     Text(
                         text = month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = GymCoachColors.TextSecondary,
                         modifier = Modifier.width(40.dp)
                     )
                     Spacer(Modifier.width(8.dp))
@@ -266,7 +263,7 @@ private fun DayDistributionChart(dayFrequency: Map<DayOfWeek, Int>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -274,7 +271,7 @@ private fun DayDistributionChart(dayFrequency: Map<DayOfWeek, Int>) {
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.5.sp,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
             Spacer(Modifier.padding(top = 14.dp))
 
@@ -307,7 +304,7 @@ private fun DayDistributionChart(dayFrequency: Map<DayOfWeek, Int>) {
                         Text(
                             text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(1),
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 }

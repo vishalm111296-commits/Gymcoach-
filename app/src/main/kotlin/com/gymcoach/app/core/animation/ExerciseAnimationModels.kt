@@ -1,5 +1,9 @@
 package com.gymcoach.app.core.animation
 
+import kotlin.math.acos
+import kotlin.math.atan2
+import kotlin.math.sqrt
+
 /**
  * Biomechanical phases of an exercise repetition.
  */
@@ -38,6 +42,25 @@ data class EquipmentGeometry(
 )
 
 /**
+ * Biomechanical specification for measuring joint angles (e.g. knee flexion, elbow angle).
+ */
+data class JointAngleSpec(
+    val label: String,
+    val pointA: String,
+    val centerPoint: String,
+    val pointB: String
+)
+
+/**
+ * Computed angle readout for display.
+ */
+data class JointAngleReadout(
+    val label: String,
+    val centerCoord: JointPoint,
+    val angleDegrees: Float
+)
+
+/**
  * A single discrete keyframe of a skeletal movement.
  */
 data class SkeletalKeyframe(
@@ -45,6 +68,7 @@ data class SkeletalKeyframe(
     val phase: AnimationPhase,
     val joints: Map<String, JointPoint>,
     val equipment: EquipmentGeometry? = null,
+    val activeMuscles: List<String> = emptyList(),
     val cue: String = ""
 )
 
@@ -57,10 +81,26 @@ data class ExerciseAnimationDefinition(
     val perspective: ViewPerspective = ViewPerspective.SIDE,
     val durationMs: Long = 3200L,
     val keyframes: List<SkeletalKeyframe>,
+    val angleSpecs: List<JointAngleSpec> = emptyList(),
+    val primaryMuscle: String = "",
     val description: String = ""
 ) {
     init {
         require(keyframes.isNotEmpty()) { "ExerciseAnimationDefinition must contain at least one keyframe." }
+    }
+
+    /**
+     * Pre-calculated full trajectory path for equipment / movement endpoint (e.g. barbell path).
+     */
+    val trajectoryPath: List<JointPoint> by lazy {
+        keyframes.mapNotNull { kf ->
+            // Try equipment point first, then wrist/ankle
+            kf.equipment?.points?.firstOrNull()
+                ?: kf.joints["wrist"]
+                ?: kf.joints["wrist_near"]
+                ?: kf.joints["ankle"]
+                ?: kf.joints["ankle_near"]
+        }
     }
 
     /**
@@ -75,7 +115,9 @@ data class ExerciseAnimationDefinition(
                 phase = single.phase,
                 joints = single.joints,
                 equipment = single.equipment,
-                cue = single.cue
+                activeMuscles = single.activeMuscles,
+                cue = single.cue,
+                angleReadouts = computeAngles(single.joints)
             )
         }
 
@@ -96,16 +138,15 @@ data class ExerciseAnimationDefinition(
         val range = next.progress - prev.progress
         val localT = if (range <= 0.0001f) 0.0f else ((clamped - prev.progress) / range).coerceIn(0.0f, 1.0f)
 
-        // For 2-keyframe start/end movements, apply cosine easing.
-        // For multi-keyframe biomechanical paths (>=3 waypoints), use continuous progression
-        // to prevent velocity dropping to zero at every intermediate keyframe boundary.
+        // Smooth cosine easing
         val eased = if (keyframes.size == 2) {
             (1.0f - kotlin.math.cos(localT * Math.PI.toFloat())) / 2.0f
         } else {
-            localT
+            // Apply slight cubic hermite smoothstep for local segment transitions
+            localT * localT * (3.0f - 2.0f * localT)
         }
 
-        val interpolatedJoints = mutableMapOf<String, JointPoint>()
+        val interpolatedJoints = HashMap<String, JointPoint>(prev.joints.size)
         for ((name, p1) in prev.joints) {
             val p2 = next.joints[name] ?: p1
             val ix = p1.x + (p2.x - p1.x) * eased
@@ -129,14 +170,54 @@ data class ExerciseAnimationDefinition(
 
         val currentPhase = if (localT < 0.5f) prev.phase else next.phase
         val currentCue = if (localT < 0.5f) prev.cue else next.cue
+        val currentMuscles = if (localT < 0.5f) prev.activeMuscles else next.activeMuscles
 
         return InterpolatedFrame(
             progress = clamped,
             phase = currentPhase,
             joints = interpolatedJoints,
             equipment = interpolatedEquipment,
-            cue = currentCue
+            activeMuscles = currentMuscles,
+            cue = currentCue,
+            angleReadouts = computeAngles(interpolatedJoints)
         )
+    }
+
+    private fun computeAngles(joints: Map<String, JointPoint>): List<JointAngleReadout> {
+        if (angleSpecs.isEmpty()) return emptyList()
+        val readouts = mutableListOf<JointAngleReadout>()
+        for (spec in angleSpecs) {
+            val pA = joints[spec.pointA] ?: joints["${spec.pointA}_near"] ?: continue
+            val pCenter = joints[spec.centerPoint] ?: joints["${spec.centerPoint}_near"] ?: continue
+            val pB = joints[spec.pointB] ?: joints["${spec.pointB}_near"] ?: continue
+
+            val angle = calculateAngle(pA, pCenter, pB)
+            readouts.add(
+                JointAngleReadout(
+                    label = spec.label,
+                    centerCoord = pCenter,
+                    angleDegrees = angle
+                )
+            )
+        }
+        return readouts
+    }
+
+    companion object {
+        fun calculateAngle(a: JointPoint, center: JointPoint, b: JointPoint): Float {
+            val v1x = a.x - center.x
+            val v1y = a.y - center.y
+            val v2x = b.x - center.x
+            val v2y = b.y - center.y
+
+            val dot = v1x * v2x + v1y * v2y
+            val mag1 = sqrt(v1x * v1x + v1y * v1y)
+            val mag2 = sqrt(v2x * v2x + v2y * v2y)
+
+            if (mag1 < 0.0001f || mag2 < 0.0001f) return 0.0f
+            val cosTheta = (dot / (mag1 * mag2)).coerceIn(-1.0f, 1.0f)
+            return (acos(cosTheta) * 180.0f / Math.PI.toFloat())
+        }
     }
 }
 
@@ -148,5 +229,7 @@ data class InterpolatedFrame(
     val phase: AnimationPhase,
     val joints: Map<String, JointPoint>,
     val equipment: EquipmentGeometry?,
-    val cue: String
+    val activeMuscles: List<String> = emptyList(),
+    val cue: String,
+    val angleReadouts: List<JointAngleReadout> = emptyList()
 )

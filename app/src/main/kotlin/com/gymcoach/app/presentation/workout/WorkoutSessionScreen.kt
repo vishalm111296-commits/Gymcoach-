@@ -4,6 +4,8 @@ import com.gymcoach.app.presentation.workout.components.ExerciseSubstitutionDial
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
 import com.gymcoach.app.presentation.workout.components.SupersetLinkDialog
 import com.gymcoach.app.presentation.workout.components.WarmupCalculatorDialog
+import com.gymcoach.app.presentation.components.ExerciseTechniqueBottomSheet
+import androidx.compose.material.icons.filled.PlayCircleOutline
 
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -187,6 +189,9 @@ fun WorkoutSessionScreen(
     var activeCameraExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val supersetGroups by viewModel.supersetGroups.collectAsState()
     var supersetDialogExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val animationRepository = remember { com.gymcoach.app.core.animation.AnimationRepository(context.applicationContext) }
+    var techniqueSheetData by rememberSaveable { mutableStateOf<Triple<String, String, String>?>(null) }
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -377,7 +382,10 @@ fun WorkoutSessionScreen(
                                    onCameraClick(type)
                                },
                                supersetGroup = supersetGroups.firstOrNull { exIdx in it.exerciseIndices },
-                               onOpenSupersetDialog = { supersetDialogExerciseIndex = exIdx }
+                               onOpenSupersetDialog = { supersetDialogExerciseIndex = exIdx },
+                               onOpenTechniqueGuide = {
+                                   techniqueSheetData = Triple(we.exercise.name, we.exercise.muscleGroup, we.exercise.instructions)
+                               }
                             )
                         }
 
@@ -617,6 +625,16 @@ fun WorkoutSessionScreen(
                 supersetDialogExerciseIndex = null
             },
             onDismiss = { supersetDialogExerciseIndex = null }
+        )
+    }
+
+    if (techniqueSheetData != null) {
+        ExerciseTechniqueBottomSheet(
+            exerciseName = techniqueSheetData!!.first,
+            muscleGroup = techniqueSheetData!!.second,
+            instructions = techniqueSheetData!!.third,
+            animationRepository = animationRepository,
+            onDismiss = { techniqueSheetData = null }
         )
     }
 }
@@ -896,7 +914,8 @@ internal fun ExerciseSetCard(
     onSubstituteExercise: () -> Unit = {},
     onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null,
     supersetGroup: com.gymcoach.app.domain.model.SupersetGroup? = null,
-    onOpenSupersetDialog: () -> Unit = {}
+    onOpenSupersetDialog: () -> Unit = {},
+    onOpenTechniqueGuide: () -> Unit = {}
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     val isExerciseActive = sets.isNotEmpty() && sets.any { !it.completed }
@@ -1082,6 +1101,13 @@ internal fun ExerciseSetCard(
                             imageVector = if (supersetGroup != null) Icons.Default.LinkOff else Icons.Default.Link,
                             contentDescription = if (supersetGroup != null) "Manage Superset" else "Pair as Superset",
                             tint = if (supersetGroup != null) GymCoachColors.Primary else GymCoachColors.CyanAccent
+                        )
+                    }
+                    IconButton(onClick = onOpenTechniqueGuide) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircleOutline,
+                            contentDescription = "Technique & Biomechanical Form",
+                            tint = GymCoachColors.CyanAccent
                         )
                     }
                     IconButton(onClick = onSubstituteExercise) {

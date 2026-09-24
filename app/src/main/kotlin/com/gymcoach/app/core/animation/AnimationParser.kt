@@ -47,7 +47,23 @@ object AnimationParser {
             ViewPerspective.SIDE
         }
         val durationMs = obj.optLong("durationMs", 3200L).coerceAtLeast(500L)
+        val primaryMuscle = obj.optString("primaryMuscle", "")
         val description = obj.optString("description", "")
+
+        val angleSpecs = mutableListOf<JointAngleSpec>()
+        val angleSpecsArray = obj.optJSONArray("angleSpecs")
+        if (angleSpecsArray != null) {
+            for (i in 0 until angleSpecsArray.length()) {
+                val asObj = angleSpecsArray.optJSONObject(i) ?: continue
+                val label = asObj.optString("label", "Angle")
+                val pointA = asObj.optString("pointA", "")
+                val centerPoint = asObj.optString("centerPoint", "")
+                val pointB = asObj.optString("pointB", "")
+                if (pointA.isNotBlank() && centerPoint.isNotBlank() && pointB.isNotBlank()) {
+                    angleSpecs.add(JointAngleSpec(label, pointA, centerPoint, pointB))
+                }
+            }
+        }
 
         val kfArray = obj.optJSONArray("keyframes") ?: return null
         val keyframes = mutableListOf<SkeletalKeyframe>()
@@ -69,6 +85,15 @@ object AnimationParser {
                 }
             }
             val cue = kfObj.optString("cue", "")
+
+            val activeMuscles = mutableListOf<String>()
+            val musclesArray = kfObj.optJSONArray("activeMuscles")
+            if (musclesArray != null) {
+                for (m in 0 until musclesArray.length()) {
+                    val muscle = musclesArray.optString(m)
+                    if (muscle.isNotBlank()) activeMuscles.add(muscle)
+                }
+            }
 
             val jointsObj = kfObj.optJSONObject("joints") ?: continue
             val joints = mutableMapOf<String, JointPoint>()
@@ -117,6 +142,7 @@ object AnimationParser {
                         phase = phase,
                         joints = joints,
                         equipment = equipment,
+                        activeMuscles = activeMuscles,
                         cue = cue
                     )
                 )
@@ -132,6 +158,8 @@ object AnimationParser {
             perspective = perspective,
             durationMs = durationMs,
             keyframes = keyframes,
+            angleSpecs = angleSpecs,
+            primaryMuscle = primaryMuscle,
             description = description
         )
     }

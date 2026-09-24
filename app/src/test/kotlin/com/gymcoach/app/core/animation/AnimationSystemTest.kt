@@ -184,4 +184,82 @@ class AnimationSystemTest {
             }
         }
     }
+
+    @Test
+    fun testJointAngleComputation() {
+        // Test right angle (90 degrees)
+        val pA = JointPoint(0.5f, 0.2f) // above
+        val center = JointPoint(0.5f, 0.5f) // center
+        val pB = JointPoint(0.8f, 0.5f) // right
+        val angle90 = ExerciseAnimationDefinition.calculateAngle(pA, center, pB)
+        assertEquals(90.0f, angle90, 0.5f)
+
+        // Test straight line (180 degrees)
+        val pC = JointPoint(0.5f, 0.8f) // below
+        val angle180 = ExerciseAnimationDefinition.calculateAngle(pA, center, pC)
+        assertEquals(180.0f, angle180, 0.5f)
+
+        // Test zero length safety
+        val angleZero = ExerciseAnimationDefinition.calculateAngle(center, center, pB)
+        assertEquals(0.0f, angleZero, 0.001f)
+    }
+
+    @Test
+    fun testBiomechanicalAngleReadoutsAndTrajectories() {
+        val kf0 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            cue = "Top",
+            joints = mapOf(
+                "hip" to JointPoint(0.5f, 0.5f),
+                "knee" to JointPoint(0.5f, 0.7f),
+                "ankle" to JointPoint(0.5f, 0.9f)
+            ),
+            equipment = EquipmentGeometry("barbell", listOf(JointPoint(0.5f, 0.3f))),
+            activeMuscles = listOf("quads", "glutes")
+        )
+        val kf1 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.BOTTOM,
+            cue = "Deep Squat",
+            joints = mapOf(
+                "hip" to JointPoint(0.4f, 0.7f),
+                "knee" to JointPoint(0.6f, 0.7f),
+                "ankle" to JointPoint(0.5f, 0.9f)
+            ),
+            equipment = EquipmentGeometry("barbell", listOf(JointPoint(0.5f, 0.6f))),
+            activeMuscles = listOf("quads", "glutes", "hamstrings")
+        )
+
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "squat_test",
+            exerciseName = "Barbell Squat",
+            perspective = ViewPerspective.SIDE,
+            durationMs = 2000,
+            keyframes = listOf(kf0, kf1),
+            angleSpecs = listOf(
+                JointAngleSpec(label = "Knee Angle", pointA = "hip", centerPoint = "knee", pointB = "ankle")
+            ),
+            primaryMuscle = "quads"
+        )
+
+        // Test trajectory path
+        assertEquals(2, def.trajectoryPath.size)
+        assertEquals(0.5f, def.trajectoryPath[0].x, 0.001f)
+        assertEquals(0.3f, def.trajectoryPath[0].y, 0.001f)
+        assertEquals(0.5f, def.trajectoryPath[1].x, 0.001f)
+        assertEquals(0.6f, def.trajectoryPath[1].y, 0.001f)
+
+        // Test interpolated frame angles
+        val frame0 = def.interpolateAt(0.0f)
+        assertEquals(1, frame0.angleReadouts.size)
+        assertEquals("Knee Angle", frame0.angleReadouts[0].label)
+        assertEquals(180.0f, frame0.angleReadouts[0].angleDegrees, 1.0f)
+        assertEquals(listOf("quads", "glutes"), frame0.activeMuscles)
+
+        val frame1 = def.interpolateAt(1.0f)
+        assertEquals(1, frame1.angleReadouts.size)
+        assertTrue("Knee angle at bottom must be flexed (< 120 deg)", frame1.angleReadouts[0].angleDegrees < 120.0f)
+        assertEquals(listOf("quads", "glutes", "hamstrings"), frame1.activeMuscles)
+    }
 }

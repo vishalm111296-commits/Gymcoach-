@@ -212,4 +212,96 @@ class WorkoutDataExporterTest {
         assertTrue(json.contains("\"workoutCount\": 0"))
         assertTrue(json.contains("\"workouts\": []"))
     }
+
+    @Test
+    fun `exportToStrongCsv maps SetType to standard Strong tags in Notes column`() {
+        val exercise = Exercise(
+            id = 5L,
+            name = "Overhead Press",
+            description = "",
+            muscleGroup = "Shoulders",
+            equipment = "barbell",
+            difficulty = "Intermediate"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 50L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(1800),
+            duration = 1800L,
+            notes = "Deload OHP",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 40.0, reps = 10, rpe = 6.0, restSeconds = 60, completed = true, setType = SetType.WARMUP),
+            WorkoutSet(id = 2, workoutExerciseId = 1, setNumber = 2, weight = 60.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = true, setType = SetType.NORMAL),
+            WorkoutSet(id = 3, workoutExerciseId = 1, setNumber = 3, weight = 45.0, reps = 8, rpe = 9.0, restSeconds = 60, completed = true, setType = SetType.DROP),
+            WorkoutSet(id = 4, workoutExerciseId = 1, setNumber = 4, weight = 50.0, reps = 12, rpe = 10.0, restSeconds = 120, completed = true, setType = SetType.FAILURE)
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 1, workoutId = 50, exerciseId = 5, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val csv = exporter.exportToStrongCsv(listOf(workoutWithDetails))
+        val lines = csv.trimEnd().lines()
+        assertEquals(5, lines.size) // header + 4 sets
+
+        val warmupRow = lines[1].split(",")
+        assertEquals("W", warmupRow[9])
+
+        val normalRow = lines[2].split(",")
+        assertEquals("", normalRow[9])
+
+        val dropRow = lines[3].split(",")
+        assertEquals("D", dropRow[9])
+
+        val failureRow = lines[4].split(",")
+        assertEquals("F", failureRow[9])
+    }
+
+    @Test
+    fun `exportToJson includes restSeconds in set objects`() {
+        val exercise = Exercise(
+            id = 7L,
+            name = "Pull-up",
+            description = "",
+            muscleGroup = "Back",
+            equipment = "bodyweight",
+            difficulty = "Intermediate"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 70L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(1200),
+            duration = 1200L,
+            notes = "",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 0.0, reps = 12, rpe = 8.5, restSeconds = 75, completed = true, setType = SetType.NORMAL)
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 1, workoutId = 70, exerciseId = 7, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val json = exporter.exportToJson(listOf(workoutWithDetails))
+        val root = JSONObject(json)
+        val setObj = root.getJSONArray("workouts")
+            .getJSONObject(0)
+            .getJSONArray("exercises")
+            .getJSONObject(0)
+            .getJSONArray("sets")
+            .getJSONObject(0)
+
+        assertEquals(75, setObj.getInt("restSeconds"))
+    }
 }

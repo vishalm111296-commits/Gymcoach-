@@ -80,6 +80,7 @@ class WorkoutDataExporter @Inject constructor() {
                     sObj.put("weight", s.weight)
                     sObj.put("reps", s.reps)
                     sObj.put("rpe", s.rpe)
+                    sObj.put("restSeconds", s.restSeconds)
                     sObj.put("completed", s.completed)
                     sObj.put("setType", s.setType.name)
                     setsArray.put(sObj)
@@ -126,6 +127,12 @@ class WorkoutDataExporter @Inject constructor() {
                     val weight = set.weight
                     val reps = set.reps
                     val rpe = if (set.rpe > 0) set.rpe.toString() else ""
+                    val setTag = when (set.setType) {
+                        com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
+                        com.gymcoach.app.domain.model.SetType.DROP -> "D"
+                        com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
+                        com.gymcoach.app.domain.model.SetType.NORMAL -> ""
+                    }
 
                     sb.append(dateStr).append(',')
                         .append(workoutName).append(',')
@@ -136,7 +143,7 @@ class WorkoutDataExporter @Inject constructor() {
                         .append(reps).append(',')
                         .append('0').append(',')
                         .append('0').append(',')
-                        .append(',')
+                        .append(setTag).append(',')
                         .append(workoutNotes).append(',')
                         .append(rpe).append('\n')
                 }

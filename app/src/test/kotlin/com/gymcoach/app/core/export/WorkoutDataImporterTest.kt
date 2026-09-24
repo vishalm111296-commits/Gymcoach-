@@ -490,6 +490,7 @@ class WorkoutDataImporterTest {
             assertEquals(expectedSet.rpe, actualSet.rpe, 0.001)
             assertEquals(expectedSet.completed, actualSet.completed)
             assertEquals(expectedSet.setType, actualSet.setType)
+            assertEquals(expectedSet.restSeconds, actualSet.restSeconds)
         }
     }
 }

@@ -139,6 +139,8 @@ class WorkoutDataImporter @Inject constructor() {
                             return Result.failure(IllegalArgumentException("Unknown SetType: $setTypeStr"))
                         }
 
+                        val restSeconds = if (sObj.has("restSeconds") && !sObj.isNull("restSeconds")) sObj.getInt("restSeconds") else 0
+
                         setList.add(WorkoutSet(
                             id = 0,
                             workoutExerciseId = 0,
@@ -146,7 +148,7 @@ class WorkoutDataImporter @Inject constructor() {
                             weight = weight,
                             reps = reps,
                             rpe = rpe,
-                            restSeconds = 0,
+                            restSeconds = restSeconds,
                             completed = setCompleted,
                             setType = setType
                         ))

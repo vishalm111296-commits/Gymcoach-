@@ -61,14 +61,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
 
 /**
  * Premium, high-contrast exercise card component.
@@ -109,7 +104,7 @@ fun ExerciseItemCard(
     )
 
     val cardBorderColor by animateColorAsState(
-        targetValue = if (isPressed) AccentBlue.copy(alpha = 0.5f) else GymCoachColors.BorderSubtle,
+        targetValue = if (isPressed) GymCoachColors.Primary.copy(alpha = 0.5f) else GymCoachColors.BorderSubtle,
         animationSpec = tween(150),
         label = "cardBorderColor"
     )
@@ -133,7 +128,7 @@ fun ExerciseItemCard(
     )
 
     val favoriteTint by animateColorAsState(
-        targetValue = if (isFavorite) Color(0xFFF43F5E) else TextTertiary,
+        targetValue = if (isFavorite) Color(0xFFF43F5E) else GymCoachColors.TextMuted,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "favTint"
     )
@@ -156,7 +151,7 @@ fun ExerciseItemCard(
     )
 
     val muscleBg by animateColorAsState(
-        targetValue = AccentBlue.copy(alpha = if (isPressed) 0.22f else 0.14f),
+        targetValue = GymCoachColors.Primary.copy(alpha = if (isPressed) 0.22f else 0.14f),
         label = "muscleBg"
     )
 
@@ -202,7 +197,7 @@ fun ExerciseItemCard(
                         fontSize = 16.sp,
                         letterSpacing = (-0.2).sp
                     ),
-                    color = TextPrimary,
+                    color = GymCoachColors.TextPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -291,7 +286,7 @@ fun ExerciseItemCard(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp
                         ),
-                        color = AccentBlue
+                        color = GymCoachColors.Primary
                     )
                 }
 
@@ -304,7 +299,7 @@ fun ExerciseItemCard(
                     Text(
                         text = metadataDetails,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = TextSecondary,
+                            color = GymCoachColors.TextSecondary,
                             fontSize = 12.sp
                         ),
                         maxLines = 1,
@@ -365,7 +360,7 @@ fun ExerciseItemCard(
                             Icon(
                                 imageVector = Icons.Default.PlayCircleFilled,
                                 contentDescription = "Animation available",
-                                tint = AccentBlue,
+                                tint = GymCoachColors.Primary,
                                 modifier = Modifier.size(13.dp)
                             )
                             Text(
@@ -374,12 +369,12 @@ fun ExerciseItemCard(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold
                                 ),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = TextTertiary,
+                                tint = GymCoachColors.TextMuted,
                                 modifier = Modifier.size(10.dp)
                             )
                         }
@@ -414,7 +409,7 @@ fun ExerciseItemCard(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold
                                 ),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                     }
@@ -427,7 +422,7 @@ fun ExerciseItemCard(
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = if (isExpanded) "Collapse details" else "Expand details",
-                            tint = TextTertiary,
+                            tint = GymCoachColors.TextMuted,
                             modifier = Modifier
                                 .size(18.dp)
                                 .graphicsLayer {
@@ -459,7 +454,7 @@ fun ExerciseItemCard(
                         .fillMaxWidth()
                         .padding(top = 4.dp)
                         .clip(GymCoachShapes.sm)
-                        .background(DarkSurface.copy(alpha = 0.7f))
+                        .background(GymCoachColors.SurfaceDeep.copy(alpha = 0.7f))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -472,14 +467,14 @@ fun ExerciseItemCard(
                             text = "Movement Specs",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = AccentBlue
+                                color = GymCoachColors.Primary
                             )
                         )
                         Text(
                             text = "Tap card for full biomechanics",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 10.sp,
-                                color = TextTertiary
+                                color = GymCoachColors.TextMuted
                             )
                         )
                     }
@@ -500,7 +495,7 @@ fun ExerciseItemCard(
                                     text = "Equipment: ${equipment.replace(",", ", ")}",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 10.sp,
-                                        color = TextSecondary
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 )
                             }
@@ -516,7 +511,7 @@ fun ExerciseItemCard(
                                     text = "Pattern: $movementPattern",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 10.sp,
-                                        color = TextSecondary
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 )
                             }

@@ -99,15 +99,9 @@ import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.presentation.components.ExerciseAnimationPlayer
 import com.gymcoach.app.presentation.components.ExerciseVideoPlayer
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkBackground
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -212,7 +206,7 @@ private fun MuscleGroupHighlightBadge(
                 val cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
                 // Outer ambient glow
                 drawRoundRect(
-                    color = AccentBlue.copy(alpha = glowAlpha * 0.35f),
+                    color = GymCoachColors.Primary.copy(alpha = glowAlpha * 0.35f),
                     cornerRadius = cornerRadius,
                     size = androidx.compose.ui.geometry.Size(
                         size.width + glowSpread * 2,
@@ -222,13 +216,13 @@ private fun MuscleGroupHighlightBadge(
                 )
                 // Badge background fill
                 drawRoundRect(
-                    color = AccentBlue.copy(alpha = 0.12f + glowAlpha * 0.08f),
+                    color = GymCoachColors.Primary.copy(alpha = 0.12f + glowAlpha * 0.08f),
                     cornerRadius = cornerRadius,
                     size = size
                 )
                 // Badge border stroke
                 drawRoundRect(
-                    color = AccentBlue.copy(alpha = 0.35f + glowAlpha * 0.65f),
+                    color = GymCoachColors.Primary.copy(alpha = 0.35f + glowAlpha * 0.65f),
                     cornerRadius = cornerRadius,
                     size = size,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx())
@@ -248,7 +242,7 @@ private fun MuscleGroupHighlightBadge(
                         alpha = glowAlpha
                     }
                     .clip(CircleShape)
-                    .background(AccentBlue)
+                    .background(GymCoachColors.Primary)
             )
             Text(
                 text = muscleGroup,
@@ -256,7 +250,7 @@ private fun MuscleGroupHighlightBadge(
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp
                 ),
-                color = AccentBlue
+                color = GymCoachColors.Primary
             )
         }
     }
@@ -326,14 +320,14 @@ private fun AnimatedPhaseBadgesSection() {
                     text = "Biomechanical Phase Breakdown",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = AccentBlue
+                        color = GymCoachColors.Primary
                     )
                 )
                 Text(
                     text = "Tap phase to inspect",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 10.sp,
-                        color = TextTertiary
+                        color = GymCoachColors.TextMuted
                     )
                 )
             }
@@ -354,11 +348,11 @@ private fun AnimatedPhaseBadgesSection() {
                         AnimationPhase.BOTTOM -> GymCoachColors.PhaseBottom
                         AnimationPhase.CONCENTRIC -> GymCoachColors.PhaseConcentric
                         AnimationPhase.END -> GymCoachColors.PhaseEnd
-                        else -> AccentBlue
+                        else -> GymCoachColors.Primary
                     }
 
                     val badgeBg by animateColorAsState(
-                        targetValue = if (isSelected) phaseColor.copy(alpha = 0.22f) else DarkSurface,
+                        targetValue = if (isSelected) phaseColor.copy(alpha = 0.22f) else GymCoachColors.SurfaceDeep,
                         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         label = "phaseBadgeBg"
                     )
@@ -368,7 +362,7 @@ private fun AnimatedPhaseBadgesSection() {
                         label = "phaseBadgeBorder"
                     )
                     val badgeText by animateColorAsState(
-                        targetValue = if (isSelected) phaseColor else TextSecondary,
+                        targetValue = if (isSelected) phaseColor else GymCoachColors.TextSecondary,
                         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                         label = "phaseBadgeText"
                     )
@@ -448,7 +442,7 @@ private fun AnimatedPhaseBadgesSection() {
                         AnimationPhase.BOTTOM -> GymCoachColors.PhaseBottom
                         AnimationPhase.CONCENTRIC -> GymCoachColors.PhaseConcentric
                         AnimationPhase.END -> GymCoachColors.PhaseEnd
-                        else -> AccentBlue
+                        else -> GymCoachColors.Primary
                     }
 
                     Row(
@@ -482,7 +476,7 @@ private fun AnimatedPhaseBadgesSection() {
                                     lineHeight = 18.sp,
                                     fontSize = 12.sp
                                 ),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                     }
@@ -512,7 +506,7 @@ fun ExerciseDetailScreen(
     }
 
     val favTint by animateColorAsState(
-        targetValue = if (isFavorite) Color(0xFFF43F5E) else TextSecondary,
+        targetValue = if (isFavorite) Color(0xFFF43F5E) else GymCoachColors.TextSecondary,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "favTint"
     )
@@ -526,14 +520,14 @@ fun ExerciseDetailScreen(
     )
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = exercise?.name ?: "Exercise Detail",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary,
+                        color = GymCoachColors.TextPrimary,
                         maxLines = 1
                     )
                 },
@@ -542,7 +536,7 @@ fun ExerciseDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                 },
@@ -559,7 +553,7 @@ fun ExerciseDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         }
     ) { padding ->
@@ -608,7 +602,7 @@ fun ExerciseDetailScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 24.sp
                         ),
-                        color = TextPrimary
+                        color = GymCoachColors.TextPrimary
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -619,19 +613,19 @@ fun ExerciseDetailScreen(
 
                         Text(
                             text = "•",
-                            color = TextTertiary
+                            color = GymCoachColors.TextMuted
                         )
                         Text(
                             text = ex.equipment.ifBlank { "Bodyweight" },
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = GymCoachColors.TextSecondary
                         )
                         if (ex.movementPattern.isNotBlank()) {
-                            Text(text = "•", color = TextTertiary)
+                            Text(text = "•", color = GymCoachColors.TextMuted)
                             Text(
                                 text = ex.movementPattern,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -660,7 +654,7 @@ fun ExerciseDetailScreen(
                                 .fillMaxWidth()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Row(
@@ -672,13 +666,13 @@ fun ExerciseDetailScreen(
                                             imageVector = Icons.Default.PlayCircleOutline,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp),
-                                            tint = AccentBlue
+                                            tint = GymCoachColors.Primary
                                         )
                                         Spacer(Modifier.width(4.dp))
                                         Text(
                                             text = if (showVideo) "View Stickman Form Animation" else "Watch Video Demo",
                                             style = MaterialTheme.typography.labelMedium,
-                                            color = AccentBlue
+                                            color = GymCoachColors.Primary
                                         )
                                     }
                                 }
@@ -713,7 +707,7 @@ fun ExerciseDetailScreen(
                                 .fillMaxWidth()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
                         ) {
                             ExerciseAnimationPlayer(
                                 definition = animationDefinition!!,
@@ -729,7 +723,7 @@ fun ExerciseDetailScreen(
                                 .fillMaxWidth()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
                         ) {
                             ExerciseVideoPlayer(
                                 videoUri = Uri.parse(ex.videoUrl),
@@ -758,13 +752,13 @@ fun ExerciseDetailScreen(
                                     modifier = Modifier
                                         .size(64.dp)
                                         .clip(CircleShape)
-                                        .background(AccentBlue.copy(alpha = 0.15f)),
+                                        .background(GymCoachColors.Primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = AccentBlue,
+                                        tint = GymCoachColors.Primary,
                                         modifier = Modifier.size(32.dp)
                                     )
                                 }
@@ -772,13 +766,13 @@ fun ExerciseDetailScreen(
                                 Text(
                                     text = "Technical Movement Profile",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = TextPrimary
+                                    color = GymCoachColors.TextPrimary
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
                                     text = "Biomechanical form notes and coaching cues detailed below",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary
+                                    color = GymCoachColors.TextSecondary
                                 )
                             }
                         }
@@ -799,7 +793,7 @@ fun ExerciseDetailScreen(
                             onClick = { onCameraClick(matchedType) },
                             modifier = Modifier.weight(1f),
                             shape = GymCoachShapes.md,
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,
@@ -821,10 +815,10 @@ fun ExerciseDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("Analytics", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        Text("Analytics", color = GymCoachColors.TextPrimary, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -844,7 +838,7 @@ fun ExerciseDetailScreen(
                             text = "Quick Specifications",
                             style = MaterialTheme.typography.titleSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = AccentBlue
+                                color = GymCoachColors.Primary
                             )
                         )
                         Row(
@@ -884,14 +878,14 @@ fun ExerciseDetailScreen(
                                 text = "Overview",
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = GymCoachColors.TextPrimary
                                 )
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = ex.description,
                                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                                color = TextSecondary
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -930,11 +924,11 @@ fun ExerciseDetailScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
-                                        text = cue,
-                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = TextPrimary
-                                    )
-                                }
+                                         text = cue,
+                                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                         color = GymCoachColors.TextPrimary
+                                     )
+                                 }
                             }
                         }
                     }
@@ -959,7 +953,7 @@ fun ExerciseDetailScreen(
                                 text = "Form & Execution Guide",
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = GymCoachColors.TextPrimary
                                 )
                             )
 
@@ -968,12 +962,12 @@ fun ExerciseDetailScreen(
                                     Text(
                                         text = "Setup Position",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = AccentBlue
+                                        color = GymCoachColors.Primary
                                     )
                                     Text(
                                         text = setup,
                                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = TextSecondary
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                             }
@@ -983,12 +977,12 @@ fun ExerciseDetailScreen(
                                     Text(
                                         text = "Rep Execution",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = AccentBlue
+                                        color = GymCoachColors.Primary
                                     )
                                     Text(
                                         text = execution,
                                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = TextSecondary
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                             }
@@ -1039,7 +1033,7 @@ fun ExerciseDetailScreen(
                                     Text(
                                         text = mistake,
                                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = TextPrimary
+                                        color = GymCoachColors.TextPrimary
                                     )
                                 }
                             }
@@ -1071,7 +1065,7 @@ fun ExerciseDetailScreen(
                 Text(
                     text = "Exercise not found.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
         }
@@ -1090,20 +1084,20 @@ private fun SpecBadge(label: String, value: String, icon: ImageVector) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = TextTertiary,
+                tint = GymCoachColors.TextMuted,
                 modifier = Modifier.size(13.dp)
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextTertiary
+                color = GymCoachColors.TextMuted
             )
         }
         Spacer(Modifier.height(3.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary
+            color = GymCoachColors.TextPrimary
         )
     }
 }
@@ -1131,14 +1125,14 @@ private fun VTaperScoresSection(exercise: Exercise) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                     contentDescription = "Anatomy",
-                    tint = AccentBlue,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Target Muscles & V-Taper Impact",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
             }
 
@@ -1152,20 +1146,20 @@ private fun VTaperScoresSection(exercise: Exercise) {
                     Text(
                         text = "Secondary:",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                     exercise.secondaryMuscles.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { secMuscle ->
                         Box(
                             modifier = Modifier
                                 .clip(GymCoachShapes.pill)
-                                .background(DarkSurface)
-                                .border(1.dp, AccentBlue.copy(alpha = 0.35f), GymCoachShapes.pill)
+                                .background(GymCoachColors.SurfaceDeep)
+                                .border(1.dp, GymCoachColors.Primary.copy(alpha = 0.35f), GymCoachShapes.pill)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
                                 text = secMuscle,
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                     }
@@ -1210,7 +1204,7 @@ private fun VTaperBar(label: String, score: Int, maxScore: Int) {
 
     val color = when {
         score >= 8 -> GymCoachColors.Success
-        score >= 5 -> AccentBlue
+        score >= 5 -> GymCoachColors.Primary
         else -> GymCoachColors.Warning
     }
 
@@ -1224,7 +1218,7 @@ private fun VTaperBar(label: String, score: Int, maxScore: Int) {
                 fontWeight = if (isHighImpact) FontWeight.SemiBold else FontWeight.Normal
             ),
             modifier = Modifier.width(95.dp),
-            color = if (isHighImpact) TextPrimary else TextSecondary
+            color = if (isHighImpact) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary
         )
         LinearProgressIndicator(
             progress = { animatedProgress },
@@ -1245,14 +1239,14 @@ private fun VTaperBar(label: String, score: Int, maxScore: Int) {
                     } else Modifier
                 ),
             color = color,
-            trackColor = DarkSurface
+            trackColor = GymCoachColors.SurfaceDeep
         )
         Spacer(Modifier.width(10.dp))
         Text(
             text = "$score/$maxScore",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
-                color = if (isHighImpact) color else TextPrimary
+                color = if (isHighImpact) color else GymCoachColors.TextPrimary
             ),
             modifier = Modifier.width(36.dp)
         )
@@ -1278,14 +1272,14 @@ private fun SubstitutionSection(
                 Icon(
                     imageVector = Icons.Default.SwapHoriz,
                     contentDescription = "Substitutions",
-                    tint = AccentBlue,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Suggested Substitutions",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
             }
 
@@ -1293,7 +1287,7 @@ private fun SubstitutionSection(
             Text(
                 text = "Targeting identical muscle recruitment with alternate equipment:",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = GymCoachColors.TextSecondary
             )
 
             Spacer(Modifier.height(12.dp))
@@ -1324,7 +1318,7 @@ private fun SubstitutionItem(
             .clip(GymCoachShapes.sm)
             .border(GymCoachBorders.subtle, GymCoachShapes.sm)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep),
         shape = GymCoachShapes.sm
     ) {
         Row(
@@ -1338,12 +1332,12 @@ private fun SubstitutionItem(
                 Text(
                     text = substitute.name,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextPrimary
+                    color = GymCoachColors.TextPrimary
                 )
                 Text(
                     text = "${substitute.muscleGroup} • ${substitute.equipment}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
@@ -1351,12 +1345,12 @@ private fun SubstitutionItem(
                 Text(
                     text = "$score% match",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = AccentBlue
+                    color = GymCoachColors.Primary
                 )
                 Text(
                     text = reason,
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextTertiary
+                    color = GymCoachColors.TextMuted
                 )
             }
         }

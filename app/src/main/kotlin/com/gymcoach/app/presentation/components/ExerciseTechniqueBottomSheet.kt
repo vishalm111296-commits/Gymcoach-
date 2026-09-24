@@ -44,12 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.core.animation.AnimationRepository
 import com.gymcoach.app.core.animation.ExerciseAnimationDefinition
-import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
 
 /**
  * Contained modal bottom sheet for inspecting exercise technique and biomechanical animations
@@ -100,14 +97,14 @@ fun ExerciseTechniqueBottomSheet(
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         ),
-                        color = TextPrimary
+                        color = GymCoachColors.TextPrimary
                     )
                     if (muscleGroup.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         Box(
                             modifier = Modifier
                                 .clip(GymCoachShapes.xs)
-                                .background(AccentBlue.copy(alpha = 0.15f))
+                                .background(GymCoachColors.Primary.copy(alpha = 0.15f))
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
@@ -117,7 +114,7 @@ fun ExerciseTechniqueBottomSheet(
                                     fontSize = 10.sp,
                                     letterSpacing = 0.5.sp
                                 ),
-                                color = AccentBlue
+                                color = GymCoachColors.Primary
                             )
                         }
                     }
@@ -141,7 +138,7 @@ fun ExerciseTechniqueBottomSheet(
                             .height(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = AccentBlue)
+                        CircularProgressIndicator(color = GymCoachColors.Primary)
                     }
                 }
                 animationDefinition != null -> {
@@ -167,14 +164,14 @@ fun ExerciseTechniqueBottomSheet(
                             Icon(
                                 imageVector = Icons.Default.FitnessCenter,
                                 contentDescription = null,
-                                tint = AccentBlue,
+                                tint = GymCoachColors.Primary,
                                 modifier = Modifier.size(36.dp)
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "Form Guide Available via Standard Cues",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                     }
@@ -205,14 +202,14 @@ fun ExerciseTechniqueBottomSheet(
                             Text(
                                 text = "Execution Instructions",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
 
                         Text(
                             text = instructions,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
+                            color = GymCoachColors.TextSecondary,
                             lineHeight = 20.sp
                         )
                     }

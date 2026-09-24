@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 
 sealed class PersonalRecordsUiState {
@@ -52,7 +53,10 @@ class PersonalRecordsViewModel @Inject constructor(
                     }
                     Pair(sorted, sort)
                 }
-                .catch { e -> _uiState.value = PersonalRecordsUiState.Error(e.message ?: "Unknown error") }
+                .catch { e ->
+                    if (e is CancellationException) throw e
+                    _uiState.value = PersonalRecordsUiState.Error(e.message ?: "Unknown error")
+                }
                 .collect { (records, sort) ->
                     _uiState.value = if (records.isEmpty()) {
                         PersonalRecordsUiState.Empty

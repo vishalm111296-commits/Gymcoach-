@@ -1,5 +1,6 @@
 package com.gymcoach.app.core.audio
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -42,5 +43,23 @@ class RestAudioCoachTest {
         coach.setSoundEnabled(false)
         coach.onTick(3)
         coach.onComplete()
+    }
+
+    @Test
+    fun `preset can be changed and read back`() {
+        assertEquals(AudioCoachPreset.CLASSIC_BEEPS, coach.getPreset())
+        coach.setPreset(AudioCoachPreset.MELLOW_CHIMES)
+        assertEquals(AudioCoachPreset.MELLOW_CHIMES, coach.getPreset())
+        coach.setPreset(AudioCoachPreset.POWER_PULSE)
+        assertEquals(AudioCoachPreset.POWER_PULSE, coach.getPreset())
+    }
+
+    @Test
+    fun `getVibrationPattern returns valid non-empty arrays for all cue types`() {
+        for (cue in AudioCueType.entries) {
+            val pattern = coach.getVibrationPattern(cue)
+            assertTrue("Vibration pattern for $cue must not be empty", pattern.isNotEmpty())
+            assertEquals(0L, pattern[0]) // starts with 0 delay
+        }
     }
 }

@@ -45,10 +45,32 @@ class RestAudioCueEvaluatorTest {
     }
 
     @Test
+    fun `evaluateCue returns WARNING_15S when enabled and remaining is 15 with totalDuration greater than 20`() {
+        assertEquals(
+            AudioCueType.WARNING_15S,
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 60, enable15sWarning = true)
+        )
+        assertNull(
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 60, enable15sWarning = false)
+        )
+    }
+
+    @Test
+    fun `evaluateCue returns HALFWAY when enabled and remaining is half of total duration`() {
+        assertEquals(
+            AudioCueType.HALFWAY,
+            evaluator.evaluateCue(remainingSeconds = 30, totalDurationSeconds = 60, enableHalfwayAlert = true)
+        )
+        assertNull(
+            evaluator.evaluateCue(remainingSeconds = 30, totalDurationSeconds = 60, enableHalfwayAlert = false)
+        )
+    }
+
+    @Test
     fun `evaluateCue returns null during normal ticking`() {
         assertNull(evaluator.evaluateCue(remainingSeconds = 60))
         assertNull(evaluator.evaluateCue(remainingSeconds = 30))
-        assertNull(evaluator.evaluateCue(remainingSeconds = 15))
+        assertNull(evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 0, enable15sWarning = false))
         assertNull(evaluator.evaluateCue(remainingSeconds = 5))
         assertNull(evaluator.evaluateCue(remainingSeconds = 4))
     }

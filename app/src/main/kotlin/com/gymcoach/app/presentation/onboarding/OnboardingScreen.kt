@@ -577,7 +577,7 @@ private fun SexSelection(
                 label = { Text(label, color = if (sex == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
-                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
@@ -600,7 +600,7 @@ private fun PreferredScheduleChipGroup(
                 label = { Text(label, color = if (schedule == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
-                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
@@ -623,7 +623,7 @@ private fun LimitationsChipGroup(
                 label = { Text(label, color = if (limitation == label) WarmWhite else GymCoachColors.TextSecondary) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
-                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )
@@ -655,7 +655,7 @@ private fun ScheduleStep(
                 label = { Text("$days") },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
-                    selectedContainerColor = GymCoachColors.PrimaryGlow,
+                    selectedContainerColor = GymCoachColors.Primary,
                     labelColor = GymCoachColors.TextSecondary,
                     selectedLabelColor = WarmWhite
                 )

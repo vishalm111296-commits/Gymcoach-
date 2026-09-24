@@ -140,6 +140,7 @@ class OnboardingViewModel @Inject constructor(
                 _uiState.update { it.copy(step = OnboardingStep.COMPLETE, isGenerating = false) }
                 onComplete()
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.update {
                     it.copy(isGenerating = false, error = e.message ?: "Could not generate your program")
                 }

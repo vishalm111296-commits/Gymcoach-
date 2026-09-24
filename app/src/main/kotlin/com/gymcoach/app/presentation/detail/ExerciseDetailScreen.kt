@@ -103,6 +103,7 @@ import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -130,23 +131,35 @@ class ExerciseDetailViewModel @Inject constructor(
 
     fun loadExercise(id: Long) {
         viewModelScope.launch {
-            repository.getExerciseById(id).collect { ex ->
-                _exercise.value = ex
-                ex?.let {
-                    _isFavorite.value = it.isFavorite
-                    loadSubstitutes(it)
-                    loadAnimation(it)
+            try {
+                repository.getExerciseById(id).collect { ex ->
+                    _exercise.value = ex
+                    ex?.let {
+                        _isFavorite.value = it.isFavorite
+                        loadSubstitutes(it)
+                        loadAnimation(it)
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Graceful degradation on read failure
             }
         }
     }
 
     private suspend fun loadAnimation(exercise: Exercise) {
-        val anim = animationRepository.getAnimation(
-            exerciseId = exercise.animationUrl ?: "",
-            exerciseName = exercise.name
-        )
-        _animationDefinition.value = anim
+        try {
+            val anim = animationRepository.getAnimation(
+                exerciseId = exercise.animationUrl ?: "",
+                exerciseName = exercise.name
+            )
+            _animationDefinition.value = anim
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _animationDefinition.value = null
+        }
     }
 
     private suspend fun loadSubstitutes(exercise: Exercise) {
@@ -157,6 +170,8 @@ class ExerciseDetailViewModel @Inject constructor(
                 maxResults = 5
             )
             _substitutes.value = results
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _substitutes.value = emptyList()
         }
@@ -166,8 +181,15 @@ class ExerciseDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val ex = _exercise.value ?: return@launch
             val updated = ex.copy(isFavorite = !ex.isFavorite)
-            repository.updateExercise(updated)
-            _isFavorite.value = updated.isFavorite
+            try {
+                repository.updateExercise(updated)
+                _isFavorite.value = updated.isFavorite
+                _exercise.value = updated
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Keep existing favorite state on failure
+            }
         }
     }
 }

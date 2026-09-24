@@ -20,6 +20,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -87,8 +88,40 @@ class ExerciseDetailViewModelTest {
         viewModel.toggleFavorite()
 
         assertTrue(viewModel.isFavorite.value)
+        assertEquals(true, viewModel.exercise.value?.isFavorite)
         coVerify(exactly = 1) {
             repository.updateExercise(match { it.id == 42L && it.isFavorite })
         }
+    }
+
+    @Test
+    fun `toggleFavorite when exercise is null is a safe no-op`() = runTest {
+        viewModel.toggleFavorite()
+
+        coVerify(exactly = 0) { repository.updateExercise(any()) }
+        assertFalse(viewModel.isFavorite.value)
+        assertNull(viewModel.exercise.value)
+    }
+
+    @Test
+    fun `loadSubstitutes when engine throws gracefully sets empty list`() = runTest {
+        coEvery { substitutionEngine.findSubstitutes(any(), any(), any()) } throws RuntimeException("Substitutes unavailable")
+
+        viewModel.loadExercise(42L)
+
+        assertNotNull(viewModel.exercise.value)
+        assertTrue(viewModel.substitutes.value.isEmpty())
+    }
+
+    @Test
+    fun `loadExercise when exercise does not exist sets null safely`() = runTest {
+        every { repository.getExerciseById(999L) } returns flowOf(null)
+
+        viewModel.loadExercise(999L)
+
+        assertNull(viewModel.exercise.value)
+        assertFalse(viewModel.isFavorite.value)
+        assertNull(viewModel.animationDefinition.value)
+        assertTrue(viewModel.substitutes.value.isEmpty())
     }
 }

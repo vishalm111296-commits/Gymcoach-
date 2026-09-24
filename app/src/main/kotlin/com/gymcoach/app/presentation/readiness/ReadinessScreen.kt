@@ -71,7 +71,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.data.local.entity.ReadinessEntity
-import com.gymcoach.app.ui.theme.*
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
@@ -88,22 +91,22 @@ fun ReadinessScreen(
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         topBar = {
             TopAppBar(
-                title = { Text("Recovery & Readiness", fontWeight = FontWeight.Bold, color = TextPrimary) },
+                title = { Text("Recovery & Readiness", fontWeight = FontWeight.Bold, color = GymCoachColors.TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = GymCoachColors.TextPrimary)
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showLogDialog() },
-                containerColor = AccentBlue,
+                containerColor = GymCoachColors.Primary,
                 contentColor = androidx.compose.ui.graphics.Color.White
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Log Readiness")
@@ -174,7 +177,7 @@ fun ReadinessScreen(
                                 Text(
                                     text = latest.trainingRecommendation,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = WarmWhite,
+                                    color = GymCoachColors.TextPrimary,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 if (latest.isRestDayRecommended) {
@@ -421,7 +424,7 @@ private fun ReadinessGauge(
             Text(
                 text = "%.1f".format(displayScore),
                 style = MaterialTheme.typography.displayMedium,
-                color = WarmWhite,
+                color = GymCoachColors.TextPrimary,
                 fontWeight = FontWeight.Black
             )
             Text(
@@ -561,7 +564,7 @@ private fun MetricRow(
                     text = "$value / 5",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = WarmWhite
+                    color = GymCoachColors.TextPrimary
                 )
             }
             Spacer(Modifier.height(4.dp))
@@ -611,7 +614,7 @@ private fun ReadinessHistoryItem(readiness: ReadinessEntity) {
                 Text(
                     text = readiness.trainingRecommendation,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = WarmWhite
+                    color = GymCoachColors.TextPrimary
                 )
             }
             Text(

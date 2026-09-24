@@ -67,8 +67,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gymcoach.app.ui.theme.*
 import androidx.compose.ui.draw.clip
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.semantics.contentDescription
@@ -258,28 +261,28 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = GymCoachColors.PureDark,
         bottomBar = {
             GymCoachBottomNav(currentRoute = "profile", onNavigate = onNavigateBottomBar)
         },
         topBar = {
             TopAppBar(
-                title = { Text("Profile & Settings", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary) },
+                title = { Text("Profile & Settings", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = GymCoachColors.TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showEditSheet = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = AccentBlue)
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = GymCoachColors.Primary)
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = GymCoachColors.PureDark)
             )
         }
     ) { padding ->
@@ -290,7 +293,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator(color = AccentBlue)
+                    CircularProgressIndicator(color = GymCoachColors.Primary)
                 }
             }
             profile == null -> {
@@ -302,7 +305,7 @@ fun ProfileScreen(
                     Text(
                         text = "No profile found",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -335,7 +338,7 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(
-                                            AccentBlue.copy(alpha = 0.2f),
+                                            GymCoachColors.Primary.copy(alpha = 0.2f),
                                             shape = CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -343,7 +346,7 @@ fun ProfileScreen(
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = AccentBlue,
+                                        tint = GymCoachColors.Primary,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -356,19 +359,19 @@ fun ProfileScreen(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 10.sp
                                         ),
-                                        color = AccentBlue
+                                        color = GymCoachColors.Primary
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
                                         text = "${p.experience.ifBlank { "Lifter" }} Athlete",
                                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = TextPrimary
+                                        color = GymCoachColors.TextPrimary
                                     )
                                 }
                                 Box(
                                     modifier = Modifier
                                         .clip(GymCoachShapes.xs)
-                                        .background(AccentBlue.copy(alpha = 0.15f))
+                                        .background(GymCoachColors.Primary.copy(alpha = 0.15f))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
@@ -377,7 +380,7 @@ fun ProfileScreen(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 10.sp
                                         ),
-                                        color = AccentBlue
+                                        color = GymCoachColors.Primary
                                     )
                                 }
                             }
@@ -405,12 +408,12 @@ fun ProfileScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 9.sp
                                             ),
-                                            color = TextSecondary
+                                            color = GymCoachColors.TextSecondary
                                         )
                                         Text(
                                             text = if (p.weightKg > 0) "%.1f kg".format(p.weightKg) else "—",
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = TextPrimary
+                                            color = GymCoachColors.TextPrimary
                                         )
                                     }
                                 }
@@ -431,12 +434,12 @@ fun ProfileScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 9.sp
                                             ),
-                                            color = TextSecondary
+                                            color = GymCoachColors.TextSecondary
                                         )
                                         Text(
                                             text = if (p.heightCm > 0) "%.0f cm".format(p.heightCm) else "—",
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = TextPrimary
+                                            color = GymCoachColors.TextPrimary
                                         )
                                     }
                                 }
@@ -457,12 +460,12 @@ fun ProfileScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 9.sp
                                             ),
-                                            color = TextSecondary
+                                            color = GymCoachColors.TextSecondary
                                         )
                                         Text(
                                             text = "${p.trainingDaysPerWeek} d/wk",
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = TextPrimary
+                                            color = GymCoachColors.TextPrimary
                                         )
                                     }
                                 }

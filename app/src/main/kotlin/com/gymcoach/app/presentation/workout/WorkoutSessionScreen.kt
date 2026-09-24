@@ -25,10 +25,6 @@ import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
 import com.gymcoach.app.ui.theme.GymCoachColors
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
-import com.gymcoach.app.ui.theme.TextTertiary
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -423,10 +419,10 @@ fun WorkoutSessionScreen(
                             shape = GymCoachShapes.md,
                             border = GymCoachBorders.subtle,
                             colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                contentColor = TextPrimary
+                                contentColor = GymCoachColors.TextPrimary
                             )
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = AccentBlue)
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = GymCoachColors.Primary)
                             Spacer(Modifier.width(6.dp))
                             Text("Add Exercise", fontWeight = FontWeight.SemiBold)
                         }
@@ -434,7 +430,7 @@ fun WorkoutSessionScreen(
                         Button(
                             onClick = { showFinishDialog = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentBlue,
+                                containerColor = GymCoachColors.Primary,
                                 contentColor = androidx.compose.ui.graphics.Color.White
                             ),
                             shape = GymCoachShapes.md,
@@ -679,7 +675,7 @@ private fun RestTimerCard(
     )
 
     val cardBorderColor by animateColorAsState(
-        targetValue = if (!isPaused && timeRemaining > 0) AccentBlue.copy(alpha = 0.65f)
+        targetValue = if (!isPaused && timeRemaining > 0) GymCoachColors.Primary.copy(alpha = 0.65f)
                       else GymCoachColors.BorderSubtle,
         animationSpec = tween(durationMillis = 300),
         label = "restCardBorderColor"
@@ -687,7 +683,7 @@ private fun RestTimerCard(
 
     val timerProgressBrush = remember {
         Brush.sweepGradient(
-            listOf(AccentBlue, GymCoachColors.CyanAccent, AccentBlue)
+            listOf(GymCoachColors.Primary, GymCoachColors.CyanAccent, GymCoachColors.Primary)
         )
     }
 
@@ -723,7 +719,7 @@ private fun RestTimerCard(
                                     alpha = pulseAlpha * 0.35f
                                 }
                                 .background(
-                                    AccentBlue,
+                                    GymCoachColors.Primary,
                                     shape = androidx.compose.foundation.shape.CircleShape
                                 )
                         )
@@ -762,7 +758,7 @@ private fun RestTimerCard(
                                 .clip(androidx.compose.foundation.shape.CircleShape)
                                 .background(
                                     if (isPaused) GymCoachColors.SurfaceDeep
-                                    else AccentBlue.copy(alpha = 0.2f)
+                                    else GymCoachColors.Primary.copy(alpha = 0.2f)
                                 )
                                 .clickable { onPauseResume() },
                             contentAlignment = Alignment.Center
@@ -770,7 +766,7 @@ private fun RestTimerCard(
                             Icon(
                                 imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                                 contentDescription = if (isPaused) "Resume Rest" else "Pause Rest",
-                                tint = AccentBlue,
+                                tint = GymCoachColors.Primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -785,7 +781,7 @@ private fun RestTimerCard(
                                 letterSpacing = 1.sp,
                                 fontSize = 10.sp
                             ),
-                            color = if (isPaused) TextSecondary else AccentBlue
+                            color = if (isPaused) GymCoachColors.TextSecondary else GymCoachColors.Primary
                         )
                         Text(
                             text = "${timeRemaining}s",
@@ -793,7 +789,7 @@ private fun RestTimerCard(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 26.sp
                             ),
-                            color = TextPrimary
+                            color = GymCoachColors.TextPrimary
                         )
                     }
                 }
@@ -804,7 +800,7 @@ private fun RestTimerCard(
                         shape = GymCoachShapes.xs,
                         colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                             containerColor = GymCoachColors.SurfaceDeep,
-                            contentColor = TextPrimary
+                            contentColor = GymCoachColors.TextPrimary
                         ),
                         modifier = Modifier.height(34.dp)
                     ) {
@@ -816,7 +812,7 @@ private fun RestTimerCard(
                         shape = GymCoachShapes.xs,
                         colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                             containerColor = GymCoachColors.SurfaceDeep,
-                            contentColor = TextPrimary
+                            contentColor = GymCoachColors.TextPrimary
                         ),
                         modifier = Modifier.height(34.dp)
                     ) {
@@ -826,14 +822,14 @@ private fun RestTimerCard(
                         Icon(
                             if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                             contentDescription = "Pause/Resume",
-                            tint = TextPrimary
+                            tint = GymCoachColors.TextPrimary
                         )
                     }
                     IconButton(onClick = onSkip) {
                         Icon(
                             Icons.Default.SkipNext,
                             contentDescription = "Skip",
-                            tint = TextSecondary
+                            tint = GymCoachColors.TextSecondary
                         )
                     }
                 }
@@ -845,7 +841,7 @@ private fun RestTimerCard(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(GymCoachShapes.pill),
-                color = AccentBlue,
+                color = GymCoachColors.Primary,
                 trackColor = GymCoachColors.SurfaceDeep
             )
 
@@ -876,8 +872,8 @@ private fun RestTimerCard(
                         shape = GymCoachShapes.pill,
                         colors = FilterChipDefaults.filterChipColors(
                             containerColor = GymCoachColors.SurfaceDeep,
-                            labelColor = TextSecondary,
-                            selectedContainerColor = AccentBlue,
+                            labelColor = GymCoachColors.TextSecondary,
+                            selectedContainerColor = GymCoachColors.Primary,
                             selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         ),
                         border = if (totalDuration == seconds) null else GymCoachBorders.subtle,
@@ -924,7 +920,7 @@ internal fun ExerciseSetCard(
     val cardBorderColor by animateColorAsState(
         targetValue = when {
             isExerciseCompleted -> GymCoachColors.Success.copy(alpha = 0.55f)
-            isExerciseActive -> AccentBlue.copy(alpha = 0.65f)
+            isExerciseActive -> GymCoachColors.Primary.copy(alpha = 0.65f)
             else -> GymCoachColors.BorderSubtle
         },
         animationSpec = tween(durationMillis = 350),
@@ -970,7 +966,7 @@ internal fun ExerciseSetCard(
                         Box(
                             modifier = Modifier
                                 .clip(GymCoachShapes.xs)
-                                .background(AccentBlue.copy(alpha = 0.15f))
+                                .background(GymCoachColors.Primary.copy(alpha = 0.15f))
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
@@ -980,7 +976,7 @@ internal fun ExerciseSetCard(
                                     fontSize = 10.sp,
                                     letterSpacing = 0.5.sp
                                 ),
-                                color = AccentBlue
+                                color = GymCoachColors.Primary
                             )
                         }
 
@@ -1029,7 +1025,7 @@ internal fun ExerciseSetCard(
                                     Box(
                                         modifier = Modifier
                                             .clip(GymCoachShapes.xs)
-                                            .background(AccentBlue.copy(alpha = 0.18f))
+                                            .background(GymCoachColors.Primary.copy(alpha = 0.18f))
                                             .padding(horizontal = 7.dp, vertical = 3.dp)
                                     ) {
                                         Text(
@@ -1039,7 +1035,7 @@ internal fun ExerciseSetCard(
                                                 fontSize = 9.sp,
                                                 letterSpacing = 0.5.sp
                                             ),
-                                            color = AccentBlue
+                                            color = GymCoachColors.Primary
                                         )
                                     }
                                 }
@@ -1154,7 +1150,7 @@ internal fun ExerciseSetCard(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = null,
                                     modifier = Modifier.size(15.dp),
-                                    tint = AccentBlue
+                                    tint = GymCoachColors.Primary
                                 )
                                 Text(
                                     text = "WHY THIS WEIGHT? • ADAPTIVE COACH",
@@ -1163,13 +1159,13 @@ internal fun ExerciseSetCard(
                                         letterSpacing = 1.sp,
                                         fontSize = 10.sp
                                     ),
-                                    color = AccentBlue
+                                    color = GymCoachColors.Primary
                                 )
                             }
                             Box(
                                 modifier = Modifier
                                     .clip(GymCoachShapes.xs)
-                                    .background(AccentBlue.copy(alpha = 0.15f))
+                                    .background(GymCoachColors.Primary.copy(alpha = 0.15f))
                                     .padding(horizontal = 7.dp, vertical = 2.dp)
                             ) {
                                 Text(
@@ -1178,7 +1174,7 @@ internal fun ExerciseSetCard(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 9.sp
                                     ),
-                                    color = AccentBlue
+                                    color = GymCoachColors.Primary
                                 )
                             }
                         }
@@ -1192,7 +1188,7 @@ internal fun ExerciseSetCard(
                                 Text(
                                     text = "Target for Today",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    color = GymCoachColors.TextSecondary
                                 )
                                 Text(
                                     text = "${recommendation.recommendedWeight} kg × ${recommendation.recommendedReps} reps",
@@ -1200,7 +1196,7 @@ internal fun ExerciseSetCard(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
                                     ),
-                                    color = TextPrimary
+                                    color = GymCoachColors.TextPrimary
                                 )
                             }
                         }
@@ -1223,7 +1219,7 @@ internal fun ExerciseSetCard(
                                     lineHeight = 18.sp,
                                     fontSize = 12.sp
                                 ),
-                                color = TextPrimary
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                     }
@@ -1264,7 +1260,7 @@ internal fun ExerciseSetCard(
                                     letterSpacing = 0.8.sp,
                                     fontSize = 10.sp
                                 ),
-                                color = TextTertiary
+                                color = GymCoachColors.TextMuted
                             )
                             Text(
                                 text = "Session Best: ${bestWeight}kg",
@@ -1282,7 +1278,7 @@ internal fun ExerciseSetCard(
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 12.sp
                                 ),
-                                color = TextSecondary
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -1451,7 +1447,7 @@ internal fun ExerciseSetCard(
                 shape = GymCoachShapes.sm,
                 colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                     containerColor = GymCoachColors.SurfaceCardElevated,
-                    contentColor = TextPrimary
+                    contentColor = GymCoachColors.TextPrimary
                 )
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -1542,7 +1538,7 @@ private fun SetRow(
     )
     val checkIconColor by animateColorAsState(
         targetValue = if (completed) Color.White
-                      else TextTertiary,
+                      else GymCoachColors.TextMuted,
         animationSpec = tween(durationMillis = 220),
         label = "checkIconColor"
     )
@@ -1605,10 +1601,10 @@ private fun SetRow(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = GymCoachColors.SurfaceInput,
                 unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = GymCoachColors.Primary,
                 unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedTextColor = GymCoachColors.TextPrimary,
+                unfocusedTextColor = GymCoachColors.TextPrimary
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -1629,10 +1625,10 @@ private fun SetRow(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = GymCoachColors.SurfaceInput,
                 unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = GymCoachColors.Primary,
                 unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedTextColor = GymCoachColors.TextPrimary,
+                unfocusedTextColor = GymCoachColors.TextPrimary
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -1653,10 +1649,10 @@ private fun SetRow(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = GymCoachColors.SurfaceInput,
                 unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = GymCoachColors.Primary,
                 unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedTextColor = GymCoachColors.TextPrimary,
+                unfocusedTextColor = GymCoachColors.TextPrimary
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -1677,10 +1673,10 @@ private fun SetRow(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = GymCoachColors.SurfaceInput,
                 unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = GymCoachColors.Primary,
                 unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedTextColor = GymCoachColors.TextPrimary,
+                unfocusedTextColor = GymCoachColors.TextPrimary
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -1857,14 +1853,14 @@ internal fun WorkoutCompletionView(
                 val celebrationHaloBrush = remember {
                     Brush.radialGradient(
                         listOf(
-                            AccentBlue,
+                            GymCoachColors.Primary,
                             Color.Transparent
                         )
                     )
                 }
                 val celebrationCircleBrush = remember {
                     Brush.linearGradient(
-                        listOf(AccentBlue, GymCoachColors.CyanAccent)
+                        listOf(GymCoachColors.Primary, GymCoachColors.CyanAccent)
                     )
                 }
                 Box(

@@ -55,13 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.core.progression.OneRepMaxCalculator
 import com.gymcoach.app.core.progression.WarmupCalculator
-import com.gymcoach.app.ui.theme.AccentBlue
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
-import com.gymcoach.app.ui.theme.TextPrimary
-import com.gymcoach.app.ui.theme.TextSecondary
 
 @Composable
 fun WarmupCalculatorDialog(
@@ -101,12 +98,12 @@ fun WarmupCalculatorDialog(
                         text = "Warm-Up & 1RM Suite",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = GymCoachColors.TextPrimary
                     )
                     Text(
                         text = exerciseName,
                         style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary
+                        color = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -203,7 +200,7 @@ fun WarmupCalculatorDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Target Work Load", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text("Target Work Load", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
                                     Text(
                                         "${warmupPlan.workingWeight} kg",
                                         style = MaterialTheme.typography.titleMedium,
@@ -212,7 +209,7 @@ fun WarmupCalculatorDialog(
                                     )
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Est. Warm-up Time", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text("Est. Warm-up Time", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
                                     Text(
                                         "~${warmupPlan.estimatedDurationMinutes} min",
                                         style = MaterialTheme.typography.titleMedium,
@@ -258,12 +255,12 @@ fun WarmupCalculatorDialog(
                                             text = "${ws.weight} kg × ${ws.reps} reps",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = TextPrimary
+                                            color = GymCoachColors.TextPrimary
                                         )
                                         Text(
                                             text = ws.purpose,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = TextSecondary
+                                            color = GymCoachColors.TextSecondary
                                         )
                                     }
                                 }
@@ -298,7 +295,7 @@ fun WarmupCalculatorDialog(
                                     .padding(GymCoachSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text("Average Estimated 1RM", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Text("Average Estimated 1RM", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
                                 Text(
                                     "${oneRepMaxProfile.average1RM} kg",
                                     style = MaterialTheme.typography.headlineSmall,
@@ -308,7 +305,7 @@ fun WarmupCalculatorDialog(
                                 Text(
                                     "Epley: ${oneRepMaxProfile.epley1RM}kg  •  Brzycki: ${oneRepMaxProfile.brzycki1RM}kg",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    color = GymCoachColors.TextSecondary
                                 )
                             }
                         }
@@ -317,7 +314,7 @@ fun WarmupCalculatorDialog(
                             "Percentage Training Zones",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
+                            color = GymCoachColors.TextPrimary
                         )
 
                         oneRepMaxProfile.zones.forEach { zone ->
@@ -335,12 +332,12 @@ fun WarmupCalculatorDialog(
                                         text = "${zone.percentage}% (${zone.weight} kg)",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
+                                        color = GymCoachColors.TextPrimary
                                     )
                                     Text(
                                         text = zone.trainingGoal,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                                 Text(

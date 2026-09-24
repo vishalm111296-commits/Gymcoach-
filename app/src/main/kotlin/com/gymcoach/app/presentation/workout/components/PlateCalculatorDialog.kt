@@ -46,8 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gymcoach.app.core.progression.PlateCalculator
-import com.gymcoach.app.ui.theme.AccentBlue
-import com.gymcoach.app.ui.theme.DarkSurface
 import com.gymcoach.app.ui.theme.GymCoachColors
 
 data class BarbellPreset(
@@ -124,8 +122,8 @@ fun PlateCalculatorDialog(
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = AccentBlue.copy(alpha = 0.25f),
-                                    selectedLabelColor = AccentBlue
+                                    selectedContainerColor = GymCoachColors.Primary.copy(alpha = 0.25f),
+                                    selectedLabelColor = GymCoachColors.Primary
                                 )
                             )
                         }
@@ -188,7 +186,7 @@ fun PlateCalculatorDialog(
                                 .fillMaxWidth()
                                 .height(64.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(DarkSurface)
+                                .background(GymCoachColors.SurfaceDeep)
                                 .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {

@@ -8,7 +8,6 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.util.Size
 import android.view.ViewGroup
-import androidx.core.graphics.createBitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -29,14 +28,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,17 +47,23 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.gymcoach.app.core.ml.ExerciseConfig
+import androidx.core.graphics.createBitmap
 import com.gymcoach.app.core.ml.ExerciseType
 import com.gymcoach.app.core.ml.FormAnalyzer
 import com.gymcoach.app.core.ml.PoseDetector
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -100,6 +105,9 @@ fun CameraPreviewScreen(
     LaunchedEffect(Unit) {
         if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
     }
+
+    // ── Camera selector (Front vs Back) ──────────────────────
+    var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA) }
 
     // ── Pose model bootstrap (download on first launch) ─────
     var detector by remember { mutableStateOf<PoseDetector?>(null) }
@@ -193,58 +201,58 @@ fun CameraPreviewScreen(
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
                             scaleType = PreviewView.ScaleType.FILL_CENTER
-                        }.also { previewView ->
-                            val providerFuture = ProcessCameraProvider.getInstance(ctx)
-                            providerFuture.addListener({
-                                val cameraProvider = providerFuture.get()
-
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
-                                }
-
-                                val imageAnalysis = ImageAnalysis.Builder()
-                                    .setResolutionSelector(
-                                        ResolutionSelector.Builder()
-                                            .setResolutionStrategy(
-                                                ResolutionStrategy(
-                                                    Size(640, 480),
-                                                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                                                )
-                                            )
-                                            .build()
-                                    )
-                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                                    .build()
-                                    .also { analysis ->
-                                        analysis.setAnalyzer(analyzerExecutor) { proxy ->
-                                            processFrame(proxy)
-                                        }
-                                    }
-
-                                val selector = when {
-                                    cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ->
-                                        CameraSelector.DEFAULT_FRONT_CAMERA
-                                    cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ->
-                                        CameraSelector.DEFAULT_BACK_CAMERA
-                                    else -> CameraSelector.DEFAULT_FRONT_CAMERA
-                                }
-
-                                try {
-                                    cameraProvider.unbindAll()
-                                    cameraProvider.bindToLifecycle(
-                                        lifecycleOwner,
-                                        selector,
-                                        preview,
-                                        imageAnalysis
-                                    )
-                                } catch (e: Exception) {
-                                    modelState = ModelState.Error(
-                                        e.message ?: "Failed to bind camera"
-                                    )
-                                }
-                            }, ContextCompat.getMainExecutor(ctx))
                         }
+                    },
+                    update = { previewView ->
+                        val providerFuture = ProcessCameraProvider.getInstance(previewView.context)
+                        providerFuture.addListener({
+                            val cameraProvider = providerFuture.get()
+
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+
+                            val imageAnalysis = ImageAnalysis.Builder()
+                                .setResolutionSelector(
+                                    ResolutionSelector.Builder()
+                                        .setResolutionStrategy(
+                                            ResolutionStrategy(
+                                                Size(640, 480),
+                                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                                            )
+                                        )
+                                        .build()
+                                    )
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                                .build()
+                                .also { analysis ->
+                                    analysis.setAnalyzer(analyzerExecutor) { proxy ->
+                                        processFrame(proxy)
+                                    }
+                                }
+
+                            val selector = when {
+                                cameraProvider.hasCamera(lensFacing) -> lensFacing
+                                cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) -> CameraSelector.DEFAULT_FRONT_CAMERA
+                                cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) -> CameraSelector.DEFAULT_BACK_CAMERA
+                                else -> CameraSelector.DEFAULT_FRONT_CAMERA
+                            }
+
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    selector,
+                                    preview,
+                                    imageAnalysis
+                                )
+                            } catch (e: Exception) {
+                                modelState = ModelState.Error(
+                                    e.message ?: "Failed to bind camera"
+                                )
+                            }
+                        }, ContextCompat.getMainExecutor(previewView.context))
                     }
                 )
                 CameraOverlay(
@@ -259,24 +267,52 @@ fun CameraPreviewScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = GymCoachColors.Primary)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "Preparing AI coach\u2026")
+                    Text(
+                        text = "Preparing AI Coach…",
+                        color = GymCoachColors.TextPrimary,
+                        fontSize = 16.sp
+                    )
                 }
             }
 
+            // Top Bar Controls
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(top = 24.dp, start = 16.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.55f))
+                    .background(GymCoachColors.PureDark.copy(alpha = 0.75f))
+                    .semantics { contentDescription = "Exit camera preview" }
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
+                    contentDescription = null,
+                    tint = GymCoachColors.TextPrimary
+                )
+            }
+
+            IconButton(
+                onClick = {
+                    lensFacing = if (lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA) {
+                        CameraSelector.DEFAULT_BACK_CAMERA
+                    } else {
+                        CameraSelector.DEFAULT_FRONT_CAMERA
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 24.dp, end = 16.dp)
+                    .clip(CircleShape)
+                    .background(GymCoachColors.PureDark.copy(alpha = 0.75f))
+                    .semantics { contentDescription = "Switch front or rear camera" }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Cameraswitch,
+                    contentDescription = null,
+                    tint = GymCoachColors.Primary
                 )
             }
         }
@@ -298,12 +334,21 @@ private fun PermissionRationale(
         Text(
             text = "GymCoach needs camera access to count your reps and coach your form in real time.",
             textAlign = TextAlign.Center,
-            fontSize = 18.sp
+            fontSize = 18.sp,
+            color = GymCoachColors.TextPrimary
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRequest) { Text(text = "Grant camera access") }
+        Button(
+            onClick = onRequest,
+            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+            shape = GymCoachShapes.pill
+        ) {
+            Text(text = "Grant Camera Access", color = GymCoachColors.TextPrimary)
+        }
         Spacer(modifier = Modifier.height(12.dp))
-        TextButton(onClick = onBackClick) { Text(text = "Go back") }
+        TextButton(onClick = onBackClick) {
+            Text(text = "Go Back", color = GymCoachColors.TextMuted)
+        }
     }
 }
 
@@ -323,12 +368,21 @@ private fun ModelErrorView(
         Text(
             text = "Couldn't load the pose model:\n$message",
             textAlign = TextAlign.Center,
-            fontSize = 16.sp
+            fontSize = 16.sp,
+            color = GymCoachColors.Danger
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRetry) { Text(text = "Retry") }
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+            shape = GymCoachShapes.pill
+        ) {
+            Text(text = "Retry", color = GymCoachColors.TextPrimary)
+        }
         Spacer(modifier = Modifier.height(12.dp))
-        TextButton(onClick = onBackClick) { Text(text = "Go back") }
+        TextButton(onClick = onBackClick) {
+            Text(text = "Go Back", color = GymCoachColors.TextMuted)
+        }
     }
 }
 

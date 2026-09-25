@@ -235,4 +235,75 @@ class StrengthStandardsEngineTest {
         assertNull(profile.weakestLift)
         assertTrue(profile.coachingRecommendation.contains("Record a 1RM for all Big 4 lifts"))
     }
+
+    @Test
+    fun `testFractionalBig4TotalWeightAccumulationAndBodyweightRatios`() {
+        val bw = 75.0
+        val maxes = mapOf(
+            "Squat" to 142.5,
+            "Bench Press" to 102.5,
+            "Deadlift" to 185.0,
+            "Overhead Press" to 67.5
+        )
+
+        val profile = engine.evaluateProfile(bw, maxes)
+        assertEquals(497.5, profile.totalBig4Kg, 0.001)
+
+        val squat = profile.liftStandards.find { it.exerciseName == "Squat" }!!
+        assertEquals(142.5 / 75.0, squat.bodyweightRatio, 0.001)
+
+        val bench = profile.liftStandards.find { it.exerciseName == "Bench Press" }!!
+        assertEquals(102.5 / 75.0, bench.bodyweightRatio, 0.001)
+    }
+
+    @Test
+    fun `testTierAdvanceResetsProgressPercentageToZeroForNextTier`() {
+        val bw = 100.0
+        // Squat: Novice is 80kg (0.8x), Intermediate is 120kg (1.2x), Advanced is 175kg (1.75x)
+
+        // At 110kg (in Novice): progress = (110 - 80) / (120 - 80) * 100 = 75%
+        val p110 = engine.evaluateProfile(bw, mapOf("Squat" to 110.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        val squat110 = p110.liftStandards.find { it.exerciseName == "Squat" }!!
+        assertEquals(StrengthTier.NOVICE, squat110.tier)
+        assertEquals(75, squat110.progressToNextTierPct)
+
+        // At 120kg (advances to Intermediate): progress to Advanced = (120 - 120) / (175 - 120) * 100 = 0%
+        val p120 = engine.evaluateProfile(bw, mapOf("Squat" to 120.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        val squat120 = p120.liftStandards.find { it.exerciseName == "Squat" }!!
+        assertEquals(StrengthTier.INTERMEDIATE, squat120.tier)
+        assertEquals(StrengthTier.ADVANCED, squat120.nextTier)
+        assertEquals(175.0, squat120.nextTierKg!!, 0.001)
+        assertEquals(0, squat120.progressToNextTierPct)
+    }
+
+    @Test
+    fun `testCompletelyOmittedMapKeysHandledAsZeroAndIncomplete`() {
+        val bw = 80.0
+        // Pass only Squat; Bench, Deadlift, OHP keys absent from map
+        val maxes = mapOf("Squat" to 150.0)
+
+        val profile = engine.evaluateProfile(bw, maxes)
+        assertEquals(StrengthTier.UNTRAINED, profile.overallTier)
+        assertNull(profile.strongestLift)
+        assertNull(profile.weakestLift)
+        assertTrue(profile.coachingRecommendation.contains("Record a 1RM for all Big 4 lifts"))
+        assertEquals(4, profile.liftStandards.size) // All 4 entries created with 0.0 for missing
+        assertEquals(150.0, profile.totalBig4Kg, 0.001)
+    }
+
+    @Test
+    fun `testSpecificLaggingLiftRecommendationNaming`() {
+        val bw = 80.0
+        // Squat, Bench, Deadlift are Advanced, but Bench Press is lowest in progression
+        val maxes = mapOf(
+            "Squat" to 160.0,        // 2.0x -> Advanced
+            "Bench Press" to 75.0,   // 0.9375x -> Intermediate (lagging!)
+            "Deadlift" to 190.0,     // 2.375x -> Advanced
+            "Overhead Press" to 70.0 // 0.875x -> Advanced
+        )
+
+        val profile = engine.evaluateProfile(bw, maxes)
+        assertEquals("Bench Press", profile.weakestLift)
+        assertTrue(profile.coachingRecommendation.contains("Your Bench Press is currently lagging behind"))
+    }
 }

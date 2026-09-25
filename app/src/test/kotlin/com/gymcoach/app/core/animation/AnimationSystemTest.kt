@@ -262,4 +262,222 @@ class AnimationSystemTest {
         assertTrue("Knee angle at bottom must be flexed (< 120 deg)", frame1.angleReadouts[0].angleDegrees < 120.0f)
         assertEquals(listOf("quads", "glutes", "hamstrings"), frame1.activeMuscles)
     }
+
+    @Test
+    fun testProgressBoundaryClamping() {
+        val kf0 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            cue = "Start",
+            joints = mapOf("wrist" to JointPoint(0.1f, 0.2f))
+        )
+        val kf1 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.END,
+            cue = "End",
+            joints = mapOf("wrist" to JointPoint(0.9f, 0.8f))
+        )
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "clamp_test",
+            exerciseName = "Clamp Test",
+            keyframes = listOf(kf0, kf1)
+        )
+
+        val negativeProgress = def.interpolateAt(-0.5f)
+        assertEquals(0.0f, negativeProgress.progress, 0.0001f)
+        assertEquals(0.1f, negativeProgress.joints["wrist"]?.x ?: 0f, 0.001f)
+        assertEquals(0.2f, negativeProgress.joints["wrist"]?.y ?: 0f, 0.001f)
+        assertEquals(AnimationPhase.START, negativeProgress.phase)
+
+        val excessiveProgress = def.interpolateAt(2.0f)
+        assertEquals(1.0f, excessiveProgress.progress, 0.0001f)
+        assertEquals(0.9f, excessiveProgress.joints["wrist"]?.x ?: 0f, 0.001f)
+        assertEquals(0.8f, excessiveProgress.joints["wrist"]?.y ?: 0f, 0.001f)
+        assertEquals(AnimationPhase.END, excessiveProgress.phase)
+    }
+
+    @Test
+    fun testSingleKeyframeDefinitionInterpolation() {
+        val singleKf = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.SETUP,
+            cue = "Hold Position",
+            joints = mapOf("hip" to JointPoint(0.5f, 0.5f)),
+            equipment = EquipmentGeometry("kettlebell", listOf(JointPoint(0.5f, 0.4f))),
+            activeMuscles = listOf("core")
+        )
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "single_kf",
+            exerciseName = "Plank Hold",
+            keyframes = listOf(singleKf),
+            angleSpecs = listOf(
+                JointAngleSpec("Straight", "hip", "hip", "hip")
+            )
+        )
+
+        val frame = def.interpolateAt(0.5f)
+        assertEquals(0.5f, frame.progress, 0.0001f)
+        assertEquals(AnimationPhase.SETUP, frame.phase)
+        assertEquals("Hold Position", frame.cue)
+        assertEquals(0.5f, frame.joints["hip"]?.x ?: 0f, 0.001f)
+        assertEquals("kettlebell", frame.equipment?.type)
+        assertEquals(1, frame.angleReadouts.size)
+    }
+
+    @Test
+    fun testEquipmentGeometryInterpolationAndFallbacks() {
+        // Matching equipment type interpolates points
+        val kf0 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            joints = emptyMap(),
+            equipment = EquipmentGeometry("barbell", listOf(JointPoint(0.2f, 0.2f)))
+        )
+        val kf1 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.END,
+            joints = emptyMap(),
+            equipment = EquipmentGeometry("barbell", listOf(JointPoint(0.8f, 0.8f)))
+        )
+        val defMatch = ExerciseAnimationDefinition(
+            exerciseId = "barbell_match",
+            exerciseName = "Barbell Match",
+            keyframes = listOf(kf0, kf1)
+        )
+        val midMatch = defMatch.interpolateAt(0.5f)
+        assertNotNull(midMatch.equipment)
+        assertEquals("barbell", midMatch.equipment?.type)
+        assertEquals(0.5f, midMatch.equipment?.points?.firstOrNull()?.x ?: 0f, 0.01f)
+
+        // Differing equipment types falls back without crashing
+        val kfDiff = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.END,
+            joints = emptyMap(),
+            equipment = EquipmentGeometry("dumbbell", listOf(JointPoint(0.8f, 0.8f)))
+        )
+        val defDiff = ExerciseAnimationDefinition(
+            exerciseId = "eq_diff",
+            exerciseName = "Eq Diff",
+            keyframes = listOf(kf0, kfDiff)
+        )
+        val midDiff = defDiff.interpolateAt(0.5f)
+        assertNotNull(midDiff.equipment)
+        assertTrue(midDiff.equipment?.type == "barbell" || midDiff.equipment?.type == "dumbbell")
+    }
+
+    @Test
+    fun testTrajectoryPathPriorityHierarchy() {
+        // Priority 1: equipment point
+        val def1 = ExerciseAnimationDefinition(
+            exerciseId = "t1",
+            exerciseName = "Trajectory 1",
+            keyframes = listOf(
+                SkeletalKeyframe(
+                    progress = 0.0f,
+                    phase = AnimationPhase.START,
+                    joints = mapOf(
+                        "wrist" to JointPoint(0.2f, 0.2f),
+                        "wrist_near" to JointPoint(0.3f, 0.3f),
+                        "ankle" to JointPoint(0.4f, 0.4f)
+                    ),
+                    equipment = EquipmentGeometry("barbell", listOf(JointPoint(0.1f, 0.1f)))
+                )
+            )
+        )
+        assertEquals(0.1f, def1.trajectoryPath[0].x, 0.001f)
+
+        // Priority 2: wrist (no equipment)
+        val def2 = ExerciseAnimationDefinition(
+            exerciseId = "t2",
+            exerciseName = "Trajectory 2",
+            keyframes = listOf(
+                SkeletalKeyframe(
+                    progress = 0.0f,
+                    phase = AnimationPhase.START,
+                    joints = mapOf(
+                        "wrist" to JointPoint(0.2f, 0.2f),
+                        "wrist_near" to JointPoint(0.3f, 0.3f),
+                        "ankle" to JointPoint(0.4f, 0.4f)
+                    )
+                )
+            )
+        )
+        assertEquals(0.2f, def2.trajectoryPath[0].x, 0.001f)
+
+        // Priority 3: wrist_near (no wrist, no equipment)
+        val def3 = ExerciseAnimationDefinition(
+            exerciseId = "t3",
+            exerciseName = "Trajectory 3",
+            keyframes = listOf(
+                SkeletalKeyframe(
+                    progress = 0.0f,
+                    phase = AnimationPhase.START,
+                    joints = mapOf(
+                        "wrist_near" to JointPoint(0.3f, 0.3f),
+                        "ankle" to JointPoint(0.4f, 0.4f)
+                    )
+                )
+            )
+        )
+        assertEquals(0.3f, def3.trajectoryPath[0].x, 0.001f)
+
+        // Priority 4: ankle
+        val def4 = ExerciseAnimationDefinition(
+            exerciseId = "t4",
+            exerciseName = "Trajectory 4",
+            keyframes = listOf(
+                SkeletalKeyframe(
+                    progress = 0.0f,
+                    phase = AnimationPhase.START,
+                    joints = mapOf(
+                        "ankle" to JointPoint(0.4f, 0.4f)
+                    )
+                )
+            )
+        )
+        assertEquals(0.4f, def4.trajectoryPath[0].x, 0.001f)
+
+        // Priority 5: ankle_near
+        val def5 = ExerciseAnimationDefinition(
+            exerciseId = "t5",
+            exerciseName = "Trajectory 5",
+            keyframes = listOf(
+                SkeletalKeyframe(
+                    progress = 0.0f,
+                    phase = AnimationPhase.START,
+                    joints = mapOf(
+                        "ankle_near" to JointPoint(0.5f, 0.5f)
+                    )
+                )
+            )
+        )
+        assertEquals(0.5f, def5.trajectoryPath[0].x, 0.001f)
+    }
+
+    @Test
+    fun testJointAngleNearSuffixFallback() {
+        val kf = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            joints = mapOf(
+                "shoulder_near" to JointPoint(0.5f, 0.2f),
+                "elbow_near" to JointPoint(0.5f, 0.5f),
+                "wrist_near" to JointPoint(0.8f, 0.5f)
+            )
+        )
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "near_fallback_test",
+            exerciseName = "Near Fallback Test",
+            keyframes = listOf(kf),
+            angleSpecs = listOf(
+                JointAngleSpec("Elbow Flexion", "shoulder", "elbow", "wrist")
+            )
+        )
+
+        val frame = def.interpolateAt(0.0f)
+        assertEquals(1, frame.angleReadouts.size)
+        assertEquals("Elbow Flexion", frame.angleReadouts[0].label)
+        assertEquals(90.0f, frame.angleReadouts[0].angleDegrees, 0.5f)
+    }
 }

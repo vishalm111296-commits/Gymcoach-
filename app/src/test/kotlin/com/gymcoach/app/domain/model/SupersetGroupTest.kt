@@ -246,4 +246,58 @@ class SupersetGroupTest {
             viewModel.clearForTest()
         }
     }
+
+    @Test
+    fun `empty exerciseIndices handles indexing and round detection safely`() {
+        val emptyGroup = SupersetGroup(
+            id = "SS_EMPTY",
+            label = "Empty Superset",
+            exerciseIndices = emptyList(),
+            transitionRestSeconds = 30,
+            roundRestSeconds = 90
+        )
+        assertNull(emptyGroup.getNextExerciseIndex(0))
+        assertFalse(emptyGroup.isEndOfRound(0))
+        assertEquals(30, emptyGroup.getRecommendedRestSeconds(0))
+    }
+
+    @Test
+    fun `single exercise group loops back to itself and treats every set as end of round`() {
+        val singleGroup = SupersetGroup(
+            id = "SS_SINGLE",
+            label = "Single Circuit",
+            exerciseIndices = listOf(5),
+            transitionRestSeconds = 15,
+            roundRestSeconds = 75
+        )
+        assertEquals(5, singleGroup.getNextExerciseIndex(5))
+        assertNull(singleGroup.getNextExerciseIndex(0))
+        assertTrue(singleGroup.isEndOfRound(5))
+        assertEquals(75, singleGroup.getRecommendedRestSeconds(5))
+    }
+
+    @Test
+    fun `quad-set giant set handles 4-station circular indexing and rest intervals`() {
+        val quadSet = SupersetGroup(
+            id = "SS_GIANT",
+            label = "Giant Set A",
+            exerciseIndices = listOf(10, 20, 30, 40),
+            transitionRestSeconds = 20,
+            roundRestSeconds = 120
+        )
+        assertEquals(20, quadSet.getNextExerciseIndex(10))
+        assertEquals(30, quadSet.getNextExerciseIndex(20))
+        assertEquals(40, quadSet.getNextExerciseIndex(30))
+        assertEquals(10, quadSet.getNextExerciseIndex(40))
+
+        assertFalse(quadSet.isEndOfRound(10))
+        assertFalse(quadSet.isEndOfRound(20))
+        assertFalse(quadSet.isEndOfRound(30))
+        assertTrue(quadSet.isEndOfRound(40))
+
+        assertEquals(20, quadSet.getRecommendedRestSeconds(10))
+        assertEquals(20, quadSet.getRecommendedRestSeconds(20))
+        assertEquals(20, quadSet.getRecommendedRestSeconds(30))
+        assertEquals(120, quadSet.getRecommendedRestSeconds(40))
+    }
 }

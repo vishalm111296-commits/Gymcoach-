@@ -321,4 +321,151 @@ class WorkoutShareCardBuilderTest {
         val notesCard = builder.buildShareData(workout, workoutTitle = "   ")
         assertEquals("Push Day A", notesCard.workoutTitle)
     }
+
+    @Test
+    fun `selectMotivationalQuote strictly respects the priority hierarchy and exact boundary thresholds`() {
+        val bench = createExercise(1L, "Bench Press", "Chest")
+
+        // 1. volume > 10000.0 takes absolute precedence even with PRs and high sets
+        val ultraHeavyWorkout = createWorkoutWithDetails(
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    WorkoutExercise(1, 1, 1, 0), bench,
+                    listOf(WorkoutSet(1, 1, 1, weight = 1000.1, reps = 10, rpe = 10.0, restSeconds = 90, completed = true))
+                )
+            )
+        )
+        val ultraCard = builder.buildShareData(ultraHeavyWorkout, personalRecords = listOf(
+            PRDetector.PersonalRecord(1L, "Bench Press", PRDetector.PRType.WEIGHT, 1000.0, "1000.0kg", now, 1L)
+        ))
+        assertEquals("Titan Volume Unlocked", ultraCard.motivationalQuote)
+
+        // 2. Exactly 10000.0 kg (not > 10000.0) with PR -> "Personal Records Broken"
+        val exact10kWithPr = createWorkoutWithDetails(
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    WorkoutExercise(1, 1, 1, 0), bench,
+                    listOf(WorkoutSet(1, 1, 1, weight = 1000.0, reps = 10, rpe = 10.0, restSeconds = 90, completed = true))
+                )
+            )
+        )
+        val card10kPr = builder.buildShareData(exact10kWithPr, personalRecords = listOf(
+            PRDetector.PersonalRecord(1L, "Bench Press", PRDetector.PRType.WEIGHT, 1000.0, "1000.0kg", now, 1L)
+        ))
+        assertEquals("Personal Records Broken", card10kPr.motivationalQuote)
+
+        // 3. Exactly 10000.0 kg without PR -> "Heavyweight Champion" (since 10000.0 > 5000.0)
+        val card10kNoPr = builder.buildShareData(exact10kWithPr, personalRecords = emptyList())
+        assertEquals("Heavyweight Champion", card10kNoPr.motivationalQuote)
+
+        // 4. Exactly 5000.0 kg (not > 5000.0) with 20 sets -> "Iron Will & Relentless Grind"
+        val sets20 = (1..20).map {
+            WorkoutSet(it.toLong(), 1, it, weight = 25.0, reps = 10, rpe = 7.0, restSeconds = 60, completed = true)
+        }
+        val workout20Sets = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), bench, sets20))
+        )
+        val card20Sets = builder.buildShareData(workout20Sets)
+        assertEquals(5000.0, card20Sets.totalVolumeKg, 0.001)
+        assertEquals("Iron Will & Relentless Grind", card20Sets.motivationalQuote)
+
+        // 5. 19 sets with 4000.0 kg -> "Solid Work in the Iron Temple"
+        val sets19 = (1..19).map {
+            WorkoutSet(it.toLong(), 1, it, weight = 20.0, reps = 10, rpe = 7.0, restSeconds = 60, completed = true)
+        }
+        val workout19Sets = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), bench, sets19))
+        )
+        val card19Sets = builder.buildShareData(workout19Sets)
+        assertEquals("Solid Work in the Iron Temple", card19Sets.motivationalQuote)
+
+        // 6. 9 sets with 1000.0 kg -> "Every Rep Counts Towards Greatness"
+        val sets9 = (1..9).map {
+            WorkoutSet(it.toLong(), 1, it, weight = 10.0, reps = 10, rpe = 7.0, restSeconds = 60, completed = true)
+        }
+        val workout9Sets = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), bench, sets9))
+        )
+        val card9Sets = builder.buildShareData(workout9Sets)
+        assertEquals("Every Rep Counts Towards Greatness", card9Sets.motivationalQuote)
+    }
+
+    @Test
+    fun `bestSetSummary selects highest weight and breaks ties by volume load`() {
+        val squat = createExercise(1L, "Squat", "Legs")
+
+        // Tie-breaker: two sets at 100kg, one with 5 reps (500kg vol) and one with 8 reps (800kg vol)
+        val setsWithTie = listOf(
+            WorkoutSet(1, 1, 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = true),
+            WorkoutSet(2, 1, 2, weight = 100.0, reps = 8, rpe = 9.0, restSeconds = 90, completed = true)
+        )
+        val workoutTie = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), squat, setsWithTie))
+        )
+        val cardTie = builder.buildShareData(workoutTie)
+        assertEquals("100.0 kg × 8 reps", cardTie.exercises[0].bestSetSummary)
+
+        // Heavyweight priority: 110kg x 1 rep (110kg vol) beats 100kg x 10 reps (1000kg vol)
+        val setsHeavy = listOf(
+            WorkoutSet(1, 1, 1, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true),
+            WorkoutSet(2, 1, 2, weight = 110.0, reps = 1, rpe = 9.5, restSeconds = 90, completed = true)
+        )
+        val workoutHeavy = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), squat, setsHeavy))
+        )
+        val cardHeavy = builder.buildShareData(workoutHeavy)
+        assertEquals("110.0 kg × 1 reps", cardHeavy.exercises[0].bestSetSummary)
+    }
+
+    @Test
+    fun `topMuscles is strictly truncated to top 3 even when 5 muscle groups are trained`() {
+        val ex1 = createExercise(1, "Bench", "Chest")
+        val ex2 = createExercise(2, "Row", "Back")
+        val ex3 = createExercise(3, "Squat", "Quads")
+        val ex4 = createExercise(4, "OHP", "Shoulders")
+        val ex5 = createExercise(5, "Curl", "Biceps")
+
+        fun makeSets(count: Int) = (1..count).map {
+            WorkoutSet(it.toLong(), 1, it, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = true)
+        }
+
+        val exercises = listOf(
+            WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), ex1, makeSets(5)), // Chest: 5
+            WorkoutExerciseWithSets(WorkoutExercise(2, 1, 2, 1), ex2, makeSets(4)), // Back: 4
+            WorkoutExerciseWithSets(WorkoutExercise(3, 1, 3, 2), ex3, makeSets(3)), // Quads: 3
+            WorkoutExerciseWithSets(WorkoutExercise(4, 1, 4, 3), ex4, makeSets(2)), // Shoulders: 2
+            WorkoutExerciseWithSets(WorkoutExercise(5, 1, 5, 4), ex5, makeSets(1))  // Biceps: 1
+        )
+
+        val workout = createWorkoutWithDetails(exercises = exercises)
+        val card = builder.buildShareData(workout)
+
+        assertEquals(3, card.topMuscles.size)
+        assertEquals(listOf("Chest", "Back", "Quads"), card.topMuscles)
+    }
+
+    @Test
+    fun `exercise summary falls back gracefully to planned sets when none are completed`() {
+        val bench = createExercise(1L, "Bench Press", "Chest")
+        val uncompletedSets = listOf(
+            WorkoutSet(1, 1, 1, weight = 80.0, reps = 10, rpe = 7.0, restSeconds = 90, completed = false),
+            WorkoutSet(2, 1, 2, weight = 90.0, reps = 8, rpe = 8.0, restSeconds = 90, completed = false)
+        )
+        val workout = createWorkoutWithDetails(
+            exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), bench, uncompletedSets))
+        )
+
+        val card = builder.buildShareData(workout)
+
+        assertEquals(0, card.totalSets)
+        assertEquals(0, card.totalReps)
+        assertEquals(0.0, card.totalVolumeKg, 0.001)
+
+        // Exercise summary reflects planned sets
+        assertEquals(1, card.exercises.size)
+        assertEquals(2, card.exercises[0].totalSetsCount)
+        assertEquals("90.0 kg × 8 reps", card.exercises[0].bestSetSummary)
+        assertFalse(card.exercises[0].isPr)
+    }
 }
+

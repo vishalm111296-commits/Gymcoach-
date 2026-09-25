@@ -278,4 +278,191 @@ class SubstitutionEngineTest {
         assertEquals("Dumbbell Row", results[0].substitute.name)
         assertEquals(80, results[0].preservationScore)
     }
+
+    @Test
+    fun `calculatePreservationScore accurately calculates each isolated component score`() = runTest {
+        val base = ExerciseEntity(
+            id = 1L, name = "Base", description = "",
+            muscleGroup = "Chest", category = "push", equipment = "barbell",
+            difficulty = "intermediate", tags = "compound, isolation"
+        )
+
+        // Only muscle matches (+40)
+        val matchMuscle = ExerciseEntity(
+            id = 2L, name = "Muscle Only", description = "",
+            muscleGroup = "Chest", category = "legs", equipment = "cable",
+            difficulty = "beginner", tags = "none"
+        )
+        // Only category matches (+20)
+        val matchCategory = ExerciseEntity(
+            id = 3L, name = "Category Only", description = "",
+            muscleGroup = "Back", category = "push", equipment = "machine",
+            difficulty = "advanced", tags = "none"
+        )
+        // Only equipment matches (+15)
+        val matchEquipment = ExerciseEntity(
+            id = 4L, name = "Equipment Only", description = "",
+            muscleGroup = "Legs", category = "pull", equipment = "barbell",
+            difficulty = "expert", tags = "none"
+        )
+        // Only difficulty matches (+10)
+        val matchDifficulty = ExerciseEntity(
+            id = 5L, name = "Difficulty Only", description = "",
+            muscleGroup = "Arms", category = "core", equipment = "dumbbell",
+            difficulty = "intermediate", tags = "none"
+        )
+        // Only compound matches (+10)
+        val matchCompound = ExerciseEntity(
+            id = 6L, name = "Compound Only", description = "",
+            muscleGroup = "Shoulders", category = "core", equipment = "kettlebell",
+            difficulty = "beginner", tags = "compound"
+        )
+        // Only isolation matches (+10)
+        val matchIsolation = ExerciseEntity(
+            id = 7L, name = "Isolation Only", description = "",
+            muscleGroup = "Abs", category = "legs", equipment = "bodyweight",
+            difficulty = "beginner", tags = "isolation"
+        )
+        // Everything matches except isolation: 40 + 20 + 15 + 10 + 10 = 95
+        val match95 = ExerciseEntity(
+            id = 8L, name = "Almost Full Match", description = "",
+            muscleGroup = "Chest", category = "push", equipment = "barbell",
+            difficulty = "intermediate", tags = "compound"
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(base)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(
+            listOf(matchMuscle, matchCategory, matchEquipment, matchDifficulty, matchCompound, matchIsolation, match95)
+        )
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym", maxResults = 10)
+
+        val scoreMap = results.associate { it.substitute.name to it.preservationScore }
+        assertEquals(40, scoreMap["Muscle Only"])
+        assertEquals(20, scoreMap["Category Only"])
+        assertEquals(15, scoreMap["Equipment Only"])
+        assertEquals(10, scoreMap["Difficulty Only"])
+        assertEquals(10, scoreMap["Compound Only"])
+        assertEquals(10, scoreMap["Isolation Only"])
+        assertEquals(95, scoreMap["Almost Full Match"])
+    }
+
+    @Test
+    fun `findSubstitutes handles varied maxResults boundary limits including zero`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Bench Press", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate"
+        )
+        val pool = (2L..10L).map { id ->
+            ExerciseEntity(
+                id = id, name = "Chest Sub $id", description = "", muscleGroup = "Chest",
+                equipment = "dumbbell", category = "push", difficulty = "intermediate"
+            )
+        }
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(emptyList())
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig) + pool)
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        // maxResults = 0
+        val res0 = engine.findSubstitutes(1L, "gym", maxResults = 0)
+        assertEquals(0, res0.size)
+
+        // maxResults = 1
+        val res1 = engine.findSubstitutes(1L, "gym", maxResults = 1)
+        assertEquals(1, res1.size)
+
+        // maxResults = 4
+        val res4 = engine.findSubstitutes(1L, "gym", maxResults = 4)
+        assertEquals(4, res4.size)
+
+        // maxResults = 20 (more than pool size of 9)
+        val res20 = engine.findSubstitutes(1L, "gym", maxResults = 20)
+        assertEquals(9, res20.size)
+    }
+
+    @Test
+    fun `findSubstitutes returns empty list when exerciseId is negative or missing`() = runTest {
+        every { exerciseDao.getById(-1L) } returns flowOf(null)
+        every { exerciseDao.getById(999999L) } returns flowOf(null)
+
+        assertTrue(engine.findSubstitutes(-1L, "gym").isEmpty())
+        assertTrue(engine.findSubstitutes(999999L, "gym").isEmpty())
+    }
+
+    @Test
+    fun `findSubstitutes with real EquipmentAvailability filters home versus gym equipment accurately`() = runTest {
+        val realEquipmentAvailability = EquipmentAvailability()
+        val realEngine = SubstitutionEngine(
+            exerciseDao = exerciseDao,
+            exerciseMuscleDao = exerciseMuscleDao,
+            exerciseSubstitutionDao = exerciseSubstitutionDao,
+            equipmentAvailability = realEquipmentAvailability
+        )
+
+        val barbellSquat = ExerciseEntity(
+            id = 100L, name = "Barbell Back Squat", description = "", muscleGroup = "Quadriceps",
+            equipment = "barbell", category = "legs", difficulty = "intermediate", tags = "compound"
+        )
+        val dumbbellSquat = ExerciseEntity(
+            id = 101L, name = "Goblet Squat", description = "", muscleGroup = "Quadriceps",
+            equipment = "dumbbell", category = "legs", difficulty = "beginner", tags = "compound"
+        )
+        val bodyweightSquat = ExerciseEntity(
+            id = 102L, name = "Air Squat", description = "", muscleGroup = "Quadriceps",
+            equipment = "bodyweight", category = "legs", difficulty = "beginner", tags = "compound"
+        )
+        val legPress = ExerciseEntity(
+            id = 103L, name = "Machine Leg Press", description = "", muscleGroup = "Quadriceps",
+            equipment = "leg press", category = "legs", difficulty = "intermediate", tags = "compound"
+        )
+
+        every { exerciseDao.getById(100L) } returns flowOf(barbellSquat)
+        every { exerciseSubstitutionDao.getSubstituteExercises(100L) } returns flowOf(
+            listOf(dumbbellSquat, bodyweightSquat, legPress)
+        )
+
+        // In HOME tier: dumbbell & bodyweight are available; leg press is not
+        val homeResults = realEngine.findSubstitutes(100L, "home", maxResults = 5)
+        assertEquals(2, homeResults.size)
+        assertTrue(homeResults.any { it.substitute.name == "Goblet Squat" })
+        assertTrue(homeResults.any { it.substitute.name == "Air Squat" })
+        assertTrue(homeResults.none { it.substitute.name == "Machine Leg Press" })
+
+        // In GYM tier: dumbbell, bodyweight, and leg press are all available
+        val gymResults = realEngine.findSubstitutes(100L, "gym", maxResults = 5)
+        assertEquals(3, gymResults.size)
+        assertTrue(gymResults.any { it.substitute.name == "Machine Leg Press" })
+
+        // In CUSTOM tier: only bodyweight is available
+        val customResults = realEngine.findSubstitutes(100L, "custom", maxResults = 5)
+        assertEquals(1, customResults.size)
+        assertEquals("Air Squat", customResults[0].substitute.name)
+    }
+
+    @Test
+    fun `findSubstitutes does not include original exercise in fallback results`() = runTest {
+        val orig = ExerciseEntity(
+            id = 50L, name = "Pull Up", description = "", muscleGroup = "Back",
+            equipment = "pull-up bar", category = "pull", difficulty = "intermediate", tags = "compound"
+        )
+        val chinUp = ExerciseEntity(
+            id = 51L, name = "Chin Up", description = "", muscleGroup = "Back",
+            equipment = "pull-up bar", category = "pull", difficulty = "intermediate", tags = "compound"
+        )
+
+        every { exerciseDao.getById(50L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(50L) } returns flowOf(emptyList())
+        // Pool explicitly contains orig and chinUp
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig, chinUp))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(50L, "gym", maxResults = 5)
+
+        assertEquals(1, results.size)
+        assertEquals(51L, results[0].substitute.id)
+        assertEquals("Chin Up", results[0].substitute.name)
+    }
 }

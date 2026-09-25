@@ -2,6 +2,7 @@ package com.gymcoach.app.core.progression
 
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -218,6 +219,64 @@ class PRDetectorUnitTest {
         // Volume PR sums both sets: 120*2 + 100*12 = 1440kg
         val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
         assertEquals(1440.0, volumePR.value, 0.01)
+    }
+
+    @Test
+    fun `detectPRs detects micro-load fractional improvements over existing PRs`() {
+        val now = Instant.now()
+        val existingPRs = listOf(
+            PRDetector.PersonalRecord(
+                exerciseId = 1L,
+                exerciseName = "Bench Press",
+                type = PRDetector.PRType.WEIGHT,
+                value = 100.0,
+                details = "100.0kg lifted",
+                date = now,
+                workoutId = 1L
+            )
+        )
+
+        val currentSets = listOf(
+            createSet(weight = 100.25, reps = 5, completed = true, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = currentSets,
+            existingPRs = existingPRs,
+            workoutId = 2L
+        )
+
+        val weightPR = prs.firstOrNull { it.type == PRDetector.PRType.WEIGHT }
+        assertNotNull("Micro-load improvement must trigger a WEIGHT PR", weightPR)
+        assertEquals(100.25, weightPR!!.value, 0.001)
+    }
+
+    @Test
+    fun `detectPRs ignores high volume warmup and incomplete sets while keeping completed normal PR`() {
+        val mixedSets = listOf(
+            createSet(weight = 50.0, reps = 50, completed = true, setType = 1),
+            createSet(weight = 110.0, reps = 3, completed = true, setType = 0),
+            createSet(weight = 120.0, reps = 10, completed = false, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = mixedSets,
+            existingPRs = emptyList(),
+            workoutId = 3L
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals(110.0, weightPR.value, 0.001)
+
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        assertEquals(3.0, repPR.value, 0.001)
+
+        val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        assertEquals(330.0, volumePR.value, 0.001)
     }
 
     private fun createSet(

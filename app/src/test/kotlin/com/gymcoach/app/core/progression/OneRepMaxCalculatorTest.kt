@@ -158,4 +158,33 @@ class OneRepMaxCalculatorTest {
             )
         }
     }
+
+    @Test
+    fun testTenRepMathematicalEquivalenceBetweenEpleyAndBrzycki() {
+        val weight = 120.0
+        val epley10 = OneRepMaxCalculator.epley(weight, 10)
+        val brzycki10 = OneRepMaxCalculator.brzycki(weight, 10)
+        assertEquals(160.0, epley10, 0.001)
+        assertEquals(160.0, brzycki10, 0.001)
+        assertEquals(epley10, brzycki10, 0.001)
+
+        val profile = OneRepMaxCalculator.calculateProfile(weight, 10)
+        assertEquals(160.0, profile.epley1RM, 0.001)
+        assertEquals(160.0, profile.brzycki1RM, 0.001)
+    }
+
+    @Test
+    fun testMicroLoadingPlateStepsInTrainingZones() {
+        val profileStep05 = OneRepMaxCalculator.calculateProfile(weight = 100.0, reps = 1, plateStep = 0.5)
+        for (zone in profileStep05.zones) {
+            val remainder = Math.round(zone.weight * 100.0) % 50L
+            assertEquals(0L, remainder)
+        }
+
+        val profileStep025 = OneRepMaxCalculator.calculateProfile(weight = 100.0, reps = 1, plateStep = 0.25)
+        for (zone in profileStep025.zones) {
+            val remainder = Math.round(zone.weight * 100.0) % 25L
+            assertEquals(0L, remainder)
+        }
+    }
 }

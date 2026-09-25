@@ -97,4 +97,55 @@ class StrengthStandardsEngineTest {
         assertEquals(120.0, squatStandard.nextTierKg!!, 0.01)
         assertEquals(50, squatStandard.progressToNextTierPct)
     }
+
+    @Test
+    fun `evaluateProfile identifies ELITE across all Big 4 lifts`() {
+        val bw = 100.0
+        val maxes = mapOf(
+            "Squat" to 230.0,       // 2.3x >= 2.25 (Elite)
+            "Bench Press" to 180.0, // 1.8x >= 1.75 (Elite)
+            "Deadlift" to 280.0,    // 2.8x >= 2.75 (Elite)
+            "Overhead Press" to 115.0 // 1.15x >= 1.1 (Elite)
+        )
+
+        val profile = engine.evaluateProfile(bw, maxes)
+        assertEquals(StrengthTier.ELITE, profile.overallTier)
+        assertTrue(profile.percentile >= 98)
+        assertEquals(230.0 + 180.0 + 280.0 + 115.0, profile.totalBig4Kg, 0.01)
+
+        for (lift in profile.liftStandards) {
+            assertEquals(StrengthTier.ELITE, lift.tier)
+            assertNull(lift.nextTier)
+            assertNull(lift.nextTierKg)
+            assertEquals(100, lift.progressToNextTierPct)
+        }
+        assertTrue(profile.coachingRecommendation.isNotEmpty())
+    }
+
+    @Test
+    fun `evaluateProfile handles negative bodyweight safely`() {
+        val profile = engine.evaluateProfile(-75.0, mapOf("Squat" to 100.0))
+        assertEquals(StrengthTier.UNTRAINED, profile.overallTier)
+        assertTrue(profile.liftStandards.isEmpty())
+        assertEquals(0.0, profile.totalBig4Kg, 0.001)
+    }
+
+    @Test
+    fun `evaluateProfile calculates progress from UNTRAINED to NOVICE`() {
+        val bw = 100.0
+        // Squat Novice: 0.8x (80kg). A 40kg squat is 50% of the way to Novice
+        val maxes = mapOf(
+            "Squat" to 40.0,
+            "Bench Press" to 1.0,
+            "Deadlift" to 1.0,
+            "Overhead Press" to 1.0
+        )
+
+        val profile = engine.evaluateProfile(bw, maxes)
+        val squatStandard = profile.liftStandards.find { it.exerciseName == "Squat" }!!
+        assertEquals(StrengthTier.UNTRAINED, squatStandard.tier)
+        assertEquals(StrengthTier.NOVICE, squatStandard.nextTier)
+        assertEquals(80.0, squatStandard.nextTierKg!!, 0.01)
+        assertEquals(50, squatStandard.progressToNextTierPct)
+    }
 }

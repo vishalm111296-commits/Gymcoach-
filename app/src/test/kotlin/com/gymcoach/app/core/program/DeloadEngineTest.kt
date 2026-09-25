@@ -373,6 +373,125 @@ class DeloadEngineTest {
         assertEquals(listOf(1, 2, 3, 4), deloaded.exercises[3].sets.map { it.setNumber })
     }
 
+    @Test
+    fun `exact 55 readiness boundary conditions distinguish optimal recovery from fatigue accumulation`() {
+        val statusExact55 = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(55, 55, 55),
+            currentWeekInBlock = 2
+        )
+        assertFalse("Readiness at exactly 55 threshold should NOT trigger fatigue accumulation deload", statusExact55.isDeloadRecommended)
+        assertNull(statusExact55.reason)
+
+        val statusSub55 = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(54, 55, 55),
+            currentWeekInBlock = 2
+        )
+        assertTrue("Readiness average < 55 should trigger fatigue accumulation deload", statusSub55.isDeloadRecommended)
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, statusSub55.reason)
+    }
+
+    @Test
+    fun `strict evaluation priority order enforces user reset over mesocycle over fatigue over plateau`() {
+        val baseTime = Instant.now()
+        val stagnantWorkouts = listOf(
+            createWorkoutWithDetails(1, baseTime.minusSeconds(86400 * 3), listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10))))),
+            createWorkoutWithDetails(2, baseTime.minusSeconds(86400 * 2), listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10))))),
+            createWorkoutWithDetails(3, baseTime.minusSeconds(86400 * 1), listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 9)))))
+        )
+        val lowReadiness = listOf(40, 45, 50)
+
+        // 1. User reset priority over everything (even week >= 4, low readiness, stagnation)
+        val resetStatus = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = stagnantWorkouts,
+            readinessScores = lowReadiness,
+            currentWeekInBlock = 5,
+            userRequestedReset = true
+        )
+        assertEquals(DeloadReason.RECOVERY_RESET, resetStatus.reason)
+
+        // 2. Mesocycle week priority over low readiness and stagnation
+        val mesoStatus = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = stagnantWorkouts,
+            readinessScores = lowReadiness,
+            currentWeekInBlock = 4,
+            userRequestedReset = false
+        )
+        assertEquals(DeloadReason.PLANNED_MESOCYCLE_END, mesoStatus.reason)
+
+        // 3. Low readiness priority over stagnation plateau (when week < 4)
+        val fatigueStatus = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = stagnantWorkouts,
+            readinessScores = lowReadiness,
+            currentWeekInBlock = 2,
+            userRequestedReset = false
+        )
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, fatigueStatus.reason)
+    }
+
+    @Test
+    fun `workout history out of order is sorted chronologically for stagnation plateau detection`() {
+        val baseTime = Instant.now()
+        val w1 = createWorkoutWithDetails(
+            workoutId = 1,
+            date = baseTime.minusSeconds(86400 * 5),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10))))
+        )
+        val w2 = createWorkoutWithDetails(
+            workoutId = 2,
+            date = baseTime.minusSeconds(86400 * 3),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10))))
+        )
+        val w3 = createWorkoutWithDetails(
+            workoutId = 3,
+            date = baseTime.minusSeconds(86400 * 1),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 9))))
+        )
+
+        val scrambledHistory = listOf(w2, w3, w1)
+
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = scrambledHistory,
+            readinessScores = listOf(70, 75),
+            currentWeekInBlock = 2
+        )
+        assertTrue("Chronologically sorted workouts should trigger stagnation plateau", status.isDeloadRecommended)
+        assertEquals(DeloadReason.STAGNATION_PLATEAU, status.reason)
+    }
+
+    @Test
+    fun `applyDeloadToWorkout handles custom 2_5kg increments and zero load bodyweight exercises`() {
+        val originalWorkout = createWorkoutWithDetails(
+            exercises = listOf(
+                createExerciseWithSets(
+                    exerciseId = 1,
+                    name = "Barbell Squat",
+                    sets = listOf(
+                        createWorkoutSet(1, 82.5, 8),
+                        createWorkoutSet(2, 82.5, 8)
+                    )
+                ),
+                createExerciseWithSets(
+                    exerciseId = 2,
+                    name = "Pull-up",
+                    sets = listOf(
+                        createWorkoutSet(1, 0.0, 12),
+                        createWorkoutSet(2, 0.0, 10)
+                    )
+                )
+            )
+        )
+
+        val deloaded = deloadEngine.applyDeloadToWorkout(originalWorkout, weightIncrement = 2.5)
+
+        assertEquals(1, deloaded.exercises[0].sets.size)
+        assertEquals(75.0, deloaded.exercises[0].sets[0].weight, 0.001)
+
+        assertEquals(1, deloaded.exercises[1].sets.size)
+        assertEquals(0.0, deloaded.exercises[1].sets[0].weight, 0.001)
+    }
+
     private fun createWorkoutWithDetails(
         workoutId: Long = 1L,
         date: Instant = Instant.now(),

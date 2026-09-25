@@ -326,4 +326,126 @@ class VolumeCalculatorTest {
         assertEquals(2, balance.backVolume.totalSets)
         assertEquals(2, balance.backVolume.weeklySets)
     }
+
+    @Test
+    fun `volume status boundaries test exact threshold transitions`() {
+        val weekDate = 1700000000000L
+        fun setsForCount(count: Int): List<VolumeCalculator.SetWithContext> {
+            return (1..count).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = i.toLong(), workoutExerciseId = 1L, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                    exerciseId = 1L,
+                    workoutDate = weekDate
+                )
+            }
+        }
+        val muscleMap = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // sets < 10 -> INSUFFICIENT
+        assertEquals(VolumeCalculator.VolumeStatus.INSUFFICIENT, volumeCalculator.calculateWeeklyVolume(setsForCount(9), muscleMap).upperChestVolume.status)
+        // 10..13 -> MODERATE
+        assertEquals(VolumeCalculator.VolumeStatus.MODERATE, volumeCalculator.calculateWeeklyVolume(setsForCount(10), muscleMap).upperChestVolume.status)
+        assertEquals(VolumeCalculator.VolumeStatus.MODERATE, volumeCalculator.calculateWeeklyVolume(setsForCount(13), muscleMap).upperChestVolume.status)
+        // 14..17 -> OPTIMAL
+        assertEquals(VolumeCalculator.VolumeStatus.OPTIMAL, volumeCalculator.calculateWeeklyVolume(setsForCount(14), muscleMap).upperChestVolume.status)
+        assertEquals(VolumeCalculator.VolumeStatus.OPTIMAL, volumeCalculator.calculateWeeklyVolume(setsForCount(17), muscleMap).upperChestVolume.status)
+        // 18..21 -> HIGH
+        assertEquals(VolumeCalculator.VolumeStatus.HIGH, volumeCalculator.calculateWeeklyVolume(setsForCount(18), muscleMap).upperChestVolume.status)
+        assertEquals(VolumeCalculator.VolumeStatus.HIGH, volumeCalculator.calculateWeeklyVolume(setsForCount(21), muscleMap).upperChestVolume.status)
+        // >= 22 -> EXCESSIVE
+        assertEquals(VolumeCalculator.VolumeStatus.EXCESSIVE, volumeCalculator.calculateWeeklyVolume(setsForCount(22), muscleMap).upperChestVolume.status)
+    }
+
+    @Test
+    fun `multi exercise secondary credit aggregation accurately calculates multi week triceps volume`() {
+        val week1Date = 1700000000000L
+        val week2Date = week1Date + (7 * 24 * 60 * 60 * 1000L)
+
+        fun makeWeekSets(startDate: Long, baseId: Long): List<VolumeCalculator.SetWithContext> {
+            val benchSets = (1..6).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = baseId + i, workoutExerciseId = 1L, setNumber = i, weight = 80.0, reps = 8, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                    exerciseId = 1L,
+                    workoutDate = startDate
+                )
+            }
+            val ohpSets = (1..4).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = baseId + 10 + i, workoutExerciseId = 2L, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                    exerciseId = 2L,
+                    workoutDate = startDate
+                )
+            }
+            val triSets = (1..5).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = baseId + 20 + i, workoutExerciseId = 3L, setNumber = i, weight = 30.0, reps = 12, rpe = 8.0, restSeconds = 60, completed = true, setType = 0),
+                    exerciseId = 3L,
+                    workoutDate = startDate
+                )
+            }
+            return benchSets + ohpSets + triSets
+        }
+
+        val allSets = makeWeekSets(week1Date, 100L) + makeWeekSets(week2Date, 200L)
+        val muscleMap = mapOf(
+            1L to listOf(
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.SECONDARY)
+            ),
+            2L to listOf(
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_LATERAL_DELT, VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.SECONDARY)
+            ),
+            3L to listOf(
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.PRIMARY)
+            )
+        )
+
+        val balance = volumeCalculator.calculateWeeklyVolume(allSets, muscleMap)
+
+        assertEquals(10, balance.tricepsVolume.directSets)
+        assertEquals(20, balance.tricepsVolume.indirectSets)
+        assertEquals(30, balance.tricepsVolume.totalSets)
+        assertEquals(10, balance.tricepsVolume.weeklySets)
+        assertEquals(VolumeCalculator.VolumeStatus.MODERATE, balance.tricepsVolume.status)
+    }
+
+    @Test
+    fun `calculateVtaperBalance boundary conditions distinguish low moderate and good scores`() {
+        val weekDate = 1700000000000L
+        fun makeSets(exerciseId: Long, count: Int): List<VolumeCalculator.SetWithContext> {
+            return (1..count).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = (exerciseId * 1000 + i), workoutExerciseId = exerciseId, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                    exerciseId = exerciseId,
+                    workoutDate = weekDate
+                )
+            }
+        }
+        val mapAll = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_LATERAL_DELT, VolumeCalculator.MuscleRole.PRIMARY)),
+            3L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_REAR_DELT, VolumeCalculator.MuscleRole.PRIMARY)),
+            4L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY)),
+            5L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_UPPER_BACK, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // Case 1: Primary >= 3.0 (level 3 OPTIMAL for both Back & Lat Delt = 3.0), but Secondary < 2.0 (MODERATE 1, MODERATE 1, INSUFFICIENT 0 -> (1+1+0)/3 = 0.67)
+        val setsPrimaryOptimalSecondaryLow = makeSets(1L, 15) + makeSets(2L, 15) + makeSets(3L, 10) + makeSets(4L, 10) + makeSets(5L, 5)
+        val balance1 = volumeCalculator.calculateWeeklyVolume(setsPrimaryOptimalSecondaryLow, mapAll)
+        val vtaper1 = volumeCalculator.calculateVtaperBalance(balance1)
+        assertEquals(3.0, vtaper1.primaryScore, 0.01)
+        assertTrue("Secondary score should be < 2.0", vtaper1.secondaryScore < 2.0)
+        assertEquals("Moderate V-taper focus", vtaper1.overallBalance)
+
+        // Case 2: Primary < 2.0 (MODERATE 1, INSUFFICIENT 0 -> 0.5) even if Secondary is OPTIMAL (level 3 across all 3 muscles)
+        val setsPrimaryLowSecondaryOptimal = makeSets(1L, 10) + makeSets(2L, 5) + makeSets(3L, 15) + makeSets(4L, 15) + makeSets(5L, 15)
+        val balance2 = volumeCalculator.calculateWeeklyVolume(setsPrimaryLowSecondaryOptimal, mapAll)
+        val vtaper2 = volumeCalculator.calculateVtaperBalance(balance2)
+        assertTrue("Primary score should be < 2.0", vtaper2.primaryScore < 2.0)
+        assertEquals(3.0, vtaper2.secondaryScore, 0.01)
+        assertEquals("Low V-taper volume", vtaper2.overallBalance)
+    }
 }

@@ -332,4 +332,86 @@ class StreakAndAchievementEngineTest {
         val rMixed = engine.calculateReport(mixedcaseWorkout, emptyList(), weeklyTarget = 1, zoneId = zoneId)
         assertTrue(rMixed.badges.find { it.id == "deload_disciple" }?.isUnlocked == true)
     }
+
+    @Test
+    fun testStreakBadgesExactThresholdBoundaries() {
+        // 3 consecutive weeks -> streak_4w locked (progress 3/4)
+        val workouts3w = (0..2).map { createWorkout(now.minus(it * 7L, ChronoUnit.DAYS).toEpochMilli()) }
+        val r3w = engine.calculateReport(workouts3w, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        val badge4wLocked = r3w.badges.find { it.id == "streak_4w" }
+        assertNotNull(badge4wLocked)
+        assertFalse(badge4wLocked!!.isUnlocked)
+        assertEquals(3, badge4wLocked.currentProgress)
+
+        // 4 consecutive weeks -> streak_4w unlocked
+        val workouts4w = (0..3).map { createWorkout(now.minus(it * 7L, ChronoUnit.DAYS).toEpochMilli()) }
+        val r4w = engine.calculateReport(workouts4w, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        val badge4wUnlocked = r4w.badges.find { it.id == "streak_4w" }
+        assertNotNull(badge4wUnlocked)
+        assertTrue(badge4wUnlocked!!.isUnlocked)
+        assertEquals(4, badge4wUnlocked.currentProgress)
+
+        // 11 consecutive weeks -> streak_12w locked (progress 11/12)
+        val workouts11w = (0..10).map { createWorkout(now.minus(it * 7L, ChronoUnit.DAYS).toEpochMilli()) }
+        val r11w = engine.calculateReport(workouts11w, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        val badge12wLocked = r11w.badges.find { it.id == "streak_12w" }
+        assertNotNull(badge12wLocked)
+        assertFalse(badge12wLocked!!.isUnlocked)
+        assertEquals(11, badge12wLocked.currentProgress)
+
+        // 12 consecutive weeks -> streak_12w unlocked
+        val workouts12w = (0..11).map { createWorkout(now.minus(it * 7L, ChronoUnit.DAYS).toEpochMilli()) }
+        val r12w = engine.calculateReport(workouts12w, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        val badge12wUnlocked = r12w.badges.find { it.id == "streak_12w" }
+        assertNotNull(badge12wUnlocked)
+        assertTrue(badge12wUnlocked!!.isUnlocked)
+        assertEquals(12, badge12wUnlocked.currentProgress)
+    }
+
+    @Test
+    fun testUncompletedWorkoutsIgnoredAcrossAllMetrics() {
+        val uncompleted = (1..5).map {
+            createWorkout(now.minus(it * 7L, ChronoUnit.DAYS).toEpochMilli(), isCompleted = false)
+        }
+        val report = engine.calculateReport(uncompleted, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(0, report.totalWorkouts)
+        assertEquals(0, report.currentWeeklyStreak)
+        assertEquals(0, report.longestWeeklyStreak)
+        assertEquals(1, report.athleteLevel)
+        assertEquals(0, report.currentXp)
+        assertFalse(report.badges.find { it.id == "first_rep" }!!.isUnlocked)
+    }
+
+    @Test
+    fun testSetTypeFilteringInXpAndCenturion() {
+        val workout = listOf(createWorkout(now.toEpochMilli()))
+        // 10 warmup sets (setType = 1) -> not normal sets, so 0 normal sets
+        val warmupSets = (1..10).map { createSet(weight = 50.0, reps = 10, isCompleted = true, setType = 1) }
+        val rWarmup = engine.calculateReport(workout, warmupSets, weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(0, rWarmup.totalSets)
+        // 1 workout * 100 XP + 0 sets * 10 = 100 XP
+        assertEquals(100, rWarmup.currentXp)
+        assertEquals(0, rWarmup.badges.find { it.id == "centurion" }!!.currentProgress)
+
+        // 10 normal sets (setType = 0) -> +100 XP
+        val normalSets = (1..10).map { createSet(weight = 50.0, reps = 10, isCompleted = true, setType = 0) }
+        val rNormal = engine.calculateReport(workout, normalSets, weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(10, rNormal.totalSets)
+        assertEquals(200, rNormal.currentXp)
+        assertEquals(10, rNormal.badges.find { it.id == "centurion" }!!.currentProgress)
+    }
+
+    @Test
+    fun testHeatMapSpanAndAggregation() {
+        val todayStr = dateFormatter.format(now)
+        val w1 = createWorkout(now.toEpochMilli())
+        val w2 = createWorkout(now.plusSeconds(3600).toEpochMilli()) // Same day second workout
+        val ancientWorkout = createWorkout(now.minus(400, ChronoUnit.DAYS).toEpochMilli()) // Out of 365 day window
+
+        val report = engine.calculateReport(listOf(w1, w2, ancientWorkout), emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        // 365 days ago to today inclusive = 366 dates
+        assertEquals(366, report.heatMapData.size)
+        assertEquals(2, report.heatMapData[todayStr])
+    }
 }
+

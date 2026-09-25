@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -59,6 +61,33 @@ fun TrainingFrequencyScreen(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = GymCoachColors.Primary)
+            }
+        } else if (state.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(GymCoachSpacing.lg),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
+                ) {
+                    Text(
+                        text = state.error ?: "Failed to load frequency data",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = GymCoachColors.Danger,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { viewModel.loadData() },
+                        colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+                        shape = GymCoachShapes.md
+                    ) {
+                        Text("Retry", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         } else {
             Column(

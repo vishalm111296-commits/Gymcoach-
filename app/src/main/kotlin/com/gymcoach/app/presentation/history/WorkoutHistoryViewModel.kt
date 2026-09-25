@@ -105,6 +105,10 @@ class WorkoutHistoryViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    fun dismissError() {
+        _error.value = null
+    }
+
     init {
         observeWorkouts()
         loadIncompleteWorkout()

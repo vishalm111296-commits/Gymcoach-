@@ -229,4 +229,16 @@ class WorkoutHistoryViewModelTest {
         assertNotNull(viewModel.error.value)
         assertTrue(viewModel.error.value!!.contains("Constraint violation"))
     }
+
+    @Test
+    fun `dismissError clears error StateFlow`() = runTest {
+        every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Corrupted DB")
+        coEvery { workoutRepository.getIncompleteWorkout() } returns null
+
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        assertNotNull(viewModel.error.value)
+        viewModel.dismissError()
+        assertNull(viewModel.error.value)
+    }
 }

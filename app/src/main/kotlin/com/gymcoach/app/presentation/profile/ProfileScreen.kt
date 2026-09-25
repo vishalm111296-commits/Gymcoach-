@@ -259,6 +259,7 @@ fun ProfileScreen(
     val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val importUiState by viewModel.importUiState.collectAsState()
+    val profileError by viewModel.error.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     var showEditSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -660,6 +661,19 @@ fun ProfileScreen(
             text = { Text(err) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    profileError?.let { err ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissError() },
+            title = { Text("Profile Error") },
+            text = { Text(err) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissError() }) {
                     Text("OK")
                 }
             }

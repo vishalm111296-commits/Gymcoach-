@@ -178,6 +178,10 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun dismissError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
 }
 
 data class WorkoutHistoryDetailUiState(
@@ -229,6 +233,15 @@ fun WorkoutHistoryDetailScreen(
                 shareViewModel.resetState()
             }
             else -> {}
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let { err ->
+            if (state.workout != null) {
+                snackbarHostState.showSnackbar(err)
+                viewModel.dismissError()
+            }
         }
     }
 
@@ -292,7 +305,7 @@ fun WorkoutHistoryDetailScreen(
                     CircularProgressIndicator()
                 }
             }
-            state.error != null -> {
+            state.error != null && state.workout == null -> {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.lg),
                     verticalArrangement = Arrangement.Center,
@@ -303,6 +316,14 @@ fun WorkoutHistoryDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = GymCoachColors.Danger
                     )
+                    Spacer(Modifier.height(GymCoachSpacing.md))
+                    Button(
+                        onClick = { viewModel.loadWorkout(workoutId) },
+                        colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+                        shape = GymCoachShapes.md
+                    ) {
+                        Text("Retry", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             else -> {

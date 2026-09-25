@@ -40,7 +40,7 @@ class TrainingFrequencyViewModel @Inject constructor(
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             try {
                 workoutRepository.getCompletedWorkouts().collect { workouts ->

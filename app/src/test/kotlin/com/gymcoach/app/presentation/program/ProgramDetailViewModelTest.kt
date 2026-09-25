@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -275,5 +276,21 @@ class ProgramDetailViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("Program DB failed", state.error)
         assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun `dismissError clears error state`() = runTest {
+        every { programRepository.getActiveProgram() } throws RuntimeException("Program DB failed")
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        assertNotNull(viewModel.uiState.value.error)
+        viewModel.dismissError()
+        assertNull(viewModel.uiState.value.error)
     }
 }

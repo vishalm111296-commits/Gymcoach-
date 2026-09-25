@@ -75,8 +75,31 @@ fun DeloadPeriodizationScreen(
                 CircularProgressIndicator(color = GymCoachColors.Primary)
             }
         } else if (uiState.error != null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = uiState.error ?: "Unknown error", color = GymCoachColors.Danger)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(GymCoachSpacing.lg),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
+                ) {
+                    Text(
+                        text = uiState.error ?: "Failed to load periodization data",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = GymCoachColors.Danger,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { viewModel.loadPeriodizationData() },
+                        colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+                        shape = GymCoachShapes.md
+                    ) {
+                        Text("Retry", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         } else {
             Column(

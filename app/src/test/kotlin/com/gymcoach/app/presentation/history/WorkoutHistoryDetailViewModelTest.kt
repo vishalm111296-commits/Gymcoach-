@@ -184,4 +184,16 @@ class WorkoutHistoryDetailViewModelTest {
 
         assertEquals("Failed to delete workout", viewModel.uiState.value.error)
     }
+
+    @Test
+    fun `dismissError clears error state`() = runTest {
+        coEvery { workoutRepository.deleteWorkout(201L) } throws RuntimeException("Delete failed")
+
+        viewModel.onDeleteClick(201L)
+        viewModel.confirmDelete()
+
+        assertNotNull(viewModel.uiState.value.error)
+        viewModel.dismissError()
+        assertNull(viewModel.uiState.value.error)
+    }
 }

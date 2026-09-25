@@ -98,6 +98,7 @@ fun WorkoutHistoryScreen(
     val exportResult by viewModel.exportResult.collectAsState()
     val isExporting by viewModel.isExporting.collectAsState()
     val importUiState by viewModel.importUiState.collectAsState()
+    val generalError by viewModel.error.collectAsState()
     val context = LocalContext.current
 
     val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -424,6 +425,19 @@ fun WorkoutHistoryScreen(
             text = { Text(err) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearImportUiState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    generalError?.let { err ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissError() },
+            title = { Text("Error") },
+            text = { Text(err) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissError() }) {
                     Text("OK")
                 }
             }

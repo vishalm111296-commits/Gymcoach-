@@ -245,6 +245,10 @@ class ProgramDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun dismissError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -286,6 +290,25 @@ fun ProgramDetailScreen(
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = GymCoachColors.Primary)
+                }
+            }
+            state.error != null && state.program == null -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.xxl), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)) {
+                        Text(
+                            text = state.error ?: "Failed to load program",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Button(
+                            onClick = { viewModel.loadActiveProgram() },
+                            shape = GymCoachShapes.md,
+                            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
+                        ) {
+                            Text("Retry", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
             state.program == null -> {
@@ -514,6 +537,21 @@ fun ProgramDetailScreen(
                 onSave = { name, desc, goal, days ->
                     viewModel.createCustomRoutine(name, desc, goal, days)
                     showBuilderSheet = false
+                }
+            )
+        }
+    }
+
+    state.error?.let { err ->
+        if (state.program != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissError() },
+                title = { Text("Program Error") },
+                text = { Text(err) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissError() }) {
+                        Text("OK")
+                    }
                 }
             )
         }

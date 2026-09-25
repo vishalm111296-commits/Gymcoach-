@@ -67,4 +67,30 @@ class WorkoutRepositoryProgramTest {
         assertEquals(99L, result)
         coVerify(exactly = 1) { workoutDao.createWorkoutFromProgramDayTransaction(programDay, programExercises) }
     }
+
+    @Test
+    fun `createWorkoutFromProgramDay handles empty exercises list safely`() = runTest {
+        val emptyProgramDay = ProgramDayEntity(id = 2L, programId = 100L, dayNumber = 2, name = "Active Mobility", targetMuscles = "Core", isRestDay = false)
+        coEvery { programDayDao.getById(2L) } returns emptyProgramDay
+        every { programExerciseDao.getByDayId(2L) } returns flowOf(emptyList())
+        coEvery { workoutDao.createWorkoutFromProgramDayTransaction(emptyProgramDay, emptyList()) } returns 101L
+
+        val result = repository.createWorkoutFromProgramDay(2L)
+
+        assertEquals(101L, result)
+        coVerify(exactly = 1) { workoutDao.createWorkoutFromProgramDayTransaction(emptyProgramDay, emptyList()) }
+    }
+
+    @Test
+    fun `createWorkoutFromProgramDay handles rest day flag properly`() = runTest {
+        val restDay = ProgramDayEntity(id = 3L, programId = 100L, dayNumber = 3, name = "Rest & Recovery", targetMuscles = "", isRestDay = true)
+        coEvery { programDayDao.getById(3L) } returns restDay
+        every { programExerciseDao.getByDayId(3L) } returns flowOf(emptyList())
+        coEvery { workoutDao.createWorkoutFromProgramDayTransaction(restDay, emptyList()) } returns 102L
+
+        val result = repository.createWorkoutFromProgramDay(3L)
+
+        assertEquals(102L, result)
+        coVerify(exactly = 1) { workoutDao.createWorkoutFromProgramDayTransaction(restDay, emptyList()) }
+    }
 }

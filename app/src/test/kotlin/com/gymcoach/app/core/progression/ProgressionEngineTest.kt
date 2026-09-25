@@ -421,4 +421,98 @@ class ProgressionEngineTest {
         assertTrue(result.isDeloadRecommended)
         assertTrue(result.reason.contains("Plateau detected"))
     }
+
+    @Test
+    fun `calculateProgressionForExercise delegates properly with custom rep range in domain model`() {
+        val exercise = com.gymcoach.app.domain.model.Exercise(
+            id = 42L,
+            name = "Incline Dumbbell Press",
+            description = "Upper chest pressing movement",
+            muscleGroup = "Chest",
+            equipment = "dumbbell",
+            difficulty = "Intermediate",
+            recommendedRepRange = "6-10"
+        )
+        val currentSets = listOf(
+            createSet(weight = 30.0, reps = 10),
+            createSet(weight = 30.0, reps = 10)
+        )
+        val recommendation = progressionEngine.calculateProgressionForExercise(
+            exercise = exercise,
+            previousSets = emptyList(),
+            currentSets = currentSets
+        )
+
+        assertEquals(42L, recommendation.exerciseId)
+        assertEquals("Incline Dumbbell Press", recommendation.exerciseName)
+        assertEquals(30.0, recommendation.currentWeight, 0.001)
+        assertEquals(32.5, recommendation.recommendedWeight, 0.001) // 30.0 + 2.5
+        assertEquals("6-10", recommendation.recommendedReps)
+        assertFalse(recommendation.isDeloadRecommended)
+        assertFalse(recommendation.isPlateaued)
+    }
+
+    @Test
+    fun `roundToIncrement with zero or negative increment returns weight unchanged`() {
+        assertEquals(42.5, progressionEngine.roundToIncrement(42.5, 0.0), 0.001)
+        assertEquals(77.3, progressionEngine.roundToIncrement(77.3, -2.5), 0.001)
+    }
+
+    @Test
+    fun `calculateProgression deload sets are clamped at minimum 2 sets`() {
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 10)
+        )
+        // targetSets = 2 -> (2 - 1).coerceAtLeast(2) = 2
+        val res2 = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 2,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            readinessScore = 1.5
+        )
+        assertEquals(2, res2.recommendedSets)
+
+        // targetSets = 5 -> 5 - 1 = 4
+        val res5 = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 5,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            readinessScore = 1.5
+        )
+        assertEquals(4, res5.recommendedSets)
+    }
+
+    @Test
+    fun `isRegressing returns false when previous sets contain only warmups or incomplete sets`() {
+        val currentSets = listOf(
+            createSet(weight = 80.0, reps = 5) // Below target 8
+        )
+        val previousWarmupOnly = listOf(
+            createSet(weight = 80.0, reps = 5, completed = true, setType = 1), // Warmup
+            createSet(weight = 80.0, reps = 5, completed = false, setType = 0)  // Incomplete
+        )
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = previousWarmupOnly,
+            currentSets = currentSets
+        )
+        // Because previous normal sets are empty, regression is false and weight is maintained
+        assertEquals(80.0, result.recommendedWeight, 0.001)
+        assertTrue(result.reason.contains("Maintain current weight"))
+    }
 }

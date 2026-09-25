@@ -299,4 +299,125 @@ class TdeeMacroCalculatorTest {
         )
         assertTrue("Fat grams should be at least 60.0g floor", cutProfile.macroSplit.fatGrams >= 60.0f)
     }
+
+    @Test
+    fun `calculateMifflinStJeorBmr exact clamping boundary thresholds`() {
+        // Weight bounds: [30.0, 300.0]
+        val bmrWeight29 = TdeeMacroCalculator.calculateMifflinStJeorBmr(29.0, 175.0, 30, BiologicalSex.MALE)
+        val bmrWeight30 = TdeeMacroCalculator.calculateMifflinStJeorBmr(30.0, 175.0, 30, BiologicalSex.MALE)
+        assertEquals(bmrWeight30, bmrWeight29, 0.001)
+
+        val bmrWeight300 = TdeeMacroCalculator.calculateMifflinStJeorBmr(300.0, 175.0, 30, BiologicalSex.MALE)
+        val bmrWeight301 = TdeeMacroCalculator.calculateMifflinStJeorBmr(301.0, 175.0, 30, BiologicalSex.MALE)
+        assertEquals(bmrWeight300, bmrWeight301, 0.001)
+
+        // Height bounds: [100.0, 250.0]
+        val bmrHeight99 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 99.0, 30, BiologicalSex.MALE)
+        val bmrHeight100 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 100.0, 30, BiologicalSex.MALE)
+        assertEquals(bmrHeight100, bmrHeight99, 0.001)
+
+        val bmrHeight250 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 250.0, 30, BiologicalSex.MALE)
+        val bmrHeight251 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 251.0, 30, BiologicalSex.MALE)
+        assertEquals(bmrHeight250, bmrHeight251, 0.001)
+
+        // Age bounds: [14, 100]
+        val bmrAge13 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 175.0, 13, BiologicalSex.MALE)
+        val bmrAge14 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 175.0, 14, BiologicalSex.MALE)
+        assertEquals(bmrAge14, bmrAge13, 0.001)
+
+        val bmrAge100 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 175.0, 100, BiologicalSex.MALE)
+        val bmrAge101 = TdeeMacroCalculator.calculateMifflinStJeorBmr(75.0, 175.0, 101, BiologicalSex.MALE)
+        assertEquals(bmrAge100, bmrAge101, 0.001)
+    }
+
+    @Test
+    fun `calculate macro percentage summing and calorie consistency across all nutrition goals`() {
+        for (goal in NutritionGoal.values()) {
+            val profile = TdeeMacroCalculator.calculate(
+                weightKg = 80.0,
+                heightCm = 180.0,
+                age = 28,
+                sex = BiologicalSex.MALE,
+                goal = goal,
+                activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+                trainingDaysPerWeek = 4,
+                sessionLengthMinutes = 60
+            )
+
+            val split = profile.macroSplit
+            val totalPercent = split.proteinPercent + split.carbsPercent + split.fatPercent
+            // Percentages should sum to 100% within rounding tolerance
+            assertTrue("Total percentage for $goal should be ~100%, got $totalPercent", totalPercent in 99.0f..101.0f)
+
+            // Direct calorie consistency checks
+            assertEquals(Math.round(split.proteinGrams * 4f), split.proteinCalories)
+            assertEquals(Math.round(split.fatGrams * 9f), split.fatCalories)
+            assertEquals(Math.round(split.carbsGrams * 4f), split.carbsCalories)
+
+            // Ensure non-zero positive macro amounts
+            assertTrue("Protein grams should be positive", split.proteinGrams > 0)
+            assertTrue("Fat grams should be positive", split.fatGrams > 0)
+            assertTrue("Carbs grams should be positive", split.carbsGrams > 0)
+        }
+    }
+
+    @Test
+    fun `calculate hydration target scaling across session lengths and frequencies`() {
+        // Base weight 70kg -> base water = 70 * 35 = 2450ml
+        // 0 min session or 0 days -> no workout addition -> 2450ml
+        val p0 = TdeeMacroCalculator.calculate(
+            weightKg = 70.0, heightCm = 175.0, age = 25, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.SEDENTARY,
+            trainingDaysPerWeek = 0, sessionLengthMinutes = 0
+        )
+        assertEquals(2450, p0.waterMlTarget)
+
+        // 60 min session -> (60/60) * 500 = 500ml addition -> 2450 + 500 = 2950ml
+        val p60 = TdeeMacroCalculator.calculate(
+            weightKg = 70.0, heightCm = 175.0, age = 25, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+            trainingDaysPerWeek = 3, sessionLengthMinutes = 60
+        )
+        assertEquals(2950, p60.waterMlTarget)
+
+        // 90 min session -> (90/60) * 500 = 750ml addition -> 2450 + 750 = 3200ml
+        val p90 = TdeeMacroCalculator.calculate(
+            weightKg = 70.0, heightCm = 175.0, age = 25, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+            trainingDaysPerWeek = 4, sessionLengthMinutes = 90
+        )
+        assertEquals(3200, p90.waterMlTarget)
+
+        // Minimum clamping check (30kg person with 0 workouts -> 30*35=1050ml -> clamped to 2000ml)
+        val pMin = TdeeMacroCalculator.calculate(
+            weightKg = 30.0, heightCm = 150.0, age = 25, sex = BiologicalSex.FEMALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.SEDENTARY,
+            trainingDaysPerWeek = 0, sessionLengthMinutes = 0
+        )
+        assertEquals(2000, pMin.waterMlTarget)
+
+        // Maximum clamping check (150kg person with 60 min -> 150*35=5250 + 500 = 5750ml -> clamped to 5000ml)
+        val pMax = TdeeMacroCalculator.calculate(
+            weightKg = 150.0, heightCm = 195.0, age = 25, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.VERY_ACTIVE,
+            trainingDaysPerWeek = 5, sessionLengthMinutes = 60
+        )
+        assertEquals(5000, pMax.waterMlTarget)
+    }
+
+    @Test
+    fun `calculate carbohydrate floor preservation during heavy caloric deficits`() {
+        // Very low calorie target: ensure carbs are never starved below 40g floor
+        val cutProfile = TdeeMacroCalculator.calculate(
+            weightKg = 50.0,
+            heightCm = 150.0,
+            age = 60,
+            sex = BiologicalSex.FEMALE,
+            goal = NutritionGoal.AGGRESSIVE_CUT,
+            activityLevel = ActivityLevel.SEDENTARY
+        )
+        assertTrue("Carbs should be at least 40g floor", cutProfile.macroSplit.carbsGrams >= 40.0f)
+        assertTrue("Carbs calories should be at least 160 kcal", cutProfile.macroSplit.carbsCalories >= 160)
+    }
 }
+

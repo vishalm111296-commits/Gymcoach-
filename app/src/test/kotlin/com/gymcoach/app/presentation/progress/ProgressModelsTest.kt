@@ -209,6 +209,58 @@ class ProgressCalculationTest {
         // Zero
         val zeroAdherence = (0.toFloat() / 4).coerceIn(0f, 1f)
         assertEquals(0f, zeroAdherence, 0.01f)
+
+        // Negative value clamping
+        val negativeAdherence = ((-2).toFloat() / 4).coerceIn(0f, 1f)
+        assertEquals(0f, negativeAdherence, 0.01f)
+
+        // Extreme over-adherence
+        val extremeOver = (100.toFloat() / 10).coerceIn(0f, 1f)
+        assertEquals(1f, extremeOver, 0.01f)
+    }
+
+    @Test
+    fun `trendDirection exact boundary thresholds`() {
+        // Exactly at 1.01 limit (100.0 * 1.01 = 101.0) -> not strictly greater, so STABLE
+        val exactUpLimit = listOf(
+            TrendPoint(LocalDate.of(2026, 1, 1), 100.0),
+            TrendPoint(LocalDate.of(2026, 1, 2), 101.0)
+        )
+        assertEquals(TrendDirection.STABLE, trendDirection(exactUpLimit))
+
+        // Strictly greater than 1.01 -> UP
+        val justOverUp = listOf(
+            TrendPoint(LocalDate.of(2026, 1, 1), 100.0),
+            TrendPoint(LocalDate.of(2026, 1, 2), 101.01)
+        )
+        assertEquals(TrendDirection.UP, trendDirection(justOverUp))
+
+        // Exactly at 0.99 limit (100.0 * 0.99 = 99.0) -> not strictly less, so STABLE
+        val exactDownLimit = listOf(
+            TrendPoint(LocalDate.of(2026, 1, 1), 100.0),
+            TrendPoint(LocalDate.of(2026, 1, 2), 99.0)
+        )
+        assertEquals(TrendDirection.STABLE, trendDirection(exactDownLimit))
+
+        // Strictly less than 0.99 -> DOWN
+        val justBelowDown = listOf(
+            TrendPoint(LocalDate.of(2026, 1, 1), 100.0),
+            TrendPoint(LocalDate.of(2026, 1, 2), 98.99)
+        )
+        assertEquals(TrendDirection.DOWN, trendDirection(justBelowDown))
+    }
+
+    @Test
+    fun `calculateWeeklyTrend strictly isolates last two weeks from history`() {
+        val history = listOf(
+            java.util.Date(1000) to 500.0,
+            java.util.Date(2000) to 400.0,
+            java.util.Date(3000) to 200.0,
+            java.util.Date(4000) to 300.0
+        )
+        // Previous = 200.0, Current = 300.0 -> (300 - 200) / 200 * 100 = 50.0%
+        val trend = calculateWeeklyTrend(history)
+        assertEquals(50.0, trend, 0.001)
     }
 
     // Helper functions to match ProgressViewModel's private methods
@@ -255,5 +307,30 @@ class MuscleGroupStatsTest {
         val stats = emptyList<com.gymcoach.app.domain.repository.MuscleGroupStats>()
         val totalReps = stats.sumOf { it.totalReps }
         assertEquals(0, totalReps)
+    }
+
+    @Test
+    fun `single muscle group dominance yields 100 percent`() {
+        val stats = listOf(
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Legs", 250)
+        )
+        val totalReps = stats.sumOf { it.totalReps }
+        assertEquals(250, totalReps)
+        val legsPercentage = stats[0].totalReps.toDouble() / totalReps * 100
+        assertEquals(100.0, legsPercentage, 0.001)
+    }
+
+    @Test
+    fun `three way split calculates proportional distribution accurately`() {
+        val stats = listOf(
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Push", 100),
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Pull", 200),
+            com.gymcoach.app.domain.repository.MuscleGroupStats("Legs", 300)
+        )
+        val totalReps = stats.sumOf { it.totalReps }
+        assertEquals(600, totalReps)
+        assertEquals(16.666, (stats[0].totalReps.toDouble() / totalReps * 100), 0.01)
+        assertEquals(33.333, (stats[1].totalReps.toDouble() / totalReps * 100), 0.01)
+        assertEquals(50.000, (stats[2].totalReps.toDouble() / totalReps * 100), 0.01)
     }
 }

@@ -6,6 +6,7 @@ import com.gymcoach.app.core.gamification.StreakAndAchievementEngine
 import com.gymcoach.app.core.gamification.StreakReport
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,18 +35,24 @@ class StreakAndAchievementViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            combine(
-                workoutRepository.getCompletedWorkouts(),
-                workoutRepository.getCompletedSetsWithContext()
-            ) { workouts, setsWithContext ->
-                if (workouts.isEmpty()) {
-                    StreakUiState.Empty
-                } else {
-                    val report = streakEngine.calculateReport(workouts, setsWithContext)
-                    StreakUiState.Success(report)
+            try {
+                combine(
+                    workoutRepository.getCompletedWorkouts(),
+                    workoutRepository.getCompletedSetsWithContext()
+                ) { workouts, setsWithContext ->
+                    if (workouts.isEmpty()) {
+                        StreakUiState.Empty
+                    } else {
+                        val report = streakEngine.calculateReport(workouts, setsWithContext)
+                        StreakUiState.Success(report)
+                    }
+                }.collect { state ->
+                    _uiState.value = state
                 }
-            }.collect { state ->
-                _uiState.value = state
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = StreakUiState.Empty
             }
         }
     }

@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -97,39 +98,51 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { records -> _prCount.value = records.size }
         }
         viewModelScope.launch {
-            readinessRepository.getLatestReadiness().collect { latest ->
-                _uiState.value = _uiState.value.copy(latestReadiness = latest)
+            try {
+                readinessRepository.getLatestReadiness().collect { latest ->
+                    _uiState.value = _uiState.value.copy(latestReadiness = latest)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Readiness is non-critical; silently fail
             }
         }
         viewModelScope.launch {
-            val programFlow = programRepository.getActiveProgram()
-                .flatMapLatest { program ->
-                    if (program == null) {
-                        flowOf(null)
-                    } else {
-                        programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
-                            val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
-                            val dayIds = days.map { it.id }
-                            if (dayIds.isEmpty()) {
-                                flowOf(ProgramCore(program, pickToday(nonRest), days, emptyMap()))
-                            } else {
-                                programRepository.getExercisesForDays(dayIds).map { byDay ->
-                                    ProgramCore(program, pickToday(nonRest), days, byDay)
+            try {
+                val programFlow = programRepository.getActiveProgram()
+                    .flatMapLatest { program ->
+                        if (program == null) {
+                            flowOf(null)
+                        } else {
+                            programRepository.getDaysForProgram(program.id).flatMapLatest { days ->
+                                val nonRest = days.filter { !it.isRestDay }.sortedBy { it.dayNumber }
+                                val dayIds = days.map { it.id }
+                                if (dayIds.isEmpty()) {
+                                    flowOf(ProgramCore(program, pickToday(nonRest), days, emptyMap()))
+                                } else {
+                                    programRepository.getExercisesForDays(dayIds).map { byDay ->
+                                        ProgramCore(program, pickToday(nonRest), days, byDay)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-            combine(
-                programFlow,
-                workoutRepository.getCompletedWorkouts(),
-                workoutRepository.getCompletedSetsWithContext(),
-                exerciseRepository.getAllExercises(),
-                exerciseRepository.getAllExerciseMuscleDetails()
-            ) { core, workouts, completedSets, exercises, muscleDetails ->
-                buildUiState(core, workouts, completedSets, exercises, muscleDetails, _prCount.value)
-            }.collect { state -> _uiState.value = state }
+                combine(
+                    programFlow,
+                    workoutRepository.getCompletedWorkouts(),
+                    workoutRepository.getCompletedSetsWithContext(),
+                    exerciseRepository.getAllExercises(),
+                    exerciseRepository.getAllExerciseMuscleDetails()
+                ) { core, workouts, completedSets, exercises, muscleDetails ->
+                    buildUiState(core, workouts, completedSets, exercises, muscleDetails, _prCount.value)
+                }.collect { state -> _uiState.value = state }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
         }
     }
 
@@ -268,11 +281,17 @@ class HomeViewModel @Inject constructor(
 
     fun startTodayWorkout(onCreated: (Long?) -> Unit) {
         viewModelScope.launch {
-            val dayId = _uiState.value.todayWorkout?.programDayId
-            if (dayId != null) {
-                val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
-                onCreated(newId)
-            } else {
+            try {
+                val dayId = _uiState.value.todayWorkout?.programDayId
+                if (dayId != null) {
+                    val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
+                    onCreated(newId)
+                } else {
+                    onCreated(null)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
                 onCreated(null)
             }
         }

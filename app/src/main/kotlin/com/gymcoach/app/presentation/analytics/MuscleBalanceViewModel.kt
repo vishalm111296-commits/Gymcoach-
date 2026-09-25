@@ -8,6 +8,7 @@ import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +45,8 @@ class MuscleBalanceViewModel @Inject constructor(
             try {
                 // Get past 30 days of completed sets
                 val thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
-                val sets = workoutRepository.getCompletedSetsWithContext().first().filter { it.workoutDate >= thirtyDaysAgo }
+                val sets = workoutRepository.getCompletedSetsWithContext().first()
+                    .filter { it.workoutDate >= thirtyDaysAgo }
 
                 if (sets.isEmpty()) {
                     _uiState.value = MuscleBalanceUiState.Empty
@@ -56,11 +58,9 @@ class MuscleBalanceViewModel @Inject constructor(
 
                 for (exercise in allExercises) {
                     val assignments = mutableListOf<VolumeCalculator.MuscleAssignment>()
-                    // Primary
                     if (exercise.muscleGroup.isNotEmpty()) {
                         assignments.add(VolumeCalculator.MuscleAssignment(exercise.muscleGroup, VolumeCalculator.MuscleRole.PRIMARY))
                     }
-                    // Secondary
                     if (exercise.secondaryMuscles.isNotEmpty()) {
                         exercise.secondaryMuscles.split(",").map { it.trim() }.forEach {
                             if (it.isNotEmpty()) {
@@ -75,6 +75,7 @@ class MuscleBalanceViewModel @Inject constructor(
                 _uiState.value = MuscleBalanceUiState.Success(report)
 
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.value = MuscleBalanceUiState.Empty
             }
         }

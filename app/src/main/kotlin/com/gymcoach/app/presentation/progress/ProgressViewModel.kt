@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,18 +148,24 @@ class ProgressViewModel @Inject constructor(
         notes: String
     ) {
         viewModelScope.launch {
-            bodyMeasurementDao.insert(
-                BodyMeasurementEntity(
-                    weightKg = weightKg,
-                    waistCm = waistCm ?: 0.0,
-                    shouldersCm = shouldersCm ?: 0.0,
-                    chestCm = chestCm ?: 0.0,
-                    bodyFatPct = bodyFatPct ?: 0.0,
-                    notes = notes
+            try {
+                bodyMeasurementDao.insert(
+                    BodyMeasurementEntity(
+                        weightKg = weightKg,
+                        waistCm = waistCm ?: 0.0,
+                        shouldersCm = shouldersCm ?: 0.0,
+                        chestCm = chestCm ?: 0.0,
+                        bodyFatPct = bodyFatPct ?: 0.0,
+                        notes = notes
+                    )
                 )
-            )
-            _uiState.update { it.copy(showMeasurementDialog = false) }
-            load()
+                _uiState.update { it.copy(showMeasurementDialog = false) }
+                load()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Failed to save measurement") }
+            }
         }
     }
 

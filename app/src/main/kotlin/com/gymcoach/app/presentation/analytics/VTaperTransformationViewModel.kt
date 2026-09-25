@@ -7,6 +7,7 @@ import com.gymcoach.app.core.analytics.VTaperTransformationEngine
 import com.gymcoach.app.data.local.dao.BodyMeasurementDao
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,6 +60,8 @@ class VTaperTransformationViewModel @Inject constructor(
                 } else {
                     measurementDao.update(measurement)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // In a real app we might show a one-off event/snackbar
             }
@@ -69,6 +72,8 @@ class VTaperTransformationViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 measurementDao.deleteById(id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Handle error
             }

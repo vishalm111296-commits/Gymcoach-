@@ -65,4 +65,74 @@ class PlateCalculatorTest {
         assertEquals(1, result.platesPerSide.size)
         assertEquals(20.0, result.platesPerSide[0].plateWeight, 0.001)
     }
+
+    @Test
+    fun testTargetWeightEqualsBarWeight() {
+        val result = PlateCalculator.calculatePlates(targetWeight = 20.0, barWeight = 20.0)
+        assertEquals(0.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertTrue(result.platesPerSide.isEmpty())
+    }
+
+    @Test
+    fun testTargetWeightZeroOrNegative() {
+        val resultZero = PlateCalculator.calculatePlates(targetWeight = 0.0, barWeight = 20.0)
+        assertEquals(0.0, resultZero.weightPerSide, 0.001)
+        assertEquals(0.0, resultZero.remainder, 0.001)
+        assertTrue(resultZero.platesPerSide.isEmpty())
+
+        val resultNegative = PlateCalculator.calculatePlates(targetWeight = -50.0, barWeight = 20.0)
+        assertEquals(0.0, resultNegative.weightPerSide, 0.001)
+        assertEquals(0.0, resultNegative.remainder, 0.001)
+        assertTrue(resultNegative.platesPerSide.isEmpty())
+    }
+
+    @Test
+    fun testCustomImperialPlateInventory() {
+        // Standard US plates: 45, 35, 25, 10, 5, 2.5 lbs
+        val imperialPlates = listOf(
+            45.0 to 0xFF000000,
+            35.0 to 0xFF000000,
+            25.0 to 0xFF000000,
+            10.0 to 0xFF000000,
+            5.0 to 0xFF000000,
+            2.5 to 0xFF000000
+        )
+        // 225 lbs on 45 lb bar = 90 lbs per side -> 2x45 lbs
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 225.0,
+            barWeight = 45.0,
+            availablePlates = imperialPlates
+        )
+        assertEquals(90.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(1, result.platesPerSide.size)
+        assertEquals(45.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2, result.platesPerSide[0].count)
+    }
+
+    @Test
+    fun testHeavyDeadliftLoad() {
+        // 300 kg on 20 kg bar = 140 kg per side -> 5x25kg (125kg) + 1x15kg (15kg) = 140kg
+        val result = PlateCalculator.calculatePlates(targetWeight = 300.0, barWeight = 20.0)
+        assertEquals(140.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(25.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(5, result.platesPerSide[0].count)
+        assertEquals(15.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
+
+    @Test
+    fun testEmptyAvailablePlatesList() {
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 100.0,
+            barWeight = 20.0,
+            availablePlates = emptyList()
+        )
+        assertEquals(40.0, result.weightPerSide, 0.001)
+        assertEquals(80.0, result.remainder, 0.001)
+        assertTrue(result.platesPerSide.isEmpty())
+    }
 }

@@ -79,5 +79,62 @@ class WarmupCalculatorTest {
         val rounded = WarmupCalculator.roundToStep(61.8, 20.0, 2.5)
         // 61.8 - 20 = 41.8 / 2.5 = 16.72 -> round is 17 -> 17*2.5 = 42.5 + 20 = 62.5
         assertEquals(62.5, rounded, 0.001)
+
+        // Below minWeight returns minWeight
+        assertEquals(20.0, WarmupCalculator.roundToStep(15.0, 20.0, 2.5), 0.001)
+        assertEquals(20.0, WarmupCalculator.roundToStep(20.0, 20.0, 2.5), 0.001)
+    }
+
+    @Test
+    fun testWorkingWeightLessThanBarWeightReturnsSingleSet() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 15.0,
+            barWeight = 20.0
+        )
+        assertEquals(1, plan.sets.size)
+        assertEquals(20.0, plan.sets[0].weight, 0.001)
+        assertEquals(10, plan.sets[0].reps)
+        assertEquals(2, plan.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun testHeavyThresholdBoundary139kgVs140kg() {
+        val plan139 = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 139.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        // Under 140kg should have at most 4 sets (no 92% potentiation set)
+        assertEquals(4, plan139.sets.size)
+        assertTrue(plan139.sets.none { it.percentage == 0.92 })
+
+        val plan140 = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 140.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        // 140kg should have 5 sets including 92% potentiation set
+        assertEquals(5, plan140.sets.size)
+        assertEquals(0.92, plan140.sets.last().percentage, 0.001)
+        assertEquals("Post-activation potentiation", plan140.sets.last().purpose)
+    }
+
+    @Test
+    fun testCustomBarWeightAndPlateStep() {
+        // 15kg women's Olympic bar with 1.25kg plate steps for 80kg squat
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 80.0,
+            barWeight = 15.0,
+            plateStep = 1.25
+        )
+        assertEquals(15.0, plan.barWeight, 0.001)
+        assertEquals(15.0, plan.sets[0].weight, 0.001)
+        assertTrue(plan.sets.size >= 3)
+        // Verify every set weight respects the 1.25 step from the 15kg base
+        for (s in plan.sets) {
+            val plateWeight = s.weight - 15.0
+            val remainder = Math.round(plateWeight * 100.0) % 125L
+            assertEquals(0L, remainder)
+        }
     }
 }

@@ -355,4 +355,70 @@ class HomeViewModelTest {
         assertEquals(0, viewModel.weeklyWorkoutCount.value)
         job.cancel()
     }
+
+    @Test
+    fun `startTodayWorkout when repository throws exception invokes callback with null`() = runTest {
+        val fakeDayId = 42L
+
+        val day = mockk<ProgramDayEntity> {
+            every { id } returns fakeDayId
+            every { dayNumber } returns 1
+            every { isRestDay } returns false
+            every { name } returns "Push Day"
+            every { targetMuscles } returns "chest,shoulders"
+        }
+
+        every { programRepository.getDaysForProgram(any()) } returns flowOf(listOf(day))
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(emptyList())
+        coEvery { workoutRepository.createWorkoutFromProgramDay(fakeDayId) } throws RuntimeException("DB error")
+
+        val viewModel = HomeViewModel(
+            programRepository, workoutRepository, exerciseRepository, volumeCalculator,
+            analyticsRepository, readinessRepository, nutritionRepository
+        )
+
+        val job = launch(testDispatcher) { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val idSlot = mutableListOf<Long?>()
+        viewModel.startTodayWorkout { id -> idSlot.add(id) }
+        advanceUntilIdle()
+
+        assertEquals(null, idSlot.firstOrNull())
+        job.cancel()
+    }
+
+    @Test
+    fun `activeProgram flow exception sets isLoading false without crashing`() = runTest {
+        every { programRepository.getActiveProgram() } throws RuntimeException("Program load failed")
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(emptyList())
+
+        val viewModel = HomeViewModel(
+            programRepository, workoutRepository, exerciseRepository, volumeCalculator,
+            analyticsRepository, readinessRepository, nutritionRepository
+        )
+
+        val job = launch(testDispatcher) { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertFalse("isLoading should be set to false on flow error", viewModel.uiState.value.isLoading)
+        job.cancel()
+    }
+
+    @Test
+    fun `readinessRepository exception does not crash and leaves latestReadiness default`() = runTest {
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(emptyList())
+        every { readinessRepository.getLatestReadiness() } throws RuntimeException("Readiness failed")
+
+        val viewModel = HomeViewModel(
+            programRepository, workoutRepository, exerciseRepository, volumeCalculator,
+            analyticsRepository, readinessRepository, nutritionRepository
+        )
+
+        val job = launch(testDispatcher) { viewModel.latestReadiness.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.latestReadiness.value)
+        job.cancel()
+    }
 }

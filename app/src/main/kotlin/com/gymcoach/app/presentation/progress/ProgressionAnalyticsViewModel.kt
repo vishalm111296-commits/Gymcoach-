@@ -80,13 +80,18 @@ class ProgressionAnalyticsViewModel @Inject constructor(
                 exerciseId
             }
             _exerciseId.value = resolvedId
-            workoutRepository.getCompletedSetsWithContext()
-                .map { allSets -> computeAnalytics(resolvedId, exerciseName, allSets) }
-                .catch { e ->
-                    android.util.Log.e("ProgressionAnalyticsVM", "Error loading progression data", e)
-                    _uiState.update { it.copy(isLoading = false, isEmpty = true) }
-                }
-                .collect { state -> _uiState.value = state }
+            try {
+                workoutRepository.getCompletedSetsWithContext()
+                    .map { allSets -> computeAnalytics(resolvedId, exerciseName, allSets) }
+                    .catch { _ ->
+                        _uiState.update { it.copy(isLoading = false, isEmpty = true) }
+                    }
+                    .collect { state -> _uiState.value = state }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoading = false, isEmpty = true) }
+            }
         }
     }
 

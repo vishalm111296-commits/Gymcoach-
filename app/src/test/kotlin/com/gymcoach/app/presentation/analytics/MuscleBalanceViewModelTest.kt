@@ -121,4 +121,14 @@ class MuscleBalanceViewModelTest {
         assertEquals(800.0, success.report.pushPullRatio.agonistVolumeKg, 0.01)
         assertEquals(750.0, success.report.pushPullRatio.antagonistVolumeKg, 0.01)
     }
+
+    @Test
+    fun `repository exception gracefully emits Empty state`() = runTest(testDispatcher) {
+        every { workoutRepository.getCompletedSetsWithContext() } throws RuntimeException("Database error")
+
+        val viewModel = MuscleBalanceViewModel(workoutRepository, exerciseRepository, muscleBalanceAnalyzer)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is MuscleBalanceUiState.Empty)
+    }
 }

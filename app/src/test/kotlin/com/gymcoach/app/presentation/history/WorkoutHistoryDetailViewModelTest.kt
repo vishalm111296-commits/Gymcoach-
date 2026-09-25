@@ -140,4 +140,48 @@ class WorkoutHistoryDetailViewModelTest {
         assertNull(viewModel.deleteTarget.value)
         assertFalse(viewModel.showDeleteConfirmation.value)
     }
+
+    @Test
+    fun `loadWorkout repository exception surfaces as error state with isLoading false`() = runTest {
+        every { workoutRepository.getWorkoutWithDetails(999L) } throws RuntimeException("Workout not found")
+
+        viewModel.loadWorkout(999L)
+
+        val state = viewModel.uiState.value
+        assertEquals("Workout not found", state.error)
+        assertFalse(state.isLoading)
+        assertNull(state.workout)
+    }
+
+    @Test
+    fun `updateNotes repository exception surfaces as error state`() = runTest {
+        viewModel.loadWorkout(201L)
+        coEvery { workoutRepository.updateWorkout(any()) } throws RuntimeException("Update failed")
+
+        viewModel.updateNotes("New Note")
+
+        val state = viewModel.uiState.value
+        assertEquals("Update failed", state.error)
+    }
+
+    @Test
+    fun `performAgain repository exception surfaces as error state`() = runTest {
+        coEvery { workoutRepository.createWorkoutFromHistory(201L) } throws RuntimeException("Create failed")
+
+        var callbackInvoked = false
+        viewModel.performAgain(201L) { callbackInvoked = true }
+
+        assertFalse("Callback should not be invoked on failure", callbackInvoked)
+        assertEquals("Failed to repeat workout", viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `confirmDelete repository exception surfaces as error state`() = runTest {
+        coEvery { workoutRepository.deleteWorkout(201L) } throws RuntimeException("Delete failed")
+
+        viewModel.onDeleteClick(201L)
+        viewModel.confirmDelete()
+
+        assertEquals("Failed to delete workout", viewModel.uiState.value.error)
+    }
 }

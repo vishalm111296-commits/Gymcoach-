@@ -190,4 +190,90 @@ class ProgramDetailViewModelTest {
         assertEquals("Bench Press", exercises.first().name)
         collectJob.cancel()
     }
+
+    @Test
+    fun `generateAndActivateProgram repository exception surfaces as error state with isLoading false`() = runTest {
+        coEvery { programGenerator.generateProgram(any(), any(), any()) } throws RuntimeException("Generator failed")
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        viewModel.generateAndActivateProgram(3, "gym", "Strength")
+
+        val state = viewModel.uiState.value
+        assertEquals("Generator failed", state.error)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun `createCustomRoutine repository exception surfaces as error state`() = runTest {
+        coEvery { programRepository.saveCustomRoutine(any(), any(), any(), any(), any()) } throws RuntimeException("Save failed")
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        viewModel.createCustomRoutine("Split", "Desc", "Hypertrophy", emptyList())
+
+        val state = viewModel.uiState.value
+        assertEquals("Save failed", state.error)
+    }
+
+    @Test
+    fun `startWorkoutForDay succeeds and invokes onCreated callback`() = runTest {
+        coEvery { workoutRepository.createWorkoutFromProgramDay(10L) } returns 500L
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        var resultId: Long? = null
+        viewModel.startWorkoutForDay(10L) { resultId = it }
+
+        assertEquals(500L, resultId)
+    }
+
+    @Test
+    fun `startWorkoutForDay repository exception surfaces as error state`() = runTest {
+        coEvery { workoutRepository.createWorkoutFromProgramDay(10L) } throws RuntimeException("Creation error")
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        var resultId: Long? = null
+        viewModel.startWorkoutForDay(10L) { resultId = it }
+
+        assertEquals(null, resultId)
+        assertEquals("Failed to start workout", viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `loadActiveProgram repository exception surfaces as error state with isLoading false`() = runTest {
+        every { programRepository.getActiveProgram() } throws RuntimeException("Program DB failed")
+
+        viewModel = ProgramDetailViewModel(
+            programRepository = programRepository,
+            exerciseDao = exerciseDao,
+            workoutRepository = workoutRepository,
+            programGenerator = programGenerator
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("Program DB failed", state.error)
+        assertFalse(state.isLoading)
+    }
 }

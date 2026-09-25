@@ -174,4 +174,48 @@ class ExerciseViewModelTest {
             repository.deleteExercise(exercise)
         }
     }
+
+    @Test
+    fun `toggleFavorite repository exception does not crash coroutine`() = runTest {
+        coEvery { repository.updateExercise(any()) } throws RuntimeException("DB update failed")
+
+        val exercise = sampleExercises[0]
+        viewModel.toggleFavorite(exercise)
+        // Should not throw or crash
+    }
+
+    @Test
+    fun `addExercise repository exception does not crash coroutine`() = runTest {
+        coEvery { repository.addExercise(any()) } throws RuntimeException("Insert failed")
+
+        viewModel.addExercise(sampleExercises[0])
+        // Should not throw or crash
+    }
+
+    @Test
+    fun `createCustomExercise repository exception does not call onCreated`() = runTest {
+        coEvery { repository.createCustomExercise(any(), any(), any(), any(), any()) } throws RuntimeException("Creation failed")
+
+        var called = false
+        viewModel.createCustomExercise(
+            name = "Test",
+            muscleGroup = "Chest",
+            equipment = "Barbell",
+            onCreated = { called = true }
+        )
+
+        assertFalse("onCreated should not be called when creation fails", called)
+    }
+
+    @Test
+    fun `deleteCustomExercise repository exception invokes onDeleted with false`() = runTest {
+        coEvery { repository.deleteCustomExercise(any()) } throws RuntimeException("Delete failed")
+
+        var result: Boolean? = null
+        viewModel.deleteCustomExercise(10L) { success ->
+            result = success
+        }
+
+        assertEquals(false, result)
+    }
 }

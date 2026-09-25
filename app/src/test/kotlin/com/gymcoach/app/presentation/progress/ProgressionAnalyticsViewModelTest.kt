@@ -274,4 +274,37 @@ class ProgressionAnalyticsViewModelTest {
         assertEquals(60, profile.zones[7].percentage)
         collectJob.cancel()
     }
+
+    @Test
+    fun loadExercise_repositoryException_setsIsEmptyTrueAndIsLoadingFalse() = runTest {
+        every { workoutRepository.getCompletedSetsWithContext() } throws RuntimeException("DB query failed")
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
+
+        val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+        viewModel.loadExercise(1L, "Bench Press")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertTrue(state.isEmpty)
+        collectJob.cancel()
+    }
+
+    @Test
+    fun loadExercise_exerciseRepositoryNameResolutionException_fallsBackToProvidedId() = runTest {
+        every { exerciseRepository.getAllExercises() } throws RuntimeException("Exercise DB failed")
+        every { workoutRepository.getCompletedSetsWithContext() } returns flowOf(emptyList())
+        viewModel = ProgressionAnalyticsViewModel(workoutRepository, prDetector, exerciseRepository)
+
+        val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+        viewModel.loadExercise(0L, "Bench Press")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        // Falls back to 0L without crashing
+        assertEquals(0L, state.exerciseId)
+        assertTrue(state.isEmpty)
+        assertFalse(state.isLoading)
+        collectJob.cancel()
+    }
 }

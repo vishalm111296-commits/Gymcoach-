@@ -116,4 +116,33 @@ class ProgressViewModelTest {
         assertEquals(1.50, state.shoulderToWaistTrend[1].value, 0.01)
         assertEquals(0.05, state.shoulderToWaistChange!!, 0.01)
     }
+
+    @Test
+    fun `load repository exception surfaces as error state with isLoading false`() = runTest {
+        every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Network error")
+
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+
+        val state = viewModel.uiState.value
+        assertEquals("Network error", state.error)
+        assertEquals(false, state.isLoading)
+    }
+
+    @Test
+    fun `saveMeasurement dao insert exception surfaces as error state`() = runTest {
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        coEvery { bodyMeasurementDao.insert(any()) } throws RuntimeException("Disk full")
+
+        viewModel.saveMeasurement(
+            weightKg = 80.0,
+            waistCm = 85.0,
+            shouldersCm = 120.0,
+            chestCm = 100.0,
+            bodyFatPct = 15.0,
+            notes = "Test note"
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("Disk full", state.error)
+    }
 }

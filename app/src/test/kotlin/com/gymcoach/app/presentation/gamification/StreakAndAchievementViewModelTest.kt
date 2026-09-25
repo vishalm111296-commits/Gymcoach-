@@ -104,4 +104,14 @@ class StreakAndAchievementViewModelTest {
         assertEquals(1000.0, success.report.totalVolumeKg, 0.01)
         assertEquals(1, success.report.totalSets)
     }
+
+    @Test
+    fun `repository exception gracefully emits Empty state`() = runTest(testDispatcher) {
+        every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Database error")
+
+        val viewModel = StreakAndAchievementViewModel(workoutRepository, streakEngine)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is StreakUiState.Empty)
+    }
 }

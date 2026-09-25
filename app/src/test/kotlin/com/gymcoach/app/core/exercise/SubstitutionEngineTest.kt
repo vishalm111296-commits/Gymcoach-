@@ -103,4 +103,81 @@ class SubstitutionEngineTest {
 
         assertTrue(results.isEmpty())
     }
+
+    @Test
+    fun `findSubstitutes sorts candidates by descending preservation score`() = runTest {
+        val orig = ExerciseEntity(
+            id = 10L, name = "Barbell Squat", description = "", muscleGroup = "Quadriceps",
+            equipment = "barbell", category = "legs", difficulty = "intermediate", tags = "compound"
+        )
+        // Sub 1: Perfect match except equipment (dumbbell): 40 (muscle) + 20 (category) + 10 (difficulty) + 10 (compound) = 80
+        val sub1 = ExerciseEntity(
+            id = 11L, name = "Goblet Squat", description = "", muscleGroup = "Quadriceps",
+            equipment = "dumbbell", category = "legs", difficulty = "intermediate", tags = "compound"
+        )
+        // Sub 2: Different category & difficulty: 40 (muscle) = 40
+        val sub2 = ExerciseEntity(
+            id = 12L, name = "Leg Extension", description = "", muscleGroup = "Quadriceps",
+            equipment = "machine", category = "isolation", difficulty = "beginner", tags = "isolation"
+        )
+
+        every { exerciseDao.getById(10L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(10L) } returns flowOf(listOf(sub2, sub1))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(10L, "gym")
+
+        assertEquals(2, results.size)
+        // sub1 (score 80) must be sorted before sub2 (score 40)
+        assertEquals("Goblet Squat", results[0].substitute.name)
+        assertEquals(80, results[0].preservationScore)
+        assertEquals("Leg Extension", results[1].substitute.name)
+        assertEquals(40, results[1].preservationScore)
+    }
+
+    @Test
+    fun `findSubstitutes skips predefined substitutes when equipment is unavailable`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Barbell Bench Press", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate"
+        )
+        val cableFly = ExerciseEntity(
+            id = 4L, name = "Cable Fly", description = "", muscleGroup = "Chest",
+            equipment = "cable", category = "push", difficulty = "intermediate"
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(listOf(cableFly))
+        // Cable is unavailable at home
+        every { equipmentAvailability.isAvailable("cable", "home") } returns false
+        every { exerciseDao.getAll() } returns flowOf(listOf(pushUp))
+        every { equipmentAvailability.isAvailable("bodyweight", "home") } returns true
+
+        val results = engine.findSubstitutes(1L, "home")
+
+        assertEquals(1, results.size)
+        assertEquals("Push Up", results[0].substitute.name)
+    }
+
+    @Test
+    fun `calculatePreservationScore clamps at 100 when all score bonuses are met`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Original", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate", tags = "compound, isolation"
+        )
+        val identical = ExerciseEntity(
+            id = 2L, name = "Identical Attributes", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate", tags = "compound, isolation"
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(listOf(identical))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym")
+
+        assertEquals(1, results.size)
+        // 40 + 20 + 15 + 10 + 10 + 10 = 105, capped at 100
+        assertEquals(100, results[0].preservationScore)
+    }
 }

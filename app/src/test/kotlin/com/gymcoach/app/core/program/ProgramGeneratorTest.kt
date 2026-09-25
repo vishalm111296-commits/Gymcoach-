@@ -163,4 +163,53 @@ class ProgramGeneratorTest {
         assertTrue("All RPE should be 7.5 (fallback)", rpe.all { it == 7.5 })
         assertTrue("Description should mention fallback", program.description.contains("3.0"))
     }
+
+    private suspend fun generateWithFrequency(
+        frequency: Int,
+        equipmentType: String = "gym",
+        readinessEntity: ReadinessEntity? = null
+    ): ProgramGenerator.GeneratedProgram {
+        coEvery { dao.getAll() } returns flowOf(all())
+        coEvery { readinessRepository.getLatestReadiness() } returns flowOf(readinessEntity)
+        return generator.generateProgram(frequency, equipmentType, "vtaper")
+    }
+
+    @Test
+    fun `frequency 1 generates single full body day with max 8 exercise cap`() = runTest {
+        val program = generateWithFrequency(1)
+        assertEquals(1, program.days.size)
+        assertEquals("Full Body A", program.days[0].name)
+        assertTrue("Day should respect cap of 8", program.days[0].exercises.size <= 8)
+    }
+
+    @Test
+    fun `frequency 2 generates two full body days`() = runTest {
+        val program = generateWithFrequency(2)
+        assertEquals(2, program.days.size)
+        assertEquals("Full Body A", program.days[0].name)
+        assertEquals("Full Body B", program.days[1].name)
+    }
+
+    @Test
+    fun `frequency 5 generates PPL Upper Lower hybrid with max 5 exercise cap`() = runTest {
+        val program = generateWithFrequency(5)
+        assertEquals(5, program.days.size)
+        assertEquals(listOf("Push", "Pull", "Legs", "Upper", "Lower"), program.days.map { it.name })
+        assertTrue("All days should respect cap of 5", program.days.all { it.exercises.size <= 5 })
+    }
+
+    @Test
+    fun `frequency 6 generates PPL double with max 4 exercise cap`() = runTest {
+        val program = generateWithFrequency(6)
+        assertEquals(6, program.days.size)
+        assertEquals(listOf("Push", "Pull", "Legs", "Push", "Pull", "Legs"), program.days.map { it.name })
+        assertTrue("All days should respect cap of 4", program.days.all { it.exercises.size <= 4 })
+    }
+
+    @Test
+    fun `frequency 7 generates 7 days including day 7 Full Body finisher`() = runTest {
+        val program = generateWithFrequency(7)
+        assertEquals(7, program.days.size)
+        assertEquals("Full Body", program.days[6].name)
+    }
 }

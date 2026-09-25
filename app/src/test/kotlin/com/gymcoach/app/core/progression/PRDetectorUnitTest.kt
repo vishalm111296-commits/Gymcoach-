@@ -157,6 +157,69 @@ class PRDetectorUnitTest {
         assertEquals(30.0, e1rmPR!!.value, 0.001) // 20 reps * 1.5 proxy
     }
 
+    @Test
+    fun `detectPRs ignores performance equal to existing PRs requiring strictly greater value`() {
+        val now = Instant.now()
+        val e1rm100x10 = detector.calculateEstimated1RM(100.0, 10)
+        val existingPRs = listOf(
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.WEIGHT, 100.0, "100kg", now, 1L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.REP, 10.0, "10 reps", now, 1L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.ESTIMATED_1RM, e1rm100x10, "133.33kg", now, 1L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.VOLUME, 2000.0, "2000kg", now, 1L)
+        )
+
+        // Exact match with existing PRs (100kg for 10 reps = 1000kg volume, 133.33 e1rm)
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 10, completed = true, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            currentSets = currentSets,
+            existingPRs = existingPRs,
+            workoutId = 2L
+        )
+
+        assertTrue("No PR should be detected on equal or lesser performance", prs.isEmpty())
+    }
+
+    @Test
+    fun `detectPRs handles intra-session divergent set winners across weight reps and e1RM`() {
+        // Set 1: Heavy low-rep: 120kg x 2 -> e1RM = 120 * (1 + 2/30) = 128kg
+        // Set 2: Moderate high-rep: 100kg x 12 -> e1RM = 100 * (1 + 12/30) = 140kg
+        val currentSets = listOf(
+            createSet(weight = 120.0, reps = 2, completed = true, setType = 0),
+            createSet(weight = 100.0, reps = 12, completed = true, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 5L
+        )
+
+        assertEquals(4, prs.size)
+
+        // Weight PR won by Set 1 (120kg)
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals(120.0, weightPR.value, 0.01)
+
+        // Rep PR won by Set 2 (12 reps)
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        assertEquals(12.0, repPR.value, 0.01)
+
+        // Estimated 1RM PR won by Set 2 (140kg, exceeding Set 1's 128kg)
+        val e1rmPR = prs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertEquals(140.0, e1rmPR.value, 0.01)
+
+        // Volume PR sums both sets: 120*2 + 100*12 = 1440kg
+        val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        assertEquals(1440.0, volumePR.value, 0.01)
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

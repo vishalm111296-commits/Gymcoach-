@@ -417,7 +417,7 @@ fun ExerciseItemCard(
                     // Expand/collapse chevron button
                     IconButton(
                         onClick = { isExpanded = !isExpanded },
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,

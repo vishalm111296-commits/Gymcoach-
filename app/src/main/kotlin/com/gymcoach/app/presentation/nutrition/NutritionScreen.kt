@@ -622,18 +622,18 @@ private fun MealLogCard(
                 IconButton(
                     onClick = onEdit,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
                         .semantics { contentDescription = "Edit meal ${log.mealName}" }
                 ) {
-                    Icon(Icons.Filled.Edit, contentDescription = null, tint = GymCoachColors.TextSecondary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Edit, contentDescription = null, tint = GymCoachColors.TextSecondary, modifier = Modifier.size(20.dp))
                 }
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
                         .semantics { contentDescription = "Delete meal ${log.mealName}" }
                 ) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = GymCoachColors.Danger, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Delete, contentDescription = null, tint = GymCoachColors.Danger, modifier = Modifier.size(20.dp))
                 }
             }
         }

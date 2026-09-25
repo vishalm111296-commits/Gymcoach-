@@ -175,13 +175,13 @@ fun ExerciseAnimationPlayer(
                     // Trajectory toggle
                     IconButton(
                         onClick = { showTrajectory = !showTrajectory },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoGraph,
                             contentDescription = "Toggle ROM Trajectory",
                             tint = if (showTrajectory) GymCoachColors.CyanAccent else Color.Gray,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
@@ -189,13 +189,13 @@ fun ExerciseAnimationPlayer(
                     if (definition.angleSpecs.isNotEmpty()) {
                         IconButton(
                             onClick = { showAngles = !showAngles },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SquareFoot,
                                 contentDescription = "Toggle Joint Angles",
                                 tint = if (showAngles) GymCoachColors.GoldAccent else Color.Gray,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -233,13 +233,13 @@ fun ExerciseAnimationPlayer(
                     // Loop toggle
                     IconButton(
                         onClick = { controller.setLoop(!controller.isLooping) },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Repeat,
                             contentDescription = "Loop",
                             tint = if (controller.isLooping) MaterialTheme.colorScheme.primary else Color.Gray,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -356,7 +356,7 @@ fun ExerciseAnimationPlayer(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Replay
-                IconButton(onClick = { controller.replay() }, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = { controller.replay() }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.Default.Replay,
                         contentDescription = "Replay",
@@ -365,7 +365,7 @@ fun ExerciseAnimationPlayer(
                 }
 
                 // Previous Step (Keyframe)
-                IconButton(onClick = { controller.previousStep() }, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = { controller.previousStep() }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Previous Phase Step",
@@ -378,7 +378,7 @@ fun ExerciseAnimationPlayer(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .size(if (compact) 44.dp else 50.dp)
+                        .size(if (compact) 48.dp else 52.dp)
                         .graphicsLayer {
                             scaleX = playButtonScale
                             scaleY = playButtonScale
@@ -398,7 +398,7 @@ fun ExerciseAnimationPlayer(
                 }
 
                 // Next Step (Keyframe)
-                IconButton(onClick = { controller.nextStep() }, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = { controller.nextStep() }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Next Phase Step",

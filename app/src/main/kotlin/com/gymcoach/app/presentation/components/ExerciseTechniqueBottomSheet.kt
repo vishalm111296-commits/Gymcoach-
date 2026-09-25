@@ -120,7 +120,7 @@ fun ExerciseTechniqueBottomSheet(
                     }
                 }
 
-                IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Technique Guide",

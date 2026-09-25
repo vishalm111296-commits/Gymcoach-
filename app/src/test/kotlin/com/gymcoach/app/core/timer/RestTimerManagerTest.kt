@@ -196,4 +196,60 @@ class RestTimerManagerTest {
         testScheduler.runCurrent()
         assertEquals(3, manager.state.value.timeRemaining)
     }
+
+    @Test
+    fun `adjust maintains paused state when delta is positive and stops when negative delta exhausts time`() = testScope.runTest {
+        timerManager.start(30, this)
+        timerManager.pause()
+        assertTrue(timerManager.state.value.isPaused)
+
+        // Positive adjust while paused: preserves paused flag while increasing remaining & total
+        timerManager.adjust(15)
+        assertEquals(45, timerManager.state.value.timeRemaining)
+        assertEquals(45, timerManager.state.value.totalDuration)
+        assertTrue(timerManager.state.value.isPaused)
+        assertTrue(timerManager.state.value.isRunning)
+
+        // Negative adjust that exhausts remaining time: calls stop, resetting paused and running flags
+        timerManager.adjust(-50)
+        assertEquals(0, timerManager.state.value.timeRemaining)
+        assertFalse(timerManager.state.value.isPaused)
+        assertFalse(timerManager.state.value.isRunning)
+    }
+
+    @Test
+    fun `restart unpauses timer and re-arms full duration`() = testScope.runTest {
+        timerManager.start(60, this)
+        timerManager.pause()
+        assertTrue(timerManager.state.value.isPaused)
+
+        // Restarting while paused should reset pause and arm new duration
+        timerManager.restart(90, this)
+        val state = timerManager.state.value
+        assertEquals(90, state.timeRemaining)
+        assertEquals(90, state.totalDuration)
+        assertTrue(state.isRunning)
+        assertFalse(state.isPaused)
+    }
+
+    @Test
+    fun `RestPresets recommended correctly evaluates extreme RPE inputs across all set types`() {
+        // High RPE ceiling
+        assertEquals(180, RestPresets.recommended(SetType.NORMAL, 10.0))
+        assertEquals(180, RestPresets.recommended(SetType.NORMAL, 9.5))
+        assertEquals(180, RestPresets.recommended(SetType.NORMAL, 9.0))
+
+        // Negative or zero RPE evaluates to shortest normal rest (60s)
+        assertEquals(60, RestPresets.recommended(SetType.NORMAL, -5.0))
+        assertEquals(60, RestPresets.recommended(SetType.NORMAL, -0.1))
+
+        // Fixed set types ignore RPE entirely
+        assertEquals(60, RestPresets.recommended(SetType.WARMUP, 10.0))
+        assertEquals(60, RestPresets.recommended(SetType.WARMUP, 0.0))
+        assertEquals(30, RestPresets.recommended(SetType.DROP, 10.0))
+        assertEquals(30, RestPresets.recommended(SetType.DROP, 0.0))
+        assertEquals(120, RestPresets.recommended(SetType.FAILURE, 10.0))
+        assertEquals(120, RestPresets.recommended(SetType.FAILURE, 0.0))
+    }
 }
+

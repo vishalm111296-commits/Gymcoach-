@@ -130,4 +130,32 @@ class OneRepMaxCalculatorTest {
         val zone85 = profileStep1.zones.first { it.percentage == 85 }
         assertEquals(85.0, zone85.weight, 0.001)
     }
+
+    @Test
+    fun testMonotonicityAcrossRepsOneToFifteen() {
+        val weight = 100.0
+        for (r in 2..15) {
+            assertTrue("Epley must strictly increase with reps", OneRepMaxCalculator.epley(weight, r) > OneRepMaxCalculator.epley(weight, r - 1))
+            assertTrue("Brzycki must strictly increase with reps", OneRepMaxCalculator.brzycki(weight, r) > OneRepMaxCalculator.brzycki(weight, r - 1))
+            assertTrue("Lombardi must strictly increase with reps", OneRepMaxCalculator.lombardi(weight, r) > OneRepMaxCalculator.lombardi(weight, r - 1))
+            assertTrue("Mayhew must strictly increase with reps", OneRepMaxCalculator.mayhew(weight, r) > OneRepMaxCalculator.mayhew(weight, r - 1))
+            assertTrue("Wathen must strictly increase with reps", OneRepMaxCalculator.wathen(weight, r) > OneRepMaxCalculator.wathen(weight, r - 1))
+        }
+    }
+
+    @Test
+    fun testTrainingZonesMonotonicOrdering() {
+        val profile = OneRepMaxCalculator.calculateProfile(weight = 100.0, reps = 5, plateStep = 2.5)
+        assertEquals(8, profile.zones.size)
+
+        val expectedPcts = listOf(95, 90, 85, 80, 75, 70, 65, 60)
+        assertEquals(expectedPcts, profile.zones.map { it.percentage })
+
+        for (i in 0 until profile.zones.size - 1) {
+            assertTrue(
+                "Zone weight must be non-increasing as percentage decreases",
+                profile.zones[i].weight >= profile.zones[i + 1].weight
+            )
+        }
+    }
 }

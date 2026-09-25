@@ -135,4 +135,48 @@ class PlateCalculatorTest {
         assertEquals(80.0, result.remainder, 0.001)
         assertTrue(result.platesPerSide.isEmpty())
     }
+
+    @Test
+    fun testSpecialtyBarsSafetySquatAndWomensBar() {
+        // 25kg Safety Squat Bar: 125kg total -> 50kg/side -> 2x25kg plates per side
+        val ssb = PlateCalculator.calculatePlates(targetWeight = 125.0, barWeight = 25.0)
+        assertEquals(50.0, ssb.weightPerSide, 0.001)
+        assertEquals(0.0, ssb.remainder, 0.001)
+        assertEquals(1, ssb.platesPerSide.size)
+        assertEquals(25.0, ssb.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2, ssb.platesPerSide[0].count)
+
+        // 15kg Women's Olympic Bar: 50kg total -> 17.5kg/side -> 1x15kg + 1x2.5kg
+        val womensBar = PlateCalculator.calculatePlates(targetWeight = 50.0, barWeight = 15.0)
+        assertEquals(17.5, womensBar.weightPerSide, 0.001)
+        assertEquals(0.0, womensBar.remainder, 0.001)
+        assertEquals(2, womensBar.platesPerSide.size)
+        assertEquals(15.0, womensBar.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, womensBar.platesPerSide[0].count)
+        assertEquals(2.5, womensBar.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, womensBar.platesPerSide[1].count)
+    }
+
+    @Test
+    fun testMicroLoadingFractionalPlates() {
+        // Inventory includes 0.5kg and 0.25kg fractional change plates
+        val fractionalPlates = PlateCalculator.STANDARD_METRIC_PLATES + listOf(
+            0.5 to 0xFFCCCCCC,
+            0.25 to 0xFFEEEEEE
+        )
+
+        // Target: 61.5kg on 20kg bar -> 20.75kg per side -> 1x20kg + 1x0.5kg + 1x0.25kg
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 61.5,
+            barWeight = 20.0,
+            availablePlates = fractionalPlates
+        )
+
+        assertEquals(20.75, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(3, result.platesPerSide.size)
+        assertEquals(20.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(0.5, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(0.25, result.platesPerSide[2].plateWeight, 0.001)
+    }
 }

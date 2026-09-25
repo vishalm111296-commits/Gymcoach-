@@ -137,4 +137,39 @@ class WarmupCalculatorTest {
             assertEquals(0L, remainder)
         }
     }
+
+    @Test
+    fun testLightWorkingWeightSuppressesSubBarSets() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 30.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        // Set 1: Empty Bar (20kg) x 10
+        // 50% = 15kg (suppressed <= 20)
+        // 70% = 21kg -> rounded to 20kg (suppressed <= 20)
+        // 85% = 25.5kg -> rounded to 25.0kg (included)
+        assertEquals(2, plan.sets.size)
+        assertEquals(20.0, plan.sets[0].weight, 0.001)
+        assertEquals(10, plan.sets[0].reps)
+        assertEquals(25.0, plan.sets[1].weight, 0.001)
+        assertEquals(1, plan.sets[1].reps)
+        assertEquals(0.85, plan.sets[1].percentage, 0.001)
+    }
+
+    @Test
+    fun testLargePlateStepGranularity() {
+        // 5.0kg plate steps on 120kg working load
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 120.0,
+            barWeight = 20.0,
+            plateStep = 5.0
+        )
+        assertTrue(plan.sets.size >= 4)
+        for (s in plan.sets) {
+            val addedWeight = s.weight - 20.0
+            val remainder = Math.round(addedWeight * 100.0) % 500L
+            assertEquals(0L, remainder)
+        }
+    }
 }

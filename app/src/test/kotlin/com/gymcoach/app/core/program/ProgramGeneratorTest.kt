@@ -212,4 +212,115 @@ class ProgramGeneratorTest {
         assertEquals(7, program.days.size)
         assertEquals("Full Body", program.days[6].name)
     }
+
+    @Test
+    fun `frequency 3 generates three full body days with max 7 exercise cap`() = runTest {
+        val program = generateWithFrequency(3)
+        assertEquals(3, program.days.size)
+        assertEquals(listOf("Full Body A", "Full Body B", "Full Body C"), program.days.map { it.name })
+        assertTrue("All days should respect cap of 7", program.days.all { it.exercises.size <= 7 })
+    }
+
+    @Test
+    fun `difficulty ordering breaks ties when vtaper score is identical`() = runTest {
+        val advLateral = ExerciseEntity(
+            id = 20, name = "Cable Lateral Raise", description = "", muscleGroup = "Lateral Deltoid",
+            equipment = "cable", difficulty = "Advanced", vtaperLateralDelt = 8
+        )
+        val begLateral = ExerciseEntity(
+            id = 21, name = "DB Lateral Raise", description = "", muscleGroup = "Lateral Deltoid",
+            equipment = "dumbbell", difficulty = "Beginner", vtaperLateralDelt = 8
+        )
+        coEvery { dao.getAll() } returns flowOf(listOf(advLateral, begLateral))
+        coEvery { readinessRepository.getLatestReadiness() } returns flowOf(null)
+
+        val program = generator.generateProgram(4, "gym", "vtaper")
+        val upperA = program.days.first { it.name == "Upper A" }
+        val names = upperA.exercises.map { it.exerciseName }
+
+        assertEquals(listOf("DB Lateral Raise", "Cable Lateral Raise"), names)
+    }
+
+    @Test
+    fun `exercise is never duplicated in the same training day despite matching multiple target muscle slots`() = runTest {
+        val multiSlotEx = ExerciseEntity(
+            id = 30, name = "Incline DB Curl", description = "",
+            muscleGroup = "Biceps", secondaryMuscles = "Lateral Deltoid",
+            equipment = "dumbbell", difficulty = "Beginner",
+            vtaperLateralDelt = 5
+        )
+        coEvery { dao.getAll() } returns flowOf(listOf(multiSlotEx))
+        coEvery { readinessRepository.getLatestReadiness() } returns flowOf(null)
+
+        val program = generator.generateProgram(4, "gym", "vtaper")
+        val upperA = program.days.first { it.name == "Upper A" }
+        val matchingOccurrences = upperA.exercises.count { it.exerciseId == 30L }
+
+        assertEquals("Exercise must appear exactly once in the session", 1, matchingOccurrences)
+    }
+
+    @Test
+    fun `matchesMuscle handles compound movement patterns correctly across legs arms and core`() = runTest {
+        val squat = ExerciseEntity(id = 40, name = "Barbell Squat", description = "", muscleGroup = "legs", movementPattern = "squat", equipment = "barbell", difficulty = "Intermediate")
+        val rdl = ExerciseEntity(id = 41, name = "Romanian Deadlift", description = "", muscleGroup = "legs", movementPattern = "hip_hinge", equipment = "barbell", difficulty = "Intermediate")
+        val curl = ExerciseEntity(id = 42, name = "Hammer Curl", description = "", muscleGroup = "arms", movementPattern = "elbow_flexion", equipment = "dumbbell", difficulty = "Beginner")
+        val tricep = ExerciseEntity(id = 43, name = "Tricep Extension", description = "", muscleGroup = "arms", movementPattern = "elbow_extension", equipment = "cable", difficulty = "Beginner")
+        val plank = ExerciseEntity(id = 44, name = "Core Plank", description = "", muscleGroup = "core", movementPattern = "anti_extension", equipment = "bodyweight", difficulty = "Beginner")
+
+        coEvery { dao.getAll() } returns flowOf(listOf(squat, rdl, curl, tricep, plank))
+        coEvery { readinessRepository.getLatestReadiness() } returns flowOf(null)
+
+        val program = generator.generateProgram(4, "gym", "vtaper")
+        val lowerA = program.days.first { it.name == "Lower A" }
+        val lowerExercises = lowerA.exercises.map { it.exerciseName }
+        assertTrue("Barbell Squat expected in Lower A via legs/squat matching", "Barbell Squat" in lowerExercises)
+        assertTrue("Romanian Deadlift expected in Lower A via legs/hip_hinge matching", "Romanian Deadlift" in lowerExercises)
+
+        val upperA = program.days.first { it.name == "Upper A" }
+        val upperExercises = upperA.exercises.map { it.exerciseName }
+        assertTrue("Hammer Curl expected in Upper A via arms/elbow_flexion matching", "Hammer Curl" in upperExercises)
+        assertTrue("Tricep Extension expected in Upper A via arms/elbow_extension matching", "Tricep Extension" in upperExercises)
+
+        val lowerB = program.days.first { it.name == "Lower B" }
+        val lowerBExercises = lowerB.exercises.map { it.exerciseName }
+        assertTrue("Core Plank expected in Lower B via core matching", "Core Plank" in lowerBExercises)
+    }
+
+    @Test
+    fun `session exercise budget cap strictly truncates surplus candidates`() = runTest {
+        // Upper A has 6 slots: Back, Chest, Lateral Deltoid, Rear Deltoid, Biceps, Triceps
+        // Create 2 unique exercises for each of the 6 slots = 12 total valid exercises
+        val surplusExercises = (1..12).map { idx ->
+            val slotMuscle = when (idx) {
+                1, 2 -> "Back"
+                3, 4 -> "Chest"
+                5, 6 -> "Lateral Deltoid"
+                7, 8 -> "Rear Deltoid"
+                9, 10 -> "Biceps"
+                else -> "Triceps"
+            }
+            ExerciseEntity(
+                id = 100L + idx,
+                name = "Exercise $idx",
+                description = "",
+                muscleGroup = slotMuscle,
+                equipment = "dumbbell",
+                difficulty = "Beginner"
+            )
+        }
+
+        coEvery { dao.getAll() } returns flowOf(surplusExercises)
+        coEvery { readinessRepository.getLatestReadiness() } returns flowOf(null)
+
+        // Frequency 4 has cap = 6 exercises
+        val programFreq4 = generator.generateProgram(4, "gym", "vtaper")
+        val upperAFreq4 = programFreq4.days.first { it.name == "Upper A" }
+        assertEquals("Upper A must be strictly capped at 6 exercises", 6, upperAFreq4.exercises.size)
+
+        // Frequency 6 has cap = 4 exercises
+        val programFreq6 = generator.generateProgram(6, "gym", "vtaper")
+        val pushDayFreq6 = programFreq6.days.first { it.name == "Push" }
+        assertEquals("Push day must be strictly capped at 4 exercises", 4, pushDayFreq6.exercises.size)
+    }
 }
+

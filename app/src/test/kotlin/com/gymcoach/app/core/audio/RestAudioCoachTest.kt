@@ -62,4 +62,39 @@ class RestAudioCoachTest {
             assertEquals(0L, pattern[0]) // starts with 0 delay
         }
     }
+
+    @Test
+    fun `getVibrationPattern returns exact timing profiles for distinct cues`() {
+        val warning = coach.getVibrationPattern(AudioCueType.WARNING_15S)
+        assertEquals(4, warning.size)
+        assertEquals(0L, warning[0])
+        assertEquals(100L, warning[1])
+        assertEquals(80L, warning[2])
+        assertEquals(100L, warning[3])
+
+        val finished = coach.getVibrationPattern(AudioCueType.TIMER_FINISHED)
+        assertEquals(4, finished.size)
+        assertEquals(200L, finished[1])
+        assertEquals(100L, finished[2])
+        assertEquals(300L, finished[3])
+
+        val superset = coach.getVibrationPattern(AudioCueType.SUPERSET_SWITCH)
+        assertEquals(6, superset.size)
+        assertEquals(240L, superset[5])
+
+        val countdown = coach.getVibrationPattern(AudioCueType.COUNTDOWN_1)
+        assertEquals(2, countdown.size)
+        assertEquals(60L, countdown[1])
+    }
+
+    @Test
+    fun `playCue executes safely across all preset and cue combinations`() {
+        for (preset in AudioCoachPreset.entries) {
+            coach.setPreset(preset)
+            assertEquals(preset, coach.getPreset())
+            for (cue in AudioCueType.entries) {
+                coach.playCue(cue)
+            }
+        }
+    }
 }

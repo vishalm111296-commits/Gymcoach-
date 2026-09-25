@@ -74,4 +74,59 @@ class RestAudioCueEvaluatorTest {
         assertNull(evaluator.evaluateCue(remainingSeconds = 5))
         assertNull(evaluator.evaluateCue(remainingSeconds = 4))
     }
+
+    @Test
+    fun `evaluateCue ignores halfway alert when total duration is under 30 seconds`() {
+        // totalDuration = 20s, half is 10s: totalDuration < 30 suppresses HALFWAY
+        assertNull(
+            evaluator.evaluateCue(remainingSeconds = 10, totalDurationSeconds = 20, enableHalfwayAlert = true)
+        )
+    }
+
+    @Test
+    fun `evaluateCue handles odd duration halfway split and 15s warning minimum duration threshold`() {
+        // 45s total duration: integer division 45 / 2 = 22 seconds
+        assertEquals(
+            AudioCueType.HALFWAY,
+            evaluator.evaluateCue(remainingSeconds = 22, totalDurationSeconds = 45, enableHalfwayAlert = true)
+        )
+
+        // 15s warning requires totalDuration > 20
+        assertNull(
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 20, enable15sWarning = true)
+        )
+        assertEquals(
+            AudioCueType.WARNING_15S,
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 21, enable15sWarning = true)
+        )
+    }
+
+    @Test
+    fun `evaluateCue gives precedence to halfway alert over 15s warning when coincident`() {
+        // totalDuration = 30s: 30 / 2 = 15s
+        // When both enabled: HALFWAY takes precedence
+        assertEquals(
+            AudioCueType.HALFWAY,
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 30, enable15sWarning = true, enableHalfwayAlert = true)
+        )
+
+        // When HALFWAY disabled: falls through to WARNING_15S
+        assertEquals(
+            AudioCueType.WARNING_15S,
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 30, enable15sWarning = true, enableHalfwayAlert = false)
+        )
+    }
+
+    @Test
+    fun `evaluateCue completion overrides any ticking cue`() {
+        // Even at 15s or 3s or 22s: isCompleted takes absolute precedence
+        assertEquals(
+            AudioCueType.TIMER_FINISHED,
+            evaluator.evaluateCue(remainingSeconds = 15, totalDurationSeconds = 60, isCompleted = true, enable15sWarning = true)
+        )
+        assertEquals(
+            AudioCueType.SUPERSET_SWITCH,
+            evaluator.evaluateCue(remainingSeconds = 3, totalDurationSeconds = 60, isCompleted = true, isSupersetSwitch = true)
+        )
+    }
 }

@@ -493,4 +493,103 @@ class WorkoutDataImporterTest {
             assertEquals(expectedSet.restSeconds, actualSet.restSeconds)
         }
     }
+
+    @Test
+    fun `parseJson returns failure on malformed json syntax`() {
+        val malformed = "{ version: 1, exportedAt: 12345, workouts: ["
+        val result = importer.parseJson(malformed)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Invalid JSON syntax") == true)
+    }
+
+    @Test
+    fun `parseJson returns failure when version is missing or unsupported`() {
+        // Missing version
+        val noVersion = """{ "exportedAt": 1000, "workouts": [] }"""
+        val result1 = importer.parseJson(noVersion)
+        assertTrue(result1.isFailure)
+        assertTrue(result1.exceptionOrNull()?.message?.contains("Unsupported or missing schema version") == true)
+
+        // Version 2 (unsupported)
+        val v2 = """{ "version": 2, "exportedAt": 1000, "workouts": [] }"""
+        val result2 = importer.parseJson(v2)
+        assertTrue(result2.isFailure)
+        assertTrue(result2.exceptionOrNull()?.message?.contains("Expected 1, got 2") == true)
+    }
+
+    @Test
+    fun `parseJson returns failure when required exportedAt or workouts is missing`() {
+        val noWorkouts = """{ "version": 1, "exportedAt": 1000 }"""
+        val result = importer.parseJson(noWorkouts)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Missing required keys") == true)
+    }
+
+    @Test
+    fun `parseJson parses date string when startTime is omitted and defaults endTime`() {
+        val jsonWithDateOnly = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 55,
+                  "date": "2023-06-15 10:30:00",
+                  "durationSeconds": 1800,
+                  "completed": true,
+                  "notes": "Morning cardio & push",
+                  "exercises": []
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(jsonWithDateOnly)
+        assertTrue(result.isSuccess)
+        val workout = result.getOrNull()!!.workouts.first().workout
+        assertEquals(55L, workout.id)
+        assertEquals(1800L, workout.duration)
+        assertEquals(workout.startTime, workout.endTime) // endTime defaults to startTime
+        assertTrue(workout.startTime.toEpochMilli() > 0)
+    }
+
+    @Test
+    fun `parseJson defaults restSeconds and rpe when omitted from set json`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 1,
+                  "startTime": 1672567200000,
+                  "durationSeconds": 600,
+                  "completed": true,
+                  "exercises": [
+                    {
+                      "exerciseId": 10,
+                      "exerciseName": "Pull Up",
+                      "muscleGroup": "Back",
+                      "sets": [
+                        {
+                          "setNumber": 1,
+                          "weight": 0.0,
+                          "reps": 10,
+                          "completed": true,
+                          "setType": "NORMAL"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isSuccess)
+        val set = result.getOrNull()!!.workouts.first().exercises.first().sets.first()
+        assertEquals(0, set.restSeconds) // defaulted
+        assertEquals(0.0, set.rpe, 0.001) // defaulted
+    }
 }

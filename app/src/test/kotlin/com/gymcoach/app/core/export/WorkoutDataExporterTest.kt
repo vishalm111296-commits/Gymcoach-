@@ -304,4 +304,55 @@ class WorkoutDataExporterTest {
 
         assertEquals(75, setObj.getInt("restSeconds"))
     }
+
+    @Test
+    fun `exportToCsv with empty list returns header only`() {
+        val csv = exporter.exportToCsv(emptyList())
+        assertEquals("Date,Workout ID,Exercise Name,Set Order,Weight (kg),Reps,RPE,Set Type,Rest Seconds,Notes\n", csv)
+    }
+
+    @Test
+    fun `exportToJson with empty list returns valid schema with zero workouts`() {
+        val json = exporter.exportToJson(emptyList())
+        val root = JSONObject(json)
+        assertEquals(1, root.getInt("version"))
+        assertEquals(0, root.getInt("workoutCount"))
+        assertEquals(0, root.getJSONArray("workouts").length())
+    }
+
+    @Test
+    fun `exportToCsv escapes quotes commas and newlines in exercise names and notes`() {
+        val exercise = Exercise(
+            id = 100L,
+            name = "Incline Press, \"Paused\"",
+            description = "",
+            muscleGroup = "Chest",
+            equipment = "barbell",
+            difficulty = "Intermediate"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 99L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(3600),
+            duration = 3600L,
+            notes = "Felt great.\nNeed longer rest.",
+            completed = true
+        )
+        val sets = listOf(
+            WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 80.0, reps = 8, rpe = 8.0, restSeconds = 90, completed = true, setType = SetType.NORMAL)
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 1, workoutId = 99, exerciseId = 100, orderIndex = 0),
+            exercise = exercise,
+            sets = sets
+        )
+        val workoutWithDetails = WorkoutWithDetails(workout = workout, exercises = listOf(we))
+
+        val csv = exporter.exportToCsv(listOf(workoutWithDetails))
+        // Verify quotes are doubled and field is quoted
+        assertTrue(csv.contains("\"Incline Press, \"\"Paused\"\"\""))
+        assertTrue(csv.contains("\"Felt great.\nNeed longer rest.\""))
+    }
 }

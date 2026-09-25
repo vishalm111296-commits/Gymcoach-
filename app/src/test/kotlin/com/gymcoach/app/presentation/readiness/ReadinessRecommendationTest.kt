@@ -117,4 +117,150 @@ class ReadinessRecommendationTest {
         )
         assertFalse(pastEntry.isRecordedToday)
     }
+
+    @Test
+    fun `boundary test - exactly 4_0 yields full intensity`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 5,
+            soreness = 5,
+            energy = 3,
+            motivation = 3
+        )
+        assertEquals(4.0, entry.readinessScore, 0.001)
+        assertEquals("Full intensity session recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - just below 4_0 yields moderate session`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 4,
+            soreness = 4,
+            energy = 4,
+            motivation = 3
+        )
+        assertEquals(3.75, entry.readinessScore, 0.001)
+        assertEquals("Moderate session recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - exactly 3_0 yields moderate session`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 3,
+            soreness = 3,
+            energy = 3,
+            motivation = 3
+        )
+        assertEquals(3.0, entry.readinessScore, 0.001)
+        assertEquals("Moderate session recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - just below 3_0 yields light session without rest day`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 3,
+            soreness = 3,
+            energy = 3,
+            motivation = 2
+        )
+        assertEquals(2.75, entry.readinessScore, 0.001)
+        assertEquals("Light session or active recovery recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - exactly 2_5 does not flag rest day`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 3,
+            soreness = 3,
+            energy = 2,
+            motivation = 2
+        )
+        assertEquals(2.5, entry.readinessScore, 0.001)
+        assertEquals("Light session or active recovery recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - just below 2_5 flags rest day`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 3,
+            soreness = 2,
+            energy = 2,
+            motivation = 2
+        )
+        assertEquals(2.25, entry.readinessScore, 0.001)
+        assertEquals("Light session or active recovery recommended", entry.trainingRecommendation)
+        assertTrue(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - exactly 2_0 yields light session with rest day flagged`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 2,
+            soreness = 2,
+            energy = 2,
+            motivation = 2
+        )
+        assertEquals(2.0, entry.readinessScore, 0.001)
+        assertEquals("Light session or active recovery recommended", entry.trainingRecommendation)
+        assertTrue(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `boundary test - just below 2_0 transitions to rest day recommended`() {
+        val entry = ReadinessEntity(
+            sleepQuality = 2,
+            soreness = 2,
+            energy = 2,
+            motivation = 1
+        )
+        assertEquals(1.75, entry.readinessScore, 0.001)
+        assertEquals("Rest day recommended. Listen to your body.", entry.trainingRecommendation)
+        assertTrue(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `default readiness entity provides balanced moderate defaults`() {
+        val defaultEntry = ReadinessEntity()
+        assertEquals(3, defaultEntry.sleepQuality)
+        assertEquals(3, defaultEntry.soreness)
+        assertEquals(3, defaultEntry.energy)
+        assertEquals(3, defaultEntry.motivation)
+        assertEquals(3.0, defaultEntry.readinessScore, 0.001)
+        assertEquals("Moderate session recommended", defaultEntry.trainingRecommendation)
+        assertFalse(defaultEntry.isRestDayRecommended)
+        assertTrue(defaultEntry.isRecordedToday)
+    }
+
+    @Test
+    fun `asymmetric extreme inputs calculate correct average`() {
+        // High sleep & energy (5, 5) but drained soreness & motivation (1, 1)
+        val entry = ReadinessEntity(
+            sleepQuality = 5,
+            soreness = 1,
+            energy = 5,
+            motivation = 1
+        )
+        assertEquals(3.0, entry.readinessScore, 0.001)
+        assertEquals("Moderate session recommended", entry.trainingRecommendation)
+        assertFalse(entry.isRestDayRecommended)
+    }
+
+    @Test
+    fun `date freshness boundary - tomorrow or past calendar days are not today`() {
+        val tomorrow = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }.timeInMillis
+        val tomorrowEntry = ReadinessEntity(recordedAt = tomorrow)
+        assertFalse(tomorrowEntry.isRecordedToday)
+
+        val yesterday = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, -1)
+        }.timeInMillis
+        val yesterdayEntry = ReadinessEntity(recordedAt = yesterday)
+        assertFalse(yesterdayEntry.isRecordedToday)
+    }
 }

@@ -515,4 +515,159 @@ class ProgressionEngineTest {
         assertEquals(80.0, result.recommendedWeight, 0.001)
         assertTrue(result.reason.contains("Maintain current weight"))
     }
+
+    @Test
+    fun `calculateProgression handles ACSM weight progression boundaries and 10kg cap`() {
+        fun runProgressionWithWeight(weight: Double): Double {
+            val sets = listOf(createSet(weight = weight, reps = 12))
+            val res = progressionEngine.calculateProgression(
+                exerciseId = 1L,
+                exerciseName = "Exercise",
+                exerciseEquipment = "barbell",
+                targetRepsMin = 8,
+                targetRepsMax = 12,
+                targetSets = 3,
+                previousSets = emptyList(),
+                currentSets = sets
+            )
+            return res.recommendedWeight
+        }
+
+        // Sub-20kg: +2.0kg increment, rounded to 2.0 multiple
+        // 16.0 -> 16.0 + 2.0 = 18.0
+        assertEquals(18.0, runProgressionWithWeight(16.0), 0.001)
+
+        // Boundary at 20kg: 20.0 <= weight < 50.0 adds 2.5kg, rounded to 2.5 multiple
+        // 20.0 -> 22.5
+        assertEquals(22.5, runProgressionWithWeight(20.0), 0.001)
+        // 47.5 -> 50.0
+        assertEquals(50.0, runProgressionWithWeight(47.5), 0.001)
+
+        // Boundary at 50kg: 50.0 <= weight < 100.0 adds 5.0kg, rounded to 2.5 multiple
+        // 50.0 -> 55.0
+        assertEquals(55.0, runProgressionWithWeight(50.0), 0.001)
+        // 95.0 -> 100.0
+        assertEquals(100.0, runProgressionWithWeight(95.0), 0.001)
+
+        // Boundary at 100kg: weight >= 100.0 adds 5% (capped at +10kg)
+        // 100.0 -> 100.0 * 1.05 = 105.0
+        assertEquals(105.0, runProgressionWithWeight(100.0), 0.001)
+        // 150.0 -> 150.0 * 1.05 = 157.5
+        assertEquals(157.5, runProgressionWithWeight(150.0), 0.001)
+        // 200.0 -> 200.0 * 1.05 = 210.0 (+10.0kg exact cap)
+        assertEquals(210.0, runProgressionWithWeight(200.0), 0.001)
+        // 300.0 -> 300.0 * 1.05 = 315.0, clamped at 300.0 + 10.0 = 310.0
+        assertEquals(310.0, runProgressionWithWeight(300.0), 0.001)
+    }
+
+    @Test
+    fun `parseRepRange parses various delimiters single integers and handles invalid inputs`() {
+        // Hyphen with spaces
+        val (min1, max1) = ProgressionEngine.parseRepRange(" 6 - 10 ")
+        assertEquals(6, min1)
+        assertEquals(10, max1)
+
+        // En-dash delimiter
+        val (min2, max2) = ProgressionEngine.parseRepRange("8–12")
+        assertEquals(8, min2)
+        assertEquals(12, max2)
+
+        // Word 'to' delimiter
+        val (min3, max3) = ProgressionEngine.parseRepRange("12 to 15")
+        assertEquals(12, min3)
+        assertEquals(15, max3)
+
+        // Single integer "10" -> (10 - 2, 10) = (8, 10)
+        val (min4, max4) = ProgressionEngine.parseRepRange("10")
+        assertEquals(8, min4)
+        assertEquals(10, max4)
+
+        // Single integer "1" clamped at 1 -> (1, 1)
+        val (min5, max5) = ProgressionEngine.parseRepRange("1")
+        assertEquals(1, min5)
+        assertEquals(1, max5)
+
+        // Blank string defaults
+        val (min6, max6) = ProgressionEngine.parseRepRange("   ", defaultMin = 5, defaultMax = 8)
+        assertEquals(5, min6)
+        assertEquals(8, max6)
+
+        // Invalid non-digit characters default
+        val (min7, max7) = ProgressionEngine.parseRepRange("unlimited", defaultMin = 4, defaultMax = 6)
+        assertEquals(4, min7)
+        assertEquals(6, max7)
+    }
+
+    @Test
+    fun `calculateProgression transitions strictly at readiness score boundaries`() {
+        val currentSets = listOf(createSet(weight = 100.0, reps = 12)) // Hits max reps
+
+        // Readiness < 2.0 (critically low): deload recommended, weight decreases 10%
+        val res19 = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = currentSets, readinessScore = 1.9
+        )
+        assertTrue(res19.isDeloadRecommended)
+        assertEquals(90.0, res19.recommendedWeight, 0.001) // 100.0 * 0.9 = 90.0
+        assertEquals(2, res19.recommendedSets) // (3 - 1).coerceAtLeast(2) = 2
+
+        // Readiness 2.0 (reduced readiness boundary): holds load, no deload
+        val res20 = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = currentSets, readinessScore = 2.0
+        )
+        assertFalse(res20.isDeloadRecommended)
+        assertEquals(100.0, res20.recommendedWeight, 0.001)
+        assertEquals(3, res20.recommendedSets)
+        assertTrue(res20.reason.contains("Reduced readiness (2.0/5.0)"))
+
+        // Readiness 2.49 (still in reduced readiness range): holds load
+        val res249 = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = currentSets, readinessScore = 2.49
+        )
+        assertFalse(res249.isDeloadRecommended)
+        assertEquals(100.0, res249.recommendedWeight, 0.001)
+
+        // Readiness 2.50 (normal readiness): proceeds to weight progression because all hit top
+        val res25 = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = currentSets, readinessScore = 2.5
+        )
+        assertFalse(res25.isDeloadRecommended)
+        assertEquals(105.0, res25.recommendedWeight, 0.001) // Weight progresses
+    }
+
+    @Test
+    fun `calculateProgression handles bodyweight exercise plateau and regression preserving zero load`() {
+        val bwSets = listOf(createSet(weight = 0.0, reps = 9)) // Below top 12
+
+        // Plateau: 3 sessions at same weight (0.0) without hitting top
+        val plateauRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Pull Up", exerciseEquipment = "pull-up bar",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = bwSets,
+            consecutiveSessionsAtSameWeight = 3
+        )
+        assertTrue(plateauRes.isPlateaued)
+        assertTrue(plateauRes.isDeloadRecommended)
+        assertEquals(0.0, plateauRes.recommendedWeight, 0.0) // Must remain 0.0, not negative
+
+        // Regression: reps below min (e.g. 6 reps where min is 8) across 2+ sessions
+        val failingCurrentSets = listOf(createSet(weight = 0.0, reps = 6))
+        val failingPrevSets = listOf(createSet(weight = 0.0, reps = 7))
+        val regressionRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Pull Up", exerciseEquipment = "pull-up bar",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = failingPrevSets, currentSets = failingCurrentSets
+        )
+        assertEquals(0.0, regressionRes.recommendedWeight, 0.0)
+        assertTrue(regressionRes.reason.contains("Focus on form and range of motion."))
+        assertFalse(regressionRes.reason.contains("Reduce weight."))
+    }
 }
+

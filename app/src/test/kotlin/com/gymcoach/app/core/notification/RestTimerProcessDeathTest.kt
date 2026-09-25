@@ -136,4 +136,51 @@ class RestTimerProcessDeathTest {
         val durable = RestTimerPreferences.load(context)
         assertFalse("Preferences should be cleared for expired timer", durable.isRunning)
     }
+
+    @Test
+    fun testRestTimerManagerRestoresPausedTimerAfterProcessDeath() = runTest {
+        val now = System.currentTimeMillis()
+        val pausedState = DurableTimerState(
+            isRunning = true,
+            isPaused = true,
+            restEndEpochMillis = now + 40_000L,
+            totalDurationSeconds = 90,
+            pausedRemainingSeconds = 45,
+            nextSetLabel = "Incline Dumbbell Press Set 3",
+            workoutId = 111L
+        )
+        RestTimerPreferences.save(context, pausedState)
+
+        val manager = RestTimerManager(context)
+
+        val state = manager.state.value
+        assertTrue("Restored timer should be running", state.isRunning)
+        assertTrue("Restored timer should be paused", state.isPaused)
+        assertEquals("Total duration should match", 90, state.totalDuration)
+        assertEquals("Paused remaining seconds should be preserved exactly", 45, state.timeRemaining)
+    }
+
+    @Test
+    fun testRestTimerManagerStopClearsPreferences() = runTest {
+        val now = System.currentTimeMillis()
+        val activeState = DurableTimerState(
+            isRunning = true,
+            isPaused = false,
+            restEndEpochMillis = now + 60_000L,
+            totalDurationSeconds = 60,
+            pausedRemainingSeconds = 60,
+            nextSetLabel = "Pullups Set 1",
+            workoutId = 222L
+        )
+        RestTimerPreferences.save(context, activeState)
+
+        val manager = RestTimerManager(context)
+        assertTrue(manager.state.value.isRunning)
+
+        manager.stop()
+
+        assertFalse("Manager should be stopped", manager.state.value.isRunning)
+        val loaded = RestTimerPreferences.load(context)
+        assertFalse("Preferences should be inactive after manager stop", loaded.isRunning)
+    }
 }

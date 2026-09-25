@@ -330,4 +330,75 @@ class RestTimerStateMachineTest {
         assertEquals("Squat Set 4", stateMachine.nextSetLabel)
         assertEquals(123L, stateMachine.workoutId)
     }
+
+    @Test
+    fun testRestoreUnRunTimerCallsReset() {
+        stateMachine.start(60, "Running Set")
+        val durableInactive = DurableTimerState(isRunning = false)
+        val restored = stateMachine.restore(durableInactive)
+        assertFalse(restored)
+        assertEquals(0, stateMachine.remainingSeconds.value)
+        assertFalse(stateMachine.isRunning.value)
+        assertEquals("", stateMachine.nextSetLabel)
+    }
+
+    @Test
+    fun testRestoreExpandsTotalDurationWhenRemainingExceedsTotal() {
+        val now = 1000000L
+        val durable = DurableTimerState(
+            isRunning = true,
+            isPaused = false,
+            restEndEpochMillis = now + 90_000L,
+            totalDurationSeconds = 45, // Inconsistent/shrunk total duration
+            nextSetLabel = "Overhead Press"
+        )
+        val restored = stateMachine.restore(durable, nowMillis = now)
+        assertTrue(restored)
+        assertEquals(90, stateMachine.remainingSeconds.value)
+        assertEquals(90, stateMachine.totalDurationSeconds.value)
+    }
+
+    @Test
+    fun testMultipleStartsOverridesActiveAndUnpauses() {
+        stateMachine.start(45, "Set 1", workoutId = 1L)
+        stateMachine.pause()
+        assertTrue(stateMachine.isPaused.value)
+
+        // Starting a new timer overrides and unpauses
+        stateMachine.start(120, "Set 2", workoutId = 2L)
+        assertFalse(stateMachine.isPaused.value)
+        assertTrue(stateMachine.isRunning.value)
+        assertEquals(120, stateMachine.remainingSeconds.value)
+        assertEquals(120, stateMachine.totalDurationSeconds.value)
+        assertEquals("Set 2", stateMachine.nextSetLabel)
+        assertEquals(2L, stateMachine.workoutId)
+    }
+
+    @Test
+    fun testConsecutiveAdjustsMaintainsHighestTotalDuration() {
+        stateMachine.start(30)
+        assertEquals(30, stateMachine.totalDurationSeconds.value)
+
+        // Adjust +15 -> remaining 45, total expands to 45
+        stateMachine.adjust(15)
+        assertEquals(45, stateMachine.remainingSeconds.value)
+        assertEquals(45, stateMachine.totalDurationSeconds.value)
+
+        // Adjust -10 -> remaining 35, total remains 45
+        stateMachine.adjust(-10)
+        assertEquals(35, stateMachine.remainingSeconds.value)
+        assertEquals(45, stateMachine.totalDurationSeconds.value)
+
+        // Adjust +30 -> remaining 65, total expands to 65
+        stateMachine.adjust(30)
+        assertEquals(65, stateMachine.remainingSeconds.value)
+        assertEquals(65, stateMachine.totalDurationSeconds.value)
+    }
+
+    @Test
+    fun testFormatSecondsLargeHourValues() {
+        assertEquals("60:00", RestTimerStateMachine.formatSeconds(3600))
+        assertEquals("61:05", RestTimerStateMachine.formatSeconds(3665))
+        assertEquals("120:30", RestTimerStateMachine.formatSeconds(7230))
+    }
 }

@@ -181,4 +181,39 @@ class BodyCompositionEngineTest {
         val trend166 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 166.0, waistCm = 100.0)))
         assertEquals("Heroic Frame", trend166.vTaperCategory)
     }
+
+    @Test
+    fun testAsymmetricSingleLimbAveragingResilience() {
+        val t = System.currentTimeMillis()
+        val oldM = BodyMeasurementEntity(
+            recordedAt = t - 86400000L,
+            leftArmCm = 37.0,
+            rightArmCm = 0.0 // Only left recorded previously
+        )
+        val newM = BodyMeasurementEntity(
+            recordedAt = t,
+            leftArmCm = 38.0,
+            rightArmCm = 38.0 // Both recorded currently
+        )
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(newM, oldM))
+        val armsDelta = trend.circumferences[BodyPart.ARMS]
+        assertNotNull(armsDelta)
+        assertEquals(38.0, armsDelta!!.currentCm, 0.001)
+        // delta = 38.0 - 37.0 = 1.0 (does not divide 37 by 2 to yield 18.5)
+        assertEquals(1.0, armsDelta.deltaCm, 0.001)
+    }
+
+    @Test
+    fun testGoldenRatioProximityBeyondQuarterBoundaryClampsToZero() {
+        // Ratio = 2.10 (diff = 0.482 > 0.4) -> must clamp to 0.0f
+        val distantRatio = BodyMeasurementEntity(shouldersCm = 210.0, waistCm = 100.0)
+        val trend = BodyCompositionEngine.calculateTrend(listOf(distantRatio))
+        assertEquals(0.0f, trend.goldenRatioProximityPct, 0.001f)
+
+        // Ratio = 1.818 (diff = 0.200 = exactly half of 0.4) -> proximity = 0.5f
+        val halfwayRatio = BodyMeasurementEntity(shouldersCm = 181.8, waistCm = 100.0)
+        val trendHalf = BodyCompositionEngine.calculateTrend(listOf(halfwayRatio))
+        assertEquals(0.5f, trendHalf.goldenRatioProximityPct, 0.01f)
+    }
 }

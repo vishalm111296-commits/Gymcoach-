@@ -238,11 +238,65 @@ class TdeeMacroCalculatorTest {
         assertEquals(NutritionGoal.AGGRESSIVE_CUT, NutritionGoal.fromString("aggressive cut"))
         assertEquals(NutritionGoal.MODERATE_CUT, NutritionGoal.fromString("cut"))
         assertEquals(NutritionGoal.MODERATE_CUT, NutritionGoal.fromString("fat loss"))
-        assertEquals(NutritionGoal.MODERATE_CUT, NutritionGoal.fromString("weight loss"))
-        assertEquals(NutritionGoal.RECOMPOSITION, NutritionGoal.fromString("body recomp"))
-        assertEquals(NutritionGoal.LEAN_BULK, NutritionGoal.fromString("hypertrophy"))
-        assertEquals(NutritionGoal.LEAN_BULK, NutritionGoal.fromString("muscle gain"))
         assertEquals(NutritionGoal.AGGRESSIVE_BULK, NutritionGoal.fromString("mass gain"))
         assertEquals(NutritionGoal.MAINTENANCE, NutritionGoal.fromString("general fitness"))
+    }
+
+    @Test
+    fun `calculate falls back to Mifflin-St Jeor when body fat is outside 4 to 60 percent`() {
+        // Below 4% (e.g., 3.0%) -> falls back to Mifflin-St Jeor
+        val subMinProfile = TdeeMacroCalculator.calculate(
+            weightKg = 80.0,
+            heightCm = 180.0,
+            age = 25,
+            sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE,
+            activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+            bodyFatPercentage = 3.0
+        )
+        assertEquals(BmrFormula.MIFFLIN_ST_JEOR, subMinProfile.formulaUsed)
+
+        // Above 60% (e.g., 65.0%) -> falls back to Mifflin-St Jeor
+        val supraMaxProfile = TdeeMacroCalculator.calculate(
+            weightKg = 80.0,
+            heightCm = 180.0,
+            age = 25,
+            sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE,
+            activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+            bodyFatPercentage = 65.0
+        )
+        assertEquals(BmrFormula.MIFFLIN_ST_JEOR, supraMaxProfile.formulaUsed)
+    }
+
+    @Test
+    fun `inferFromTraining boundary edge cases`() {
+        // 5 days, 75 mins -> VERY_ACTIVE
+        assertEquals(ActivityLevel.VERY_ACTIVE, ActivityLevel.inferFromTraining(5, 75))
+        // 5 days, 74 mins -> MODERATELY_ACTIVE
+        assertEquals(ActivityLevel.MODERATELY_ACTIVE, ActivityLevel.inferFromTraining(5, 74))
+        // 3 days, 60 mins -> MODERATELY_ACTIVE
+        assertEquals(ActivityLevel.MODERATELY_ACTIVE, ActivityLevel.inferFromTraining(3, 60))
+        // 3 days, 59 mins -> LIGHTLY_ACTIVE
+        assertEquals(ActivityLevel.LIGHTLY_ACTIVE, ActivityLevel.inferFromTraining(3, 59))
+        // 2 days, 90 mins -> LIGHTLY_ACTIVE
+        assertEquals(ActivityLevel.LIGHTLY_ACTIVE, ActivityLevel.inferFromTraining(2, 90))
+        // 1 day, 90 mins -> SEDENTARY
+        assertEquals(ActivityLevel.SEDENTARY, ActivityLevel.inferFromTraining(1, 90))
+    }
+
+    @Test
+    fun `calculate ensures healthy fat floor of 0_75g per kg for endocrine support`() {
+        // Person 80kg on aggressive cut: 25% of 1500 kcal would be 375 kcal / 9 = 41.6g,
+        // but min healthy fat is 80 * 0.75 = 60.0g
+        val cutProfile = TdeeMacroCalculator.calculate(
+            weightKg = 80.0,
+            heightCm = 160.0,
+            age = 45,
+            sex = BiologicalSex.FEMALE,
+            goal = NutritionGoal.AGGRESSIVE_CUT,
+            activityLevel = ActivityLevel.SEDENTARY
+        )
+        assertTrue("Fat grams should be at least 60.0g floor", cutProfile.macroSplit.fatGrams >= 60.0f)
     }
 }

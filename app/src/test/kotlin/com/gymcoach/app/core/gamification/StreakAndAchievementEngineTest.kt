@@ -413,5 +413,90 @@ class StreakAndAchievementEngineTest {
         assertEquals(366, report.heatMapData.size)
         assertEquals(2, report.heatMapData[todayStr])
     }
+
+    @Test
+    fun testIsoYearBoundaryCrossingPreservesStreakContinuity() {
+        // Schedule across 2023 W51, 2023 W52, 2024 W01, 2024 W02 (now is 2024-01-08)
+        val wWeek2 = createWorkout(now.toEpochMilli()) // 2024-01-08
+        val wWeek1 = createWorkout(now.minus(7L, ChronoUnit.DAYS).toEpochMilli()) // 2024-01-01
+        val wWeek52 = createWorkout(now.minus(14L, ChronoUnit.DAYS).toEpochMilli()) // 2023-12-25
+        val wWeek51 = createWorkout(now.minus(21L, ChronoUnit.DAYS).toEpochMilli()) // 2023-12-18
+
+        val report = engine.calculateReport(
+            listOf(wWeek2, wWeek1, wWeek52, wWeek51),
+            emptyList(),
+            weeklyTarget = 1,
+            zoneId = zoneId
+        )
+
+        assertEquals("Streak across year transition should be 4", 4, report.currentWeeklyStreak)
+        assertEquals("Longest streak across year transition should be 4", 4, report.longestWeeklyStreak)
+    }
+
+    @Test
+    fun testBadgeProgressClampingAtMaxValues() {
+        // 15 workouts -> first_rep unlocked with exact epoch
+        val firstEpoch = now.minus(100L, ChronoUnit.DAYS).toEpochMilli()
+        val workouts = (0..14).map {
+            createWorkout(firstEpoch + (it * 86400000L))
+        }
+
+        // 250 normal completed sets (> 100 max for centurion)
+        val sets = (1..250).map { createSet(weight = 1000.0, reps = 1) } // 250,000 kg (> 100,000 max)
+
+        val report = engine.calculateReport(workouts, sets, weeklyTarget = 1, zoneId = zoneId)
+
+        val firstRep = report.badges.find { it.id == "first_rep" }!!
+        assertTrue(firstRep.isUnlocked)
+        assertEquals(1, firstRep.currentProgress)
+        assertEquals(firstEpoch, firstRep.unlockedDateEpochMilli)
+
+        val centurion = report.badges.find { it.id == "centurion" }!!
+        assertTrue(centurion.isUnlocked)
+        assertEquals(100, centurion.currentProgress) // Clamped at maxProgress 100
+
+        val volume100k = report.badges.find { it.id == "volume_100k" }!!
+        assertTrue(volume100k.isUnlocked)
+        assertEquals(100000, volume100k.currentProgress) // Clamped at maxProgress 100000
+    }
+
+    @Test
+    fun testHighTierAthleteLevelProgressionAndXpRollover() {
+        // 45 workouts = 4500 XP
+        val workouts = (1..45).map { createWorkout(now.minus(it.toLong(), ChronoUnit.DAYS).toEpochMilli()) }
+        // 450 normal sets = 4500 XP -> Total = 9000 XP
+        val sets = (1..450).map { createSet(50.0, 10) }
+
+        val report9000 = engine.calculateReport(workouts, sets, weeklyTarget = 1, zoneId = zoneId)
+        // Level = (9000 / 1000) + 1 = 10
+        assertEquals(10, report9000.athleteLevel)
+        assertEquals(0, report9000.currentXp)
+        assertEquals(1000, report9000.xpForNextLevel)
+
+        // Add 1 normal set (+10 XP) -> Total = 9010 XP -> Level 10, 10 XP
+        val setsPlusOne = sets + createSet(50.0, 10)
+        val report9010 = engine.calculateReport(workouts, setsPlusOne, weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(10, report9010.athleteLevel)
+        assertEquals(10, report9010.currentXp)
+    }
+
+    @Test
+    fun testSameDayMultipleWorkoutsCountTowardWeeklyTargetAndHeatMap() {
+        val todayMs = now.toEpochMilli()
+        val workouts = listOf(
+            createWorkout(todayMs),
+            createWorkout(todayMs + 3600000L),
+            createWorkout(todayMs + 7200000L),
+            createWorkout(todayMs + 10800000L)
+        )
+
+        val report = engine.calculateReport(workouts, emptyList(), weeklyTarget = 4, zoneId = zoneId)
+
+        assertEquals("4 workouts on same day should satisfy weeklyTarget=4", 1, report.currentWeeklyStreak)
+        assertEquals(4, report.currentWeekWorkoutsCompleted)
+        assertEquals(4, report.totalWorkouts)
+        val todayStr = dateFormatter.format(now)
+        assertEquals(4, report.heatMapData[todayStr])
+    }
 }
 

@@ -148,4 +148,91 @@ class StrengthStandardsEngineTest {
         assertEquals(80.0, squatStandard.nextTierKg!!, 0.01)
         assertEquals(50, squatStandard.progressToNextTierPct)
     }
+
+    @Test
+    fun `evaluateProfile verifies exact threshold transitions for Squat Deadlift and Overhead Press`() {
+        val bw = 100.0
+
+        // Squat boundaries: 0.8x (80kg), 1.2x (120kg), 1.75x (175kg), 2.25x (225kg)
+        val squatUntrained = engine.evaluateProfile(bw, mapOf("Squat" to 79.9, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.UNTRAINED, squatUntrained.liftStandards.find { it.exerciseName == "Squat" }?.tier)
+
+        val squatNovice = engine.evaluateProfile(bw, mapOf("Squat" to 80.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.NOVICE, squatNovice.liftStandards.find { it.exerciseName == "Squat" }?.tier)
+
+        val squatIntermediate = engine.evaluateProfile(bw, mapOf("Squat" to 120.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.INTERMEDIATE, squatIntermediate.liftStandards.find { it.exerciseName == "Squat" }?.tier)
+
+        val squatAdvanced = engine.evaluateProfile(bw, mapOf("Squat" to 175.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.ADVANCED, squatAdvanced.liftStandards.find { it.exerciseName == "Squat" }?.tier)
+
+        val squatElite = engine.evaluateProfile(bw, mapOf("Squat" to 225.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.ELITE, squatElite.liftStandards.find { it.exerciseName == "Squat" }?.tier)
+
+        // Deadlift boundaries: 1.0x (100kg), 1.5x (150kg), 2.2x (220kg), 2.75x (275kg)
+        val dlUntrained = engine.evaluateProfile(bw, mapOf("Deadlift" to 99.9, "Squat" to 1.0, "Bench Press" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.UNTRAINED, dlUntrained.liftStandards.find { it.exerciseName == "Deadlift" }?.tier)
+
+        val dlNovice = engine.evaluateProfile(bw, mapOf("Deadlift" to 100.0, "Squat" to 1.0, "Bench Press" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.NOVICE, dlNovice.liftStandards.find { it.exerciseName == "Deadlift" }?.tier)
+
+        val dlElite = engine.evaluateProfile(bw, mapOf("Deadlift" to 275.0, "Squat" to 1.0, "Bench Press" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(StrengthTier.ELITE, dlElite.liftStandards.find { it.exerciseName == "Deadlift" }?.tier)
+
+        // Overhead Press boundaries: 0.4x (40kg), 0.6x (60kg), 0.85x (85kg), 1.1x (110kg)
+        val ohpUntrained = engine.evaluateProfile(bw, mapOf("Overhead Press" to 39.9, "Squat" to 1.0, "Bench Press" to 1.0, "Deadlift" to 1.0))
+        assertEquals(StrengthTier.UNTRAINED, ohpUntrained.liftStandards.find { it.exerciseName == "Overhead Press" }?.tier)
+
+        val ohpNovice = engine.evaluateProfile(bw, mapOf("Overhead Press" to 40.0, "Squat" to 1.0, "Bench Press" to 1.0, "Deadlift" to 1.0))
+        assertEquals(StrengthTier.NOVICE, ohpNovice.liftStandards.find { it.exerciseName == "Overhead Press" }?.tier)
+
+        val ohpElite = engine.evaluateProfile(bw, mapOf("Overhead Press" to 110.0, "Squat" to 1.0, "Bench Press" to 1.0, "Deadlift" to 1.0))
+        assertEquals(StrengthTier.ELITE, ohpElite.liftStandards.find { it.exerciseName == "Overhead Press" }?.tier)
+    }
+
+    @Test
+    fun `percentile calculation clamps correctly across boundary tier values`() {
+        val bw = 100.0
+        // All Untrained (1kg each -> tier 0): totalTierValue = 0 -> percentile = 0
+        val pUntrained = engine.evaluateProfile(bw, mapOf("Squat" to 1.0, "Bench Press" to 1.0, "Deadlift" to 1.0, "Overhead Press" to 1.0))
+        assertEquals(0, pUntrained.percentile)
+
+        // All Novice (80kg Squat, 60kg Bench, 100kg Deadlift, 40kg OHP -> tier 1 each -> total = 4):
+        // base = 4/16 * 100 = 25% -> in [20, 50]
+        val pNovice = engine.evaluateProfile(bw, mapOf("Squat" to 80.0, "Bench Press" to 60.0, "Deadlift" to 100.0, "Overhead Press" to 40.0))
+        assertEquals(25, pNovice.percentile)
+
+        // All Intermediate (120kg, 90kg, 150kg, 60kg -> tier 2 each -> total = 8):
+        // base = 8/16 * 100 = 50% -> in [50, 80]
+        val pIntermediate = engine.evaluateProfile(bw, mapOf("Squat" to 120.0, "Bench Press" to 90.0, "Deadlift" to 150.0, "Overhead Press" to 60.0))
+        assertEquals(50, pIntermediate.percentile)
+
+        // All Advanced (175kg, 130kg, 220kg, 85kg -> tier 3 each -> total = 12):
+        // base = 12/16 * 100 = 75% -> coerced to [80, 95] -> 80%
+        val pAdvanced = engine.evaluateProfile(bw, mapOf("Squat" to 175.0, "Bench Press" to 130.0, "Deadlift" to 220.0, "Overhead Press" to 85.0))
+        assertEquals(80, pAdvanced.percentile)
+
+        // All Elite (225kg, 175kg, 275kg, 110kg -> tier 4 each -> total = 16):
+        // base = 16/16 * 100 = 100% -> coerced to [95, 99] -> 99%
+        val pElite = engine.evaluateProfile(bw, mapOf("Squat" to 225.0, "Bench Press" to 175.0, "Deadlift" to 275.0, "Overhead Press" to 110.0))
+        assertEquals(99, pElite.percentile)
+    }
+
+    @Test
+    fun `evaluateProfile with zero oneRepMax flags incomplete profile and Untrained overall`() {
+        val bw = 80.0
+        // Squat, Bench, and Deadlift are high, but Overhead Press is 0.0
+        val maxes = mapOf(
+            "Squat" to 160.0,
+            "Bench Press" to 120.0,
+            "Deadlift" to 200.0,
+            "Overhead Press" to 0.0
+        )
+        val profile = engine.evaluateProfile(bw, maxes)
+
+        assertEquals(StrengthTier.UNTRAINED, profile.overallTier)
+        assertNull(profile.strongestLift)
+        assertNull(profile.weakestLift)
+        assertTrue(profile.coachingRecommendation.contains("Record a 1RM for all Big 4 lifts"))
+    }
 }

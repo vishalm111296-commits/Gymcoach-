@@ -180,4 +180,102 @@ class SubstitutionEngineTest {
         // 40 + 20 + 15 + 10 + 10 + 10 = 105, capped at 100
         assertEquals(100, results[0].preservationScore)
     }
+
+    @Test
+    fun `findSubstitutes truncates candidate list strictly to maxResults`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Barbell Bench Press", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate"
+        )
+        val candidates = (2L..10L).map { id ->
+            ExerciseEntity(
+                id = id, name = "Chest Exercise $id", description = "", muscleGroup = "Chest",
+                equipment = "dumbbell", category = "push", difficulty = "intermediate"
+            )
+        }
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(emptyList())
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig) + candidates)
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym", maxResults = 3)
+
+        assertEquals(3, results.size)
+        assertTrue(results.none { it.substitute.id == 1L })
+    }
+
+    @Test
+    fun `findSubstitutes prevents duplicate exercises between predefined and same group fallback`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Barbell Bench Press", description = "", muscleGroup = "Chest",
+            equipment = "barbell", category = "push", difficulty = "intermediate"
+        )
+        val predefinedSub = ExerciseEntity(
+            id = 2L, name = "Dumbbell Bench Press", description = "", muscleGroup = "Chest",
+            equipment = "dumbbell", category = "push", difficulty = "intermediate"
+        )
+        val otherSub = ExerciseEntity(
+            id = 3L, name = "Incline Dumbbell Press", description = "", muscleGroup = "Chest",
+            equipment = "dumbbell", category = "push", difficulty = "intermediate"
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(listOf(predefinedSub))
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig, predefinedSub, otherSub))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym", maxResults = 5)
+
+        assertEquals(2, results.size)
+        assertEquals(listOf(2L, 3L), results.map { it.substitute.id }.sorted())
+        val dbBench = results.first { it.substitute.id == 2L }
+        assertEquals("Recommended substitute", dbBench.reason)
+        val incline = results.first { it.substitute.id == 3L }
+        assertEquals("Same muscle group", incline.reason)
+    }
+
+    @Test
+    fun `calculatePreservationScore yields zero when attributes are completely disjoint`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Deadlift", description = "", muscleGroup = "Back",
+            equipment = "barbell", category = "pull", difficulty = "advanced", tags = ""
+        )
+        val disjoint = ExerciseEntity(
+            id = 2L, name = "Leg Extension", description = "", muscleGroup = "Quadriceps",
+            equipment = "machine", category = "isolation", difficulty = "beginner", tags = ""
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(listOf(disjoint))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym")
+
+        assertEquals(1, results.size)
+        assertEquals(0, results[0].preservationScore)
+    }
+
+    @Test
+    fun `muscleGroup matching is case-insensitive for preservation score and fallback filtering`() = runTest {
+        val orig = ExerciseEntity(
+            id = 1L, name = "Upper Body Row", description = "", muscleGroup = "BACK",
+            equipment = "cable", category = "pull", difficulty = "intermediate", tags = "compound"
+        )
+        val lowercaseSub = ExerciseEntity(
+            id = 2L, name = "Dumbbell Row", description = "", muscleGroup = "back",
+            equipment = "dumbbell", category = "pull", difficulty = "intermediate", tags = "compound"
+        )
+
+        every { exerciseDao.getById(1L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(1L) } returns flowOf(emptyList())
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig, lowercaseSub))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(1L, "gym")
+
+        assertEquals(1, results.size)
+        assertEquals("Dumbbell Row", results[0].substitute.name)
+        assertEquals(80, results[0].preservationScore)
+    }
 }

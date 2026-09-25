@@ -282,5 +282,110 @@ class WarmupCalculatorTest {
         assertEquals(25.0, WarmupCalculator.roundToStep(24.9, 25.0, 0.5), 0.001)
         assertEquals(25.0, WarmupCalculator.roundToStep(10.0, 25.0, 0.5), 0.001)
     }
+
+    @Test
+    fun `sequential set number integrity is preserved when intermediate sets are suppressed`() {
+        // With 35kg working load, 20kg bar, 2.5kg step:
+        // Set 1: Empty bar 20kg (setNumber = 1)
+        // 50% = 17.5kg <= 20kg -> suppressed!
+        // 70% = 24.5kg -> round to 25.0kg -> added (setNumber = 2)
+        // 85% = 29.75kg -> round to 30.0kg -> added (setNumber = 3)
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 35.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        assertEquals(3, plan.sets.size)
+        assertEquals(listOf(1, 2, 3), plan.sets.map { it.setNumber })
+        assertEquals(listOf(20.0, 25.0, 30.0), plan.sets.map { it.weight })
+        assertEquals(listOf(10, 3, 1), plan.sets.map { it.reps })
+        assertEquals(listOf(45, 90, 120), plan.sets.map { it.restSeconds })
+        // Total rest: 45 + 90 + 120 = 255s. Performance: 3 * 20 = 60s. Total: 315s. ceil(315/60) = 6 min
+        assertEquals(6, plan.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun `heavy load potentiation set is omitted when coarse plate step collides with primer set`() {
+        // At 140kg with a coarse 20kg plate step:
+        // 85% = 119kg -> (119-20)/20 = 4.95 -> 5 -> 20 + 100 = 120kg (set 4)
+        // 92% = 128.8kg -> (128.8-20)/20 = 5.44 -> 5 -> 20 + 100 = 120kg
+        // Because weight92 (120kg) is NOT > weight85 (120kg), potentiation set must be suppressed
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 140.0,
+            barWeight = 20.0,
+            plateStep = 20.0
+        )
+        assertEquals(4, plan.sets.size)
+        assertTrue(plan.sets.none { it.percentage == 0.92 })
+        val weights = plan.sets.map { it.weight }
+        for (i in 0 until weights.size - 1) {
+            assertTrue("Loads must strictly increase", weights[i] < weights[i + 1])
+        }
+        assertEquals(listOf(20.0, 60.0, 100.0, 120.0), weights)
+    }
+
+    @Test
+    fun `specialty trap bar with microloading steps generates exact ramp and duration`() {
+        // 30kg Trap Bar with 0.5kg microloading steps for a 175kg working load
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 175.0,
+            barWeight = 30.0,
+            plateStep = 0.5
+        )
+        assertEquals(175.0, plan.workingWeight, 0.001)
+        assertEquals(30.0, plan.barWeight, 0.001)
+        assertEquals(5, plan.sets.size)
+
+        // Set 1: Barbell activation (30kg)
+        assertEquals(30.0, plan.sets[0].weight, 0.001)
+        assertEquals(10, plan.sets[0].reps)
+        assertEquals(45, plan.sets[0].restSeconds)
+
+        // Set 2: 50% = 87.5kg -> added = 57.5 -> /0.5 = 115.0 -> 87.5kg
+        assertEquals(87.5, plan.sets[1].weight, 0.001)
+        assertEquals(5, plan.sets[1].reps)
+        assertEquals(60, plan.sets[1].restSeconds)
+
+        // Set 3: 70% = 122.5kg -> added = 92.5 -> /0.5 = 185.0 -> 122.5kg
+        assertEquals(122.5, plan.sets[2].weight, 0.001)
+        assertEquals(3, plan.sets[2].reps)
+        assertEquals(90, plan.sets[2].restSeconds)
+
+        // Set 4: 85% = 148.75kg -> added = 118.75 -> /0.5 = 237.5 -> round(237.5) is 238.0 -> 30 + 119.0 = 149.0kg
+        assertEquals(149.0, plan.sets[3].weight, 0.001)
+        assertEquals(1, plan.sets[3].reps)
+        assertEquals(120, plan.sets[3].restSeconds)
+
+        // Set 5: 92% = 161.0kg -> added = 131.0 -> /0.5 = 262.0 -> 161.0kg
+        assertEquals(161.0, plan.sets[4].weight, 0.001)
+        assertEquals(1, plan.sets[4].reps)
+        assertEquals(150, plan.sets[4].restSeconds)
+        assertEquals("Post-activation potentiation", plan.sets[4].purpose)
+
+        // Rest: 45 + 60 + 90 + 120 + 150 = 465s. Sets: 5 * 20 = 100s. Total = 565s. ceil(565 / 60) = 10 min
+        assertEquals(10, plan.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun `zero and sub-bar working weights gracefully clamp to single activation set`() {
+        val testLoads = listOf(0.0, -10.0, 5.0, 15.0, 20.0)
+        for (load in testLoads) {
+            val plan = WarmupCalculator.calculateWarmupPlan(
+                workingWeight = load,
+                barWeight = 20.0,
+                plateStep = 2.5
+            )
+            assertEquals(1, plan.sets.size)
+            val singleSet = plan.sets.first()
+            assertEquals(1, singleSet.setNumber)
+            assertEquals(20.0, singleSet.weight, 0.001)
+            assertEquals(10, singleSet.reps)
+            assertEquals(45, singleSet.restSeconds)
+            assertEquals("Barbell activation & mobility", singleSet.purpose)
+            assertEquals(1.0, singleSet.percentage, 0.001)
+            assertEquals(2, plan.estimatedDurationMinutes)
+        }
+    }
 }
+
 

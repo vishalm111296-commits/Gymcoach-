@@ -253,4 +253,62 @@ class VTaperTransformationEngineTest {
         assertEquals(10.0, report.recompDelta!!.shoulderDeltaCm, 0.001) // 120 - 110
         assertEquals(91, report.recompDelta!!.daysPeriod)
     }
+
+    @Test
+    fun testAdonisIndexExactThresholdTransitions() {
+        // 1.349 -> NOVICE vs 1.350 -> ATHLETIC
+        val mNovice = BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 134.9)
+        assertEquals(VTaperTier.NOVICE, engine.calculateReport(listOf(mNovice)).adonisIndex.tier)
+        val mAthletic = BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 135.0)
+        assertEquals(VTaperTier.ATHLETIC, engine.calculateReport(listOf(mAthletic)).adonisIndex.tier)
+
+        // 1.499 -> ATHLETIC vs 1.500 -> PRIME
+        val mAthleticUpper = BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 149.9)
+        assertEquals(VTaperTier.ATHLETIC, engine.calculateReport(listOf(mAthleticUpper)).adonisIndex.tier)
+        val mPrime = BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 150.0)
+        assertEquals(VTaperTier.PRIME, engine.calculateReport(listOf(mPrime)).adonisIndex.tier)
+
+        // 1.617 -> PRIME vs 1.618 -> GOLDEN
+        val mPrimeUpper = BodyMeasurementEntity(waistCm = 1000.0, shouldersCm = 1617.0)
+        assertEquals(VTaperTier.PRIME, engine.calculateReport(listOf(mPrimeUpper)).adonisIndex.tier)
+        val mGolden = BodyMeasurementEntity(waistCm = 1000.0, shouldersCm = 1618.0)
+        assertEquals(VTaperTier.GOLDEN, engine.calculateReport(listOf(mGolden)).adonisIndex.tier)
+    }
+
+    @Test
+    fun testPartialLimbMeasurementExclusion() {
+        val measurement = BodyMeasurementEntity(
+            leftArmCm = 36.0,
+            rightArmCm = 0.0, // missing right arm -> Arms excluded
+            leftThighCm = 0.0,
+            rightThighCm = 58.0, // missing left thigh -> Thighs excluded
+            leftCalfCm = 38.0,
+            rightCalfCm = 38.2 // valid both -> Calves included
+        )
+        val report = engine.calculateReport(listOf(measurement))
+        assertEquals(1, report.limbSymmetries.size)
+        assertEquals("Calves", report.limbSymmetries[0].limbName)
+        assertTrue(report.limbSymmetries[0].isBalanced)
+    }
+
+    @Test
+    fun testSingleMeasurementHasNullRecompDelta() {
+        val single = BodyMeasurementEntity(id = 1, recordedAt = System.currentTimeMillis(), waistCm = 80.0, shouldersCm = 120.0)
+        val report = engine.calculateReport(listOf(single))
+        assertNull("Single measurement must have null recompDelta", report.recompDelta)
+    }
+
+    @Test
+    fun testNegativeCircumferenceSafelyReturnsEmptyAdonisIndex() {
+        val negativeWaist = BodyMeasurementEntity(waistCm = -80.0, shouldersCm = 120.0)
+        val report1 = engine.calculateReport(listOf(negativeWaist))
+        assertEquals(0.0, report1.adonisIndex.currentRatio, 0.0)
+        assertEquals("No Data", report1.adonisIndex.statusSummary)
+
+        val negativeShoulders = BodyMeasurementEntity(waistCm = 80.0, shouldersCm = -120.0)
+        val report2 = engine.calculateReport(listOf(negativeShoulders))
+        assertEquals(0.0, report2.adonisIndex.currentRatio, 0.0)
+        assertEquals("No Data", report2.adonisIndex.statusSummary)
+    }
 }
+

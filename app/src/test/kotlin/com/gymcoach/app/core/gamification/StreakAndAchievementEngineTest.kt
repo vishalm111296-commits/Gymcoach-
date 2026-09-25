@@ -264,4 +264,72 @@ class StreakAndAchievementEngineTest {
         assertEquals(0, report.currentXp)
         assertTrue(report.badges.none { it.isUnlocked })
     }
+
+    @Test
+    fun testVolumeMilestoneExactBoundaries() {
+        // Test 99,999 kg (locked) vs 100,000 kg (unlocked)
+        val sets99k = listOf(createSet(weight = 999.99, reps = 100)) // 99,999 kg
+        val r99k = engine.calculateReport(listOf(createWorkout(now.toEpochMilli())), sets99k, weeklyTarget = 1, zoneId = zoneId)
+        val badge99k = r99k.badges.find { it.id == "volume_100k" }
+        assertNotNull(badge99k)
+        assertFalse(badge99k!!.isUnlocked)
+        assertEquals(99999, badge99k.currentProgress)
+
+        val sets100k = listOf(createSet(weight = 1000.0, reps = 100)) // 100,000 kg
+        val r100k = engine.calculateReport(listOf(createWorkout(now.toEpochMilli())), sets100k, weeklyTarget = 1, zoneId = zoneId)
+        val badge100k = r100k.badges.find { it.id == "volume_100k" }
+        assertNotNull(badge100k)
+        assertTrue(badge100k!!.isUnlocked)
+        assertEquals(100000, badge100k.currentProgress)
+    }
+
+    @Test
+    fun testCenturionMilestoneExactBoundaries() {
+        // 99 normal completed sets -> locked
+        val sets99 = (1..99).map { createSet(weight = 50.0, reps = 10) }
+        val r99 = engine.calculateReport(listOf(createWorkout(now.toEpochMilli())), sets99, weeklyTarget = 1, zoneId = zoneId)
+        val badge99 = r99.badges.find { it.id == "centurion" }
+        assertNotNull(badge99)
+        assertFalse(badge99!!.isUnlocked)
+        assertEquals(99, badge99.currentProgress)
+
+        // 100 normal completed sets -> unlocked
+        val sets100 = (1..100).map { createSet(weight = 50.0, reps = 10) }
+        val r100 = engine.calculateReport(listOf(createWorkout(now.toEpochMilli())), sets100, weeklyTarget = 1, zoneId = zoneId)
+        val badge100 = r100.badges.find { it.id == "centurion" }
+        assertNotNull(badge100)
+        assertTrue(badge100!!.isUnlocked)
+        assertEquals(100, badge100.currentProgress)
+    }
+
+    @Test
+    fun testXpLevelThresholdTransitions() {
+        // Level 1: 0 - 999 XP
+        // Level 2: 1000 - 1999 XP
+        // 9 completed workouts = 900 XP + 9 normal sets = 990 XP
+        val workouts9 = (1..9).map { createWorkout(now.minus(it.toLong(), ChronoUnit.DAYS).toEpochMilli()) }
+        val sets9 = (1..9).map { createSet(50.0, 10) }
+        val r990 = engine.calculateReport(workouts9, sets9, weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(1, r990.athleteLevel)
+        assertEquals(990, r990.currentXp)
+        assertEquals(1000, r990.xpForNextLevel)
+
+        // Adding 1 set = +10 XP -> 1000 XP -> Level 2, 0 current XP
+        val sets10 = (1..10).map { createSet(50.0, 10) }
+        val r1000 = engine.calculateReport(workouts9, sets10, weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(2, r1000.athleteLevel)
+        assertEquals(0, r1000.currentXp)
+        assertEquals(1000, r1000.xpForNextLevel)
+    }
+
+    @Test
+    fun testDeloadDiscipleCaseInsensitiveMatching() {
+        val uppercaseWorkout = listOf(createWorkout(now.toEpochMilli(), notes = "LIGHT DELOAD SESSION"))
+        val rUpper = engine.calculateReport(uppercaseWorkout, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        assertTrue(rUpper.badges.find { it.id == "deload_disciple" }?.isUnlocked == true)
+
+        val mixedcaseWorkout = listOf(createWorkout(now.toEpochMilli(), notes = "Planned DeLoad Week"))
+        val rMixed = engine.calculateReport(mixedcaseWorkout, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        assertTrue(rMixed.badges.find { it.id == "deload_disciple" }?.isUnlocked == true)
+    }
 }

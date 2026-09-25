@@ -197,4 +197,60 @@ class VTaperTransformationEngineTest {
         val rGolden = engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 161.8)))
         assertEquals(VTaperTier.GOLDEN, rGolden.adonisIndex.tier)
     }
+
+    @Test
+    fun testLimbSymmetryExactHalfCentimeterBoundary() {
+        // Delta = 0.50 -> Balanced
+        val balancedMeasurement = BodyMeasurementEntity(
+            leftArmCm = 35.0,
+            rightArmCm = 35.5
+        )
+        val balancedReport = engine.calculateReport(listOf(balancedMeasurement))
+        val armSym = balancedReport.limbSymmetries.find { it.limbName == "Arms" }
+        assertNotNull(armSym)
+        assertTrue(armSym!!.isBalanced)
+        assertEquals(0.5, armSym.deltaCm, 0.001)
+
+        // Delta = 0.51 -> Imbalanced
+        val imbalancedMeasurement = BodyMeasurementEntity(
+            leftArmCm = 35.0,
+            rightArmCm = 35.51
+        )
+        val imbalancedReport = engine.calculateReport(listOf(imbalancedMeasurement))
+        val armImb = imbalancedReport.limbSymmetries.find { it.limbName == "Arms" }
+        assertNotNull(armImb)
+        assertFalse(armImb!!.isBalanced)
+        assertEquals(0.51, armImb.deltaCm, 0.001)
+    }
+
+    @Test
+    fun testExtremeAdonisRatioClampedAt100Progress() {
+        val superGolden = BodyMeasurementEntity(
+            waistCm = 70.0,
+            shouldersCm = 145.0 // Ratio: 2.07
+        )
+        val report = engine.calculateReport(listOf(superGolden))
+        assertEquals(VTaperTier.GOLDEN, report.adonisIndex.tier)
+        assertEquals(100, report.adonisIndex.progressPct)
+        assertEquals("Golden Tier", report.adonisIndex.statusSummary)
+    }
+
+    @Test
+    fun testRecompDeltaClosestBaselineSelectionAcrossMultipleEntries() {
+        val now = System.currentTimeMillis()
+        val day = 24L * 60L * 60L * 1000L
+
+        // 4 measurements: 120 days ago, 91 days ago, 60 days ago, now
+        val m120 = BodyMeasurementEntity(id = 1, recordedAt = now - (120 * day), waistCm = 95.0, shouldersCm = 105.0)
+        val m91 = BodyMeasurementEntity(id = 2, recordedAt = now - (91 * day), waistCm = 90.0, shouldersCm = 110.0)
+        val m60 = BodyMeasurementEntity(id = 3, recordedAt = now - (60 * day), waistCm = 85.0, shouldersCm = 115.0)
+        val mNow = BodyMeasurementEntity(id = 4, recordedAt = now, waistCm = 80.0, shouldersCm = 120.0)
+
+        // 90 day window: m91 is closest to now - 90*day
+        val report = engine.calculateReport(listOf(mNow, m60, m91, m120), daysWindow = 90)
+        assertNotNull(report.recompDelta)
+        assertEquals(-10.0, report.recompDelta!!.waistDeltaCm, 0.001) // 80 - 90
+        assertEquals(10.0, report.recompDelta!!.shoulderDeltaCm, 0.001) // 120 - 110
+        assertEquals(91, report.recompDelta!!.daysPeriod)
+    }
 }

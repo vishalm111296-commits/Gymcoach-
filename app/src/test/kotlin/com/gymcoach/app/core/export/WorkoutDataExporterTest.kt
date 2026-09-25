@@ -355,4 +355,69 @@ class WorkoutDataExporterTest {
         assertTrue(csv.contains("\"Incline Press, \"\"Paused\"\"\""))
         assertTrue(csv.contains("\"Felt great.\nNeed longer rest.\""))
     }
+
+    @Test
+    fun `exportToJson preserves Unicode exercise names and emoji in notes`() {
+        val exercise = Exercise(
+            id = 200L,
+            name = "Développé Couché 🏋️",
+            description = "",
+            muscleGroup = "Poitrine",
+            equipment = "barre",
+            difficulty = "Avancé"
+        )
+        val now = Instant.now()
+        val workout = Workout(
+            id = 150L,
+            date = now,
+            startTime = now,
+            endTime = now.plusSeconds(3600),
+            duration = 3600L,
+            notes = "Séance excellente! 🔥 素晴らしい",
+            completed = true
+        )
+        val we = WorkoutExerciseWithSets(
+            workoutExercise = WorkoutExercise(id = 1, workoutId = 150, exerciseId = 200, orderIndex = 0),
+            exercise = exercise,
+            sets = listOf(
+                WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 100.0, reps = 10, rpe = 9.0, restSeconds = 120, completed = true, setType = SetType.NORMAL)
+            )
+        )
+        val json = exporter.exportToJson(listOf(WorkoutWithDetails(workout = workout, exercises = listOf(we))))
+        assertTrue(json.contains("Développé Couché 🏋️"))
+        assertTrue(json.contains("Séance excellente! 🔥 素晴らしい"))
+    }
+
+    @Test
+    fun `exportToStrongCsv handles multi-hour durations sub-minute floor and all SetType tags`() {
+        val exercise = Exercise(id = 1L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "barbell", difficulty = "Advanced")
+        val now = Instant.now()
+
+        // Workout 1: 2 hours (7200 seconds) -> 120m
+        val w1 = Workout(id = 1, date = now, startTime = now, endTime = now.plusSeconds(7200), duration = 7200, notes = "", completed = true)
+        val sets1 = listOf(
+            WorkoutSet(1, 1, 1, 140.0, 5, 8.0, 180, true, SetType.NORMAL),
+            WorkoutSet(2, 1, 2, 70.0, 10, 0.0, 60, true, SetType.WARMUP),
+            WorkoutSet(3, 1, 3, 100.0, 12, 10.0, 90, true, SetType.DROP),
+            WorkoutSet(4, 1, 4, 120.0, 6, 10.0, 120, true, SetType.FAILURE)
+        )
+        val we1 = WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), exercise, sets1)
+
+        // Workout 2: 30 seconds -> coerced to 1m
+        val w2 = Workout(id = 2, date = now, startTime = now, endTime = now.plusSeconds(30), duration = 30, notes = "", completed = true)
+        val we2 = WorkoutExerciseWithSets(WorkoutExercise(2, 2, 1, 0), exercise, listOf(WorkoutSet(5, 2, 1, 100.0, 5, 8.0, 60, true, SetType.NORMAL)))
+
+        val csv = exporter.exportToStrongCsv(listOf(WorkoutWithDetails(w1, listOf(we1)), WorkoutWithDetails(w2, listOf(we2))))
+        val lines = csv.trimEnd().lines()
+
+        // 1 header + 4 sets + 1 set = 6 lines
+        assertEquals(6, lines.size)
+
+        // Check durations
+        assertTrue(lines[1].contains(",120m,Squat,1,140.0,5,0,0,,")) // Normal tag is empty
+        assertTrue(lines[2].contains(",120m,Squat,2,70.0,10,0,0,W,")) // Warmup tag is W
+        assertTrue(lines[3].contains(",120m,Squat,3,100.0,12,0,0,D,")) // Drop tag is D
+        assertTrue(lines[4].contains(",120m,Squat,4,120.0,6,0,0,F,")) // Failure tag is F
+        assertTrue(lines[5].contains(",1m,Squat,1,100.0,5,0,0,,"))    // Sub-minute clamped to 1m
+    }
 }

@@ -592,4 +592,77 @@ class WorkoutDataImporterTest {
         assertEquals(0, set.restSeconds) // defaulted
         assertEquals(0.0, set.rpe, 0.001) // defaulted
     }
+
+    @Test
+    fun `parseJson preserves unicode names and emoji notes`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 88,
+                  "startTime": 1672567200000,
+                  "durationSeconds": 3600,
+                  "completed": true,
+                  "notes": "Top séance! 🔥 素晴らしい",
+                  "exercises": [
+                    {
+                      "exerciseId": 99,
+                      "exerciseName": "Développé Couché 🏋️",
+                      "muscleGroup": "Pectoraux",
+                      "sets": [
+                        {
+                          "setNumber": 1,
+                          "weight": 100.0,
+                          "reps": 10,
+                          "completed": true,
+                          "setType": "NORMAL"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isSuccess)
+        val workout = result.getOrNull()!!.workouts.first()
+        assertEquals("Top séance! 🔥 素晴らしい", workout.workout.notes)
+        assertEquals("Développé Couché 🏋️", workout.exercises.first().exercise.name)
+    }
+
+    @Test
+    fun `parseJson handles exercises with empty sets list`() {
+        val json = """
+            {
+              "version": 1,
+              "exportedAt": 1672531200000,
+              "workouts": [
+                {
+                  "id": 1,
+                  "startTime": 1672567200000,
+                  "durationSeconds": 1800,
+                  "completed": true,
+                  "exercises": [
+                    {
+                      "exerciseId": 10,
+                      "exerciseName": "Bench Press",
+                      "muscleGroup": "Chest",
+                      "sets": []
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = importer.parseJson(json)
+        assertTrue(result.isSuccess)
+        val workout = result.getOrNull()!!.workouts.first()
+        assertEquals(1, workout.exercises.size)
+        assertTrue(workout.exercises.first().sets.isEmpty())
+    }
 }

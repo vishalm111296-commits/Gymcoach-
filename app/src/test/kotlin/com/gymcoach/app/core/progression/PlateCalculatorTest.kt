@@ -227,4 +227,91 @@ class PlateCalculatorTest {
         assertEquals(0.5, result.platesPerSide[1].plateWeight, 0.001)
         assertEquals(1, result.platesPerSide[1].count)
     }
+
+    @Test
+    fun testIwfHexColorsStrictlyPreservedInPlateCounts() {
+        // Target: 157.5kg on 20kg bar = 137.5kg plates -> 68.75kg per side
+        // Per side: 2x25kg (50kg) + 1x15kg (15kg) + 1x2.5kg (2.5kg) + 1x1.25kg (1.25kg) = 68.75kg
+        val result = PlateCalculator.calculatePlates(targetWeight = 157.5, barWeight = 20.0)
+
+        assertEquals(68.75, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(4, result.platesPerSide.size)
+
+        // 25kg Red
+        assertEquals(25.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2, result.platesPerSide[0].count)
+        assertEquals(0xFFD32F2FL, result.platesPerSide[0].hexColor)
+
+        // 15kg Yellow
+        assertEquals(15.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+        assertEquals(0xFFFBC02DL, result.platesPerSide[1].hexColor)
+
+        // 2.5kg Black
+        assertEquals(2.5, result.platesPerSide[2].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[2].count)
+        assertEquals(0xFF212121L, result.platesPerSide[2].hexColor)
+
+        // 1.25kg Chrome/Silver
+        assertEquals(1.25, result.platesPerSide[3].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[3].count)
+        assertEquals(0xFF9E9E9EL, result.platesPerSide[3].hexColor)
+    }
+
+    @Test
+    fun testUnsortedInputPlateInventoryIsProperlyOrderedDescending() {
+        // Caller supplies scrambled plates
+        val scrambledPlates = listOf(
+            5.0 to 0xFFFFFFFFL,
+            25.0 to 0xFFD32F2FL,
+            1.25 to 0xFF9E9E9EL,
+            15.0 to 0xFFFBC02DL,
+            20.0 to 0xFF1976D2L,
+            10.0 to 0xFF388E3CL,
+            2.5 to 0xFF212121L
+        )
+
+        // Target: 100kg on 20kg bar = 40kg per side -> greedy must pick 1x25kg + 1x15kg
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 100.0,
+            barWeight = 20.0,
+            availablePlates = scrambledPlates
+        )
+
+        assertEquals(40.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(25.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[0].count)
+        assertEquals(15.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
+
+    @Test
+    fun testSubBarWeightBoundaryReturnsCleanEmptyPlates() {
+        val justBelow = PlateCalculator.calculatePlates(targetWeight = 19.99, barWeight = 20.0)
+        assertEquals(19.99, justBelow.totalWeight, 0.001)
+        assertEquals(20.0, justBelow.barWeight, 0.001)
+        assertEquals(0.0, justBelow.weightPerSide, 0.001)
+        assertEquals(0.0, justBelow.remainder, 0.001)
+        assertTrue(justBelow.platesPerSide.isEmpty())
+    }
+
+    @Test
+    fun testExtremeLoad400KgBarbellPlateAllocation() {
+        // 400kg on 20kg bar = 380kg total plates -> 190kg per side
+        // Per side: 7x25kg (175kg) + 1x15kg (15kg) = 190kg
+        val result = PlateCalculator.calculatePlates(targetWeight = 400.0, barWeight = 20.0)
+
+        assertEquals(400.0, result.totalWeight, 0.001)
+        assertEquals(20.0, result.barWeight, 0.001)
+        assertEquals(190.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(25.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(7, result.platesPerSide[0].count)
+        assertEquals(15.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
 }

@@ -492,6 +492,164 @@ class DeloadEngineTest {
         assertEquals(0.0, deloaded.exercises[1].sets[0].weight, 0.001)
     }
 
+    @Test
+    fun `applyDeloadToWorkout scales set counts systematically across 0 to 6 sets and re-indexes set numbers`() {
+        for (originalCount in 0..6) {
+            val sets = (1..originalCount).map { setNum ->
+                createWorkoutSet(setNumber = setNum, weight = 100.0, reps = 10)
+            }
+            val workout = createWorkoutWithDetails(
+                exercises = listOf(
+                    createExerciseWithSets(exerciseId = 1L, name = "Squat", sets = sets)
+                )
+            )
+            val deloaded = deloadEngine.applyDeloadToWorkout(workout)
+            val scaledSets = deloaded.exercises[0].sets
+
+            val expectedCount = when (originalCount) {
+                0 -> 0
+                1 -> 1
+                2 -> 1
+                3 -> 2
+                4 -> 2
+                5 -> 3
+                6 -> 3
+                else -> originalCount / 2
+            }
+            assertEquals("Scaled set count for $originalCount original sets", expectedCount, scaledSets.size)
+
+            // Verify sequential 1..N set re-indexing
+            scaledSets.forEachIndexed { idx, set ->
+                assertEquals("Set number should be 1-indexed and sequential", idx + 1, set.setNumber)
+                assertEquals(90.0, set.weight, 0.001) // 100.0 * 0.90
+            }
+        }
+    }
+
+    @Test
+    fun `roundToNearestIncrement handles custom increments and boundary inputs`() {
+        // 0.5kg increment (default)
+        assertEquals(91.0, deloadEngine.roundToNearestIncrement(91.2, 0.5), 0.001)
+        assertEquals(91.5, deloadEngine.roundToNearestIncrement(91.3, 0.5), 0.001)
+
+        // 1.0kg increment
+        assertEquals(74.0, deloadEngine.roundToNearestIncrement(74.4, 1.0), 0.001)
+        assertEquals(75.0, deloadEngine.roundToNearestIncrement(74.6, 1.0), 0.001)
+
+        // 2.5kg increment
+        assertEquals(80.0, deloadEngine.roundToNearestIncrement(81.2, 2.5), 0.001)
+        assertEquals(82.5, deloadEngine.roundToNearestIncrement(81.3, 2.5), 0.001)
+
+        // 5.0kg increment
+        assertEquals(100.0, deloadEngine.roundToNearestIncrement(102.4, 5.0), 0.001)
+        assertEquals(105.0, deloadEngine.roundToNearestIncrement(102.6, 5.0), 0.001)
+
+        // Invalid increment or weight (<= 0.0) returns unchanged weight
+        assertEquals(53.25, deloadEngine.roundToNearestIncrement(53.25, 0.0), 0.001)
+        assertEquals(53.25, deloadEngine.roundToNearestIncrement(53.25, -1.0), 0.001)
+        assertEquals(0.0, deloadEngine.roundToNearestIncrement(0.0, 2.5), 0.001)
+        assertEquals(-10.0, deloadEngine.roundToNearestIncrement(-10.0, 2.5), 0.001)
+    }
+
+    @Test
+    fun `stagnation plateau evaluation accurately distinguishes plateau from progress and handles small histories`() {
+        val baseTime = Instant.now()
+
+        fun makeSession(daysAgo: Long, totalVolumeWeight: Double): WorkoutWithDetails {
+            return createWorkoutWithDetails(
+                workoutId = daysAgo,
+                date = baseTime.minusSeconds(daysAgo * 86400),
+                exercises = listOf(
+                    createExerciseWithSets(
+                        sets = listOf(
+                            createWorkoutSet(setNumber = 1, weight = totalVolumeWeight, reps = 1)
+                        )
+                    )
+                )
+            )
+        }
+
+        // Case 1: Less than 3 workouts -> No plateau
+        val shortHistory = listOf(makeSession(2, 1000.0), makeSession(1, 1000.0))
+        val statusShort = deloadEngine.evaluateDeloadNeed(workoutHistory = shortHistory, currentWeekInBlock = 1)
+        assertFalse(statusShort.isDeloadRecommended)
+
+        // Case 2: Progressing volume (1000 -> 1100 -> 1200) -> No plateau
+        val progressingHistory = listOf(
+            makeSession(3, 1000.0),
+            makeSession(2, 1100.0),
+            makeSession(1, 1200.0)
+        )
+        val statusProgressing = deloadEngine.evaluateDeloadNeed(workoutHistory = progressingHistory, currentWeekInBlock = 1)
+        assertFalse(statusProgressing.isDeloadRecommended)
+
+        // Case 3: Fluctuating volume (1000 -> 1200 -> 1100) -> No plateau (1200 was a peak)
+        val fluctuatingHistory = listOf(
+            makeSession(3, 1000.0),
+            makeSession(2, 1200.0),
+            makeSession(1, 1100.0)
+        )
+        val statusFluctuating = deloadEngine.evaluateDeloadNeed(workoutHistory = fluctuatingHistory, currentWeekInBlock = 1)
+        assertFalse(statusFluctuating.isDeloadRecommended)
+
+        // Case 4: Equal plateau across 3 sessions (1000 -> 1000 -> 1000) -> Triggers Plateau
+        val plateauHistory = listOf(
+            makeSession(3, 1000.0),
+            makeSession(2, 1000.0),
+            makeSession(1, 1000.0)
+        )
+        val statusPlateau = deloadEngine.evaluateDeloadNeed(workoutHistory = plateauHistory, currentWeekInBlock = 1)
+        assertTrue(statusPlateau.isDeloadRecommended)
+        assertEquals(DeloadReason.STAGNATION_PLATEAU, statusPlateau.reason)
+
+        // Case 5: Regressing volume across 3 sessions (1200 -> 1100 -> 1000) -> Triggers Plateau
+        val regressingHistory = listOf(
+            makeSession(3, 1200.0),
+            makeSession(2, 1100.0),
+            makeSession(1, 1000.0)
+        )
+        val statusRegressing = deloadEngine.evaluateDeloadNeed(workoutHistory = regressingHistory, currentWeekInBlock = 1)
+        assertTrue(statusRegressing.isDeloadRecommended)
+        assertEquals(DeloadReason.STAGNATION_PLATEAU, statusRegressing.reason)
+    }
+
+    @Test
+    fun `isLowReadinessSustained boundary transitions around threshold 55`() {
+        // Threshold exactly 55: not below threshold -> false
+        val exactly55 = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(55, 55, 55),
+            currentWeekInBlock = 1
+        )
+        assertFalse("Readiness at exactly 55 does not trigger deload", exactly55.isDeloadRecommended)
+
+        // Just below threshold (54): triggers fatigue accumulation deload
+        val below55 = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(54, 54, 54),
+            currentWeekInBlock = 1
+        )
+        assertTrue("Readiness at 54 triggers deload", below55.isDeloadRecommended)
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, below55.reason)
+
+        // Trailing 3 average below 55 (historical high, recent fatigue)
+        val trailingFatigue = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(90, 85, 50, 52, 53),
+            currentWeekInBlock = 1
+        )
+        assertTrue("Trailing fatigue below 55 triggers deload", trailingFatigue.isDeloadRecommended)
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, trailingFatigue.reason)
+
+        // Trailing 3 recovered (historical fatigue, recent recovery)
+        val trailingRecovered = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(40, 45, 60, 65, 70),
+            currentWeekInBlock = 1
+        )
+        assertFalse("Trailing recovery prevents deload", trailingRecovered.isDeloadRecommended)
+    }
+
     private fun createWorkoutWithDetails(
         workoutId: Long = 1L,
         date: Instant = Instant.now(),

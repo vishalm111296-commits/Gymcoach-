@@ -448,4 +448,116 @@ class VolumeCalculatorTest {
         assertEquals(3.0, vtaper2.secondaryScore, 0.01)
         assertEquals("Low V-taper volume", vtaper2.overallBalance)
     }
+
+    @Test
+    fun `calculateWeeklyVolume normalizes weekly sets across totalCalendarWeeks while preserving totalSets`() {
+        val week1Date = 1700000000000L // arbitrary fixed date
+        val chestSets = (1..20).map { i ->
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = i.toLong(), workoutExerciseId = 1L, setNumber = i, weight = 80.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 1L,
+                workoutDate = week1Date
+            )
+        }
+        val muscleMap = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // Without totalCalendarWeeks (single week bucket of 20 sets) -> weeklySets = 20
+        val unnormalized = volumeCalculator.calculateWeeklyVolume(chestSets, muscleMap, totalCalendarWeeks = null)
+        assertEquals(20, unnormalized.upperChestVolume.totalSets)
+        assertEquals(20, unnormalized.upperChestVolume.weeklySets)
+        assertEquals(VolumeCalculator.VolumeStatus.HIGH, unnormalized.upperChestVolume.status)
+
+        // With totalCalendarWeeks = 2 -> 20 / 2 = 10 weeklySets (MODERATE)
+        val normalized2Weeks = volumeCalculator.calculateWeeklyVolume(chestSets, muscleMap, totalCalendarWeeks = 2)
+        assertEquals(20, normalized2Weeks.upperChestVolume.totalSets) // totalSets preserved
+        assertEquals(10, normalized2Weeks.upperChestVolume.weeklySets)
+        assertEquals(VolumeCalculator.VolumeStatus.MODERATE, normalized2Weeks.upperChestVolume.status)
+
+        // With totalCalendarWeeks = 4 -> 20 / 4 = 5 weeklySets (INSUFFICIENT)
+        val normalized4Weeks = volumeCalculator.calculateWeeklyVolume(chestSets, muscleMap, totalCalendarWeeks = 4)
+        assertEquals(20, normalized4Weeks.upperChestVolume.totalSets)
+        assertEquals(5, normalized4Weeks.upperChestVolume.weeklySets)
+        assertEquals(VolumeCalculator.VolumeStatus.INSUFFICIENT, normalized4Weeks.upperChestVolume.status)
+    }
+
+    @Test
+    fun `isoWeekKey accurately calculates ISO 8601 week-based year and week numbers across boundaries`() {
+        val utc = java.time.ZoneOffset.UTC
+
+        // 2024-12-30 (Monday) is Week 1 of 2025 in ISO 8601
+        val date2024Dec30 = java.time.LocalDate.of(2024, 12, 30).atStartOfDay().toInstant(utc).toEpochMilli()
+        assertEquals(202501, volumeCalculator.isoWeekKey(date2024Dec30, utc))
+
+        // 2023-01-01 (Sunday) is Week 52 of 2022 in ISO 8601
+        val date2023Jan01 = java.time.LocalDate.of(2023, 1, 1).atStartOfDay().toInstant(utc).toEpochMilli()
+        assertEquals(202252, volumeCalculator.isoWeekKey(date2023Jan01, utc))
+
+        // Mid-year date: 2026-07-15 (Wednesday of Week 29, 2026)
+        val date2026Jul15 = java.time.LocalDate.of(2026, 7, 15).atStartOfDay().toInstant(utc).toEpochMilli()
+        assertEquals(202629, volumeCalculator.isoWeekKey(date2026Jul15, utc))
+    }
+
+    @Test
+    fun `legacy Lats key variations map case-insensitively directly into canonical Back volume`() {
+        val date = 1700000000000L
+        val sets = listOf(
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = 1L, workoutExerciseId = 10L, setNumber = 1, weight = 70.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 100L,
+                workoutDate = date
+            ),
+            VolumeCalculator.SetWithContext(
+                set = WorkoutSetEntity(id = 2L, workoutExerciseId = 20L, setNumber = 1, weight = 60.0, reps = 12, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                exerciseId = 200L,
+                workoutDate = date
+            )
+        )
+        // Exercise 100 mapped with "Lats", Exercise 200 mapped with "lats"
+        val muscleMap = mapOf(
+            100L to listOf(VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY)),
+            200L to listOf(VolumeCalculator.MuscleAssignment("lats", VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        val balance = volumeCalculator.calculateWeeklyVolume(sets, muscleMap)
+
+        assertEquals("Back direct sets must receive all mapped Lats sets", 2, balance.backVolume.directSets)
+        assertEquals(2, balance.backVolume.weeklySets)
+        assertEquals(2, balance.backVolume.totalSets)
+        // Check latVolume alias equality
+        assertEquals(balance.backVolume, balance.latVolume)
+    }
+
+    @Test
+    fun `calculateVtaperBalance recognizes Good V-taper volume distribution when both primary and secondary thresholds met`() {
+        val weekDate = 1700000000000L
+        fun makeSets(exerciseId: Long, count: Int): List<VolumeCalculator.SetWithContext> {
+            return (1..count).map { i ->
+                VolumeCalculator.SetWithContext(
+                    set = WorkoutSetEntity(id = (exerciseId * 1000 + i), workoutExerciseId = exerciseId, setNumber = i, weight = 50.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true, setType = 0),
+                    exerciseId = exerciseId,
+                    workoutDate = weekDate
+                )
+            }
+        }
+        val mapAll = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_LATERAL_DELT, VolumeCalculator.MuscleRole.PRIMARY)),
+            3L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_REAR_DELT, VolumeCalculator.MuscleRole.PRIMARY)),
+            4L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY)),
+            5L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_UPPER_BACK, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        // Primary: Back 15 sets (OPTIMAL level 3) + Lat Delt 15 sets (OPTIMAL level 3) -> avg 3.0 >= 3.0
+        // Secondary: Rear Delt 15 sets (OPTIMAL level 3) + Chest 10 sets (MODERATE level 1) + Upper Back 18 sets (HIGH level 2) -> (3+1+2)/3 = 2.0 >= 2.0
+        val sets = makeSets(1L, 15) + makeSets(2L, 15) + makeSets(3L, 15) + makeSets(4L, 10) + makeSets(5L, 18)
+        val balance = volumeCalculator.calculateWeeklyVolume(sets, mapAll)
+        val vtaper = volumeCalculator.calculateVtaperBalance(balance)
+
+        assertEquals(3.0, vtaper.primaryScore, 0.01)
+        assertEquals(2.0, vtaper.secondaryScore, 0.01)
+        assertEquals("Good V-taper volume distribution", vtaper.overallBalance)
+    }
 }
+

@@ -379,6 +379,77 @@ class MuscleBalanceAnalyzerTest {
         assertEquals(40, report.overallBalanceScore)
     }
 
+    @Test
+    fun `test exact ratio boundary thresholds for quad-hamstring and push-pull`() {
+        // Quad / Hamstring optimal range: 0.90..1.15
+        // Severe threshold upper: 1.15 * 1.2 = 1.38
+        // Test 1.15 exactly -> OPTIMAL
+        val setsOptimal = listOf(createSet(1, 115.0, 1), createSet(2, 100.0, 1))
+        val mapQuadHam = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_QUADRICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_HAMSTRINGS, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+        val reportOptimal = analyzer.analyzeBalance(setsOptimal, mapQuadHam)
+        assertEquals(BalanceStatus.OPTIMAL, reportOptimal.quadHamstringRatio.status)
+
+        // Test 1.38 exactly -> MODERATE_IMBALANCE
+        val setsModerateUpper = listOf(createSet(1, 138.0, 1), createSet(2, 100.0, 1))
+        val reportModUpper = analyzer.analyzeBalance(setsModerateUpper, mapQuadHam)
+        assertEquals(BalanceStatus.MODERATE_IMBALANCE, reportModUpper.quadHamstringRatio.status)
+
+        // Test 1.39 -> SEVERE_IMBALANCE
+        val setsSevereUpper = listOf(createSet(1, 139.0, 1), createSet(2, 100.0, 1))
+        val reportSevUpper = analyzer.analyzeBalance(setsSevereUpper, mapQuadHam)
+        assertEquals(BalanceStatus.SEVERE_IMBALANCE, reportSevUpper.quadHamstringRatio.status)
+
+        // Lower boundary: 0.90 * 0.8 = 0.72
+        // Test 0.75 -> MODERATE_IMBALANCE (between 0.72 and 0.90)
+        val setsModerateLower = listOf(createSet(1, 75.0, 1), createSet(2, 100.0, 1))
+        val reportModLower = analyzer.analyzeBalance(setsModerateLower, mapQuadHam)
+        assertEquals(BalanceStatus.MODERATE_IMBALANCE, reportModLower.quadHamstringRatio.status)
+
+        // Test 0.70 -> SEVERE_IMBALANCE (< 0.72)
+        val setsSevereLower = listOf(createSet(1, 70.0, 1), createSet(2, 100.0, 1))
+        val reportSevLower = analyzer.analyzeBalance(setsSevereLower, mapQuadHam)
+        assertEquals(BalanceStatus.SEVERE_IMBALANCE, reportSevLower.quadHamstringRatio.status)
+    }
+
+    @Test
+    fun `test multi-imbalance generates concurrent prescriptions for each target muscle`() {
+        // Push-heavy (Push 150, Pull 100 -> ratio 1.5 > 1.0 -> Pull prescription)
+        // Quad-heavy (Quad 150, Ham 100 -> ratio 1.5 > 1.15 -> Hamstrings prescription)
+        // Biceps-heavy (Bi 150, Tri 100 -> ratio 1.5 > 1.05 -> Triceps prescription)
+        val sets = listOf(
+            createSet(1, 150.0, 1), createSet(2, 100.0, 1),
+            createSet(3, 150.0, 1), createSet(4, 100.0, 1),
+            createSet(5, 150.0, 1), createSet(6, 100.0, 1)
+        )
+        val map = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY)),
+            3L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_QUADRICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            4L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_HAMSTRINGS, VolumeCalculator.MuscleRole.PRIMARY)),
+            5L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            6L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        val report = analyzer.analyzeBalance(sets, map)
+
+        assertEquals(3, report.correctivePrescriptions.size)
+        val targets = report.correctivePrescriptions.map { it.targetMuscle }.toSet()
+        assertEquals(setOf("Hamstrings", "Pull", "Triceps"), targets)
+    }
+
+    @Test
+    fun `test empty sets list produces perfect score without prescriptions`() {
+        val report = analyzer.analyzeBalance(emptyList(), emptyMap())
+        assertEquals(100, report.overallBalanceScore)
+        assertEquals(BalanceStatus.OPTIMAL, report.pushPullRatio.status)
+        assertEquals(BalanceStatus.OPTIMAL, report.quadHamstringRatio.status)
+        assertEquals(BalanceStatus.OPTIMAL, report.bicepsTricepsRatio.status)
+        assertTrue(report.correctivePrescriptions.isEmpty())
+    }
+
     private fun createSet(exerciseId: Long, weight: Double, reps: Int): VolumeCalculator.SetWithContext {
         return VolumeCalculator.SetWithContext(
             set = WorkoutSetEntity(
@@ -397,3 +468,4 @@ class MuscleBalanceAnalyzerTest {
         )
     }
 }
+

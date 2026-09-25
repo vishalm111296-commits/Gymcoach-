@@ -168,10 +168,14 @@ class MuscleBalanceAnalyzer @Inject constructor() {
     ): MuscleRatio {
         val ratio = if (antVol > 0) agVol / antVol else if (agVol > 0) Double.MAX_VALUE else 1.0
 
+        val severeLower = optimalRange.start * 0.8
+        val severeUpper = optimalRange.endInclusive * 1.2
+        val epsilon = 1e-6
+
         val status = when {
             ratio == 1.0 && agVol == 0.0 -> BalanceStatus.OPTIMAL // No data
             ratio in optimalRange -> BalanceStatus.OPTIMAL
-            ratio < optimalRange.start * 0.8 || ratio > optimalRange.endInclusive * 1.2 -> BalanceStatus.SEVERE_IMBALANCE
+            ratio < severeLower - epsilon || ratio > severeUpper + epsilon -> BalanceStatus.SEVERE_IMBALANCE
             else -> BalanceStatus.MODERATE_IMBALANCE
         }
 

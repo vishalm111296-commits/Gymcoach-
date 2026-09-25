@@ -3,6 +3,8 @@ package com.gymcoach.app.core.analytics
 import com.gymcoach.app.core.program.VolumeCalculator
 import com.gymcoach.app.data.local.entity.WorkoutSetEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -448,6 +450,119 @@ class MuscleBalanceAnalyzerTest {
         assertEquals(BalanceStatus.OPTIMAL, report.quadHamstringRatio.status)
         assertEquals(BalanceStatus.OPTIMAL, report.bicepsTricepsRatio.status)
         assertTrue(report.correctivePrescriptions.isEmpty())
+    }
+
+    @Test
+    fun `testMuscleGroupAliasesAnteriorDeltoidGlutesLatsAndRearDelt`() {
+        val sets = listOf(
+            createSet(1, 100.0, 1), // Anterior Deltoid -> Push (100)
+            createSet(2, 50.0, 1),  // Lats -> Pull (50)
+            createSet(3, 50.0, 1),  // Rear Deltoid -> Pull (50)
+            createSet(4, 100.0, 1), // Quadriceps -> Quad (100)
+            createSet(5, 100.0, 1)  // Glutes -> Hamstring/Posterior (100)
+        )
+        val map = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment("Anterior Deltoid", VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment("Lats", VolumeCalculator.MuscleRole.PRIMARY)),
+            3L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_REAR_DELT, VolumeCalculator.MuscleRole.PRIMARY)),
+            4L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_QUADRICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            5L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_GLUTES, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        val report = analyzer.analyzeBalance(sets, map)
+
+        // Push = 100, Pull = 50 + 50 = 100 -> ratio 1.0 (Optimal)
+        assertEquals(100.0, report.pushPullRatio.agonistVolumeKg, 0.001)
+        assertEquals(100.0, report.pushPullRatio.antagonistVolumeKg, 0.001)
+        assertEquals(1.0, report.pushPullRatio.ratio, 0.001)
+        assertEquals(BalanceStatus.OPTIMAL, report.pushPullRatio.status)
+
+        // Quad = 100, Ham/Glutes = 100 -> ratio 1.0 (Optimal)
+        assertEquals(100.0, report.quadHamstringRatio.agonistVolumeKg, 0.001)
+        assertEquals(100.0, report.quadHamstringRatio.antagonistVolumeKg, 0.001)
+        assertEquals(BalanceStatus.OPTIMAL, report.quadHamstringRatio.status)
+    }
+
+    @Test
+    fun `testOverallScoreDeductionsMixedModerateAndSevere`() {
+        // Push 110, Pull 100 -> ratio 1.10 (MODERATE_IMBALANCE -> -10)
+        // Quad 200, Ham 50 -> ratio 4.0 (SEVERE_IMBALANCE -> -20)
+        // Bi 100, Tri 100 -> ratio 1.0 (OPTIMAL -> 0)
+        // Total score = 100 - 10 - 20 = 70
+        val sets = listOf(
+            createSet(1, 110.0, 1),
+            createSet(2, 100.0, 1),
+            createSet(3, 200.0, 1),
+            createSet(4, 50.0, 1),
+            createSet(5, 100.0, 1),
+            createSet(6, 100.0, 1)
+        )
+        val map = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY)),
+            3L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_QUADRICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            4L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_HAMSTRINGS, VolumeCalculator.MuscleRole.PRIMARY)),
+            5L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            6L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        val report = analyzer.analyzeBalance(sets, map)
+        assertEquals(BalanceStatus.MODERATE_IMBALANCE, report.pushPullRatio.status)
+        assertEquals(BalanceStatus.SEVERE_IMBALANCE, report.quadHamstringRatio.status)
+        assertEquals(BalanceStatus.OPTIMAL, report.bicepsTricepsRatio.status)
+        assertEquals(70, report.overallBalanceScore)
+    }
+
+    @Test
+    fun `testHamstringHeavyRatioSuppressesHamstringPrescription`() {
+        // Quad 80, Ham 100 -> ratio 0.80 (MODERATE_IMBALANCE because < 0.90)
+        // However, prescription is only triggered when quadHam.ratio > 1.15
+        val sets = listOf(
+            createSet(1, 80.0, 1),
+            createSet(2, 100.0, 1)
+        )
+        val map = mapOf(
+            1L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_QUADRICEPS, VolumeCalculator.MuscleRole.PRIMARY)),
+            2L to listOf(VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_HAMSTRINGS, VolumeCalculator.MuscleRole.PRIMARY))
+        )
+
+        val report = analyzer.analyzeBalance(sets, map)
+        assertEquals(BalanceStatus.MODERATE_IMBALANCE, report.quadHamstringRatio.status)
+        // Hamstring prescription must NOT be generated since quad is not dominant
+        val hamPrescription = report.correctivePrescriptions.find { it.targetMuscle == "Hamstrings" }
+        assertNull(hamPrescription)
+    }
+
+    @Test
+    fun `testCompoundMultiRoleDistributionAcrossMultipleExercises`() {
+        // Exercise 1: Barbell Row -> Back PRIMARY (1.0) + Biceps SECONDARY (0.5)
+        // Exercise 2: Bench Press -> Chest PRIMARY (1.0) + Triceps SECONDARY (0.5)
+        val sets = listOf(
+            createSet(1, 100.0, 10), // 1000kg
+            createSet(2, 100.0, 10)  // 1000kg
+        )
+        val map = mapOf(
+            1L to listOf(
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BACK, VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_BICEPS, VolumeCalculator.MuscleRole.SECONDARY)
+            ),
+            2L to listOf(
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_CHEST, VolumeCalculator.MuscleRole.PRIMARY),
+                VolumeCalculator.MuscleAssignment(VolumeCalculator.MUSCLE_TRICEPS, VolumeCalculator.MuscleRole.SECONDARY)
+            )
+        )
+
+        val report = analyzer.analyzeBalance(sets, map)
+
+        // Push (Chest) = 1000, Pull (Back) = 1000 -> ratio 1.0 (Optimal)
+        assertEquals(1000.0, report.pushPullRatio.agonistVolumeKg, 0.001)
+        assertEquals(1000.0, report.pushPullRatio.antagonistVolumeKg, 0.001)
+        assertEquals(BalanceStatus.OPTIMAL, report.pushPullRatio.status)
+
+        // Biceps = 1000 * 0.5 = 500, Triceps = 1000 * 0.5 = 500 -> ratio 1.0 (Optimal)
+        assertEquals(500.0, report.bicepsTricepsRatio.agonistVolumeKg, 0.001)
+        assertEquals(500.0, report.bicepsTricepsRatio.antagonistVolumeKg, 0.001)
+        assertEquals(BalanceStatus.OPTIMAL, report.bicepsTricepsRatio.status)
     }
 
     private fun createSet(exerciseId: Long, weight: Double, reps: Int): VolumeCalculator.SetWithContext {

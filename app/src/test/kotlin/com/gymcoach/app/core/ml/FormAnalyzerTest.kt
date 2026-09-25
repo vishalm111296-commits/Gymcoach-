@@ -125,4 +125,155 @@ class FormAnalyzerTest {
 
         assertEquals(0, analyzer.repCount)
     }
+
+    private fun createLegPose(angle: Double, visible: Boolean = true): Pose {
+        val rad = Math.toRadians(180 - angle)
+        val landmarks = List(33) { NormalizedLandmark(0f, 0f, 0f) }.toMutableList()
+        landmarks[24] = NormalizedLandmark(0f, 0f, 0f)
+        landmarks[26] = NormalizedLandmark(0f, 1f, 0f)
+        landmarks[28] = NormalizedLandmark(Math.sin(rad).toFloat(), 1f + Math.cos(rad).toFloat(), 0f)
+        val visibility = List(33) { if (visible) 1.0f else 0.0f }
+        return Pose(landmarks, visibility)
+    }
+
+    private fun createPlankPose(angle: Double, visible: Boolean = true): Pose {
+        val rad = Math.toRadians(180 - angle)
+        val landmarks = List(33) { NormalizedLandmark(0f, 0f, 0f) }.toMutableList()
+        landmarks[12] = NormalizedLandmark(0f, 0f, 0f)
+        landmarks[24] = NormalizedLandmark(0f, 1f, 0f)
+        landmarks[28] = NormalizedLandmark(Math.sin(rad).toFloat(), 1f + Math.cos(rad).toFloat(), 0f)
+        val visibility = List(33) { if (visible) 1.0f else 0.0f }
+        return Pose(landmarks, visibility)
+    }
+
+    @Test
+    fun `detects complete rep for squat`() {
+        val squatAnalyzer = FormAnalyzer(ExerciseType.SQUAT, FormAnalyzer.defaultFor(ExerciseType.SQUAT))
+        for (i in 0..4) squatAnalyzer.analyze(createLegPose(170.0))
+        for (i in 0..4) squatAnalyzer.analyze(createLegPose(90.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = squatAnalyzer.analyze(createLegPose(170.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `detects complete rep for push up`() {
+        val pushUpAnalyzer = FormAnalyzer(ExerciseType.PUSH_UP, FormAnalyzer.defaultFor(ExerciseType.PUSH_UP))
+        for (i in 0..4) pushUpAnalyzer.analyze(createPose(170.0))
+        for (i in 0..4) pushUpAnalyzer.analyze(createPose(80.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = pushUpAnalyzer.analyze(createPose(170.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `detects complete rep for bench press`() {
+        val benchAnalyzer = FormAnalyzer(ExerciseType.BENCH_PRESS, FormAnalyzer.defaultFor(ExerciseType.BENCH_PRESS))
+        for (i in 0..4) benchAnalyzer.analyze(createPose(170.0))
+        for (i in 0..4) benchAnalyzer.analyze(createPose(75.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = benchAnalyzer.analyze(createPose(170.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `detects complete rep for shoulder press`() {
+        val spAnalyzer = FormAnalyzer(ExerciseType.SHOULDER_PRESS, FormAnalyzer.defaultFor(ExerciseType.SHOULDER_PRESS))
+        for (i in 0..4) spAnalyzer.analyze(createPose(70.0))
+        for (i in 0..4) spAnalyzer.analyze(createPose(175.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = spAnalyzer.analyze(createPose(70.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `plank tracking detects hold and increments rep on completion`() {
+        val config = ExerciseConfig(
+            downThreshold = 170.0,
+            upThreshold = 170.0,
+            minConfidence = 0.5,
+            isTimeBased = true,
+            holdDurationMs = 5000L
+        )
+        val plankAnalyzer = FormAnalyzer(ExerciseType.PLANK, config)
+
+        // Enter plank position at t=1000
+        val r1 = plankAnalyzer.analyze(createPlankPose(175.0), currentTimeMs = 1000L)
+        assertNotNull(r1)
+        assertEquals(0, r1!!.repCount)
+        assertEquals("Hold for 5s", r1.formFeedback)
+
+        // Halfway through hold at t=3500
+        val r2 = plankAnalyzer.analyze(createPlankPose(175.0), currentTimeMs = 3500L)
+        assertEquals(0, r2!!.repCount)
+        assertEquals("Hold for 2s", r2.formFeedback)
+
+        // Hold complete at t=6100
+        val r3 = plankAnalyzer.analyze(createPlankPose(175.0), currentTimeMs = 6100L)
+        assertEquals(1, r3!!.repCount)
+        assertEquals("Plank hold complete", r3.formFeedback)
+    }
+
+    @Test
+    fun `plank tracking resets timer when breaking position`() {
+        val config = ExerciseConfig(
+            downThreshold = 170.0,
+            upThreshold = 170.0,
+            minConfidence = 0.5,
+            isTimeBased = true,
+            holdDurationMs = 5000L
+        )
+        val plankAnalyzer = FormAnalyzer(ExerciseType.PLANK, config)
+
+        // Enter plank position at t=1000
+        plankAnalyzer.analyze(createPlankPose(175.0), currentTimeMs = 1000L)
+
+        // Drop out of position (hips sagging: angle 140)
+        val rBreak = plankAnalyzer.analyze(createPlankPose(140.0), currentTimeMs = 3000L)
+        assertEquals("Get into plank position", rBreak!!.formFeedback)
+        assertEquals(0, rBreak.repCount)
+
+        // Re-enter position: timer starts fresh from t=4000
+        val rRestart = plankAnalyzer.analyze(createPlankPose(175.0), currentTimeMs = 4000L)
+        assertEquals("Hold for 5s", rRestart!!.formFeedback)
+    }
+
+    @Test
+    fun `coincident landmarks report invalid movement without throwing`() {
+        val landmarks = List(33) { NormalizedLandmark(0f, 0f, 0f) }
+        val pose = Pose(landmarks, List(33) { 1.0f })
+
+        val result = analyzer.analyze(pose)
+        assertNotNull(result)
+        assertEquals("Landmarks not detected", result!!.formFeedback)
+        assertEquals(0, result.repCount)
+    }
+
+    @Test
+    fun `consecutive low confidence frames reset transient tracking`() {
+        // Build up initial angle and state
+        for (i in 0..4) analyzer.analyze(createPose(160.0))
+
+        // Feed 3 consecutive low-confidence frames
+        analyzer.analyze(createPose(160.0, visible = false))
+        analyzer.analyze(createPose(160.0, visible = false))
+        analyzer.analyze(createPose(160.0, visible = false))
+
+        // Valid frame afterwards starts cleanly without residual invalid state
+        val result = analyzer.analyze(createPose(160.0))
+        assertNotNull(result)
+        assertEquals(0, result!!.repCount)
+    }
 }

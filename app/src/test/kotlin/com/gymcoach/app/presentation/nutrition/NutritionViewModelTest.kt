@@ -203,4 +203,52 @@ class NutritionViewModelTest {
 
         coVerify { nutritionRepository.deleteLog(log) }
     }
+
+    @Test
+    fun `logWater with zero or negative amountMl is ignored and does not call repository`() = runTest(testDispatcher) {
+        every { nutritionRepository.getLogsForDay(any(), any()) } returns flowOf(emptyList())
+
+        val viewModel = NutritionViewModel(nutritionRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.logWater(0)
+        viewModel.logWater(-100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // addLog should only be called for the initial loadDay TDEE computation, not for logWater
+        coVerify(exactly = 0) { nutritionRepository.addLog(match { it.mealName == "Water" }) }
+    }
+
+    @Test
+    fun `deleteLog repository exception surfaces as error state`() = runTest(testDispatcher) {
+        every { nutritionRepository.getLogsForDay(any(), any()) } returns flowOf(emptyList())
+        val log = NutritionLogEntity(id = 5L, mealName = "Test", calories = 100, proteinGrams = 10f, carbsGrams = 10f, fatGrams = 5f)
+        coEvery { nutritionRepository.deleteLog(log) } throws RuntimeException("DB write failed")
+
+        val viewModel = NutritionViewModel(nutritionRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.deleteLog(log)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val errorMsg = viewModel.uiState.value.error
+        assertNotNull(errorMsg)
+        assertTrue(errorMsg!!.contains("DB write failed"))
+    }
+
+    @Test
+    fun `saveLog repository exception surfaces as error state`() = runTest(testDispatcher) {
+        every { nutritionRepository.getLogsForDay(any(), any()) } returns flowOf(emptyList())
+        coEvery { nutritionRepository.addLog(any()) } throws RuntimeException("Insert failed")
+
+        val viewModel = NutritionViewModel(nutritionRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveLog("Breakfast", 500, 40f, 50f, 15f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val errorMsg = viewModel.uiState.value.error
+        assertNotNull(errorMsg)
+        assertTrue(errorMsg!!.contains("Insert failed"))
+    }
 }

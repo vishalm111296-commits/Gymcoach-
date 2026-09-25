@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
@@ -95,6 +97,30 @@ class TrainingFrequencyViewModelTest {
         assertEquals(true, state.heatmapData.isEmpty())
         assertEquals(true, state.dayFrequency.isEmpty())
         assertEquals(true, state.monthlyData.isEmpty())
+    }
+
+    @Test
+    fun `repository exception surfaces as error state with isLoading false`() = runTest(testDispatcher) {
+        every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Network error")
+
+        val viewModel = TrainingFrequencyViewModel(workoutRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(false, state.isLoading)
+        assertNotNull(state.error)
+        assertTrue(state.error!!.contains("Network error"))
+    }
+
+    @Test
+    fun `single workout produces bestStreak of 1`() = runTest(testDispatcher) {
+        val today = LocalDate.now()
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(listOf(createWorkoutForDate(today)))
+
+        val viewModel = TrainingFrequencyViewModel(workoutRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.bestStreak)
     }
 
     private fun createWorkoutForDate(date: LocalDate): WorkoutWithStats {

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -148,34 +149,39 @@ class NutritionViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, selectedDate = date) }
-            nutritionRepository.getLogsForDay(startOfDay, endOfDay).collect { logs ->
-                val tdeeProfile = computeTdeeProfile(
-                    profile = cachedProfile,
-                    goalOverride = _uiState.value.selectedGoalOverride,
-                    activityOverride = _uiState.value.selectedActivityOverride
-                )
-                val summary = DailyNutritionSummary(
-                    totalCalories = logs.sumOf { it.calories },
-                    totalProtein = logs.sumOf { it.proteinGrams.toDouble() }.toFloat(),
-                    totalCarbs = logs.sumOf { it.carbsGrams.toDouble() }.toFloat(),
-                    totalFat = logs.sumOf { it.fatGrams.toDouble() }.toFloat(),
-                    totalFiber = logs.sumOf { it.fiberGrams.toDouble() }.toFloat(),
-                    totalWaterMl = logs.sumOf { it.waterMl },
-                    calorieGoal = tdeeProfile.targetCalories,
-                    proteinGoalGrams = tdeeProfile.macroSplit.proteinGrams,
-                    carbsGoalGrams = tdeeProfile.macroSplit.carbsGrams,
-                    fatGoalGrams = tdeeProfile.macroSplit.fatGrams,
-                    fiberGoalGrams = tdeeProfile.fiberGrams,
-                    waterGoalMl = tdeeProfile.waterMlTarget,
-                    tdeeProfile = tdeeProfile
-                )
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        todayLogs = logs,
-                        dailySummary = summary
+            try {
+                nutritionRepository.getLogsForDay(startOfDay, endOfDay).collect { logs ->
+                    val tdeeProfile = computeTdeeProfile(
+                        profile = cachedProfile,
+                        goalOverride = _uiState.value.selectedGoalOverride,
+                        activityOverride = _uiState.value.selectedActivityOverride
                     )
+                    val summary = DailyNutritionSummary(
+                        totalCalories = logs.sumOf { it.calories },
+                        totalProtein = logs.sumOf { it.proteinGrams.toDouble() }.toFloat(),
+                        totalCarbs = logs.sumOf { it.carbsGrams.toDouble() }.toFloat(),
+                        totalFat = logs.sumOf { it.fatGrams.toDouble() }.toFloat(),
+                        totalFiber = logs.sumOf { it.fiberGrams.toDouble() }.toFloat(),
+                        totalWaterMl = logs.sumOf { it.waterMl },
+                        calorieGoal = tdeeProfile.targetCalories,
+                        proteinGoalGrams = tdeeProfile.macroSplit.proteinGrams,
+                        carbsGoalGrams = tdeeProfile.macroSplit.carbsGrams,
+                        fatGoalGrams = tdeeProfile.macroSplit.fatGrams,
+                        fiberGoalGrams = tdeeProfile.fiberGrams,
+                        waterGoalMl = tdeeProfile.waterMlTarget,
+                        tdeeProfile = tdeeProfile
+                    )
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            todayLogs = logs,
+                            dailySummary = summary
+                        )
+                    }
                 }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(isLoading = false, error = "Failed to load nutrition data: ${e.message}") }
             }
         }
     }
@@ -193,23 +199,29 @@ class NutritionViewModel @Inject constructor(
     }
 
     fun logWater(amountMl: Int) {
+        if (amountMl <= 0) return
         viewModelScope.launch {
-            val zone = ZoneId.systemDefault()
-            val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() +
-                (System.currentTimeMillis() % 86_400_000L)
+            try {
+                val zone = ZoneId.systemDefault()
+                val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() +
+                    (System.currentTimeMillis() % 86_400_000L)
 
-            val log = NutritionLogEntity(
-                date = dateMillis,
-                mealName = "Water",
-                calories = 0,
-                proteinGrams = 0f,
-                carbsGrams = 0f,
-                fatGrams = 0f,
-                fiberGrams = 0f,
-                waterMl = amountMl,
-                notes = "Hydration"
-            )
-            nutritionRepository.addLog(log)
+                val log = NutritionLogEntity(
+                    date = dateMillis,
+                    mealName = "Water",
+                    calories = 0,
+                    proteinGrams = 0f,
+                    carbsGrams = 0f,
+                    fatGrams = 0f,
+                    fiberGrams = 0f,
+                    waterMl = amountMl,
+                    notes = "Hydration"
+                )
+                nutritionRepository.addLog(log)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(error = "Failed to log water: ${e.message}") }
+            }
         }
     }
 
@@ -224,36 +236,46 @@ class NutritionViewModel @Inject constructor(
         notes: String = ""
     ) {
         viewModelScope.launch {
-            val existing = _uiState.value.editingLog
-            val zone = ZoneId.systemDefault()
-            val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() + 
-                (System.currentTimeMillis() % 86_400_000L)
+            try {
+                val existing = _uiState.value.editingLog
+                val zone = ZoneId.systemDefault()
+                val dateMillis = _uiState.value.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli() +
+                    (System.currentTimeMillis() % 86_400_000L)
 
-            val log = NutritionLogEntity(
-                id = existing?.id ?: 0L,
-                date = existing?.date ?: dateMillis,
-                mealName = mealName,
-                calories = calories,
-                proteinGrams = proteinGrams,
-                carbsGrams = carbsGrams,
-                fatGrams = fatGrams,
-                fiberGrams = fiberGrams,
-                waterMl = waterMl,
-                notes = notes
-            )
+                val log = NutritionLogEntity(
+                    id = existing?.id ?: 0L,
+                    date = existing?.date ?: dateMillis,
+                    mealName = mealName,
+                    calories = calories,
+                    proteinGrams = proteinGrams,
+                    carbsGrams = carbsGrams,
+                    fatGrams = fatGrams,
+                    fiberGrams = fiberGrams,
+                    waterMl = waterMl,
+                    notes = notes
+                )
 
-            if (log.id == 0L) {
-                nutritionRepository.addLog(log)
-            } else {
-                nutritionRepository.updateLog(log)
+                if (log.id == 0L) {
+                    nutritionRepository.addLog(log)
+                } else {
+                    nutritionRepository.updateLog(log)
+                }
+                _uiState.update { it.copy(showAddDialog = false, editingLog = null) }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(error = "Failed to save nutrition log: ${e.message}") }
             }
-            _uiState.update { it.copy(showAddDialog = false, editingLog = null) }
         }
     }
 
     fun deleteLog(log: NutritionLogEntity) {
         viewModelScope.launch {
-            nutritionRepository.deleteLog(log)
+            try {
+                nutritionRepository.deleteLog(log)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(error = "Failed to delete nutrition log: ${e.message}") }
+            }
         }
     }
 }

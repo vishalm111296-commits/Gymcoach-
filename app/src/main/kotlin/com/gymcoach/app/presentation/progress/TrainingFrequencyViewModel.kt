@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Instant
@@ -23,7 +24,8 @@ data class TrainingFrequencyUiState(
     val bestStreak: Int = 0,
     val dayFrequency: Map<DayOfWeek, Int> = emptyMap(),
     val heatmapData: Map<LocalDate, Int> = emptyMap(),
-    val monthlyData: Map<Month, Int> = emptyMap()
+    val monthlyData: Map<Month, Int> = emptyMap(),
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -40,75 +42,80 @@ class TrainingFrequencyViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            workoutRepository.getCompletedWorkouts().collect { workouts ->
-                val today = LocalDate.now()
-                val sixMonthsAgo = today.minusMonths(6).withDayOfMonth(1)
-                val zoneId = ZoneId.systemDefault()
-                
-                val currentWeekNum = today.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
-                val currentYear = today.year
-                
-                var weekCount = 0
-                var monthCount = 0
-                val heatData = mutableMapOf<LocalDate, Int>()
-                val dayFreq = mutableMapOf<DayOfWeek, Int>()
-                val monthData = mutableMapOf<Month, Int>()
+            try {
+                workoutRepository.getCompletedWorkouts().collect { workouts ->
+                    val today = LocalDate.now()
+                    val sixMonthsAgo = today.minusMonths(6).withDayOfMonth(1)
+                    val zoneId = ZoneId.systemDefault()
 
-                val activeDates = mutableSetOf<LocalDate>()
+                    val currentWeekNum = today.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                    val currentYear = today.year
 
-                for (w in workouts) {
-                    val date = w.date.atZone(zoneId).toLocalDate()
-                    activeDates.add(date)
+                    var weekCount = 0
+                    var monthCount = 0
+                    val heatData = mutableMapOf<LocalDate, Int>()
+                    val dayFreq = mutableMapOf<DayOfWeek, Int>()
+                    val monthData = mutableMapOf<Month, Int>()
 
-                    // week count
-                    if (date.year == currentYear && date.get(ChronoField.ALIGNED_WEEK_OF_YEAR) == currentWeekNum) {
-                        weekCount++
-                    }
-                    
-                    // month count
-                    if (date.year == currentYear && date.month == today.month) {
-                        monthCount++
-                    }
+                    val activeDates = mutableSetOf<LocalDate>()
 
-                    // For last 6 months
-                    if (!date.isBefore(sixMonthsAgo)) {
-                        heatData[date] = heatData.getOrDefault(date, 0) + 1
-                        dayFreq[date.dayOfWeek] = dayFreq.getOrDefault(date.dayOfWeek, 0) + 1
-                        monthData[date.month] = monthData.getOrDefault(date.month, 0) + 1
-                    }
-                }
+                    for (w in workouts) {
+                        val date = w.date.atZone(zoneId).toLocalDate()
+                        activeDates.add(date)
 
-                // calculate best streak
-                var currentStreak = 0
-                var maxStreak = 0
-                var lastDate: LocalDate? = null
+                        // week count
+                        if (date.year == currentYear && date.get(ChronoField.ALIGNED_WEEK_OF_YEAR) == currentWeekNum) {
+                            weekCount++
+                        }
 
-                val sortedDates = activeDates.sorted()
-                for (date in sortedDates) {
-                    if (lastDate == null) {
-                        currentStreak = 1
-                    } else {
-                        if (lastDate.plusDays(1) == date) {
-                            currentStreak++
-                        } else {
-                            currentStreak = 1
+                        // month count
+                        if (date.year == currentYear && date.month == today.month) {
+                            monthCount++
+                        }
+
+                        // For last 6 months
+                        if (!date.isBefore(sixMonthsAgo)) {
+                            heatData[date] = heatData.getOrDefault(date, 0) + 1
+                            dayFreq[date.dayOfWeek] = dayFreq.getOrDefault(date.dayOfWeek, 0) + 1
+                            monthData[date.month] = monthData.getOrDefault(date.month, 0) + 1
                         }
                     }
-                    if (currentStreak > maxStreak) {
-                        maxStreak = currentStreak
-                    }
-                    lastDate = date
-                }
 
-                _uiState.value = TrainingFrequencyUiState(
-                    isLoading = false,
-                    workoutsThisWeek = weekCount,
-                    workoutsThisMonth = monthCount,
-                    bestStreak = maxStreak,
-                    dayFrequency = dayFreq,
-                    heatmapData = heatData,
-                    monthlyData = monthData
-                )
+                    // calculate best streak
+                    var currentStreak = 0
+                    var maxStreak = 0
+                    var lastDate: LocalDate? = null
+
+                    val sortedDates = activeDates.sorted()
+                    for (date in sortedDates) {
+                        if (lastDate == null) {
+                            currentStreak = 1
+                        } else {
+                            if (lastDate.plusDays(1) == date) {
+                                currentStreak++
+                            } else {
+                                currentStreak = 1
+                            }
+                        }
+                        if (currentStreak > maxStreak) {
+                            maxStreak = currentStreak
+                        }
+                        lastDate = date
+                    }
+
+                    _uiState.value = TrainingFrequencyUiState(
+                        isLoading = false,
+                        workoutsThisWeek = weekCount,
+                        workoutsThisMonth = monthCount,
+                        bestStreak = maxStreak,
+                        dayFrequency = dayFreq,
+                        heatmapData = heatData,
+                        monthlyData = monthData
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.value = _uiState.value.copy(isLoading = false, error = "Failed to load training data: ${e.message}")
             }
         }
     }

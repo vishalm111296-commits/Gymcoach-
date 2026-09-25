@@ -140,4 +140,27 @@ class DeloadPeriodizationViewModelTest {
         viewModel.toggleDeloadProtocol()
         assertFalse(viewModel.uiState.value.isDeloadActive)
     }
+
+    @Test
+    fun `loadPeriodizationData surfaces error state on repository exception`() = runTest {
+        every { programRepository.getActiveProgram() } throws RuntimeException("DB unavailable")
+
+        viewModel = DeloadPeriodizationViewModel(workoutRepository, readinessRepository, programRepository, deloadEngine)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNotNull(state.error)
+        assertTrue(state.error!!.contains("DB unavailable"))
+    }
+
+    @Test
+    fun `loadPeriodizationData with empty readiness uses default avgReadiness of 75`() = runTest {
+        every { readinessRepository.getAllReadiness() } returns flowOf(emptyList())
+
+        viewModel = DeloadPeriodizationViewModel(workoutRepository, readinessRepository, programRepository, deloadEngine)
+        advanceUntilIdle()
+
+        assertEquals(75, viewModel.uiState.value.readinessAvg)
+    }
 }

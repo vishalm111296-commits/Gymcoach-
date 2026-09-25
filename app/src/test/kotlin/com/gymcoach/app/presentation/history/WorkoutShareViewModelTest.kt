@@ -123,4 +123,32 @@ class WorkoutShareViewModelTest {
         viewModel.resetState()
         assertEquals(ShareState.Idle, viewModel.shareState.value)
     }
+
+    @Test
+    fun `generateStoryCard transitions to Error on repository exception`() = runTest(testDispatcher) {
+        val workoutId = 99L
+        coEvery { workoutRepository.getWorkoutWithDetails(workoutId) } returns flowOf(workoutWithDetails)
+        every { shareCardBuilder.buildShareData(workoutWithDetails) } throws RuntimeException("Bitmap OOM")
+
+        viewModel.generateStoryCard(workoutId, context)
+
+        val state = viewModel.shareState.value
+        assertTrue(state is ShareState.Error)
+        assertEquals("Bitmap OOM", (state as ShareState.Error).msg)
+    }
+
+    @Test
+    fun `resetState after Success resets to Idle`() = runTest(testDispatcher) {
+        val workoutId = 2L
+        coEvery { workoutRepository.getWorkoutWithDetails(workoutId) } returns flowOf(workoutWithDetails)
+        every { shareCardBuilder.buildShareData(workoutWithDetails) } returns cardData
+        every { shareCardRenderer.renderToBitmap(cardData) } returns bitmap
+        every { shareCardRenderer.saveShareImage(context, bitmap, workoutId) } returns uri
+
+        viewModel.generateStoryCard(workoutId, context)
+        assertTrue(viewModel.shareState.value is ShareState.Success)
+
+        viewModel.resetState()
+        assertEquals(ShareState.Idle, viewModel.shareState.value)
+    }
 }

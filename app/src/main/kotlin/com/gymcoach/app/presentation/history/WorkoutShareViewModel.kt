@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,6 +53,7 @@ class WorkoutShareViewModel @Inject constructor(
                     _shareState.value = ShareState.Error("Failed to save image")
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _shareState.value = ShareState.Error(e.localizedMessage ?: "Unknown error")
             }
         }

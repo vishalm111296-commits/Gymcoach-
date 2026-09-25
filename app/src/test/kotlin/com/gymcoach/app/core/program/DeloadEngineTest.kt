@@ -267,6 +267,112 @@ class DeloadEngineTest {
         assertEquals(10.0, deloadEngine.roundToNearestIncrement(10.0, 0.0), 0.01)
     }
 
+    @Test
+    fun `stagnation plateau sorts scrambled dates correctly`() {
+        val baseTime = Instant.now()
+        val w1 = createWorkoutWithDetails(
+            workoutId = 1,
+            date = baseTime.minusSeconds(86400 * 5),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10)))) // vol 1000
+        )
+        val w2 = createWorkoutWithDetails(
+            workoutId = 2,
+            date = baseTime.minusSeconds(86400 * 3),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10)))) // vol 1000
+        )
+        val w3 = createWorkoutWithDetails(
+            workoutId = 3,
+            date = baseTime.minusSeconds(86400 * 1),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 9))))  // vol 900
+        )
+
+        // Pass workouts in scrambled order: w2, w3, w1
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = listOf(w2, w3, w1),
+            readinessScores = listOf(70, 75),
+            currentWeekInBlock = 2
+        )
+
+        assertTrue("Deload should be recommended despite scrambled order", status.isDeloadRecommended)
+        assertEquals(DeloadReason.STAGNATION_PLATEAU, status.reason)
+    }
+
+    @Test
+    fun `progressive volume does not trigger stagnation plateau`() {
+        val baseTime = Instant.now()
+        val w1 = createWorkoutWithDetails(
+            workoutId = 1,
+            date = baseTime.minusSeconds(86400 * 5),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 100.0, 10)))) // vol 1000
+        )
+        val w2 = createWorkoutWithDetails(
+            workoutId = 2,
+            date = baseTime.minusSeconds(86400 * 3),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 110.0, 10)))) // vol 1100
+        )
+        val w3 = createWorkoutWithDetails(
+            workoutId = 3,
+            date = baseTime.minusSeconds(86400 * 1),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 120.0, 10)))) // vol 1200
+        )
+
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = listOf(w1, w2, w3),
+            readinessScores = listOf(75, 80),
+            currentWeekInBlock = 2
+        )
+
+        assertFalse("Deload should NOT be recommended for progressive volume", status.isDeloadRecommended)
+        assertNull(status.reason)
+    }
+
+    @Test
+    fun `mixed readiness history triggers fatigue accumulation when recent window average is low`() {
+        // Overall average: (85 + 75 + 45 + 50 + 48) / 5 = 60.6 (above 55 threshold)
+        // But recent 3 scores: (45 + 50 + 48) / 3 = 47.66 (below 55 threshold)
+        val mixedScores = listOf(85, 75, 45, 50, 48)
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = mixedScores,
+            currentWeekInBlock = 2
+        )
+
+        assertTrue(status.isDeloadRecommended)
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, status.reason)
+        assertTrue(status.coachingAdvice.contains("accumulated fatigue"))
+    }
+
+    @Test
+    fun `applyDeloadToWorkout handles various set counts with odd numbers and sequential reindexing`() {
+        val ex1Sets = listOf(createWorkoutSet(1, 100.0, 10)) // 1 set -> 1
+        val ex2Sets = (1..3).map { createWorkoutSet(it, 80.0, 8) } // 3 sets -> round(1.5) = 2
+        val ex3Sets = (1..5).map { createWorkoutSet(it, 60.0, 10) } // 5 sets -> round(2.5) = 3
+        val ex4Sets = (1..7).map { createWorkoutSet(it, 40.0, 12) } // 7 sets -> round(3.5) = 4
+
+        val originalWorkout = createWorkoutWithDetails(
+            exercises = listOf(
+                createExerciseWithSets(1, "Squat", ex1Sets),
+                createExerciseWithSets(2, "Bench", ex2Sets),
+                createExerciseWithSets(3, "Row", ex3Sets),
+                createExerciseWithSets(4, "Curl", ex4Sets)
+            )
+        )
+
+        val deloaded = deloadEngine.applyDeloadToWorkout(originalWorkout)
+
+        assertEquals(1, deloaded.exercises[0].sets.size)
+        assertEquals(listOf(1), deloaded.exercises[0].sets.map { it.setNumber })
+
+        assertEquals(2, deloaded.exercises[1].sets.size)
+        assertEquals(listOf(1, 2), deloaded.exercises[1].sets.map { it.setNumber })
+
+        assertEquals(3, deloaded.exercises[2].sets.size)
+        assertEquals(listOf(1, 2, 3), deloaded.exercises[2].sets.map { it.setNumber })
+
+        assertEquals(4, deloaded.exercises[3].sets.size)
+        assertEquals(listOf(1, 2, 3, 4), deloaded.exercises[3].sets.map { it.setNumber })
+    }
+
     private fun createWorkoutWithDetails(
         workoutId: Long = 1L,
         date: Instant = Instant.now(),

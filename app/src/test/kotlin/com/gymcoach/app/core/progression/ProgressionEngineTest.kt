@@ -308,4 +308,117 @@ class ProgressionEngineTest {
         assertEquals(12.0, progressionEngine.roundToIncrement(11.1, 2.0), 0.001)
         assertEquals(10.0, progressionEngine.roundToIncrement(10.0, 2.5), 0.001)
     }
+
+    @Test
+    fun `parseRepRange parses various valid and fallback formats`() {
+        assertEquals(Pair(8, 12), ProgressionEngine.parseRepRange("8-12"))
+        assertEquals(Pair(8, 12), ProgressionEngine.parseRepRange("8–12")) // en dash
+        assertEquals(Pair(8, 12), ProgressionEngine.parseRepRange("8 to 12"))
+        assertEquals(Pair(3, 5), ProgressionEngine.parseRepRange("3 - 5 reps"))
+        assertEquals(Pair(8, 10), ProgressionEngine.parseRepRange("10")) // single target
+        assertEquals(Pair(1, 1), ProgressionEngine.parseRepRange("1")) // single target clamped at min 1
+        assertEquals(Pair(8, 12), ProgressionEngine.parseRepRange("")) // blank default
+        assertEquals(Pair(8, 12), ProgressionEngine.parseRepRange("abc")) // corrupt default
+    }
+
+    @Test
+    fun `calculateProgression heavy weight progression adheres to ACSM 10kg ceiling`() {
+        // At 100.0 kg: 100 * 1.05 = 105.0 kg
+        val sets100 = listOf(
+            createSet(weight = 100.0, reps = 12),
+            createSet(weight = 100.0, reps = 12)
+        )
+        val result100 = progressionEngine.calculateProgression(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = sets100
+        )
+        assertEquals(105.0, result100.recommendedWeight, 0.01)
+
+        // At 250.0 kg: 250 * 1.05 = 262.5 kg, capped at 250 + 10 = 260.0 kg (ACSM ceiling)
+        val sets250 = listOf(
+            createSet(weight = 250.0, reps = 5),
+            createSet(weight = 250.0, reps = 5)
+        )
+        val result250 = progressionEngine.calculateProgression(
+            exerciseId = 2L,
+            exerciseName = "Deadlift",
+            exerciseEquipment = "barbell",
+            targetRepsMin = 3,
+            targetRepsMax = 5,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = sets250
+        )
+        assertEquals(260.0, result250.recommendedWeight, 0.01)
+    }
+
+    @Test
+    fun `calculateProgression light weight progression below 20kg adds 2kg increment`() {
+        val sets10 = listOf(
+            createSet(weight = 10.0, reps = 12),
+            createSet(weight = 10.0, reps = 12)
+        )
+        val result10 = progressionEngine.calculateProgression(
+            exerciseId = 3L,
+            exerciseName = "Dumbbell Lateral Raise",
+            exerciseEquipment = "dumbbell",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = sets10
+        )
+        assertEquals(12.0, result10.recommendedWeight, 0.01)
+    }
+
+    @Test
+    fun `calculateProgression bodyweight regression maintains 0 weight with coaching advice`() {
+        val currentSets = listOf(
+            createSet(weight = 0.0, reps = 5) // Below target 8
+        )
+        val previousSets = listOf(
+            createSet(weight = 0.0, reps = 6) // Below target 8
+        )
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 4L,
+            exerciseName = "Pull Up",
+            exerciseEquipment = "bodyweight",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = previousSets,
+            currentSets = currentSets
+        )
+        assertEquals(0.0, result.recommendedWeight, 0.0)
+        assertTrue(result.reason.contains("Focus on form and range of motion"))
+    }
+
+    @Test
+    fun `calculateProgression bodyweight plateau maintains 0 weight and flags plateau`() {
+        val currentSets = listOf(
+            createSet(weight = 0.0, reps = 8),
+            createSet(weight = 0.0, reps = 9)
+        )
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 5L,
+            exerciseName = "Push Up",
+            exerciseEquipment = "bodyweight",
+            targetRepsMin = 8,
+            targetRepsMax = 12,
+            targetSets = 3,
+            previousSets = emptyList(),
+            currentSets = currentSets,
+            consecutiveSessionsAtSameWeight = 3
+        )
+        assertEquals(0.0, result.recommendedWeight, 0.0)
+        assertTrue(result.isPlateaued)
+        assertTrue(result.isDeloadRecommended)
+        assertTrue(result.reason.contains("Plateau detected"))
+    }
 }

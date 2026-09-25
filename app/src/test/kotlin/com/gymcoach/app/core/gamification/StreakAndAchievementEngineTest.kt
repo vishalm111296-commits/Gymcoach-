@@ -183,4 +183,85 @@ class StreakAndAchievementEngineTest {
         val twoDaysAgoStr = dateFormatter.format(now.minus(2L, ChronoUnit.DAYS))
         assertEquals("Two days ago should have 0 workouts", 0, report.heatMapData[twoDaysAgoStr])
     }
+
+    @Test
+    fun testLongStreakMilestonesUnlockIronConsistencyAndTitaniumHabit() {
+        // Create 12 consecutive weekly workouts
+        val workouts = mutableListOf<WorkoutWithStats>()
+        for (i in 0 until 12) {
+            val date = now.minus(i * 7L, ChronoUnit.DAYS)
+            workouts.add(createWorkout(date.toEpochMilli()))
+        }
+
+        val report = engine.calculateReport(workouts, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(12, report.currentWeeklyStreak)
+        assertEquals(12, report.longestWeeklyStreak)
+
+        val ironBadge = report.badges.find { it.id == "streak_4w" }
+        assertNotNull(ironBadge)
+        assertTrue(ironBadge!!.isUnlocked)
+        assertEquals(4, ironBadge.currentProgress)
+
+        val titaniumBadge = report.badges.find { it.id == "streak_12w" }
+        assertNotNull(titaniumBadge)
+        assertTrue(titaniumBadge!!.isUnlocked)
+        assertEquals(12, titaniumBadge.currentProgress)
+    }
+
+    @Test
+    fun testAthleteLevelProgressionAcrossMultipleLevels() {
+        // 15 completed workouts = 1500 XP
+        val workouts = mutableListOf<WorkoutWithStats>()
+        for (i in 0 until 15) {
+            workouts.add(createWorkout(now.minus(i.toLong(), ChronoUnit.DAYS).toEpochMilli()))
+        }
+
+        // 60 normal sets = 600 XP -> Total XP = 2100 -> Level 3 (2000 XP threshold), 100 XP into level
+        val sets = mutableListOf<VolumeCalculator.SetWithContext>()
+        for (i in 0 until 60) {
+            sets.add(createSet(weight = 80.0, reps = 8, setType = 0))
+        }
+
+        val report = engine.calculateReport(workouts, sets, weeklyTarget = 4, zoneId = zoneId)
+        assertEquals(15, report.totalWorkouts)
+        assertEquals(60, report.totalSets)
+        assertEquals(3, report.athleteLevel)
+        assertEquals(100, report.currentXp)
+        assertEquals(1000, report.xpForNextLevel)
+    }
+
+    @Test
+    fun testUncompletedWorkoutsAreStrictlyExcluded() {
+        // 5 uncompleted workouts
+        val workouts = listOf(
+            createWorkout(now.toEpochMilli(), isCompleted = false),
+            createWorkout(now.minus(1L, ChronoUnit.DAYS).toEpochMilli(), isCompleted = false)
+        )
+
+        val report = engine.calculateReport(workouts, emptyList(), weeklyTarget = 1, zoneId = zoneId)
+        assertEquals(0, report.totalWorkouts)
+        assertEquals(0, report.currentWeeklyStreak)
+        assertEquals(0, report.longestWeeklyStreak)
+        assertEquals(1, report.athleteLevel)
+        assertEquals(0, report.currentXp)
+
+        val firstRep = report.badges.find { it.id == "first_rep" }
+        assertFalse(firstRep?.isUnlocked == true)
+        assertEquals(0, firstRep?.currentProgress)
+    }
+
+    @Test
+    fun testEmptyWorkoutsAndSetsReturnCleanBaselineReport() {
+        val report = engine.calculateReport(emptyList(), emptyList(), weeklyTarget = 3, zoneId = zoneId)
+        assertEquals(0, report.totalWorkouts)
+        assertEquals(0, report.totalSets)
+        assertEquals(0.0, report.totalVolumeKg, 0.001)
+        assertEquals(0, report.currentWeeklyStreak)
+        assertEquals(0, report.longestWeeklyStreak)
+        assertEquals(0, report.currentWeekWorkoutsCompleted)
+        assertEquals(3, report.weeklyTarget)
+        assertEquals(1, report.athleteLevel)
+        assertEquals(0, report.currentXp)
+        assertTrue(report.badges.none { it.isUnlocked })
+    }
 }

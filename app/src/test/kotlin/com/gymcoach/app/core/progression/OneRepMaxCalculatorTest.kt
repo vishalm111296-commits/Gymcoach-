@@ -187,4 +187,89 @@ class OneRepMaxCalculatorTest {
             assertEquals(0L, remainder)
         }
     }
+
+    @Test
+    fun testCrossFormulaConvergenceAtLowReps() {
+        val weight = 100.0
+        val reps = 2
+
+        val e = OneRepMaxCalculator.epley(weight, reps)
+        val b = OneRepMaxCalculator.brzycki(weight, reps)
+        val l = OneRepMaxCalculator.lombardi(weight, reps)
+        val m = OneRepMaxCalculator.mayhew(weight, reps)
+        val w = OneRepMaxCalculator.wathen(weight, reps)
+
+        val estimates = listOf(e, b, l, m, w)
+        val minEst = estimates.minOrNull()!!
+        val maxEst = estimates.maxOrNull()!!
+
+        // At 2 reps, all formulas must tightly converge with variance < 10% of base weight
+        assertTrue("Spread between min and max estimated 1RM must be < 10kg at 2 reps", (maxEst - minEst) < 10.0)
+
+        val profile = OneRepMaxCalculator.calculateProfile(weight, reps)
+        assertTrue("Average 1RM must be between 104 and 108 kg at 2 reps", profile.average1RM in 104.0..108.0)
+    }
+
+    @Test
+    fun testSupra15RepsProfileIdenticalTo15Reps() {
+        val weight = 80.0
+        val profile15 = OneRepMaxCalculator.calculateProfile(weight, 15)
+        val profile25 = OneRepMaxCalculator.calculateProfile(weight, 25)
+        val profile50 = OneRepMaxCalculator.calculateProfile(weight, 50)
+
+        // All 5 formula outputs must be strictly equal due to reps.coerceAtMost(15)
+        assertEquals(profile15.epley1RM, profile25.epley1RM, 0.001)
+        assertEquals(profile15.brzycki1RM, profile25.brzycki1RM, 0.001)
+        assertEquals(profile15.lombardi1RM, profile25.lombardi1RM, 0.001)
+        assertEquals(profile15.mayhew1RM, profile25.mayhew1RM, 0.001)
+        assertEquals(profile15.wathen1RM, profile25.wathen1RM, 0.001)
+        assertEquals(profile15.average1RM, profile25.average1RM, 0.001)
+
+        assertEquals(profile15.average1RM, profile50.average1RM, 0.001)
+        assertEquals(profile15.zones.map { it.weight }, profile25.zones.map { it.weight })
+    }
+
+    @Test
+    fun testCustomPlateStepRoundingMultiples() {
+        // Step = 5.0 kg
+        val profileStep5 = OneRepMaxCalculator.calculateProfile(weight = 120.0, reps = 5, plateStep = 5.0)
+        for (zone in profileStep5.zones) {
+            val remainder = Math.round(zone.weight * 10.0) % 50L
+            assertEquals(0L, remainder)
+        }
+
+        // Step = 1.25 kg
+        val profileStep125 = OneRepMaxCalculator.calculateProfile(weight = 90.0, reps = 3, plateStep = 1.25)
+        for (zone in profileStep125.zones) {
+            val remainder = Math.round(zone.weight * 100.0) % 125L
+            assertEquals(0L, remainder)
+        }
+
+        // Step = 10.0 kg
+        val profileStep10 = OneRepMaxCalculator.calculateProfile(weight = 200.0, reps = 1, plateStep = 10.0)
+        for (zone in profileStep10.zones) {
+            val remainder = Math.round(zone.weight * 10.0) % 100L
+            assertEquals(0L, remainder)
+        }
+    }
+
+    @Test
+    fun testExtremeLoadProfilesHeavyAndLight() {
+        // Heavy 300kg deadlift for 1 rep
+        val heavyProfile = OneRepMaxCalculator.calculateProfile(weight = 300.0, reps = 1, plateStep = 2.5)
+        assertEquals(300.0, heavyProfile.average1RM, 0.001)
+        val zone95 = heavyProfile.zones.first { it.percentage == 95 }
+        assertEquals(285.0, zone95.weight, 0.001)
+        val zone60 = heavyProfile.zones.first { it.percentage == 60 }
+        assertEquals(180.0, zone60.weight, 0.001)
+
+        // Light 8kg dumbbell curl for 8 reps
+        val lightProfile = OneRepMaxCalculator.calculateProfile(weight = 8.0, reps = 8, plateStep = 0.5)
+        assertTrue(lightProfile.average1RM > 8.0)
+        assertTrue(lightProfile.zones.all { it.weight > 0.0 })
+        for (i in 0 until lightProfile.zones.size - 1) {
+            assertTrue(lightProfile.zones[i].weight >= lightProfile.zones[i + 1].weight)
+        }
+    }
 }
+

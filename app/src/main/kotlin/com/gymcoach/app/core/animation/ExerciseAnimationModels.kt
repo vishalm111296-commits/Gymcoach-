@@ -94,12 +94,27 @@ data class ExerciseAnimationDefinition(
      */
     val trajectoryPath: List<JointPoint> by lazy {
         keyframes.mapNotNull { kf ->
-            // Try equipment point first, then wrist/ankle
-            kf.equipment?.points?.firstOrNull()
-                ?: kf.joints["wrist"]
-                ?: kf.joints["wrist_near"]
-                ?: kf.joints["ankle"]
-                ?: kf.joints["ankle_near"]
+            val eqType = kf.equipment?.type?.lowercase().orEmpty()
+            // If equipment is bench, rack, pullup_bar, or none, equipment points are stationary apparatus.
+            // In those cases, or when points are empty, track the dynamic moving load or anatomical joint.
+            if (eqType == "bench" || eqType == "pullup_bar" || eqType == "none" || eqType == "rack") {
+                kf.joints["wrist"]
+                    ?: kf.joints["wrist_near"]
+                    ?: kf.joints["neck"]
+                    ?: kf.joints["chest"]
+                    ?: kf.joints["head"]
+                    ?: kf.joints["ankle"]
+                    ?: kf.joints["ankle_near"]
+            } else {
+                kf.equipment?.points?.firstOrNull()
+                    ?: kf.joints["wrist"]
+                    ?: kf.joints["wrist_near"]
+                    ?: kf.joints["neck"]
+                    ?: kf.joints["chest"]
+                    ?: kf.joints["head"]
+                    ?: kf.joints["ankle"]
+                    ?: kf.joints["ankle_near"]
+            }
         }
     }
 

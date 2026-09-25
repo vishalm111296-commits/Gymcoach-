@@ -18,6 +18,14 @@ import androidx.compose.ui.graphics.nativeCanvas
  */
 object SkeletalRenderer {
 
+    private val FLOOR_DASH = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+    private val TRAJECTORY_DASH = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+    private val ANGLE_DASH = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+
+    private val HEAD_STROKE = Stroke(width = 2.5f)
+    private val PULLEY_STROKE = Stroke(width = 3.5f)
+    private val ANGLE_STROKE = Stroke(width = 2f, pathEffect = ANGLE_DASH)
+
     fun drawSkeleton(
         drawScope: DrawScope,
         frame: InterpolatedFrame,
@@ -51,7 +59,7 @@ object SkeletalRenderer {
             start = Offset(w * 0.05f, floorY),
             end = Offset(w * 0.95f, floorY),
             strokeWidth = 2f,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+            pathEffect = FLOOR_DASH
         )
 
         // Draw ROM Trajectory Path if enabled
@@ -65,7 +73,7 @@ object SkeletalRenderer {
                     start = pA,
                     end = pB,
                     strokeWidth = 2.5f,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f),
+                    pathEffect = TRAJECTORY_DASH,
                     cap = StrokeCap.Round
                 )
             }
@@ -224,7 +232,7 @@ object SkeletalRenderer {
             val head = pt("head") ?: neck?.let { Offset(it.x, it.y - headRadius * 1.35f) }
             if (head != null) {
                 drawCircle(color = nearColor, radius = headRadius, center = head)
-                drawCircle(color = jointColor, radius = headRadius, center = head, style = Stroke(width = 2.5f))
+                drawCircle(color = jointColor, radius = headRadius, center = head, style = HEAD_STROKE)
             }
 
             // 6. Near leg (foreground layer)
@@ -314,7 +322,7 @@ object SkeletalRenderer {
             val head = pt("head") ?: neck?.let { Offset(it.x, it.y - headRadius * 1.35f) }
             if (head != null) {
                 drawCircle(color = nearColor, radius = headRadius, center = head)
-                drawCircle(color = jointColor, radius = headRadius, center = head, style = Stroke(width = 2.5f))
+                drawCircle(color = jointColor, radius = headRadius, center = head, style = HEAD_STROKE)
             }
 
             // Left arm & Right arm
@@ -368,6 +376,18 @@ object SkeletalRenderer {
                         drawCircle(color = jointColor, radius = minDim * 0.022f, center = center)
                     }
                 }
+                "bench" -> {
+                    // For bench press: lifter on bench presses Olympic barbell held at wrist
+                    val barCenter = if (eq.points.size >= 3) {
+                        Offset(eq.points[2].x * w, eq.points[2].y * h)
+                    } else {
+                        pt("wrist_near") ?: pt("wrist")
+                    }
+                    if (barCenter != null) {
+                        drawCircle(color = equipmentColor.copy(alpha = 0.9f), radius = minDim * 0.065f, center = barCenter)
+                        drawCircle(color = jointColor, radius = minDim * 0.022f, center = barCenter)
+                    }
+                }
                 "dumbbell" -> {
                     for (p in eq.points) {
                         val center = Offset(p.x * w, p.y * h)
@@ -390,7 +410,7 @@ object SkeletalRenderer {
                         val pulley = Offset(eq.points[0].x * w, eq.points[0].y * h)
                         val handle = Offset(eq.points[1].x * w, eq.points[1].y * h)
                         // Pulley wheel
-                        drawCircle(color = equipmentColor, radius = minDim * 0.028f, center = pulley, style = Stroke(width = 3.5f))
+                        drawCircle(color = equipmentColor, radius = minDim * 0.028f, center = pulley, style = PULLEY_STROKE)
                         // Tension cable
                         drawLine(
                             color = equipmentColor.copy(alpha = 0.75f),
@@ -419,6 +439,15 @@ object SkeletalRenderer {
                             strokeWidth = boneStroke * 1.1f,
                             cap = StrokeCap.Round
                         )
+                    } else if (eq.points.size == 1) {
+                        val barY = eq.points[0].y * h
+                        drawLine(
+                            color = equipmentColor,
+                            start = Offset(w * 0.15f, barY),
+                            end = Offset(w * 0.85f, barY),
+                            strokeWidth = boneStroke * 1.1f,
+                            cap = StrokeCap.Round
+                        )
                     }
                 }
             }
@@ -433,7 +462,7 @@ object SkeletalRenderer {
                     color = jointColor.copy(alpha = 0.4f),
                     radius = jointRadius * 2.0f,
                     center = center,
-                    style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f))
+                    style = ANGLE_STROKE
                 )
             }
         }

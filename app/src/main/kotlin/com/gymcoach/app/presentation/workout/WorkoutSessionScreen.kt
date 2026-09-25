@@ -1099,12 +1099,30 @@ internal fun ExerciseSetCard(
                             tint = if (supersetGroup != null) GymCoachColors.Primary else GymCoachColors.CyanAccent
                         )
                     }
-                    IconButton(onClick = onOpenTechniqueGuide) {
-                        Icon(
-                            imageVector = Icons.Default.PlayCircleOutline,
-                            contentDescription = "Technique & Biomechanical Form",
-                            tint = GymCoachColors.CyanAccent
-                        )
+                    Surface(
+                        onClick = onOpenTechniqueGuide,
+                        shape = RoundedCornerShape(12.dp),
+                        color = GymCoachColors.CyanAccent.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.CyanAccent.copy(alpha = 0.6f)),
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayCircleOutline,
+                                contentDescription = "Exercise Technique & Biomechanical Form",
+                                tint = GymCoachColors.CyanAccent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "FORM",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = GymCoachColors.CyanAccent
+                            )
+                        }
                     }
                     IconButton(onClick = onSubstituteExercise) {
                         Icon(

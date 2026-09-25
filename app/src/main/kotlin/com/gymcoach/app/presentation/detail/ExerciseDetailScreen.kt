@@ -715,9 +715,7 @@ fun ExerciseDetailScreen(
                                     } else {
                                         ExerciseAnimationPlayer(
                                             definition = animationDefinition!!,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(260.dp)
+                                            modifier = Modifier.fillMaxWidth()
                                         )
                                     }
                                 }
@@ -735,7 +733,6 @@ fun ExerciseDetailScreen(
                                 definition = animationDefinition!!,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(260.dp)
                                     .padding(12.dp)
                             )
                         }

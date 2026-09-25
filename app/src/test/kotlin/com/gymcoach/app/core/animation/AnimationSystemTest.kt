@@ -3,6 +3,7 @@ package com.gymcoach.app.core.animation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -479,5 +480,170 @@ class AnimationSystemTest {
         assertEquals(1, frame.angleReadouts.size)
         assertEquals("Elbow Flexion", frame.angleReadouts[0].label)
         assertEquals(90.0f, frame.angleReadouts[0].angleDegrees, 0.5f)
+    }
+
+    @Test
+    fun testAngleCalculation_AcuteRightObtuse() {
+        val center = JointPoint(0.5f, 0.5f)
+        val pUp = JointPoint(0.5f, 0.0f)
+
+        // 45 degrees acute
+        val p45 = JointPoint(1.0f, 0.0f)
+        val acuteAngle = ExerciseAnimationDefinition.calculateAngle(pUp, center, p45)
+        assertEquals(45.0f, acuteAngle, 0.5f)
+
+        // 90 degrees right angle
+        val pRight = JointPoint(1.0f, 0.5f)
+        val rightAngle = ExerciseAnimationDefinition.calculateAngle(pUp, center, pRight)
+        assertEquals(90.0f, rightAngle, 0.5f)
+
+        // 135 degrees obtuse
+        val pObtuse = JointPoint(1.0f, 1.0f)
+        val obtuseAngle = ExerciseAnimationDefinition.calculateAngle(pUp, center, pObtuse)
+        assertEquals(135.0f, obtuseAngle, 0.5f)
+    }
+
+    @Test
+    fun testTrajectoryPathPrioritizesMovingJointForStaticEquipment() {
+        // Bench: static pads, trajectory should track wrist movement
+        val kfBench1 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            joints = mapOf("wrist" to JointPoint(0.42f, 0.20f)),
+            equipment = EquipmentGeometry("bench", listOf(JointPoint(0.22f, 0.62f), JointPoint(0.66f, 0.62f)))
+        )
+        val kfBench2 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.BOTTOM,
+            joints = mapOf("wrist" to JointPoint(0.42f, 0.52f)),
+            equipment = EquipmentGeometry("bench", listOf(JointPoint(0.22f, 0.62f), JointPoint(0.66f, 0.62f)))
+        )
+        val benchDef = ExerciseAnimationDefinition(
+            exerciseId = "bench_press",
+            exerciseName = "Bench Press",
+            keyframes = listOf(kfBench1, kfBench2)
+        )
+        assertEquals(2, benchDef.trajectoryPath.size)
+        assertEquals(0.20f, benchDef.trajectoryPath[0].y, 0.001f)
+        assertEquals(0.52f, benchDef.trajectoryPath[1].y, 0.001f)
+
+        // Pull-Up: static bar, trajectory should track neck / head displacement
+        val kfPull1 = SkeletalKeyframe(
+            progress = 0.0f,
+            phase = AnimationPhase.START,
+            joints = mapOf("neck" to JointPoint(0.50f, 0.35f)),
+            equipment = EquipmentGeometry("pullup_bar", listOf(JointPoint(0.50f, 0.15f)))
+        )
+        val kfPull2 = SkeletalKeyframe(
+            progress = 1.0f,
+            phase = AnimationPhase.BOTTOM,
+            joints = mapOf("neck" to JointPoint(0.50f, 0.18f)),
+            equipment = EquipmentGeometry("pullup_bar", listOf(JointPoint(0.50f, 0.15f)))
+        )
+        val pullDef = ExerciseAnimationDefinition(
+            exerciseId = "pull_up",
+            exerciseName = "Pull-Up",
+            keyframes = listOf(kfPull1, kfPull2)
+        )
+        assertEquals(2, pullDef.trajectoryPath.size)
+        assertEquals(0.35f, pullDef.trajectoryPath[0].y, 0.001f)
+        assertEquals(0.18f, pullDef.trajectoryPath[1].y, 0.001f)
+    }
+
+    @Test
+    fun testEnrichedAnimationsCoverage() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val json = assetFile.readText()
+        val definitions = AnimationParser.parseList(json)
+
+        assertEquals(20, definitions.size)
+
+        val benchmarkSet = setOf(
+            "barbell_squat", "bench_press", "deadlift", "barbell_row",
+            "biceps_curl", "lateral_raise", "push_up", "pull_up"
+        )
+
+        for (def in definitions) {
+            assertTrue("Every exercise must have angleSpecs: ${def.exerciseId}", def.angleSpecs.isNotEmpty())
+            for (kf in def.keyframes) {
+                assertTrue("Every keyframe must have activeMuscles: ${def.exerciseId}", kf.activeMuscles.isNotEmpty())
+            }
+            if (def.exerciseId in benchmarkSet) {
+                assertTrue("Benchmark exercise ${def.exerciseId} must have >= 5 keyframes", def.keyframes.size >= 5)
+            }
+        }
+
+        val benchPress = definitions.first { it.exerciseId == "bench_press" }
+        for (kf in benchPress.keyframes) {
+            assertNotNull(kf.equipment)
+            assertEquals("bench", kf.equipment?.type)
+            assertEquals("Bench press equipment must have 3 points (pads + barbell at wrist)", 3, kf.equipment?.points?.size)
+        }
+    }
+
+    @Test
+    fun testAnimationControllerStateTransitionsComprehensive() {
+        val def = ExerciseAnimationDefinition(
+            exerciseId = "ctrl_test",
+            exerciseName = "Control Test",
+            durationMs = 1000,
+            keyframes = listOf(
+                SkeletalKeyframe(0.0f, AnimationPhase.START, mapOf("head" to JointPoint(0f, 0f))),
+                SkeletalKeyframe(0.5f, AnimationPhase.BOTTOM, mapOf("head" to JointPoint(0.5f, 0.5f))),
+                SkeletalKeyframe(1.0f, AnimationPhase.END, mapOf("head" to JointPoint(1f, 1f)))
+            )
+        )
+        val controller = AnimationController(def, initialAutoPlay = false)
+
+        assertFalse(controller.isPlaying)
+        assertEquals(0.0f, controller.progress, 0.001f)
+
+        controller.play()
+        assertTrue(controller.isPlaying)
+        assertFalse(controller.isStepMode)
+
+        controller.pause()
+        assertFalse(controller.isPlaying)
+
+        controller.seekTo(0.25f)
+        assertEquals(0.25f, controller.progress, 0.001f)
+
+        controller.setPlaybackSpeed(1.5f)
+        assertEquals(1.5f, controller.speed, 0.001f)
+
+        controller.setLoop(false)
+        assertFalse(controller.isLooping)
+
+        controller.nextStep()
+        assertFalse("Should pause on step", controller.isPlaying)
+        assertTrue(controller.isStepMode)
+        assertEquals(0.5f, controller.progress, 0.001f)
+
+        controller.previousStep()
+        assertEquals(0.0f, controller.progress, 0.001f)
+
+        controller.replay()
+        assertTrue(controller.isPlaying)
+        assertEquals(0.0f, controller.progress, 0.001f)
+    }
+
+    @Test
+    fun testParserErrorHandling_InvalidJsonMissingData() {
+        val invalidDef = AnimationParser.parseSingle("{ invalid_json:")
+        assertNull(invalidDef)
+
+        val noKeyframesDef = AnimationParser.parseSingle("""
+            { "exerciseId": "test", "exerciseName": "Test" }
+        """.trimIndent())
+        assertNull(noKeyframesDef)
+
+        val emptyJointsDef = AnimationParser.parseSingle("""
+            {
+                "exerciseId": "test2", 
+                "exerciseName": "Test 2",
+                "keyframes": [ { "progress": 0.0, "joints": {} } ]
+            }
+        """.trimIndent())
+        assertNull(emptyJointsDef)
     }
 }

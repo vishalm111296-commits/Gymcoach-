@@ -179,4 +179,52 @@ class PlateCalculatorTest {
         assertEquals(0.5, result.platesPerSide[1].plateWeight, 0.001)
         assertEquals(0.25, result.platesPerSide[2].plateWeight, 0.001)
     }
+
+    @Test
+    fun testPlateInventoryWithoutHeavyPlatesUsesMultiplesOfSmallerPlates() {
+        val lightPlatesOnly = listOf(
+            10.0 to 0xFF388E3C,
+            5.0 to 0xFFFFFFFF,
+            2.5 to 0xFF212121,
+            1.25 to 0xFF9E9E9E
+        )
+
+        // 70kg on 20kg bar = 25kg/side -> 2x10kg + 1x5kg per side
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 70.0,
+            barWeight = 20.0,
+            availablePlates = lightPlatesOnly
+        )
+
+        assertEquals(25.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(10.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2, result.platesPerSide[0].count)
+        assertEquals(5.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
+
+    @Test
+    fun testMicroPlatesWithUnevenRemainderCalculation() {
+        val fractionalPlates = PlateCalculator.STANDARD_METRIC_PLATES + listOf(
+            0.5 to 0xFFCCCCCC,
+            0.25 to 0xFFEEEEEE
+        )
+
+        // Target: 61.1kg on 20kg bar -> 20.55kg per side -> 1x20kg (leaves 0.55) + 1x0.5kg (leaves 0.05) -> remainder 0.05 * 2 = 0.1kg
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 61.1,
+            barWeight = 20.0,
+            availablePlates = fractionalPlates
+        )
+
+        assertEquals(20.55, result.weightPerSide, 0.001)
+        assertEquals(0.1, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(20.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[0].count)
+        assertEquals(0.5, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
 }

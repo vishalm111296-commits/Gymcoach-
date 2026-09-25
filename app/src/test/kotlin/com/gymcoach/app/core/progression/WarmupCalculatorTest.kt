@@ -172,4 +172,50 @@ class WarmupCalculatorTest {
             assertEquals(0L, remainder)
         }
     }
+
+    @Test
+    fun testIntermediateBarWeightEZCurlBar() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 50.0,
+            barWeight = 10.0,
+            plateStep = 1.0
+        )
+        assertEquals(50.0, plan.workingWeight, 0.001)
+        assertEquals(10.0, plan.barWeight, 0.001)
+        assertEquals(4, plan.sets.size)
+
+        // Set 1: Empty bar 10kg
+        assertEquals(10.0, plan.sets[0].weight, 0.001)
+        assertEquals(10, plan.sets[0].reps)
+
+        // Set 2: 50% = 25kg
+        assertEquals(25.0, plan.sets[1].weight, 0.001)
+        assertEquals(5, plan.sets[1].reps)
+
+        // Set 3: 70% = 35kg
+        assertEquals(35.0, plan.sets[2].weight, 0.001)
+        assertEquals(3, plan.sets[2].reps)
+
+        // Set 4: 85% = 42.5kg -> added = 32.5kg -> IEEE 754 round-half-to-even rounds to 32.0 -> 10 + 32 = 42.0kg
+        assertEquals(42.0, plan.sets[3].weight, 0.001)
+        assertEquals(1, plan.sets[3].reps)
+    }
+
+    @Test
+    fun testUltraHeavyWorkingWeight300kgWarmupProgression() {
+        val plan = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 300.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        assertEquals(5, plan.sets.size)
+        val weights = plan.sets.map { it.weight }
+        assertEquals(listOf(20.0, 150.0, 210.0, 255.0, 275.0), weights)
+
+        // Verify strictly monotonic progression
+        for (i in 0 until weights.size - 1) {
+            assertTrue("Warmup sets must strictly increase in load", weights[i] < weights[i + 1])
+        }
+        assertEquals("Post-activation potentiation", plan.sets.last().purpose)
+    }
 }

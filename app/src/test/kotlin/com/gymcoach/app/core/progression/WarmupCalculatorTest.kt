@@ -218,4 +218,69 @@ class WarmupCalculatorTest {
         }
         assertEquals("Post-activation potentiation", plan.sets.last().purpose)
     }
+
+    @Test
+    fun `heavy potentiation boundary strictly transitions between 139_9kg and 140_0kg`() {
+        val plan1399 = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 139.9,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        assertEquals(4, plan1399.sets.size)
+        assertTrue(plan1399.sets.none { it.percentage == 0.92 })
+
+        val plan1400 = WarmupCalculator.calculateWarmupPlan(
+            workingWeight = 140.0,
+            barWeight = 20.0,
+            plateStep = 2.5
+        )
+        assertEquals(5, plan1400.sets.size)
+        val lastSet = plan1400.sets.last()
+        assertEquals(0.92, lastSet.percentage, 0.001)
+        assertEquals(130.0, lastSet.weight, 0.001) // 140 * 0.92 = 128.8 -> 130.0
+        assertEquals("Post-activation potentiation", lastSet.purpose)
+    }
+
+    @Test
+    fun `estimatedDurationMinutes matches exact ceiling formula of rest and set performance time`() {
+        // 100kg bench press: 4 sets
+        // Rest: 45 + 60 + 90 + 120 = 315s. Performance: 4 * 20 = 80s. Total: 395s. ceil(395/60) = 7 mins
+        val plan100 = WarmupCalculator.calculateWarmupPlan(workingWeight = 100.0, barWeight = 20.0)
+        assertEquals(7, plan100.estimatedDurationMinutes)
+
+        // 300kg squat: 5 sets
+        // Rest: 45 + 60 + 90 + 120 + 150 = 465s. Performance: 5 * 20 = 100s. Total: 565s. ceil(565/60) = 10 mins
+        val plan300 = WarmupCalculator.calculateWarmupPlan(workingWeight = 300.0, barWeight = 20.0)
+        assertEquals(10, plan300.estimatedDurationMinutes)
+
+        // Equal to bar weight (20kg): 1 set, 45s rest -> 2 mins
+        val plan20 = WarmupCalculator.calculateWarmupPlan(workingWeight = 20.0, barWeight = 20.0)
+        assertEquals(2, plan20.estimatedDurationMinutes)
+    }
+
+    @Test
+    fun `warmup sets strictly exhibit non-increasing rep taper from activation to potentiation`() {
+        val plan = WarmupCalculator.calculateWarmupPlan(workingWeight = 180.0, barWeight = 20.0)
+        assertEquals(5, plan.sets.size)
+        val reps = plan.sets.map { it.reps }
+
+        assertEquals(listOf(10, 5, 3, 1, 1), reps)
+        for (i in 0 until reps.size - 1) {
+            assertTrue("Reps must monotonically taper or hold", reps[i] >= reps[i + 1])
+        }
+    }
+
+    @Test
+    fun `roundToStep handles fractional micro plate steps with specialty bars`() {
+        // 25kg safety squat bar with 0.5kg plate steps
+        val target = 82.3
+        val rounded = WarmupCalculator.roundToStep(target, 25.0, 0.5)
+        // 82.3 - 25 = 57.3 / 0.5 = 114.6 -> round is 115 -> 115 * 0.5 = 57.5 + 25 = 82.5
+        assertEquals(82.5, rounded, 0.001)
+
+        // Target below minWeight returns minWeight
+        assertEquals(25.0, WarmupCalculator.roundToStep(24.9, 25.0, 0.5), 0.001)
+        assertEquals(25.0, WarmupCalculator.roundToStep(10.0, 25.0, 0.5), 0.001)
+    }
 }
+

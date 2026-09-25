@@ -17,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -154,5 +155,57 @@ class WorkoutRepositoryPerformAgainTest {
         assertNotEquals(firstNewId, secondNewId)
         assertNotEquals(sourceWorkoutId, firstNewId)
         assertNotEquals(sourceWorkoutId, secondNewId)
+    }
+
+    @Test
+    fun `createWorkoutFromHistory handles workout with no exercises safely without querying sets`() = runTest {
+        val emptySourceWorkout = sourceWorkoutEntity.copy(id = 555L)
+        every { workoutDao.getWorkoutById(555L) } returns flowOf(emptySourceWorkout)
+        every { workoutDao.getExercisesForWorkout(555L) } returns flowOf(emptyList())
+
+        val capturedSourceWorkout = slot<WorkoutEntity>()
+        val capturedExercisesWithSets = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()
+        coEvery {
+            workoutDao.createWorkoutFromHistoryTransaction(
+                capture(capturedSourceWorkout),
+                capture(capturedExercisesWithSets)
+            )
+        } returns 666L
+
+        val resultId = repository.createWorkoutFromHistory(555L)
+
+        assertEquals(666L, resultId)
+        assertEquals(555L, capturedSourceWorkout.captured.id)
+        assertTrue(capturedExercisesWithSets.captured.isEmpty())
+        coVerify(exactly = 0) { workoutDao.getSetsForExercises(any()) }
+    }
+
+    @Test
+    fun `createWorkoutFromHistory correctly associates sets when some exercises have no sets`() = runTest {
+        val we1 = WorkoutExerciseEntity(id = 11L, workoutId = sourceWorkoutId, exerciseId = 1L, orderIndex = 0)
+        val we2 = WorkoutExerciseEntity(id = 12L, workoutId = sourceWorkoutId, exerciseId = 2L, orderIndex = 1) // has no sets
+
+        every { workoutDao.getWorkoutById(sourceWorkoutId) } returns flowOf(sourceWorkoutEntity)
+        every { workoutDao.getExercisesForWorkout(sourceWorkoutId) } returns flowOf(listOf(we1, we2))
+        coEvery { workoutDao.getSetsForExercises(listOf(11L, 12L)) } returns listOf(sourceSet1.copy(workoutExerciseId = 11L))
+
+        val capturedList = slot<List<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>>()
+        coEvery {
+            workoutDao.createWorkoutFromHistoryTransaction(
+                any(),
+                capture(capturedList)
+            )
+        } returns 777L
+
+        val resultId = repository.createWorkoutFromHistory(sourceWorkoutId)
+
+        assertEquals(777L, resultId)
+        assertEquals(2, capturedList.captured.size)
+        // First exercise has 1 set
+        assertEquals(11L, capturedList.captured[0].first.id)
+        assertEquals(1, capturedList.captured[0].second.size)
+        // Second exercise has 0 sets
+        assertEquals(12L, capturedList.captured[1].first.id)
+        assertTrue(capturedList.captured[1].second.isEmpty())
     }
 }

@@ -71,4 +71,36 @@ class WorkoutRepositoryConcurrencyTest {
         assertEquals(5, results.size)
         assertEquals(5, orderCounter.get())
     }
+
+    @Test
+    fun `concurrent updateSet calls execute reliably without race conditions`() = runTest {
+        val dao = mockk<WorkoutDao>(relaxed = true)
+        val exerciseDao = mockk<ExerciseDao>(relaxed = true)
+        val repository = WorkoutRepositoryImpl(dao, exerciseDao, mockk(relaxed = true), mockk(relaxed = true))
+
+        val updatedSetCounter = AtomicInteger(0)
+        coEvery { dao.updateWorkoutSet(any()) } answers {
+            updatedSetCounter.incrementAndGet()
+        }
+
+        val deferreds = (1L..5L).map { setId ->
+            async {
+                repository.updateSet(
+                    WorkoutSet(
+                        id = setId,
+                        workoutExerciseId = 100L,
+                        setNumber = setId.toInt(),
+                        weight = 80.0,
+                        reps = 10,
+                        rpe = 8.5,
+                        restSeconds = 90,
+                        completed = true
+                    )
+                )
+            }
+        }
+        deferreds.awaitAll()
+
+        assertEquals(5, updatedSetCounter.get())
+    }
 }

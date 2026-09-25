@@ -263,4 +263,62 @@ class WorkoutShareCardBuilderTest {
         assertEquals(500.0, cardData.totalVolumeKg, 0.001)
         assertEquals(1, cardData.exercises[0].totalSetsCount)
     }
+
+    @Test
+    fun `empty workout without exercises returns safe default share card data`() {
+        val emptyWorkout = createWorkoutWithDetails(
+            id = 10L,
+            duration = 0L,
+            notes = "",
+            exercises = emptyList()
+        )
+
+        val cardData = builder.buildShareData(emptyWorkout)
+        assertEquals("Workout", cardData.workoutTitle)
+        assertEquals(0, cardData.totalSets)
+        assertEquals(0, cardData.totalReps)
+        assertEquals(0.0, cardData.totalVolumeKg, 0.001)
+        assertTrue(cardData.topMuscles.isEmpty())
+        assertTrue(cardData.exercises.isEmpty())
+        assertEquals("Stay Consistent, Stay Strong", cardData.motivationalQuote)
+
+        val shareText = builder.buildFormattedShareText(cardData)
+        assertTrue(shareText.contains("Workout"))
+        assertTrue(shareText.contains("0.0 kg"))
+        assertTrue(shareText.contains("⚡ Logged with GymCoach"))
+    }
+
+    @Test
+    fun `duration formatting handles multi-hour and zero duration correctly`() {
+        val bench = createExercise(1L, "Bench Press", "Chest")
+        val set = listOf(WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 100.0, reps = 5, rpe = 8.0, restSeconds = 90, completed = true))
+        val exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(id = 1, workoutId = 1, exerciseId = 1, orderIndex = 0), bench, set))
+
+        // 2 hours 15 minutes = 8100 seconds
+        val longWorkout = createWorkoutWithDetails(duration = 8100L, exercises = exercises)
+        val longCard = builder.buildShareData(longWorkout)
+        assertEquals("2h 15m", longCard.durationFormatted)
+
+        // 0 duration
+        val zeroWorkout = createWorkoutWithDetails(duration = 0L, exercises = exercises)
+        val zeroCard = builder.buildShareData(zeroWorkout)
+        assertEquals("0m", zeroCard.durationFormatted)
+    }
+
+    @Test
+    fun `explicit workoutTitle overrides notes and blank falls back to notes or Workout`() {
+        val bench = createExercise(1L, "Bench Press", "Chest")
+        val set = listOf(WorkoutSet(id = 1, workoutExerciseId = 1, setNumber = 1, weight = 60.0, reps = 10, rpe = 8.0, restSeconds = 90, completed = true))
+        val exercises = listOf(WorkoutExerciseWithSets(WorkoutExercise(id = 1, workoutId = 1, exerciseId = 1, orderIndex = 0), bench, set))
+
+        val workout = createWorkoutWithDetails(notes = "Push Day A", exercises = exercises)
+
+        // Custom override
+        val customCard = builder.buildShareData(workout, workoutTitle = "Chest Hypertrophy Blast")
+        assertEquals("Chest Hypertrophy Blast", customCard.workoutTitle)
+
+        // Fallback to notes when null or blank
+        val notesCard = builder.buildShareData(workout, workoutTitle = "   ")
+        assertEquals("Push Day A", notesCard.workoutTitle)
+    }
 }

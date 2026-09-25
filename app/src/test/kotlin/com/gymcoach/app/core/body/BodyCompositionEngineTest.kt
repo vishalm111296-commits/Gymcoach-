@@ -96,4 +96,89 @@ class BodyCompositionEngineTest {
         val waistDelta = trend.circumferences[BodyPart.WAIST]
         assertNull(waistDelta) // Because it's 0.0 in both entities
     }
+
+    @Test
+    fun testEmptyHistoryReturnsBaselineTrend() {
+        val trend = BodyCompositionEngine.calculateTrend(emptyList())
+        assertEquals(0.0, trend.currentWeightKg, 0.001)
+        assertNull(trend.previousWeightKg)
+        assertEquals(0.0, trend.weeklyRateKg, 0.001)
+        assertNull(trend.currentBodyFatPct)
+        assertNull(trend.vTaperRatio)
+        assertEquals("Unknown", trend.vTaperCategory)
+        assertEquals(0.0f, trend.goldenRatioProximityPct, 0.001f)
+        assertTrue(trend.circumferences.isEmpty())
+        assertTrue(trend.history.isEmpty())
+    }
+
+    @Test
+    fun testZeroOrNegativeTimeDifferenceYieldsZeroWeeklyRate() {
+        val t = System.currentTimeMillis()
+        val m1 = BodyMeasurementEntity(recordedAt = t, weightKg = 80.0)
+        val m2 = BodyMeasurementEntity(recordedAt = t, weightKg = 82.0) // Identical timestamps
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(m2, m1))
+        assertEquals(0.0, trend.weeklyRateKg, 0.001)
+    }
+
+    @Test
+    fun testAllCircumferenceBodyPartsDeltas() {
+        val t = System.currentTimeMillis()
+        val oldM = BodyMeasurementEntity(
+            recordedAt = t - 86400000L,
+            shouldersCm = 115.0,
+            chestCm = 100.0,
+            waistCm = 85.0,
+            hipsCm = 95.0,
+            leftArmCm = 35.0,
+            rightArmCm = 35.0,
+            leftThighCm = 58.0,
+            rightThighCm = 58.0,
+            leftCalfCm = 38.0,
+            rightCalfCm = 38.0
+        )
+        val newM = BodyMeasurementEntity(
+            recordedAt = t,
+            shouldersCm = 117.0, // +2
+            chestCm = 101.5,     // +1.5
+            waistCm = 83.0,      // -2
+            hipsCm = 94.0,       // -1
+            leftArmCm = 36.0,    // +1
+            rightArmCm = 36.0,
+            leftThighCm = 59.0,  // +1
+            rightThighCm = 59.0,
+            leftCalfCm = 38.5,   // +0.5
+            rightCalfCm = 38.5
+        )
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(newM, oldM))
+        assertEquals(2.0, trend.circumferences[BodyPart.SHOULDERS]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(1.5, trend.circumferences[BodyPart.CHEST]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(-2.0, trend.circumferences[BodyPart.WAIST]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(-1.0, trend.circumferences[BodyPart.HIPS]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(1.0, trend.circumferences[BodyPart.ARMS]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(1.0, trend.circumferences[BodyPart.THIGHS]?.deltaCm ?: 0.0, 0.01)
+        assertEquals(0.5, trend.circumferences[BodyPart.CALVES]?.deltaCm ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testVTaperCategoryBoundaryTransitions() {
+        val trend139 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 139.0, waistCm = 100.0)))
+        assertEquals("Standard Frame", trend139.vTaperCategory)
+
+        val trend140 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 140.0, waistCm = 100.0)))
+        assertEquals("Athletic Taper", trend140.vTaperCategory)
+
+        val trend154 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 154.0, waistCm = 100.0)))
+        assertEquals("Athletic Taper", trend154.vTaperCategory)
+
+        val trend155 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 155.0, waistCm = 100.0)))
+        assertEquals("Golden V-Taper", trend155.vTaperCategory)
+
+        val trend165 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 165.0, waistCm = 100.0)))
+        assertEquals("Golden V-Taper", trend165.vTaperCategory)
+
+        val trend166 = BodyCompositionEngine.calculateTrend(listOf(BodyMeasurementEntity(shouldersCm = 166.0, waistCm = 100.0)))
+        assertEquals("Heroic Frame", trend166.vTaperCategory)
+    }
 }

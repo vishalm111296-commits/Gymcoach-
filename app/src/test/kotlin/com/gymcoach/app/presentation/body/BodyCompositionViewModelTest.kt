@@ -119,4 +119,36 @@ class BodyCompositionViewModelTest {
 
         coVerify { repository.deleteMeasurement(42L) }
     }
+
+    @Test
+    fun `repository getAllMeasurements exception surfaces as Error state`() = runTest(testDispatcher) {
+        every { repository.getAllMeasurements() } throws RuntimeException("DB connection lost")
+
+        val viewModel = BodyCompositionViewModel(repository)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is BodyCompositionUiState.Error)
+        assertTrue((state as BodyCompositionUiState.Error).message.contains("DB connection lost"))
+    }
+
+    @Test
+    fun `saveMeasurement repository exception surfaces as Error state`() = runTest(testDispatcher) {
+        every { repository.getAllMeasurements() } returns flowOf(emptyList())
+        coEvery { repository.saveMeasurement(any()) } throws RuntimeException("Disk full")
+
+        val viewModel = BodyCompositionViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.saveMeasurement(
+            weightKg = 80.0, bodyFatPct = 15.0, chestCm = 100.0,
+            waistCm = 82.0, shouldersCm = 120.0, armCm = 38.0,
+            thighCm = 60.0, calfCm = 38.0, notes = "Test"
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is BodyCompositionUiState.Error)
+        assertTrue((state as BodyCompositionUiState.Error).message.contains("Disk full"))
+    }
 }

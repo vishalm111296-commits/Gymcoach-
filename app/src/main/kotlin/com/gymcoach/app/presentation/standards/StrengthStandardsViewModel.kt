@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -61,6 +62,7 @@ class StrengthStandardsViewModel @Inject constructor(
 
                 _uiState.value = StrengthStandardsUiState.Success(profile, allPrs)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.value = StrengthStandardsUiState.Empty
             }
         }

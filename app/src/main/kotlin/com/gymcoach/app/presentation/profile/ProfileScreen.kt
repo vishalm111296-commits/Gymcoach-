@@ -180,6 +180,9 @@ class ProfileViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         load()
     }
@@ -187,9 +190,20 @@ class ProfileViewModel @Inject constructor(
     private fun load() {
         viewModelScope.launch {
             _isLoading.value = true
-            _profile.value = userProfileRepository.getLatestProfile().firstOrNull()
-            _isLoading.value = false
+            try {
+                _profile.value = userProfileRepository.getLatestProfile().firstOrNull()
+                _error.value = null
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _error.value = e.message ?: "Failed to load profile"
+            } finally {
+                _isLoading.value = false
+            }
         }
+    }
+
+    fun dismissError() {
+        _error.value = null
     }
 
     fun updateProfile(
@@ -204,28 +218,33 @@ class ProfileViewModel @Inject constructor(
         equipment: String
     ) {
         viewModelScope.launch {
-            val current = _profile.value ?: UserProfileEntity()
-            val updated = current.copy(
-                age = age,
-                sex = sex,
-                heightCm = heightCm,
-                weightKg = weightKg,
-                trainingDaysPerWeek = trainingDays,
-                sessionLengthMinutes = sessionLength,
-                experience = experience,
-                goal = goal,
-                equipmentType = equipment
-            )
-            userProfileRepository.saveProfile(updated)
-            if (weightKg > 0) {
-                bodyMeasurementDao.insert(
-                    com.gymcoach.app.data.local.entity.BodyMeasurementEntity(
-                        weightKg = weightKg,
-                        notes = "Profile update"
-                    )
+            try {
+                val current = _profile.value ?: UserProfileEntity()
+                val updated = current.copy(
+                    age = age,
+                    sex = sex,
+                    heightCm = heightCm,
+                    weightKg = weightKg,
+                    trainingDaysPerWeek = trainingDays,
+                    sessionLengthMinutes = sessionLength,
+                    experience = experience,
+                    goal = goal,
+                    equipmentType = equipment
                 )
+                userProfileRepository.saveProfile(updated)
+                if (weightKg > 0) {
+                    bodyMeasurementDao.insert(
+                        com.gymcoach.app.data.local.entity.BodyMeasurementEntity(
+                            weightKg = weightKg,
+                            notes = "Profile update"
+                        )
+                    )
+                }
+                load()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _error.value = e.message ?: "Failed to update profile"
             }
-            load()
         }
     }
 }

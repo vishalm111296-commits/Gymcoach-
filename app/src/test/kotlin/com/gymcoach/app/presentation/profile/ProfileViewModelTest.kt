@@ -210,4 +210,54 @@ class ProfileViewModelTest {
         assertTrue(viewModel.importUiState.value.error != null)
         assertEquals(false, viewModel.importUiState.value.isImporting)
     }
+
+
+    @Test
+    fun `load repository exception surfaces as error state`() = kotlinx.coroutines.test.runTest {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>()
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+
+        io.mockk.every { mockRepo.getLatestProfile() } throws RuntimeException("Profile DB error")
+
+        val viewModel = ProfileViewModel(mockRepo, mockDao)
+
+        val error = viewModel.error.value
+        org.junit.Assert.assertNotNull(error)
+        assertTrue(error!!.contains("Profile DB error"))
+        assertEquals(false, viewModel.isLoading.value)
+    }
+
+    @Test
+    fun `updateProfile save exception surfaces as error state`() = kotlinx.coroutines.test.runTest {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+
+        io.mockk.every { mockRepo.getLatestProfile() } returns kotlinx.coroutines.flow.flowOf(null)
+        io.mockk.coEvery { mockRepo.saveProfile(any()) } throws RuntimeException("DB write error")
+
+        val viewModel = ProfileViewModel(mockRepo, mockDao)
+
+        viewModel.updateProfile(
+            age = 25, sex = "Male", heightCm = 175.0, weightKg = 75.0,
+            trainingDays = 4, sessionLength = 60, experience = "Beginner",
+            goal = "Fitness", equipment = "gym"
+        )
+
+        org.junit.Assert.assertNotNull(viewModel.error.value)
+        assertTrue(viewModel.error.value!!.contains("DB write error"))
+    }
+
+    @Test
+    fun `dismissError clears error state`() = kotlinx.coroutines.test.runTest {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>()
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+
+        io.mockk.every { mockRepo.getLatestProfile() } throws RuntimeException("Load error")
+
+        val viewModel = ProfileViewModel(mockRepo, mockDao)
+        org.junit.Assert.assertNotNull(viewModel.error.value)
+
+        viewModel.dismissError()
+        org.junit.Assert.assertNull(viewModel.error.value)
+    }
 }

@@ -202,4 +202,31 @@ class WorkoutHistoryViewModelTest {
         viewModel.clearImportUiState()
         assertNull(viewModel.importUiState.value.error)
     }
+
+    @Test
+    fun `observeWorkouts repository exception surfaces to error StateFlow`() = runTest {
+        every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Corrupted DB")
+        coEvery { workoutRepository.getIncompleteWorkout() } returns null
+
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        assertNotNull(viewModel.error.value)
+        assertTrue(viewModel.error.value!!.contains("Corrupted DB"))
+        assertFalse(viewModel.isLoading.value)
+    }
+
+    @Test
+    fun `confirmDelete repository exception surfaces to error StateFlow`() = runTest {
+        every { workoutRepository.getCompletedWorkouts() } returns flowOf(emptyList())
+        coEvery { workoutRepository.getIncompleteWorkout() } returns null
+        coEvery { workoutRepository.deleteWorkout(any()) } throws RuntimeException("Constraint violation")
+
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+
+        viewModel.onDeleteClick(99L)
+        viewModel.confirmDelete()
+
+        assertNotNull(viewModel.error.value)
+        assertTrue(viewModel.error.value!!.contains("Constraint violation"))
+    }
 }

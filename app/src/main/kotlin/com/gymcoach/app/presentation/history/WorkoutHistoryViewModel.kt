@@ -102,6 +102,9 @@ class WorkoutHistoryViewModel @Inject constructor(
     private val _workouts = MutableStateFlow<List<WorkoutWithStats>>(emptyList())
     val workouts: StateFlow<List<WorkoutWithStats>> = _workouts.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         observeWorkouts()
         loadIncompleteWorkout()
@@ -110,75 +113,82 @@ class WorkoutHistoryViewModel @Inject constructor(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeWorkouts() {
         viewModelScope.launch {
-            val filtersFlow = combine(
-                searchQuery,
-                filterOption,
-                sortOption,
-                _customStartDate,
-                _customEndDate
-            ) { query, filter, sort, customStart, customEnd ->
-                FilterState(query, filter, sort, customStart, customEnd)
-            }
-
-            filtersFlow
-                .flatMapLatest { filters ->
-                    if (filters.query.isNotBlank()) {
-                        kotlinx.coroutines.flow.flow {
-                            emit(Pair(workoutRepository.searchWorkouts(filters.query), filters))
-                        }
-                    } else {
-                        workoutRepository.getCompletedWorkouts().map { Pair(it, filters) }
-                    }
+            try {
+                val filtersFlow = combine(
+                    searchQuery,
+                    filterOption,
+                    sortOption,
+                    _customStartDate,
+                    _customEndDate
+                ) { query, filter, sort, customStart, customEnd ->
+                    FilterState(query, filter, sort, customStart, customEnd)
                 }
-                .map { (workouts, filters) ->
-                    var filtered = workouts
 
-                    // Apply filter
-                filtered = when (filters.filter) {
-                    FilterOption.ALL -> filtered
-                    FilterOption.TODAY -> {
-                        val todayStart = java.util.Calendar.getInstance().apply {
-                            set(java.util.Calendar.HOUR_OF_DAY, 0)
-                            set(java.util.Calendar.MINUTE, 0)
-                            set(java.util.Calendar.SECOND, 0)
-                            set(java.util.Calendar.MILLISECOND, 0)
-                        }.timeInMillis
-                        filtered.filter { it.date.toEpochMilli() >= todayStart }
-                    }
-                    FilterOption.THIS_WEEK -> {
-                        val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
-                        filtered.filter { it.date.toEpochMilli() >= weekAgo }
-                    }
-                    FilterOption.THIS_MONTH -> {
-                        val monthAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-                        filtered.filter { it.date.toEpochMilli() >= monthAgo }
-                    }
-                    FilterOption.CUSTOM -> {
-                        filtered.filter { it ->
-                            val date = it.date.toEpochMilli()
-                            (filters.customStart == null || date >= filters.customStart) && 
-                            (filters.customEnd == null || date <= filters.customEnd)
+                filtersFlow
+                    .flatMapLatest { filters ->
+                        if (filters.query.isNotBlank()) {
+                            kotlinx.coroutines.flow.flow {
+                                emit(Pair(workoutRepository.searchWorkouts(filters.query), filters))
+                            }
+                        } else {
+                            workoutRepository.getCompletedWorkouts().map { Pair(it, filters) }
                         }
                     }
-                }
+                    .map { (workouts, filters) ->
+                        var filtered = workouts
 
-                // Apply sorting
-                val sorted = when (filters.sort) {
-                    SortOption.NEWEST -> filtered.sortedByDescending { it.date.toEpochMilli() }
-                    SortOption.OLDEST -> filtered.sortedBy { it.date.toEpochMilli() }
-                    SortOption.VOLUME_DESC -> filtered.sortedByDescending { it.volume }
-                    SortOption.VOLUME_ASC -> filtered.sortedBy { it.volume }
-                    SortOption.DURATION_DESC -> filtered.sortedByDescending { it.duration }
-                    SortOption.DURATION_ASC -> filtered.sortedBy { it.duration }
+                        // Apply filter
+                    filtered = when (filters.filter) {
+                        FilterOption.ALL -> filtered
+                        FilterOption.TODAY -> {
+                            val todayStart = java.util.Calendar.getInstance().apply {
+                                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                set(java.util.Calendar.MINUTE, 0)
+                                set(java.util.Calendar.SECOND, 0)
+                                set(java.util.Calendar.MILLISECOND, 0)
+                            }.timeInMillis
+                            filtered.filter { it.date.toEpochMilli() >= todayStart }
+                        }
+                        FilterOption.THIS_WEEK -> {
+                            val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+                            filtered.filter { it.date.toEpochMilli() >= weekAgo }
+                        }
+                        FilterOption.THIS_MONTH -> {
+                            val monthAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+                            filtered.filter { it.date.toEpochMilli() >= monthAgo }
+                        }
+                        FilterOption.CUSTOM -> {
+                            filtered.filter { it ->
+                                val date = it.date.toEpochMilli()
+                                (filters.customStart == null || date >= filters.customStart) &&
+                                (filters.customEnd == null || date <= filters.customEnd)
+                            }
+                        }
+                    }
+
+                    // Apply sorting
+                    val sorted = when (filters.sort) {
+                        SortOption.NEWEST -> filtered.sortedByDescending { it.date.toEpochMilli() }
+                        SortOption.OLDEST -> filtered.sortedBy { it.date.toEpochMilli() }
+                        SortOption.VOLUME_DESC -> filtered.sortedByDescending { it.volume }
+                        SortOption.VOLUME_ASC -> filtered.sortedBy { it.volume }
+                        SortOption.DURATION_DESC -> filtered.sortedByDescending { it.duration }
+                        SortOption.DURATION_ASC -> filtered.sortedBy { it.duration }
+                    }
+
+                    sorted
                 }
-                
-                sorted
+                    .distinctUntilChanged()
+                    .collect { workouts ->
+                        _workouts.value = workouts
+                        _isLoading.value = false
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "Failed to load workouts: ${e.message}"
             }
-                .distinctUntilChanged()
-                .collect { workouts ->
-                    _workouts.value = workouts
-                    _isLoading.value = false
-                }
         }
     }
 
@@ -192,7 +202,13 @@ class WorkoutHistoryViewModel @Inject constructor(
 
     private fun loadIncompleteWorkout() {
         viewModelScope.launch {
-            _incompleteWorkout.value = workoutRepository.getIncompleteWorkout()
+            try {
+                _incompleteWorkout.value = workoutRepository.getIncompleteWorkout()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Non-critical — silently ignore; incomplete workout banner is optional
+            }
         }
     }
 
@@ -225,7 +241,13 @@ class WorkoutHistoryViewModel @Inject constructor(
         _deleteTarget.value?.let { workoutId ->
             _deleteTarget.value = null
             viewModelScope.launch {
-                workoutRepository.deleteWorkout(workoutId)
+                try {
+                    workoutRepository.deleteWorkout(workoutId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _error.value = "Failed to delete workout: ${e.message}"
+                }
             }
         }
     }

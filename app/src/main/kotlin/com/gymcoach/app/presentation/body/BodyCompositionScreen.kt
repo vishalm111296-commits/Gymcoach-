@@ -92,6 +92,13 @@ fun BodyCompositionScreen(
                         onDelete = { viewModel.deleteMeasurement(it) }
                     )
                 }
+                is BodyCompositionUiState.Error -> {
+                    Text(
+                        "Error: ${state.message}",
+                        color = GymCoachColors.TextSecondary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
     }

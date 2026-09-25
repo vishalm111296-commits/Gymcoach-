@@ -6,6 +6,7 @@ import com.gymcoach.app.core.animation.AnimationRepository
 import com.gymcoach.app.domain.model.Exercise
 import com.gymcoach.app.domain.repository.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -96,7 +97,7 @@ class ExerciseViewModel @Inject constructor(
             val equipFilter = if (filters.equipment == "All") null else filters.equipment
             repository.getFilteredExercises(catFilter, diffFilter, equipFilter)
         }
-        
+
         baseFlow.map { list ->
             list.filter { exercise ->
                 val matchesCategory = filters.category == "All" || exercise.muscleGroup.equals(filters.category, ignoreCase = true)
@@ -166,18 +167,29 @@ class ExerciseViewModel @Inject constructor(
 
     fun toggleFavorite(exercise: Exercise) {
         viewModelScope.launch {
-            repository.updateExercise(exercise.copy(isFavorite = !exercise.isFavorite))
+            try {
+                repository.updateExercise(exercise.copy(isFavorite = !exercise.isFavorite))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Non-critical toggle — silently ignore; state will revert on next collect
+            }
         }
     }
-
 
     private val _animatedExerciseNames = MutableStateFlow<Set<String>>(emptySet())
     val animatedExerciseNames: StateFlow<Set<String>> = _animatedExerciseNames.asStateFlow()
 
     init {
         viewModelScope.launch {
-            val names = animationRepository.getAllAnimations().map { it.exerciseName.trim().lowercase() }.toSet()
-            _animatedExerciseNames.value = names
+            try {
+                val names = animationRepository.getAllAnimations().map { it.exerciseName.trim().lowercase() }.toSet()
+                _animatedExerciseNames.value = names
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Animation names are non-critical; filter will just not show animation badge
+            }
         }
     }
 
@@ -185,16 +197,27 @@ class ExerciseViewModel @Inject constructor(
         return animationRepository.hasAnimation(name)
     }
 
-
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {
-            repository.addExercise(exercise)
+            try {
+                repository.addExercise(exercise)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Write failure — UI will not reflect the new exercise until next sync
+            }
         }
     }
 
     fun deleteExercise(exercise: Exercise) {
         viewModelScope.launch {
-            repository.deleteExercise(exercise)
+            try {
+                repository.deleteExercise(exercise)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Write failure — exercise will still appear until next sync
+            }
         }
     }
 
@@ -207,21 +230,33 @@ class ExerciseViewModel @Inject constructor(
         onCreated: (Long) -> Unit = {}
     ) {
         viewModelScope.launch {
-            val id = repository.createCustomExercise(
-                name = name,
-                muscleGroup = muscleGroup,
-                equipment = equipment,
-                difficulty = difficulty,
-                notes = notes
-            )
-            onCreated(id)
+            try {
+                val id = repository.createCustomExercise(
+                    name = name,
+                    muscleGroup = muscleGroup,
+                    equipment = equipment,
+                    difficulty = difficulty,
+                    notes = notes
+                )
+                onCreated(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Exercise creation failed; caller's onCreated won't be invoked
+            }
         }
     }
 
     fun deleteCustomExercise(id: Long, onDeleted: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            val success = repository.deleteCustomExercise(id)
-            onDeleted(success)
+            try {
+                val success = repository.deleteCustomExercise(id)
+                onDeleted(success)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                onDeleted(false)
+            }
         }
     }
 }

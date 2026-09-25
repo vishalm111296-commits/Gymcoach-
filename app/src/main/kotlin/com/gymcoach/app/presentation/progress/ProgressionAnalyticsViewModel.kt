@@ -9,6 +9,7 @@ import com.gymcoach.app.domain.repository.ExerciseRepository
 import com.gymcoach.app.domain.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -70,6 +71,8 @@ class ProgressionAnalyticsViewModel @Inject constructor(
                 try {
                     val all = exerciseRepository.getAllExercises().first()
                     all.firstOrNull { it.name.equals(exerciseName, ignoreCase = true) }?.id ?: exerciseId
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     exerciseId
                 }

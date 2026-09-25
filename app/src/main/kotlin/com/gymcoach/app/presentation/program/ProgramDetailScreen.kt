@@ -78,6 +78,7 @@ import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -158,6 +159,8 @@ class ProgramDetailViewModel @Inject constructor(
                 )
                 programRepository.saveGeneratedProgram(generated)
                 loadActiveProgram()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to generate program")
             }
@@ -198,6 +201,8 @@ class ProgramDetailViewModel @Inject constructor(
                         daysWithExercises = daysWithEx
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = ProgramDetailUiState(
                     isLoading = false,
@@ -218,6 +223,8 @@ class ProgramDetailViewModel @Inject constructor(
                     setAsActive = true
                 )
                 loadActiveProgram()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message ?: "Failed to create routine")
             }
@@ -226,9 +233,15 @@ class ProgramDetailViewModel @Inject constructor(
 
     fun startWorkoutForDay(dayId: Long, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
-            val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
-            if (newId != null) {
-                onCreated(newId)
+            try {
+                val newId = workoutRepository.createWorkoutFromProgramDay(dayId)
+                if (newId != null) {
+                    onCreated(newId)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to start workout")
             }
         }
     }

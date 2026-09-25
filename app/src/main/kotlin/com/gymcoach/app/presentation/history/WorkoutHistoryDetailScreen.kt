@@ -71,6 +71,7 @@ import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.PersonalRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,6 +108,8 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
                     workout = workout,
                     error = null
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = WorkoutHistoryDetailUiState(
                     isLoading = false,
@@ -126,7 +129,13 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
             _deleteTarget.value = null
             _showDeleteConfirmation.value = false
             viewModelScope.launch {
-                workoutRepository.deleteWorkout(workoutId)
+                try {
+                    workoutRepository.deleteWorkout(workoutId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(error = "Failed to delete workout")
+                }
             }
         }
     }
@@ -138,9 +147,15 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
 
     fun performAgain(workoutId: Long, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
-            val newId = workoutRepository.createWorkoutFromHistory(workoutId)
-            if (newId != null) {
-                onCreated(newId)
+            try {
+                val newId = workoutRepository.createWorkoutFromHistory(workoutId)
+                if (newId != null) {
+                    onCreated(newId)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to repeat workout")
             }
         }
     }
@@ -154,6 +169,8 @@ class WorkoutHistoryDetailViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     workout = current.copy(workout = updatedWorkout)
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to update notes"

@@ -129,4 +129,27 @@ class RestAudioCueEvaluatorTest {
             evaluator.evaluateCue(remainingSeconds = 3, totalDurationSeconds = 60, isCompleted = true, isSupersetSwitch = true)
         )
     }
+
+    @Test
+    fun `evaluateCue with short timer 10s suppresses 15s warning and halfway alert and executes 3 2 1 0`() {
+        val total = 10
+        // At 10s, 5s (half of 10, but total < 30 suppresses HALFWAY), 4s: null
+        assertNull(evaluator.evaluateCue(remainingSeconds = 10, totalDurationSeconds = total, enable15sWarning = true, enableHalfwayAlert = true))
+        assertNull(evaluator.evaluateCue(remainingSeconds = 5, totalDurationSeconds = total, enable15sWarning = true, enableHalfwayAlert = true))
+        assertNull(evaluator.evaluateCue(remainingSeconds = 4, totalDurationSeconds = total, enable15sWarning = true, enableHalfwayAlert = true))
+
+        // Countdown sequence
+        assertEquals(AudioCueType.COUNTDOWN_3, evaluator.evaluateCue(remainingSeconds = 3, totalDurationSeconds = total))
+        assertEquals(AudioCueType.COUNTDOWN_2, evaluator.evaluateCue(remainingSeconds = 2, totalDurationSeconds = total))
+        assertEquals(AudioCueType.COUNTDOWN_1, evaluator.evaluateCue(remainingSeconds = 1, totalDurationSeconds = total))
+        assertEquals(AudioCueType.TIMER_FINISHED, evaluator.evaluateCue(remainingSeconds = 0, totalDurationSeconds = total))
+    }
+
+    @Test
+    fun `evaluateCue with negative or oversized remaining seconds returns null`() {
+        assertNull(evaluator.evaluateCue(remainingSeconds = -1))
+        assertNull(evaluator.evaluateCue(remainingSeconds = -10))
+        assertNull(evaluator.evaluateCue(remainingSeconds = 9999, totalDurationSeconds = 9999, enableHalfwayAlert = true))
+    }
 }
+

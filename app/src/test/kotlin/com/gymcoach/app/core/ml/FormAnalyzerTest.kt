@@ -276,4 +276,79 @@ class FormAnalyzerTest {
         assertNotNull(result)
         assertEquals(0, result!!.repCount)
     }
+
+    @Test
+    fun `detects complete rep for bent over row`() {
+        val rowAnalyzer = FormAnalyzer(ExerciseType.BENT_OVER_ROW, FormAnalyzer.defaultFor(ExerciseType.BENT_OVER_ROW))
+        // Down threshold = 90, Up threshold = 160
+        for (i in 0..4) rowAnalyzer.analyze(createPose(170.0))
+        for (i in 0..4) rowAnalyzer.analyze(createPose(80.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = rowAnalyzer.analyze(createPose(170.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `detects complete rep for deadlift`() {
+        val dlAnalyzer = FormAnalyzer(ExerciseType.DEADLIFT, FormAnalyzer.defaultFor(ExerciseType.DEADLIFT))
+        // Down threshold = 100, Up threshold = 160
+        for (i in 0..4) dlAnalyzer.analyze(createLegPose(170.0))
+        for (i in 0..4) dlAnalyzer.analyze(createLegPose(90.0))
+        var result: AnalysisResult? = null
+        for (i in 0..4) {
+            result = dlAnalyzer.analyze(createLegPose(170.0))
+        }
+        assertNotNull(result)
+        assertEquals(1, result!!.repCount)
+    }
+
+    @Test
+    fun `ten consecutive invalid movement frames resets transient tracking`() {
+        // Build up initial angle and state
+        for (i in 0..4) analyzer.analyze(createPose(160.0))
+
+        // Feed 10 consecutive invalid frames (coincident landmarks returning -1.0)
+        val invalidPose = Pose(List(33) { NormalizedLandmark(0f, 0f, 0f) }, List(33) { 1.0f })
+        for (i in 1..10) {
+            val invalidResult = analyzer.analyze(invalidPose)
+            assertNotNull(invalidResult)
+            assertEquals("Landmarks not detected", invalidResult!!.formFeedback)
+        }
+
+        // 11th frame with valid pose starts from fresh tracking state
+        val validResult = analyzer.analyze(createPose(160.0))
+        assertNotNull(validResult)
+        assertEquals(0, validResult!!.repCount)
+    }
+
+    @Test
+    fun `feedback messages reflect exact form states across exercises`() {
+        val curlAnalyzer = FormAnalyzer(ExerciseType.BICEP_CURL, FormAnalyzer.defaultFor(ExerciseType.BICEP_CURL))
+        val rCurl1 = curlAnalyzer.analyze(createPose(175.0))
+        assertEquals("Extend arm more", rCurl1!!.formFeedback)
+        val rCurl2 = curlAnalyzer.analyze(createPose(25.0))
+        assertEquals("Full range of motion", rCurl2!!.formFeedback)
+        val rCurl3 = curlAnalyzer.analyze(createPose(100.0))
+        assertEquals("Good rep", rCurl3!!.formFeedback)
+
+        val squatAnalyzer = FormAnalyzer(ExerciseType.SQUAT, FormAnalyzer.defaultFor(ExerciseType.SQUAT))
+        val rSquat1 = squatAnalyzer.analyze(createLegPose(85.0))
+        assertEquals("Good depth", rSquat1!!.formFeedback)
+        val rSquat2 = squatAnalyzer.analyze(createLegPose(110.0))
+        assertEquals("Go lower", rSquat2!!.formFeedback)
+        val rSquat3 = squatAnalyzer.analyze(createLegPose(150.0))
+        assertEquals("Start squat", rSquat3!!.formFeedback)
+
+        val benchAnalyzer = FormAnalyzer(ExerciseType.BENCH_PRESS, FormAnalyzer.defaultFor(ExerciseType.BENCH_PRESS))
+        val rBench1 = benchAnalyzer.analyze(createPose(85.0))
+        assertEquals("Lower the bar", rBench1!!.formFeedback)
+        val rBench2 = benchAnalyzer.analyze(createPose(130.0))
+        assertEquals("Press up", rBench2!!.formFeedback)
+        val rBench3 = benchAnalyzer.analyze(createPose(165.0))
+        assertEquals("Start bench press", rBench3!!.formFeedback)
+    }
 }
+

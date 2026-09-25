@@ -310,5 +310,72 @@ class VTaperTransformationEngineTest {
         assertEquals(0.0, report2.adonisIndex.currentRatio, 0.0)
         assertEquals("No Data", report2.adonisIndex.statusSummary)
     }
+
+    @Test
+    fun testSubDayIntervalRecompDeltaClampedToMinimumOneDay() {
+        val now = System.currentTimeMillis()
+        val twoHoursAgo = now - (2 * 3600 * 1000L)
+
+        val m1 = BodyMeasurementEntity(id = 10, recordedAt = twoHoursAgo, waistCm = 82.0, shouldersCm = 118.0, chestCm = 102.0, weightKg = 79.5)
+        val m2 = BodyMeasurementEntity(id = 11, recordedAt = now, waistCm = 81.5, shouldersCm = 118.5, chestCm = 102.0, weightKg = 79.0)
+
+        val report = engine.calculateReport(listOf(m1, m2))
+        assertNotNull(report.recompDelta)
+        // Interval < 1 full day must be clamped to 1 day minimum
+        assertEquals(1, report.recompDelta!!.daysPeriod)
+        assertEquals(-0.5, report.recompDelta!!.waistDeltaCm, 0.001)
+        assertEquals(0.5, report.recompDelta!!.shoulderDeltaCm, 0.001)
+        assertEquals(0.0, report.recompDelta!!.chestDeltaCm, 0.001)
+        assertEquals(-0.5, report.recompDelta!!.weightDeltaKg, 0.001)
+    }
+
+    @Test
+    fun testDynamicDaysWindowSelectsClosestBaseline() {
+        val now = System.currentTimeMillis()
+        val day = 24L * 3600 * 1000L
+
+        val m180 = BodyMeasurementEntity(id = 1, recordedAt = now - (180 * day), waistCm = 92.0, shouldersCm = 108.0)
+        val m115 = BodyMeasurementEntity(id = 2, recordedAt = now - (115 * day), waistCm = 88.0, shouldersCm = 112.0)
+        val m40 = BodyMeasurementEntity(id = 3, recordedAt = now - (40 * day), waistCm = 84.0, shouldersCm = 116.0)
+        val mNow = BodyMeasurementEntity(id = 4, recordedAt = now, waistCm = 80.0, shouldersCm = 120.0)
+
+        val history = listOf(m180, m115, m40, mNow)
+
+        // 30 days window: target is -30d -> m40 (diff 10d) is closer than m115 (diff 85d)
+        val r30 = engine.calculateReport(history, daysWindow = 30)
+        assertNotNull(r30.recompDelta)
+        assertEquals(40, r30.recompDelta!!.daysPeriod)
+        assertEquals(-4.0, r30.recompDelta!!.waistDeltaCm, 0.001)
+
+        // 120 days window: target is -120d -> m115 (diff 5d) is closer than m180 (diff 60d) or m40 (diff 80d)
+        val r120 = engine.calculateReport(history, daysWindow = 120)
+        assertNotNull(r120.recompDelta)
+        assertEquals(115, r120.recompDelta!!.daysPeriod)
+        assertEquals(-8.0, r120.recompDelta!!.waistDeltaCm, 0.001)
+    }
+
+    @Test
+    fun testLimbSymmetryExtremeAsymmetryCalculation() {
+        val measurement = BodyMeasurementEntity(
+            leftArmCm = 30.0,
+            rightArmCm = 45.0 // Severe 15cm delta
+        )
+        val report = engine.calculateReport(listOf(measurement))
+        val armSym = report.limbSymmetries.find { it.limbName == "Arms" }
+        assertNotNull(armSym)
+        assertEquals(15.0, armSym!!.deltaCm, 0.001)
+        // 30 / 45 * 100 = 66.666...%
+        assertEquals(66.67, armSym.symmetryPct, 0.01)
+        assertFalse(armSym.isBalanced)
+    }
+
+    @Test
+    fun testAdonisIndexStatusSummaryMatchingAllTiers() {
+        assertEquals("Novice Tier", engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 120.0))).adonisIndex.statusSummary)
+        assertEquals("Athletic Tier", engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 140.0))).adonisIndex.statusSummary)
+        assertEquals("Prime Tier", engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 155.0))).adonisIndex.statusSummary)
+        assertEquals("Golden Tier", engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 165.0))).adonisIndex.statusSummary)
+        assertEquals("No Data", engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 0.0, shouldersCm = 0.0))).adonisIndex.statusSummary)
+    }
 }
 

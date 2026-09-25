@@ -135,4 +135,66 @@ class VTaperTransformationEngineTest {
         assertEquals(-5.0, report.recompDelta!!.weightDeltaKg, 0.01) // 80 - 85
         assertEquals(90, report.recompDelta!!.daysPeriod)
     }
+
+    @Test
+    fun testSingleMeasurementRecompDeltaIsNull() {
+        val measurement = BodyMeasurementEntity(
+            id = 1,
+            recordedAt = System.currentTimeMillis(),
+            waistCm = 80.0,
+            shouldersCm = 120.0
+        )
+        val report = engine.calculateReport(listOf(measurement))
+        assertNull(report.recompDelta)
+        assertNotNull(report.latestMeasurement)
+    }
+
+    @Test
+    fun testChronologicalSortingOrder() {
+        val now = System.currentTimeMillis()
+        val mOld = BodyMeasurementEntity(id = 1, recordedAt = now - 100000L, waistCm = 95.0, shouldersCm = 110.0)
+        val mNew = BodyMeasurementEntity(id = 2, recordedAt = now, waistCm = 80.0, shouldersCm = 125.0)
+
+        // Pass out-of-order
+        val report = engine.calculateReport(listOf(mNew, mOld))
+        assertEquals(2, report.history.size)
+        assertEquals(1L, report.history[0].id)
+        assertEquals(2L, report.history[1].id)
+        assertEquals(2L, report.latestMeasurement?.id)
+        assertEquals(80.0, report.latestMeasurement?.waistCm ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun testPerfectLimbSymmetry() {
+        val measurement = BodyMeasurementEntity(
+            leftArmCm = 40.0,
+            rightArmCm = 40.0,
+            leftThighCm = 62.0,
+            rightThighCm = 62.0
+        )
+        val report = engine.calculateReport(listOf(measurement))
+        val armSym = report.limbSymmetries.find { it.limbName == "Arms" }!!
+        assertEquals(0.0, armSym.deltaCm, 0.001)
+        assertEquals(100.0, armSym.symmetryPct, 0.001)
+        assertTrue(armSym.isBalanced)
+    }
+
+    @Test
+    fun testAdonisIndexExactTierBoundaries() {
+        // Ratio 1.34 -> Novice
+        val rNovice = engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 134.0)))
+        assertEquals(VTaperTier.NOVICE, rNovice.adonisIndex.tier)
+
+        // Ratio 1.35 -> Athletic
+        val rAthletic = engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 135.0)))
+        assertEquals(VTaperTier.ATHLETIC, rAthletic.adonisIndex.tier)
+
+        // Ratio 1.50 -> Prime
+        val rPrime = engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 150.0)))
+        assertEquals(VTaperTier.PRIME, rPrime.adonisIndex.tier)
+
+        // Ratio 1.618 -> Golden
+        val rGolden = engine.calculateReport(listOf(BodyMeasurementEntity(waistCm = 100.0, shouldersCm = 161.8)))
+        assertEquals(VTaperTier.GOLDEN, rGolden.adonisIndex.tier)
+    }
 }

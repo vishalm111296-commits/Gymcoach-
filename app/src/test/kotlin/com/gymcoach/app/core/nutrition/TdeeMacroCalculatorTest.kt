@@ -419,5 +419,71 @@ class TdeeMacroCalculatorTest {
         assertTrue("Carbs should be at least 40g floor", cutProfile.macroSplit.carbsGrams >= 40.0f)
         assertTrue("Carbs calories should be at least 160 kcal", cutProfile.macroSplit.carbsCalories >= 160)
     }
+
+    @Test
+    fun `testBiologicalSexWhitespaceAndPrefixMatching`() {
+        assertEquals(BiologicalSex.MALE, BiologicalSex.fromString("  male  "))
+        assertEquals(BiologicalSex.MALE, BiologicalSex.fromString("M"))
+        assertEquals(BiologicalSex.MALE, BiologicalSex.fromString("man"))
+        assertEquals(BiologicalSex.FEMALE, BiologicalSex.fromString("  female  "))
+        assertEquals(BiologicalSex.FEMALE, BiologicalSex.fromString("f"))
+        assertEquals(BiologicalSex.FEMALE, BiologicalSex.fromString("woman"))
+        assertEquals(BiologicalSex.UNSPECIFIED, BiologicalSex.fromString("non-binary"))
+        assertEquals(BiologicalSex.UNSPECIFIED, BiologicalSex.fromString("other"))
+        assertEquals(BiologicalSex.UNSPECIFIED, BiologicalSex.fromString("   "))
+        assertEquals(BiologicalSex.UNSPECIFIED, BiologicalSex.fromString(""))
+    }
+
+    @Test
+    fun `testNutritionGoalAliasKeywordsMatching`() {
+        assertEquals(NutritionGoal.AGGRESSIVE_CUT, NutritionGoal.fromString("rapid cut"))
+        assertEquals(NutritionGoal.MODERATE_CUT, NutritionGoal.fromString("weight loss"))
+        assertEquals(NutritionGoal.RECOMPOSITION, NutritionGoal.fromString("recomp"))
+        assertEquals(NutritionGoal.LEAN_BULK, NutritionGoal.fromString("hypertrophy"))
+        assertEquals(NutritionGoal.LEAN_BULK, NutritionGoal.fromString("muscle gain"))
+        assertEquals(NutritionGoal.AGGRESSIVE_BULK, NutritionGoal.fromString("aggressive bulk"))
+        assertEquals(NutritionGoal.MAINTENANCE, NutritionGoal.fromString("unrecognized random goal"))
+    }
+
+    @Test
+    fun `testFiberTargetClampingAcrossCalorieTiers`() {
+        // At 1200 kcal: 1.2 * 14 = 16.8g -> clamped to 25.0g floor
+        val pLow = TdeeMacroCalculator.calculate(
+            weightKg = 40.0, heightCm = 150.0, age = 50, sex = BiologicalSex.FEMALE,
+            goal = NutritionGoal.AGGRESSIVE_CUT, activityLevel = ActivityLevel.SEDENTARY
+        )
+        assertEquals(25.0f, pLow.fiberGrams, 0.01f)
+
+        // At 2500 kcal: 2.5 * 14 = 35.0g -> within [25.0, 55.0]
+        val pMid = TdeeMacroCalculator.calculate(
+            weightKg = 75.0, heightCm = 175.0, age = 25, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.MAINTENANCE, activityLevel = ActivityLevel.MODERATELY_ACTIVE
+        )
+        // Check fiber calculation formula
+        val expectedMidFiber = ((pMid.targetCalories / 1000f) * 14f).coerceIn(25f, 55f)
+        assertEquals(expectedMidFiber, pMid.fiberGrams, 0.1f)
+
+        // At extreme bulk: 5500 kcal -> 5.5 * 14 = 77.0g -> clamped to 55.0g ceiling
+        val pHigh = TdeeMacroCalculator.calculate(
+            weightKg = 250.0, heightCm = 210.0, age = 22, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.AGGRESSIVE_BULK, activityLevel = ActivityLevel.EXTRA_ACTIVE,
+            trainingDaysPerWeek = 7, sessionLengthMinutes = 120
+        )
+        assertEquals(55.0f, pHigh.fiberGrams, 0.01f)
+    }
+
+    @Test
+    fun `testRecompositionCaloricBalanceAndMultiplier`() {
+        val profile = TdeeMacroCalculator.calculate(
+            weightKg = 80.0, heightCm = 180.0, age = 28, sex = BiologicalSex.MALE,
+            goal = NutritionGoal.RECOMPOSITION, activityLevel = ActivityLevel.MODERATELY_ACTIVE,
+            trainingDaysPerWeek = 4, sessionLengthMinutes = 60
+        )
+        // 1.00 multiplier -> targetCalories == tdee, adjustment == 0
+        assertEquals(profile.tdee, profile.targetCalories)
+        assertEquals(0, profile.calorieAdjustment)
+        // High protein: 80 * 2.2 = 176g
+        assertEquals(176.0f, profile.macroSplit.proteinGrams, 0.5f)
+    }
 }
 

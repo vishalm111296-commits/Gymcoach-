@@ -216,4 +216,160 @@ class BodyCompositionEngineTest {
         val trendHalf = BodyCompositionEngine.calculateTrend(listOf(halfwayRatio))
         assertEquals(0.5f, trendHalf.goldenRatioProximityPct, 0.01f)
     }
+
+    @Test
+    fun testUnsortedHistoryChronologicalOrdering() {
+        val tBase = 1700000000000L
+        val mOldest = BodyMeasurementEntity(recordedAt = tBase, weightKg = 75.0)
+        val mMiddle = BodyMeasurementEntity(recordedAt = tBase + 86400000L * 7, weightKg = 76.0)
+        val mNewest = BodyMeasurementEntity(recordedAt = tBase + 86400000L * 14, weightKg = 77.0)
+
+        // Pass in scrambled chronological order
+        val trend = BodyCompositionEngine.calculateTrend(listOf(mMiddle, mOldest, mNewest))
+
+        assertEquals(77.0, trend.currentWeightKg, 0.001)
+        assertEquals(76.0, trend.previousWeightKg!!, 0.001)
+        assertEquals(1.0, trend.weeklyRateKg, 0.01)
+        assertEquals(3, trend.history.size)
+        assertEquals(tBase + 86400000L * 14, trend.history[0].recordedAt)
+        assertEquals(tBase + 86400000L * 7, trend.history[1].recordedAt)
+        assertEquals(tBase, trend.history[2].recordedAt)
+    }
+
+    @Test
+    fun testBodyFatPercentageSanitization() {
+        // Zero body fat percentage -> sanitized to null
+        val zeroFat = BodyMeasurementEntity(weightKg = 80.0, bodyFatPct = 0.0)
+        val trendZero = BodyCompositionEngine.calculateTrend(listOf(zeroFat))
+        assertNull(trendZero.currentBodyFatPct)
+
+        // Negative body fat percentage -> sanitized to null
+        val negativeFat = BodyMeasurementEntity(weightKg = 80.0, bodyFatPct = -5.0)
+        val trendNegative = BodyCompositionEngine.calculateTrend(listOf(negativeFat))
+        assertNull(trendNegative.currentBodyFatPct)
+
+        // Valid positive body fat percentage -> retained
+        val validFat = BodyMeasurementEntity(weightKg = 80.0, bodyFatPct = 14.5)
+        val trendValid = BodyCompositionEngine.calculateTrend(listOf(validFat))
+        assertEquals(14.5, trendValid.currentBodyFatPct!!, 0.001)
+    }
+
+    @Test
+    fun testWeightLossWeeklyRateCalculation() {
+        val t2 = System.currentTimeMillis()
+        val t1 = t2 - TimeUnit.DAYS.toMillis(21) // 3 weeks ago
+
+        val previous = BodyMeasurementEntity(recordedAt = t1, weightKg = 85.0)
+        val latest = BodyMeasurementEntity(recordedAt = t2, weightKg = 83.5) // -1.5kg over 3 weeks = -0.5kg/week
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(latest, previous))
+        assertEquals(83.5, trend.currentWeightKg, 0.001)
+        assertEquals(85.0, trend.previousWeightKg!!, 0.001)
+        assertEquals(-0.5, trend.weeklyRateKg, 0.01)
+    }
+
+    @Test
+    fun testSubWeeklyIntervalWeeklyRateCalculation() {
+        val t2 = System.currentTimeMillis()
+        val t1 = t2 - (TimeUnit.DAYS.toMillis(7) / 2) // 3.5 days ago (0.5 weeks)
+
+        val previous = BodyMeasurementEntity(recordedAt = t1, weightKg = 70.0)
+        val latest = BodyMeasurementEntity(recordedAt = t2, weightKg = 70.5) // +0.5kg in 0.5 weeks = +1.0kg/week
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(latest, previous))
+        assertEquals(1.0, trend.weeklyRateKg, 0.01)
+    }
+
+    @Test
+    fun testSingleMeasurementHistoryBaselineDeltas() {
+        val t = System.currentTimeMillis()
+        val single = BodyMeasurementEntity(
+            recordedAt = t,
+            weightKg = 78.0,
+            chestCm = 102.0,
+            shouldersCm = 120.0,
+            waistCm = 80.0,
+            leftArmCm = 36.0,
+            rightArmCm = 36.0
+        )
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(single))
+        assertEquals(78.0, trend.currentWeightKg, 0.001)
+        assertNull(trend.previousWeightKg)
+        assertEquals(0.0, trend.weeklyRateKg, 0.001)
+        assertEquals(1, trend.history.size)
+
+        // All present parts should have deltaCm = 0.0
+        assertEquals(102.0, trend.circumferences[BodyPart.CHEST]?.currentCm ?: 0.0, 0.001)
+        assertEquals(0.0, trend.circumferences[BodyPart.CHEST]?.deltaCm ?: -1.0, 0.001)
+        assertEquals(120.0, trend.circumferences[BodyPart.SHOULDERS]?.currentCm ?: 0.0, 0.001)
+        assertEquals(0.0, trend.circumferences[BodyPart.SHOULDERS]?.deltaCm ?: -1.0, 0.001)
+        assertEquals(36.0, trend.circumferences[BodyPart.ARMS]?.currentCm ?: 0.0, 0.001)
+        assertEquals(0.0, trend.circumferences[BodyPart.ARMS]?.deltaCm ?: -1.0, 0.001)
+    }
+
+    @Test
+    fun testMissingOrZeroShouldersOrWaistVTaperHandling() {
+        // Zero shoulders
+        val zeroShoulders = BodyMeasurementEntity(shouldersCm = 0.0, waistCm = 80.0)
+        val trendZeroShoulders = BodyCompositionEngine.calculateTrend(listOf(zeroShoulders))
+        assertNull(trendZeroShoulders.vTaperRatio)
+        assertEquals("Unknown", trendZeroShoulders.vTaperCategory)
+        assertEquals(0.0f, trendZeroShoulders.goldenRatioProximityPct, 0.001f)
+
+        // Zero waist
+        val zeroWaist = BodyMeasurementEntity(shouldersCm = 120.0, waistCm = 0.0)
+        val trendZeroWaist = BodyCompositionEngine.calculateTrend(listOf(zeroWaist))
+        assertNull(trendZeroWaist.vTaperRatio)
+        assertEquals("Unknown", trendZeroWaist.vTaperCategory)
+        assertEquals(0.0f, trendZeroWaist.goldenRatioProximityPct, 0.001f)
+
+        // Negative values
+        val negativeDimensions = BodyMeasurementEntity(shouldersCm = -120.0, waistCm = 80.0)
+        val trendNegative = BodyCompositionEngine.calculateTrend(listOf(negativeDimensions))
+        assertNull(trendNegative.vTaperRatio)
+        assertEquals("Unknown", trendNegative.vTaperCategory)
+        assertEquals(0.0f, trendNegative.goldenRatioProximityPct, 0.001f)
+    }
+
+    @Test
+    fun testBilateralLimbAveragingAcrossAllLimbPairs() {
+        val t = System.currentTimeMillis()
+        val oldM = BodyMeasurementEntity(
+            recordedAt = t - TimeUnit.DAYS.toMillis(7),
+            leftArmCm = 35.0,
+            rightArmCm = 35.0,
+            leftThighCm = 58.0,
+            rightThighCm = 58.0,
+            leftCalfCm = 0.0,
+            rightCalfCm = 39.0 // Calf only right previously
+        )
+        val newM = BodyMeasurementEntity(
+            recordedAt = t,
+            leftArmCm = 36.0,
+            rightArmCm = 38.0, // Arms: (36 + 38) / 2 = 37.0 -> delta = 37 - 35 = +2.0
+            leftThighCm = 0.0,
+            rightThighCm = 60.0, // Thigh: only right currently = 60.0 -> delta = 60 - 58 = +2.0
+            leftCalfCm = 40.0,
+            rightCalfCm = 0.0 // Calf: only left currently = 40.0 -> delta = 40 - 39 = +1.0
+        )
+
+        val trend = BodyCompositionEngine.calculateTrend(listOf(newM, oldM))
+
+        val armDelta = trend.circumferences[BodyPart.ARMS]
+        assertNotNull(armDelta)
+        assertEquals(37.0, armDelta!!.currentCm, 0.001)
+        assertEquals(2.0, armDelta.deltaCm, 0.001)
+
+        val thighDelta = trend.circumferences[BodyPart.THIGHS]
+        assertNotNull(thighDelta)
+        assertEquals(60.0, thighDelta!!.currentCm, 0.001)
+        assertEquals(2.0, thighDelta.deltaCm, 0.001)
+
+        val calfDelta = trend.circumferences[BodyPart.CALVES]
+        assertNotNull(calfDelta)
+        assertEquals(40.0, calfDelta!!.currentCm, 0.001)
+        assertEquals(1.0, calfDelta.deltaCm, 0.001)
+    }
 }
+

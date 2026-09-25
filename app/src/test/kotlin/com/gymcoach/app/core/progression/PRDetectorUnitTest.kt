@@ -279,6 +279,128 @@ class PRDetectorUnitTest {
         assertEquals(330.0, volumePR.value, 0.001)
     }
 
+    @Test
+    fun `detectPRs detects bodyweight e1RM proxy with one point five multiplier`() {
+        val bwSets = listOf(
+            createSet(weight = 0.0, reps = 20, completed = true, setType = 0),
+            createSet(weight = 0.0, reps = 15, completed = true, setType = 0)
+        )
+        val existingBwPR = listOf(
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Pull Up", type = PRDetector.PRType.ESTIMATED_1RM,
+                value = 25.0, details = "Bodyweight e1RM: 25.0kg", date = Instant.now(), workoutId = 1L
+            )
+        )
+
+        // 20 reps * 1.5 = 30.0kg proxy e1RM > 25.0kg -> triggers PR
+        val prs = detector.detectPRs(
+            exerciseId = 1L, exerciseName = "Pull Up",
+            currentSets = bwSets, existingPRs = existingBwPR, workoutId = 2L
+        )
+
+        val e1rmPR = prs.firstOrNull { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertNotNull("Bodyweight proxy e1RM PR should be detected", e1rmPR)
+        assertEquals(30.0, e1rmPR!!.value, 0.001)
+        assertEquals("Bodyweight e1RM: 30.0kg", e1rmPR.details)
+    }
+
+    @Test
+    fun `detectPRs returns empty list when performance matches previous PRs without exceeding`() {
+        val now = Instant.now()
+        val existingPRs = listOf(
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Squat", type = PRDetector.PRType.WEIGHT,
+                value = 100.0, details = "100.0kg lifted", date = now, workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Squat", type = PRDetector.PRType.REP,
+                value = 10.0, details = "10 reps at 100kg", date = now, workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Squat", type = PRDetector.PRType.VOLUME,
+                value = 1000.0, details = "Volume: 1000kg", date = now, workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Squat", type = PRDetector.PRType.ESTIMATED_1RM,
+                value = detector.calculateEstimated1RM(100.0, 10), details = "e1RM: 133.3kg", date = now, workoutId = 1L
+            )
+        )
+
+        // Exactly identical performance: 100kg x 10 reps = 1000kg volume, 133.333kg e1RM
+        val matchingSets = listOf(
+            createSet(weight = 100.0, reps = 10, completed = true, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L, exerciseName = "Squat",
+            currentSets = matchingSets, existingPRs = existingPRs, workoutId = 2L
+        )
+
+        assertTrue("Tying an existing PR must strictly not trigger a new PR", prs.isEmpty())
+    }
+
+    @Test
+    fun `detectPRs detects all 4 PR types simultaneously when sets diverge across heavy and high-rep`() {
+        // Set 1: Heavy low-rep (130kg x 2) -> max weight 130kg
+        // Set 2: Back-off AMRAP (105kg x 12) -> max reps 12, e1RM = 105 * (1 + 12/30) = 147.0kg
+        // Total Volume = 130 * 2 + 105 * 12 = 260 + 1260 = 1520kg
+        val currentSets = listOf(
+            createSet(weight = 130.0, reps = 2, completed = true, setType = 0),
+            createSet(weight = 105.0, reps = 12, completed = true, setType = 0)
+        )
+        val existingPRs = listOf(
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Bench Press", type = PRDetector.PRType.WEIGHT,
+                value = 125.0, details = "125kg", date = Instant.now(), workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Bench Press", type = PRDetector.PRType.REP,
+                value = 8.0, details = "8 reps", date = Instant.now(), workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Bench Press", type = PRDetector.PRType.ESTIMATED_1RM,
+                value = 140.0, details = "140kg", date = Instant.now(), workoutId = 1L
+            ),
+            PRDetector.PersonalRecord(
+                exerciseId = 1L, exerciseName = "Bench Press", type = PRDetector.PRType.VOLUME,
+                value = 1000.0, details = "1000kg", date = Instant.now(), workoutId = 1L
+            )
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 1L, exerciseName = "Bench Press",
+            currentSets = currentSets, existingPRs = existingPRs, workoutId = 5L
+        )
+
+        assertEquals(4, prs.size)
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals(130.0, weightPR.value, 0.001)
+
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        assertEquals(12.0, repPR.value, 0.001)
+
+        val e1rmPR = prs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertEquals(147.0, e1rmPR.value, 0.001)
+
+        val volPR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        assertEquals(1520.0, volPR.value, 0.001)
+
+        // Verify exercise and workout attribution
+        assertTrue(prs.all { it.exerciseId == 1L && it.exerciseName == "Bench Press" && it.workoutId == 5L })
+    }
+
+    @Test
+    fun `calculateEstimated1RM clamps formula cleanly across supra-12 repetition counts`() {
+        val at12 = detector.calculateEstimated1RM(80.0, 12)
+        val at15 = detector.calculateEstimated1RM(80.0, 15)
+        val at30 = detector.calculateEstimated1RM(80.0, 30)
+
+        // 80 * (1 + 12/30) = 80 * 1.4 = 112.0kg
+        assertEquals(112.0, at12, 0.001)
+        assertEquals(112.0, at15, 0.001)
+        assertEquals(112.0, at30, 0.001)
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

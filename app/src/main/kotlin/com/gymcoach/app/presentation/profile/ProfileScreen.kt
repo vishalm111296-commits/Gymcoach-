@@ -101,7 +101,7 @@ data class ProfileImportUiState(
 class ProfileViewModel @Inject constructor(
     private val userProfileRepository: UserProfileRepository,
     private val bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao,
-    private val workoutRepository: WorkoutRepository? = null,
+    private val workoutRepository: WorkoutRepository,
     private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter()
 ) : ViewModel() {
 
@@ -111,22 +111,7 @@ class ProfileViewModel @Inject constructor(
     ) : this(
         userProfileRepository,
         bodyMeasurementDao,
-        null,
-        WorkoutDataImporter()
-    )
-
-    constructor(userProfileRepository: UserProfileRepository) : this(
-        userProfileRepository,
-        object : com.gymcoach.app.data.local.dao.BodyMeasurementDao {
-            override suspend fun insert(measurement: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Long = 0L
-            override suspend fun insertAll(measurements: List<com.gymcoach.app.data.local.entity.BodyMeasurementEntity>) {}
-            override suspend fun update(measurement: com.gymcoach.app.data.local.entity.BodyMeasurementEntity): Int = 0
-            override fun getAll() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.BodyMeasurementEntity>())
-            override fun getLatest() = kotlinx.coroutines.flow.flowOf(null)
-            override suspend fun getById(id: Long): com.gymcoach.app.data.local.entity.BodyMeasurementEntity? = null
-            override suspend fun deleteById(id: Long): Int = 0
-        },
-        null,
+        createFallbackWorkoutRepository(),
         WorkoutDataImporter()
     )
 
@@ -134,11 +119,6 @@ class ProfileViewModel @Inject constructor(
     val importUiState: StateFlow<ProfileImportUiState> = _importUiState.asStateFlow()
 
     fun importWorkoutsFromJson(jsonString: String) {
-        val repo = workoutRepository
-        if (repo == null) {
-            _importUiState.value = ProfileImportUiState(isImporting = false, error = "Workout repository unavailable")
-            return
-        }
         viewModelScope.launch {
             _importUiState.value = ProfileImportUiState(isImporting = true)
             try {
@@ -151,7 +131,7 @@ class ProfileViewModel @Inject constructor(
                     return@launch
                 }
                 val data = parseResult.getOrThrow()
-                val result = repo.importWorkouts(data.workouts)
+                val result = workoutRepository.importWorkouts(data.workouts)
                 if (result.isFailure) {
                     _importUiState.value = ProfileImportUiState(
                         isImporting = false,
@@ -245,6 +225,40 @@ class ProfileViewModel @Inject constructor(
                 if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to update profile"
             }
+        }
+    }
+
+    private companion object {
+        private fun createFallbackWorkoutRepository(): WorkoutRepository = object : WorkoutRepository {
+            override fun getAllWorkouts() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.Workout>())
+            override fun getWorkoutWithDetails(workoutId: Long) = kotlinx.coroutines.flow.flowOf(null)
+            override suspend fun getLatestIncompleteWorkout(): com.gymcoach.app.domain.model.Workout? = null
+            override suspend fun createWorkout(workout: com.gymcoach.app.domain.model.Workout): Long = 0L
+            override suspend fun updateWorkout(workout: com.gymcoach.app.domain.model.Workout) {}
+            override suspend fun deleteWorkout(workoutId: Long) {}
+            override suspend fun addExerciseToWorkout(workoutId: Long, exerciseId: Long, orderIndex: Int): Long = 0L
+            override suspend fun removeExerciseFromWorkout(workoutExerciseId: Long) {}
+            override suspend fun swapExercise(workoutExerciseId: Long, newExerciseId: Long) {}
+            override suspend fun addSetToExercise(workoutExerciseId: Long, set: com.gymcoach.app.domain.model.WorkoutSet): Long = 0L
+            override suspend fun updateSet(set: com.gymcoach.app.domain.model.WorkoutSet) {}
+            override suspend fun deleteSet(setId: Long) {}
+            override suspend fun getLastPerformanceForExercise(exerciseId: Long): com.gymcoach.app.data.local.dao.LastPerformance? = null
+            override suspend fun getLastSetsForExercise(exerciseId: Long): List<com.gymcoach.app.data.local.dao.LastSetData> = emptyList()
+            override suspend fun getLastPerformancesForExercises(exerciseIds: List<Long>): Map<Long, com.gymcoach.app.data.local.dao.LastPerformance> = emptyMap()
+            override suspend fun getLastSetsForExercises(exerciseIds: List<Long>): Map<Long, List<com.gymcoach.app.data.local.dao.LastSetData>> = emptyMap()
+            override fun getCompletedWorkouts() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override fun getCompletedSetsWithContext() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.core.program.VolumeCalculator.SetWithContext>())
+            override fun getWorkoutsInDateRange(startDate: Long, endDate: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override fun getWorkoutsByVolumeDesc() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override fun getWorkoutsByVolumeAsc() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override fun getWorkoutsByDurationDesc() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override fun getWorkoutsByDurationAsc() = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>())
+            override suspend fun searchWorkouts(query: String) = emptyList<com.gymcoach.app.domain.model.WorkoutWithStats>()
+            override suspend fun getIncompleteWorkout(): com.gymcoach.app.domain.model.Workout? = null
+            override suspend fun createWorkoutFromHistory(workoutId: Long): Long? = null
+            override suspend fun createWorkoutFromProgramDay(programDayId: Long): Long? = null
+            override suspend fun importWorkouts(workouts: List<com.gymcoach.app.domain.model.WorkoutWithDetails>) =
+                Result.success(com.gymcoach.app.domain.repository.ImportStats(0, 0, 0))
         }
     }
 }

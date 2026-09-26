@@ -110,7 +110,6 @@ fun ExerciseAnimationPlayer(
 
     val phase = controller.currentPhase
     val cue = controller.currentCue
-    val currentFrame = controller.currentFrame
 
     val primaryColor = GymCoachColors.Primary
     val jointColor = GymCoachColors.CyanAccent
@@ -257,7 +256,7 @@ fun ExerciseAnimationPlayer(
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.fillMaxSize().padding(14.dp)) {
-                    val frame = currentFrame
+                    val frame = controller.currentFrame
                     if (frame != null) {
                         SkeletalRenderer.drawSkeleton(
                             drawScope = this,
@@ -273,33 +272,12 @@ fun ExerciseAnimationPlayer(
                     }
                 }
 
-                // Biomechanical Angle Overlay Badges
-                if (showAngles && currentFrame != null && currentFrame.angleReadouts.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        currentFrame.angleReadouts.forEach { readout ->
-                            Surface(
-                                shape = GymCoachShapes.xs,
-                                color = GymCoachColors.SurfaceDeep.copy(alpha = 0.85f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.GoldAccent.copy(alpha = 0.6f))
-                            ) {
-                                Text(
-                                    text = "${readout.label}: ${readout.angleDegrees.toInt()}°",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = GymCoachColors.GoldAccent,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+                // Biomechanical Angle Overlay Badges (isolated recomposition scope)
+                BiomechanicalAngleOverlay(
+                    controller = controller,
+                    visible = showAngles,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
 
                 // Watermark / Perspective badge
                 Text(
@@ -329,25 +307,8 @@ fun ExerciseAnimationPlayer(
 
             Spacer(Modifier.height(4.dp))
 
-            // Scrubber Slider
-            Slider(
-                value = controller.progress,
-                onValueChange = {
-                    controller.pause()
-                    controller.seekTo(it)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .semantics {
-                        contentDescription = "Animation progress: ${(controller.progress * 100).toInt()}%"
-                    },
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
-                )
-            )
+            // Scrubber Slider (isolated recomposition scope)
+            AnimationScrubber(controller = controller)
 
             // Playback Control Bar
             Row(
@@ -427,3 +388,63 @@ fun ExerciseAnimationPlayer(
         }
     }
 }
+
+@Composable
+private fun BiomechanicalAngleOverlay(
+    controller: AnimationController,
+    visible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    if (!visible) return
+    val currentFrame = controller.currentFrame
+    if (currentFrame != null && currentFrame.angleReadouts.isNotEmpty()) {
+        Row(
+            modifier = modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            currentFrame.angleReadouts.forEach { readout ->
+                Surface(
+                    shape = GymCoachShapes.xs,
+                    color = GymCoachColors.SurfaceDeep.copy(alpha = 0.85f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.GoldAccent.copy(alpha = 0.6f))
+                ) {
+                    Text(
+                        text = "${readout.label}: ${readout.angleDegrees.toInt()}°",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = GymCoachColors.GoldAccent,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnimationScrubber(
+    controller: AnimationController,
+    modifier: Modifier = Modifier
+) {
+    Slider(
+        value = controller.progress,
+        onValueChange = {
+            controller.pause()
+            controller.seekTo(it)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+            .semantics {
+                contentDescription = "Animation progress: ${(controller.progress * 100).toInt()}%"
+            },
+        colors = SliderDefaults.colors(
+            thumbColor = MaterialTheme.colorScheme.primary,
+            activeTrackColor = MaterialTheme.colorScheme.primary,
+            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+        )
+    )
+}
+

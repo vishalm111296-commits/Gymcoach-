@@ -99,7 +99,7 @@ fun GymCoachBottomNav(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 BOTTOM_NAV_ITEMS.forEach { item ->
-                    val active = currentRoute == item.route
+                    val active = currentRoute == item.route || (item.route == "workout" && currentRoute?.startsWith("workout_session") == true)
                     val iconTint by animateColorAsState(
                         targetValue = if (active) GymCoachColors.PrimaryLight else GymCoachColors.TextSecondary,
                         animationSpec = tween(durationMillis = 200),

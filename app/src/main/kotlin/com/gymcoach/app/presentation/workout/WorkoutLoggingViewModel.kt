@@ -98,7 +98,8 @@ class WorkoutLoggingViewModel @Inject constructor(
         val completedSetsCount: Int,
         val totalSetsCount: Int,
         val exercisesCompletedCount: Int,
-        val newPRs: List<com.gymcoach.app.core.progression.PRDetector.PersonalRecord> = emptyList()
+        val newPRs: List<com.gymcoach.app.core.progression.PRDetector.PersonalRecord> = emptyList(),
+        val musclesTrained: List<String> = emptyList()
     )
 
     private val _workoutSummary = MutableStateFlow<WorkoutSummary?>(null)

@@ -270,8 +270,9 @@ fun WorkoutSessionScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sessionVolume > 0) {
+                                val volFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(sessionVolume)
                                 Text(
-                                    text = "${String.format(Locale.US, "%.0f", sessionVolume)} kg·reps",
+                                    text = "$volFormatted kg·reps",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
@@ -298,7 +299,7 @@ fun WorkoutSessionScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 currentWorkout?.let { workout ->
                     // Recovery & Readiness advisory banner (only active if logged today)
@@ -343,7 +344,7 @@ fun WorkoutSessionScreen(
                         }
                     }
 
-                    item(key = "workout_header_spacer") { Spacer(Modifier.height(16.dp)) }
+                    item(key = "workout_header_spacer") { Spacer(Modifier.height(8.dp)) }
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
@@ -959,7 +960,7 @@ internal fun ExerciseSetCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(Modifier.height(3.dp))
+                    Spacer(Modifier.height(8.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1961,61 +1962,94 @@ internal fun WorkoutCompletionView(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 2x2 Grid using Rows and Columns
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Total Volume",
-                    value = "${String.format(Locale.US, "%.0f", summary.totalVolumeKg)}\nkg·reps",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Duration",
-                    value = formatDuration(summary.durationSeconds),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    title = "Sets Completed",
-                    value = "${summary.completedSetsCount} / ${summary.totalSetsCount}",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Personal Records",
-                    value = if (summary.newPRs.isNotEmpty()) "${summary.newPRs.size} New PRs!" else "0",
-                    modifier = Modifier.weight(1f),
-                    highlight = summary.newPRs.isNotEmpty()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
             if (summary.newPRs.isNotEmpty()) {
-                Text(
-                    text = "Personal Records Broken",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.Start)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(summary.newPRs) { pr ->
+                        Surface(
+                            shape = GymCoachShapes.pill,
+                            color = androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.4f))
+                        ) {
+                            Text(
+                                text = "🏆 ${pr.exerciseName}: ${pr.value} ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else "kg"}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = androidx.compose.ui.graphics.Color(0xFFFFB74D),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-                summary.newPRs.forEach { pr ->
-                    PRCard(pr)
-                    Spacer(modifier = Modifier.height(8.dp))
+            if (summary.musclesTrained.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(summary.musclesTrained) { muscle ->
+                        Surface(
+                            shape = GymCoachShapes.pill,
+                            color = GymCoachColors.Primary.copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.Primary.copy(alpha = 0.4f))
+                        ) {
+                            Text(
+                                text = muscle.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.Primary,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // 2x2 Grid using Rows and Columns
+            val volumeFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(summary.totalVolumeKg)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    StatCard(
+                        title = "Total Volume",
+                        value = "$volumeFormatted kg"
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    StatCard(
+                        title = "Sets Completed",
+                        value = "${summary.completedSetsCount} / ${summary.totalSetsCount}"
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    StatCard(
+                        title = "Exercises",
+                        value = "${summary.exercisesCompletedCount}"
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    StatCard(
+                        title = "Duration",
+                        value = formatDuration(summary.durationSeconds)
+                    )
+                }
+            }
+
 
             Button(
                 onClick = onDone,

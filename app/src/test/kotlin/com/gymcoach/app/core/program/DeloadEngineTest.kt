@@ -650,6 +650,144 @@ class DeloadEngineTest {
         assertFalse("Trailing recovery prevents deload", trailingRecovered.isDeloadRecommended)
     }
 
+    @Test
+    fun `stagnation plateau volume calculation filters out warmup and incomplete sets`() {
+        val baseTime = Instant.now()
+        // Workout 1: 1 normal completed set: 100kg x 10 = 1000kg
+        val w1 = createWorkoutWithDetails(
+            workoutId = 1,
+            date = baseTime.minusSeconds(86400 * 3),
+            exercises = listOf(
+                createExerciseWithSets(
+                    sets = listOf(
+                        createWorkoutSet(1, 100.0, 10, completed = true, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+        // Workout 2: 1 warmup set (80kg x 10) + 1 normal completed set (100kg x 10) = 1000kg
+        val w2 = createWorkoutWithDetails(
+            workoutId = 2,
+            date = baseTime.minusSeconds(86400 * 2),
+            exercises = listOf(
+                createExerciseWithSets(
+                    sets = listOf(
+                        createWorkoutSet(1, 80.0, 10, completed = true, setType = SetType.WARMUP),
+                        createWorkoutSet(2, 100.0, 10, completed = true, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+        // Workout 3: 1 incomplete normal set (100kg x 10) + 1 normal completed set (100kg x 9) = 900kg
+        val w3 = createWorkoutWithDetails(
+            workoutId = 3,
+            date = baseTime.minusSeconds(86400 * 1),
+            exercises = listOf(
+                createExerciseWithSets(
+                    sets = listOf(
+                        createWorkoutSet(1, 100.0, 10, completed = false, setType = SetType.NORMAL),
+                        createWorkoutSet(2, 100.0, 9, completed = true, setType = SetType.NORMAL)
+                    )
+                )
+            )
+        )
+
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = listOf(w1, w2, w3),
+            currentWeekInBlock = 2
+        )
+
+        // Volumes: 1000 -> 1000 -> 900 => triggers STAGNATION_PLATEAU
+        assertTrue(status.isDeloadRecommended)
+        assertEquals(DeloadReason.STAGNATION_PLATEAU, status.reason)
+    }
+
+    @Test
+    fun `zero volume bodyweight workouts safely suppress stagnation plateau trigger`() {
+        val baseTime = Instant.now()
+        // 3 consecutive workouts with only bodyweight exercises (weight = 0.0 -> volume = 0.0)
+        val w1 = createWorkoutWithDetails(
+            workoutId = 1,
+            date = baseTime.minusSeconds(86400 * 3),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 0.0, 10))))
+        )
+        val w2 = createWorkoutWithDetails(
+            workoutId = 2,
+            date = baseTime.minusSeconds(86400 * 2),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 0.0, 10))))
+        )
+        val w3 = createWorkoutWithDetails(
+            workoutId = 3,
+            date = baseTime.minusSeconds(86400 * 1),
+            exercises = listOf(createExerciseWithSets(sets = listOf(createWorkoutSet(1, 0.0, 10))))
+        )
+
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = listOf(w1, w2, w3),
+            currentWeekInBlock = 2
+        )
+
+        // volumes.all { it > 0.0 } is FALSE -> plateau is NOT triggered
+        assertFalse(status.isDeloadRecommended)
+        assertNull(status.reason)
+    }
+
+    @Test
+    fun `applyDeloadToWorkout preserves non-weight set metadata across scaled sets`() {
+        val originalSets = listOf(
+            WorkoutSet(
+                id = 10L, workoutExerciseId = 1L, setNumber = 1,
+                weight = 120.0, reps = 6, rpe = 9.5, restSeconds = 180,
+                completed = true, setType = SetType.NORMAL
+            ),
+            WorkoutSet(
+                id = 11L, workoutExerciseId = 1L, setNumber = 2,
+                weight = 120.0, reps = 6, rpe = 9.0, restSeconds = 180,
+                completed = true, setType = SetType.NORMAL
+            )
+        )
+        val workout = createWorkoutWithDetails(
+            exercises = listOf(createExerciseWithSets(exerciseId = 101L, sets = originalSets))
+        )
+
+        val deloaded = deloadEngine.applyDeloadToWorkout(workout, weightIncrement = 2.5)
+        assertEquals(1, deloaded.exercises[0].sets.size)
+        val set = deloaded.exercises[0].sets[0]
+
+        // Scaled weight: 120 * 0.9 = 108.0 -> rounded to nearest 2.5 is 107.5
+        assertEquals(107.5, set.weight, 0.001)
+        assertEquals(1, set.setNumber)
+        // Metadata preserved
+        assertEquals(6, set.reps)
+        assertEquals(9.5, set.rpe, 0.001)
+        assertEquals(180, set.restSeconds)
+        assertTrue(set.completed)
+        assertEquals(SetType.NORMAL, set.setType)
+    }
+
+    @Test
+    fun `fatigue accumulation coaching advice includes exact integer truncated recent readiness average`() {
+        // Average of recent 3: (50 + 52 + 55) / 3 = 157 / 3 = 52.333 -> 52
+        val scores = listOf(80, 50, 52, 55)
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = scores,
+            currentWeekInBlock = 2
+        )
+        assertTrue(status.isDeloadRecommended)
+        assertEquals(DeloadReason.FATIGUE_ACCUMULATION, status.reason)
+        assertTrue(status.coachingAdvice.contains("recent average: 52/100"))
+
+        // Single score: 49
+        val singleStatus = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = listOf(49),
+            currentWeekInBlock = 1
+        )
+        assertTrue(singleStatus.coachingAdvice.contains("recent average: 49/100"))
+    }
+
+
     private fun createWorkoutWithDetails(
         workoutId: Long = 1L,
         date: Instant = Instant.now(),

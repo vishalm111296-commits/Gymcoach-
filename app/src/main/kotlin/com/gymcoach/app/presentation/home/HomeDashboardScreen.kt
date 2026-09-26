@@ -621,7 +621,7 @@ private fun WeeklyConsistencyCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
+                            contentDescription = "Achievement trophy",
                             tint = GymCoachColors.GoldAccent,
                             modifier = Modifier
                                 .size(17.dp)
@@ -672,7 +672,7 @@ private fun CoachInsightCard(insight: String) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
-                    contentDescription = null,
+                    contentDescription = "Coach insight",
                     tint = GymCoachColors.Primary,
                     modifier = Modifier.size(18.dp)
                 )

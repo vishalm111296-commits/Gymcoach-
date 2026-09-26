@@ -481,7 +481,7 @@ fun ExerciseListScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = null,
+                                contentDescription = "Search exercises",
                                 tint = GymCoachColors.TextMuted,
                                 modifier = Modifier.size(48.dp)
                             )

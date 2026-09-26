@@ -691,7 +691,7 @@ fun ExerciseDetailScreen(
                                     TextButton(onClick = { showVideo = !showVideo }) {
                                         Icon(
                                             imageVector = Icons.Default.PlayCircleOutline,
-                                            contentDescription = null,
+                                            contentDescription = "Toggle video demo",
                                             modifier = Modifier.size(16.dp),
                                             tint = GymCoachColors.Primary
                                         )
@@ -791,7 +791,7 @@ fun ExerciseDetailScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
-                                        contentDescription = null,
+                                        contentDescription = "Exercise muscle group icon",
                                         tint = primaryMuscleColor.copy(alpha = 0.8f),
                                         modifier = Modifier.size(48.dp)
                                     )
@@ -842,7 +842,7 @@ fun ExerciseDetailScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,
-                                contentDescription = null,
+                                contentDescription = "Open form check camera",
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(6.dp))
@@ -858,7 +858,7 @@ fun ExerciseDetailScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                            contentDescription = null,
+                            contentDescription = "View strength trend",
                             modifier = Modifier.size(18.dp),
                             tint = GymCoachColors.TextPrimary
                         )
@@ -1067,7 +1067,7 @@ fun ExerciseDetailScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
+                                            contentDescription = "Coaching tip",
                                             tint = GymCoachColors.Success,
                                             modifier = Modifier.size(18.dp)
                                         )
@@ -1125,7 +1125,7 @@ private fun SpecBadge(label: String, value: String, icon: ImageVector) {
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = label,
                 tint = GymCoachColors.TextMuted,
                 modifier = Modifier.size(13.dp)
             )

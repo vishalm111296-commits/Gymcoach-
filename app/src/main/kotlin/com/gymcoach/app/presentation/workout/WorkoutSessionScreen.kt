@@ -424,7 +424,7 @@ fun WorkoutSessionScreen(
                                 contentColor = GymCoachColors.TextPrimary
                             )
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = GymCoachColors.Primary)
+                            Icon(Icons.Default.Add, contentDescription = "Add exercise to workout", modifier = Modifier.size(18.dp), tint = GymCoachColors.Primary)
                             Spacer(Modifier.width(6.dp))
                             Text("Add Exercise", fontWeight = FontWeight.SemiBold)
                         }
@@ -438,7 +438,7 @@ fun WorkoutSessionScreen(
                             shape = GymCoachShapes.md,
                             modifier = Modifier.weight(1f).height(48.dp)
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Check, contentDescription = "Finish workout", modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Finish Workout", fontWeight = FontWeight.Bold)
                         }
@@ -546,7 +546,7 @@ fun WorkoutSessionScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Create custom exercise", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Create Custom Exercise")
                     }
@@ -1008,7 +1008,7 @@ internal fun ExerciseSetCard(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = null,
+                                                contentDescription = "Set completed",
                                                 tint = GymCoachColors.Success,
                                                 modifier = Modifier.size(11.dp)
                                             )
@@ -1168,7 +1168,7 @@ internal fun ExerciseSetCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
+                                    contentDescription = "Adaptive progression tip",
                                     modifier = Modifier.size(15.dp),
                                     tint = GymCoachColors.Primary
                                 )
@@ -1229,7 +1229,7 @@ internal fun ExerciseSetCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
+                                contentDescription = "Previous session achieved",
                                 tint = GymCoachColors.Success,
                                 modifier = Modifier.size(14.dp).padding(top = 2.dp)
                             )
@@ -1471,7 +1471,7 @@ internal fun ExerciseSetCard(
                     contentColor = GymCoachColors.TextPrimary
                 )
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Add, contentDescription = "Add set", modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Add Set", fontWeight = FontWeight.SemiBold)
             }
@@ -1758,7 +1758,7 @@ private fun SetRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = null,
+                    contentDescription = if (completed) "Unmark set" else "Mark set complete",
                     tint = checkIconColor,
                     modifier = Modifier.size(18.dp)
                 )

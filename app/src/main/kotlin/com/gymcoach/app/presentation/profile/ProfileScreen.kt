@@ -391,7 +391,7 @@ fun ProfileScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
-                                        contentDescription = null,
+                                        contentDescription = "Fitness profile icon",
                                         tint = GymCoachColors.Primary,
                                         modifier = Modifier.size(26.dp)
                                     )
@@ -588,7 +588,7 @@ fun ProfileScreen(
                                 shape = GymCoachShapes.sm,
                                 colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
                             ) {
-                                Icon(Icons.Default.FileOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.FileOpen, contentDescription = "Import workouts from file", modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Import Workouts (JSON)")
                             }
@@ -772,7 +772,7 @@ private fun ProfileInfoRow(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = "Profile information",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )

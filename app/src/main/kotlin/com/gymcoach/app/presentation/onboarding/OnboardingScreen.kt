@@ -417,7 +417,7 @@ private fun AnimatedFeatureItem(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = "Feature icon",
                     tint = GymCoachColors.Primary,
                     modifier = Modifier.size(20.dp)
                 )

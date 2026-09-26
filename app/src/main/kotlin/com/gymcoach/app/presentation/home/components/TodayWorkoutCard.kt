@@ -72,10 +72,19 @@ fun TodayWorkoutCard(
             .clip(GymCoachShapes.lg)
             .border(GymCoachBorders.primary, GymCoachShapes.lg),
         shape = GymCoachShapes.lg,
-        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCardElevated)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(
+                            GymCoachColors.Primary.copy(alpha = 0.15f),
+                            GymCoachColors.SurfaceCardElevated
+                        )
+                    )
+                )
+                .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Pill header
@@ -149,11 +158,10 @@ fun TodayWorkoutCard(
             // Workout Name
             Text(
                 text = workoutName,
-                style = MaterialTheme.typography.headlineSmall.copy(
+                style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
-                ),
-                color = GymCoachColors.TextPrimary
+                    color = Color.White
+                )
             )
 
             // Metrics row

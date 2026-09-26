@@ -669,5 +669,151 @@ class ProgressionEngineTest {
         assertTrue(regressionRes.reason.contains("Focus on form and range of motion."))
         assertFalse(regressionRes.reason.contains("Reduce weight."))
     }
+
+    @Test
+    fun `calculateProgression produces exact confidence values across distinct decision branches`() {
+        val setNormal = createSet(weight = 100.0, reps = 12)
+        val setSubRep = createSet(weight = 100.0, reps = 9)
+
+        // 1. No completed working sets -> confidence = 0.5
+        val emptyRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = emptyList()
+        )
+        assertEquals(0.5, emptyRes.confidence, 0.001)
+
+        // 2. Severe low readiness (< 2.0) -> confidence = 0.85
+        val lowReadinessRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(setNormal), readinessScore = 1.5
+        )
+        assertEquals(0.85, lowReadinessRes.confidence, 0.001)
+
+        // 3. Reduced readiness (2.0 to 2.49) -> confidence = 0.8
+        val reducedReadinessRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(setNormal), readinessScore = 2.2
+        )
+        assertEquals(0.8, reducedReadinessRes.confidence, 0.001)
+
+        // 4. Plateau detected -> confidence = 0.85
+        val plateauRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(setSubRep), consecutiveSessionsAtSameWeight = 3
+        )
+        assertEquals(0.85, plateauRes.confidence, 0.001)
+
+        // 5. Weight increase progression -> confidence = 0.9
+        val increaseRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(setNormal)
+        )
+        assertEquals(0.9, increaseRes.confidence, 0.001)
+
+        // 6. Equipment limited progression -> confidence = 0.75
+        val bwRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Pushup", exerciseEquipment = "bodyweight",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(createSet(weight = 0.0, reps = 12))
+        )
+        assertEquals(0.75, bwRes.confidence, 0.001)
+
+        // 7. Regression decrease -> confidence = 0.8
+        val regressingRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = listOf(createSet(weight = 100.0, reps = 6)),
+            currentSets = listOf(createSet(weight = 100.0, reps = 6))
+        )
+        assertEquals(0.8, regressingRes.confidence, 0.001)
+
+        // 8. Maintain current weight -> confidence = 0.7
+        val maintainRes = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Squat", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = emptyList(), currentSets = listOf(setSubRep)
+        )
+        assertEquals(0.7, maintainRes.confidence, 0.001)
+    }
+
+    @Test
+    fun `asymmetric regression logic requires all previous sets below min before reducing weight`() {
+        val currentBelowMin = listOf(createSet(weight = 100.0, reps = 7), createSet(weight = 100.0, reps = 9))
+
+        // Previous session had 1 set >= min (8) and 1 set < min (7) -> prevReps.all { it < targetMin } is FALSE
+        val prevMixed = listOf(createSet(weight = 100.0, reps = 8), createSet(weight = 100.0, reps = 7))
+        val resMixed = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = prevMixed, currentSets = currentBelowMin
+        )
+        // Weight is maintained, not reduced
+        assertEquals(100.0, resMixed.recommendedWeight, 0.001)
+        assertTrue(resMixed.reason.contains("Maintain current weight"))
+
+        // Previous session had ALL sets < min (8) -> prevReps.all { it < targetMin } is TRUE
+        val prevAllBelow = listOf(createSet(weight = 100.0, reps = 7), createSet(weight = 100.0, reps = 6))
+        val resAllBelow = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Deadlift", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 3,
+            previousSets = prevAllBelow, currentSets = currentBelowMin
+        )
+        // Weight is reduced 10%
+        assertEquals(90.0, resAllBelow.recommendedWeight, 0.001)
+        assertTrue(resAllBelow.reason.contains("Reps below minimum for 2+ sessions. Reduce weight."))
+    }
+
+    @Test
+    fun `calculateProgression filters out warmups incomplete sets and dropsets before computing progression`() {
+        val mixedSets = listOf(
+            createSet(weight = 40.0, reps = 12, completed = true, setType = 1),   // WARMUP
+            createSet(weight = 100.0, reps = 12, completed = false, setType = 0),  // INCOMPLETE NORMAL
+            createSet(weight = 100.0, reps = 12, completed = true, setType = 0),   // COMPLETED NORMAL 1
+            createSet(weight = 100.0, reps = 12, completed = true, setType = 0),   // COMPLETED NORMAL 2
+            createSet(weight = 60.0, reps = 15, completed = true, setType = 2)     // DROPSET
+        )
+
+        val result = progressionEngine.calculateProgression(
+            exerciseId = 1L, exerciseName = "Bench Press", exerciseEquipment = "barbell",
+            targetRepsMin = 8, targetRepsMax = 12, targetSets = 2,
+            previousSets = emptyList(), currentSets = mixedSets
+        )
+
+        // Baseline weight must be taken from completed normal sets (100.0kg), not warmup (40kg) or dropset (60kg)
+        assertEquals(100.0, result.currentWeight, 0.001)
+        assertEquals(listOf(12, 12), result.currentReps)
+        // With both completed normal sets hitting 12 reps, weight increases to 105.0kg
+        assertEquals(105.0, result.recommendedWeight, 0.001)
+        assertEquals(2, result.recommendedSets)
+    }
+
+    @Test
+    fun `parseRepRange handles complex delimiters words and digit filtering variants`() {
+        val (min1, max1) = ProgressionEngine.parseRepRange("15 - 20 reps per set")
+        assertEquals(15, min1)
+        assertEquals(20, max1)
+
+        val (min2, max2) = ProgressionEngine.parseRepRange("5 to 5")
+        assertEquals(5, min2)
+        assertEquals(5, max2)
+
+        val (min3, max3) = ProgressionEngine.parseRepRange("  0  ")
+        assertEquals(1, min3) // (0 - 2).coerceAtLeast(1) = 1
+        assertEquals(0, max3)
+
+        val (min4, max4) = ProgressionEngine.parseRepRange("-10")
+        assertEquals(8, min4) // parts = ["10"] -> (10 - 2, 10) = (8, 10)
+        assertEquals(10, max4)
+
+        val (min5, max5) = ProgressionEngine.parseRepRange("3 -- 5")
+        assertEquals(3, min5)
+        assertEquals(5, max5)
+    }
 }
+
 

@@ -465,4 +465,154 @@ class SubstitutionEngineTest {
         assertEquals(51L, results[0].substitute.id)
         assertEquals("Chin Up", results[0].substitute.name)
     }
+
+    @Test
+    fun `tags case-insensitivity correctly awards compound and isolation bonuses`() = runTest {
+        val origCompoundUpper = ExerciseEntity(
+            id = 60L, name = "Barbell Overhead Press", description = "",
+            muscleGroup = "Shoulders", category = "push", equipment = "barbell",
+            difficulty = "intermediate", tags = "COMPOUND, PRIMARY"
+        )
+        val subCompoundLower = ExerciseEntity(
+            id = 61L, name = "Dumbbell Shoulder Press", description = "",
+            muscleGroup = "Shoulders", category = "push", equipment = "dumbbell",
+            difficulty = "intermediate", tags = "compound, hypertrophy"
+        )
+        val origIsolationMixed = ExerciseEntity(
+            id = 62L, name = "Cable Lateral Raise", description = "",
+            muscleGroup = "Shoulders", category = "push", equipment = "cable",
+            difficulty = "beginner", tags = "IsOlAtIoN"
+        )
+        val subIsolationUpper = ExerciseEntity(
+            id = 63L, name = "Dumbbell Lateral Raise", description = "",
+            muscleGroup = "Shoulders", category = "push", equipment = "dumbbell",
+            difficulty = "beginner", tags = "ISOLATION, ACCESSORY"
+        )
+
+        // Compound match: muscle(40) + category(20) + difficulty(10) + compound(10) = 80
+        every { exerciseDao.getById(60L) } returns flowOf(origCompoundUpper)
+        every { exerciseSubstitutionDao.getSubstituteExercises(60L) } returns flowOf(listOf(subCompoundLower))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val compoundResults = engine.findSubstitutes(60L, "gym")
+        assertEquals(1, compoundResults.size)
+        assertEquals(80, compoundResults[0].preservationScore)
+
+        // Isolation match: muscle(40) + category(20) + difficulty(10) + isolation(10) = 80
+        every { exerciseDao.getById(62L) } returns flowOf(origIsolationMixed)
+        every { exerciseSubstitutionDao.getSubstituteExercises(62L) } returns flowOf(listOf(subIsolationUpper))
+
+        val isolationResults = engine.findSubstitutes(62L, "gym")
+        assertEquals(1, isolationResults.size)
+        assertEquals(80, isolationResults[0].preservationScore)
+    }
+
+    @Test
+    fun `findSubstitutes preserves stable relative insertion order for candidates with tied scores`() = runTest {
+        val orig = ExerciseEntity(
+            id = 70L, name = "Barbell Bench Press", description = "",
+            muscleGroup = "Chest", category = "push", equipment = "barbell",
+            difficulty = "intermediate", tags = "compound"
+        )
+        // Three candidates that each match muscle (40) only -> all score 40
+        val subAlpha = ExerciseEntity(
+            id = 71L, name = "Alpha Press", description = "",
+            muscleGroup = "Chest", category = "arms", equipment = "machine",
+            difficulty = "beginner", tags = "none"
+        )
+        val subBeta = ExerciseEntity(
+            id = 72L, name = "Beta Press", description = "",
+            muscleGroup = "Chest", category = "arms", equipment = "machine",
+            difficulty = "beginner", tags = "none"
+        )
+        val subGamma = ExerciseEntity(
+            id = 73L, name = "Gamma Press", description = "",
+            muscleGroup = "Chest", category = "arms", equipment = "machine",
+            difficulty = "beginner", tags = "none"
+        )
+
+        every { exerciseDao.getById(70L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(70L) } returns flowOf(listOf(subAlpha, subBeta, subGamma))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(70L, "gym", maxResults = 3)
+
+        assertEquals(3, results.size)
+        assertTrue(results.all { it.preservationScore == 40 })
+        assertEquals(listOf("Alpha Press", "Beta Press", "Gamma Press"), results.map { it.substitute.name })
+    }
+
+    @Test
+    fun `fallback candidates with higher scores take precedence over lower scoring predefined substitutes`() = runTest {
+        val orig = ExerciseEntity(
+            id = 80L, name = "Barbell Row", description = "",
+            muscleGroup = "Back", category = "pull", equipment = "barbell",
+            difficulty = "intermediate", tags = "compound"
+        )
+        // Predefined: matches muscle only (40)
+        val predefinedSub = ExerciseEntity(
+            id = 81L, name = "Predefined Low Match", description = "",
+            muscleGroup = "Back", category = "legs", equipment = "cable",
+            difficulty = "beginner", tags = "none"
+        )
+        // Fallback: matches muscle (40) + category (20) + difficulty (10) + compound (10) = 80
+        val fallbackHighMatch = ExerciseEntity(
+            id = 82L, name = "Fallback High Match", description = "",
+            muscleGroup = "Back", category = "pull", equipment = "dumbbell",
+            difficulty = "intermediate", tags = "compound"
+        )
+
+        every { exerciseDao.getById(80L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(80L) } returns flowOf(listOf(predefinedSub))
+        every { exerciseDao.getAll() } returns flowOf(listOf(orig, predefinedSub, fallbackHighMatch))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(80L, "gym", maxResults = 2)
+
+        assertEquals(2, results.size)
+        // High-scoring fallback candidate must rank 1st despite being from fallback pool
+        assertEquals("Fallback High Match", results[0].substitute.name)
+        assertEquals(80, results[0].preservationScore)
+        assertEquals("Same muscle group", results[0].reason)
+
+        // Lower-scoring predefined candidate ranks 2nd
+        assertEquals("Predefined Low Match", results[1].substitute.name)
+        assertEquals(40, results[1].preservationScore)
+        assertEquals("Recommended substitute", results[1].reason)
+    }
+
+    @Test
+    fun `empty whitespace or unrelated tags do not award spurious pattern bonuses`() = runTest {
+        val orig = ExerciseEntity(
+            id = 90L, name = "Core Plank", description = "",
+            muscleGroup = "Abs", category = "core", equipment = "bodyweight",
+            difficulty = "beginner", tags = ""
+        )
+        val subWhitespaceTags = ExerciseEntity(
+            id = 91L, name = "Side Plank", description = "",
+            muscleGroup = "Abs", category = "core", equipment = "bodyweight",
+            difficulty = "beginner", tags = "   "
+        )
+        val subUnrelatedTags = ExerciseEntity(
+            id = 92L, name = "Ab Wheel Rollout", description = "",
+            muscleGroup = "Abs", category = "core", equipment = "bodyweight",
+            difficulty = "intermediate", tags = "cardio, endurance, mobility"
+        )
+
+        every { exerciseDao.getById(90L) } returns flowOf(orig)
+        every { exerciseSubstitutionDao.getSubstituteExercises(90L) } returns flowOf(listOf(subWhitespaceTags, subUnrelatedTags))
+        every { equipmentAvailability.isAvailable(any(), any()) } returns true
+
+        val results = engine.findSubstitutes(90L, "gym")
+
+        assertEquals(2, results.size)
+        // subWhitespaceTags: muscle(40) + category(20) + equipment(15) + difficulty(10) = 85 (no tag bonus)
+        val whitespaceResult = results.first { it.substitute.id == 91L }
+        assertEquals(85, whitespaceResult.preservationScore)
+
+        // subUnrelatedTags: muscle(40) + category(20) + equipment(15) = 75 (no tag bonus, difficulty doesn't match)
+        val unrelatedResult = results.first { it.substitute.id == 92L }
+        assertEquals(75, unrelatedResult.preservationScore)
+    }
 }
+

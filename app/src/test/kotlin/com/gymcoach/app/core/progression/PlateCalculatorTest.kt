@@ -314,4 +314,78 @@ class PlateCalculatorTest {
         assertEquals(15.0, result.platesPerSide[1].plateWeight, 0.001)
         assertEquals(1, result.platesPerSide[1].count)
     }
+
+    @Test
+    fun `standard metric plates constant integrity and IWF color specification`() {
+        val standard = PlateCalculator.STANDARD_METRIC_PLATES
+        assertEquals(7, standard.size)
+        assertEquals(listOf(25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25), standard.map { it.first })
+        val expectedColors = listOf(
+            0xFFD32F2FL, // Red
+            0xFF1976D2L, // Blue
+            0xFFFBC02DL, // Yellow
+            0xFF388E3CL, // Green
+            0xFFFFFFFFL, // White
+            0xFF212121L, // Black
+            0xFF9E9E9EL  // Chrome/Silver
+        )
+        assertEquals(expectedColors, standard.map { it.second })
+    }
+
+    @Test
+    fun `conservation of mass invariant holds across arbitrary targets`() {
+        val testWeights = listOf(43.7, 68.3, 100.0, 117.8, 142.5, 235.1, 312.4)
+        for (target in testWeights) {
+            val breakdown = PlateCalculator.calculatePlates(targetWeight = target, barWeight = 20.0)
+            val loadedPlatesWeight = breakdown.platesPerSide.sumOf { it.plateWeight * it.count } * 2.0
+            val totalCalculated = breakdown.barWeight + loadedPlatesWeight + breakdown.remainder
+            assertEquals("Mass must be conserved for target $target", target, totalCalculated, 0.001)
+            assertEquals((target - breakdown.barWeight) / 2.0, breakdown.weightPerSide, 0.001)
+        }
+    }
+
+    @Test
+    fun `specialty technique and axle bars calculate correct plate allocations`() {
+        // 5kg technique bar: 35kg target -> 15kg/side -> 1x15kg plate
+        val techBar = PlateCalculator.calculatePlates(targetWeight = 35.0, barWeight = 5.0)
+        assertEquals(15.0, techBar.weightPerSide, 0.001)
+        assertEquals(0.0, techBar.remainder, 0.001)
+        assertEquals(1, techBar.platesPerSide.size)
+        assertEquals(15.0, techBar.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, techBar.platesPerSide[0].count)
+
+        // 35kg Apollon's axle: 185kg target -> 75kg/side -> 3x25kg plates
+        val axleBar = PlateCalculator.calculatePlates(targetWeight = 185.0, barWeight = 35.0)
+        assertEquals(75.0, axleBar.weightPerSide, 0.001)
+        assertEquals(0.0, axleBar.remainder, 0.001)
+        assertEquals(1, axleBar.platesPerSide.size)
+        assertEquals(25.0, axleBar.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(3, axleBar.platesPerSide[0].count)
+    }
+
+    @Test
+    fun `duplicate weight entries in plate inventory are consumed deterministically without duplicate plate counts`() {
+        val inventoryWithDuplicates = listOf(
+            20.0 to 0xFF1976D2L,
+            20.0 to 0xFF000000L,
+            10.0 to 0xFF388E3CL,
+            10.0 to 0xFF000000L
+        )
+
+        // 80kg on 20kg bar = 30kg per side -> 1x20kg + 1x10kg
+        val result = PlateCalculator.calculatePlates(
+            targetWeight = 80.0,
+            barWeight = 20.0,
+            availablePlates = inventoryWithDuplicates
+        )
+
+        assertEquals(30.0, result.weightPerSide, 0.001)
+        assertEquals(0.0, result.remainder, 0.001)
+        assertEquals(2, result.platesPerSide.size)
+        assertEquals(20.0, result.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[0].count)
+        assertEquals(10.0, result.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, result.platesPerSide[1].count)
+    }
 }
+

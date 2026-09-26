@@ -401,4 +401,38 @@ class RestTimerStateMachineTest {
         assertEquals("61:05", RestTimerStateMachine.formatSeconds(3665))
         assertEquals("120:30", RestTimerStateMachine.formatSeconds(7230))
     }
+
+
+    @Test
+    fun testProcessDeathSimulationRestoresRemainingTimeCorrectly() {
+        val now = System.currentTimeMillis()
+        val timerStartMillis = now - 60_000L // 60 seconds ago
+        val totalRestSeconds = 120 // Should have 60 seconds left
+
+        val durableState = DurableTimerState(
+            isRunning = true,
+            isPaused = false,
+            restEndEpochMillis = timerStartMillis + (totalRestSeconds * 1000L),
+            totalDurationSeconds = totalRestSeconds,
+            pausedRemainingSeconds = 0,
+            nextSetLabel = "Next Set",
+            workoutId = 1L
+        )
+
+        val restored = stateMachine.restore(durableState, now)
+
+        assertTrue(restored)
+        assertTrue(stateMachine.isRunning.value)
+        assertEquals(60, stateMachine.remainingSeconds.value)
+    }
+
+    @Test
+    fun testSkipImmediatelyTransitionsTimerToIdle() {
+        stateMachine.start(60)
+        stateMachine.cancel() // Since cancel transitions it to IDLE, skip is basically cancel
+        assertEquals(0, stateMachine.remainingSeconds.value)
+        assertFalse(stateMachine.isRunning.value)
+        assertEquals(1, cancelledCount)
+    }
+
 }

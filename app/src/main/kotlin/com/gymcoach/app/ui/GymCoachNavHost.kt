@@ -412,8 +412,7 @@ fun GymCoachNavHost(
             )
         ) { backStackEntry ->
             val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
-            val exerciseName = backStackEntry.arguments?.getString("exerciseName")
-                ?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: ""
+            val exerciseName = backStackEntry.arguments?.getString("exerciseName") ?: ""
             ProgressionAnalyticsScreen(
                 exerciseId = exerciseId,
                 exerciseName = exerciseName,

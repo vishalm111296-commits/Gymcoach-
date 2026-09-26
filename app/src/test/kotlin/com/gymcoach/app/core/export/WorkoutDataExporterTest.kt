@@ -420,4 +420,18 @@ class WorkoutDataExporterTest {
         assertTrue(lines[4].contains(",120m,Squat,4,120.0,6,0,0,F,")) // Failure tag is F
         assertTrue(lines[5].contains(",1m,Squat,1,100.0,5,0,0,,"))    // Sub-minute clamped to 1m
     }
+
+    @Test
+    fun `exportToCsv neutralizes spreadsheet formula injection characters`() {
+        val exercise = Exercise(id = 1L, name = "=CMD|' /C calc'!A0", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        val now = Instant.now()
+        val workout = Workout(id = 1, date = now, startTime = now, endTime = now.plusSeconds(3600), duration = 3600, notes = "+2.5kg PR, @admin", completed = true)
+        val sets = listOf(WorkoutSet(1, 1, 1, 100.0, 5, 8.0, 90, true, SetType.NORMAL))
+        val we = WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), exercise, sets)
+
+        val csv = exporter.exportToCsv(listOf(WorkoutWithDetails(workout, listOf(we))))
+
+        assertTrue("Formula prefix = must be neutralized with leading single quote", csv.contains("'=CMD|' /C calc'!A0"))
+        assertTrue("Formula prefix + must be neutralized with leading single quote", csv.contains("'+2.5kg PR"))
+    }
 }

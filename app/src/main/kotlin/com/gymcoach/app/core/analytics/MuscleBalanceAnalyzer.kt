@@ -100,7 +100,7 @@ class MuscleBalanceAnalyzer @Inject constructor() {
             )
         }
 
-        if (pushPull.ratio > 1.00 || pushPull.ratio < 0.80) { // Wait, the prompt says "If Push/Pull > 1.00 (or Pull/Push < 1.0): Recommend..." wait Pull/Push < 1.0 is the same as Push/Pull > 1.0.
+        if (pushPull.ratio > 1.00 || pushPull.ratio < 0.80) {
              if (pushPull.ratio > 1.0) {
                 prescriptions.add(
                     CorrectivePrescription(
@@ -113,7 +113,7 @@ class MuscleBalanceAnalyzer @Inject constructor() {
                     )
                 )
              } else if (pushPull.ratio < 0.8) {
-                 // Nothing specific mentioned in prompt, just default logic or similar. I'll stick to the exact condition in prompt.
+                 // Pull dominant ratio: encourage balanced horizontal and incline pressing volume
                  prescriptions.add(
                      CorrectivePrescription(
                          exerciseId = null,

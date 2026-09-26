@@ -104,6 +104,22 @@ class DeloadEngineTest {
     }
 
     @Test
+    fun `test historical low readiness does not trigger deload when recent window has recovered`() {
+        // Lifter had fatigue 3 weeks ago (scores: 20, 25, 30, 35, 40), but last 3 scores are fully recovered (85, 90, 95)
+        // Lifetime average is (20+25+30+35+40+85+90+95) / 8 = 420 / 8 = 52.5 (< 55), but recent window average is 90.0
+        val historyWithRecovery = listOf(20, 25, 30, 35, 40, 85, 90, 95)
+
+        val status = deloadEngine.evaluateDeloadNeed(
+            workoutHistory = emptyList(),
+            readinessScores = historyWithRecovery,
+            currentWeekInBlock = 2
+        )
+
+        assertFalse("Deload should not be recommended when recent readiness is recovered", status.isDeloadRecommended)
+        assertNull("Reason should be null when lifter is recovered", status.reason)
+    }
+
+    @Test
     fun `test stagnation plateau triggers deload across consecutive sessions`() {
         val baseTime = Instant.now()
         // 3 consecutive workouts with non-increasing / stagnant volume

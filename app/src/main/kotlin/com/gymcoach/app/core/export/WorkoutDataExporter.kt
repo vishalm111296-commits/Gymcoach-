@@ -96,11 +96,15 @@ class WorkoutDataExporter @Inject constructor() {
     }
 
     private fun escapeCsv(str: String): String {
-        if (str.contains(',') || str.contains('"') || str.contains('\n') || str.contains('\r')) {
-            val escaped = str.replace("\"", "\"\"")
+        var sanitized = str
+        if (sanitized.isNotEmpty() && (sanitized.startsWith("=") || sanitized.startsWith("+") || sanitized.startsWith("-") || sanitized.startsWith("@"))) {
+            sanitized = "'$sanitized"
+        }
+        if (sanitized.contains(',') || sanitized.contains('"') || sanitized.contains('\n') || sanitized.contains('\r')) {
+            val escaped = sanitized.replace("\"", "\"\"")
             return "\"$escaped\""
         }
-        return str
+        return sanitized
     }
 
     /**

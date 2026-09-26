@@ -62,8 +62,9 @@ class PRDetector @Inject constructor() {
         }
 
         // Bodyweight exercises: rep-based e1RM and volume
-        if (normalSets.first().weight == 0.0) {
-            val bodyweightReps = normalSets.maxBy { it.reps }.reps
+        val bodyweightSets = normalSets.filter { it.weight == 0.0 }
+        if (bodyweightSets.isNotEmpty() && bestE1RM == 0.0) {
+            val bodyweightReps = bodyweightSets.maxBy { it.reps }.reps
             val bodyweightE1RM = bodyweightReps.toDouble() * 1.5 // Simple bodyweight strength proxy
             val bwE1PR = existingPRs.filter { it.type == PRType.ESTIMATED_1RM }.maxByOrNull { it.value }
             if (bodyweightE1RM > (bwE1PR?.value ?: 0.0)) {

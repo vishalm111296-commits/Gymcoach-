@@ -53,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -108,8 +110,8 @@ fun ExerciseAnimationPlayer(
     var showTrajectory by rememberSaveable { mutableStateOf(true) }
     var showAngles by rememberSaveable { mutableStateOf(true) }
 
-    val phase = controller.currentPhase
-    val cue = controller.currentCue
+    val phase by remember(controller) { derivedStateOf { controller.currentPhase } }
+    val cue by remember(controller) { derivedStateOf { controller.currentCue } }
 
     val primaryColor = GymCoachColors.Primary
     val jointColor = GymCoachColors.CyanAccent
@@ -174,7 +176,11 @@ fun ExerciseAnimationPlayer(
                     // Trajectory toggle
                     IconButton(
                         onClick = { showTrajectory = !showTrajectory },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .semantics {
+                                stateDescription = if (showTrajectory) "Trajectory visible" else "Trajectory hidden"
+                            }
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoGraph,
@@ -188,7 +194,11 @@ fun ExerciseAnimationPlayer(
                     if (definition.angleSpecs.isNotEmpty()) {
                         IconButton(
                             onClick = { showAngles = !showAngles },
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier
+                                .size(40.dp)
+                                .semantics {
+                                    stateDescription = if (showAngles) "Joint angles visible" else "Joint angles hidden"
+                                }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SquareFoot,
@@ -232,7 +242,11 @@ fun ExerciseAnimationPlayer(
                     // Loop toggle
                     IconButton(
                         onClick = { controller.setLoop(!controller.isLooping) },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .semantics {
+                                stateDescription = if (controller.isLooping) "Loop enabled" else "Loop disabled"
+                            }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Repeat,
@@ -347,7 +361,11 @@ fun ExerciseAnimationPlayer(
                 ) {
                     IconButton(
                         onClick = { controller.togglePlayPause() },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .semantics {
+                                stateDescription = if (controller.isPlaying) "Playing" else "Paused"
+                            }
                     ) {
                         Icon(
                             imageVector = if (controller.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -396,13 +414,15 @@ private fun BiomechanicalAngleOverlay(
     modifier: Modifier = Modifier
 ) {
     if (!visible) return
-    val currentFrame = controller.currentFrame
-    if (currentFrame != null && currentFrame.angleReadouts.isNotEmpty()) {
+    val angleReadouts by remember(controller) {
+        derivedStateOf { controller.currentFrame?.angleReadouts.orEmpty() }
+    }
+    if (angleReadouts.isNotEmpty()) {
         Row(
             modifier = modifier.padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            currentFrame.angleReadouts.forEach { readout ->
+            angleReadouts.forEach { readout ->
                 Surface(
                     shape = GymCoachShapes.xs,
                     color = GymCoachColors.SurfaceDeep.copy(alpha = 0.85f),

@@ -153,8 +153,6 @@ class DeloadEngine @Inject constructor() {
 
     private fun isLowReadinessSustained(readinessScores: List<Int>): Boolean {
         if (readinessScores.isEmpty()) return false
-        if (readinessScores.all { it < LOW_READINESS_THRESHOLD }) return true
-        if (readinessScores.average() < LOW_READINESS_THRESHOLD.toDouble()) return true
         val recent = readinessScores.takeLast(minOf(3, readinessScores.size))
         if (recent.isNotEmpty() && recent.average() < LOW_READINESS_THRESHOLD.toDouble()) return true
         if (recent.size >= 2 && recent.all { it < LOW_READINESS_THRESHOLD }) return true

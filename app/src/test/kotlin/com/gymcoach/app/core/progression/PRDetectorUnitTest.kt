@@ -401,6 +401,149 @@ class PRDetectorUnitTest {
         assertEquals(112.0, at30, 0.001)
     }
 
+    @Test
+    fun `testMultipleHistoricalPRsSameTypeTakesMaximum verifies comparison against historical ceiling`() {
+        val now = Instant.now()
+        // Historical log has multiple WEIGHT PRs and VOLUME PRs from older workouts
+        val existingPRs = listOf(
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.WEIGHT, 100.0, "100kg", now.minusSeconds(7200), 1L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.WEIGHT, 120.0, "120kg", now.minusSeconds(3600), 2L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.WEIGHT, 110.0, "110kg", now.minusSeconds(1800), 3L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.VOLUME, 1500.0, "1500kg", now.minusSeconds(3600), 2L),
+            PRDetector.PersonalRecord(1L, "Squat", PRDetector.PRType.VOLUME, 2500.0, "2500kg", now.minusSeconds(1800), 3L)
+        )
+
+        // Performance that beats 100kg and 110kg, but does NOT beat 120kg
+        val subPeakSets = listOf(
+            createSet(weight = 115.0, reps = 5, completed = true, setType = 0) // vol = 575kg
+        )
+        val subPeakPRs = detector.detectPRs(1L, "Squat", subPeakSets, existingPRs, 4L)
+        assertTrue("Weight of 115kg must not beat historical max of 120kg", subPeakPRs.none { it.type == PRDetector.PRType.WEIGHT })
+        assertTrue("Volume of 575kg must not beat historical max of 2500kg", subPeakPRs.none { it.type == PRDetector.PRType.VOLUME })
+
+        // Performance that strictly exceeds the true historical maximum (122.5kg > 120kg)
+        val peakSets = listOf(
+            createSet(weight = 122.5, reps = 5, completed = true, setType = 0)
+        )
+        val peakPRs = detector.detectPRs(1L, "Squat", peakSets, existingPRs, 5L)
+        val weightPR = peakPRs.firstOrNull { it.type == PRDetector.PRType.WEIGHT }
+        assertNotNull("Exceeding 120kg must trigger WEIGHT PR", weightPR)
+        assertEquals(122.5, weightPR!!.value, 0.001)
+    }
+
+    @Test
+    fun `testWeightedSetsSuppressBodyweightProxyE1RM ensures weighted sets dominate e1RM calculation`() {
+        // Session with weighted dip and a bodyweight burnout dip set
+        // Set 1: Weighted 20kg x 6 -> e1RM = 20 * (1 + 6/30) = 24.0kg (> 0.0)
+        // Set 2: Bodyweight 0kg x 25 -> proxy would be 25 * 1.5 = 37.5kg, but bestE1RM > 0.0 must suppress it!
+        val mixedSets = listOf(
+            createSet(weight = 20.0, reps = 6, completed = true, setType = 0),
+            createSet(weight = 0.0, reps = 25, completed = true, setType = 0)
+        )
+
+        val prs = detector.detectPRs(
+            exerciseId = 10L,
+            exerciseName = "Dips",
+            currentSets = mixedSets,
+            existingPRs = emptyList(),
+            workoutId = 8L
+        )
+
+        // Must detect normal e1RM (24.0kg), NOT bodyweight proxy (37.5kg)
+        val e1rmPRs = prs.filter { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertEquals("Must have exactly 1 ESTIMATED_1RM PR", 1, e1rmPRs.size)
+        assertEquals(24.0, e1rmPRs.first().value, 0.001)
+        assertEquals("e1RM: 24.0kg", e1rmPRs.first().details)
+    }
+
+    @Test
+    fun `testDetailsFormattingAcrossAllPRTypes validates exact presentation strings`() {
+        val sets = listOf(
+            createSet(weight = 102.5, reps = 8, completed = true, setType = 0)
+        )
+        // Best weight: 102.5kg
+        // Best reps: 8 reps at 102.5kg
+        // Volume: 102.5 * 8 = 820kg
+        // e1RM: 102.5 * (1 + 8/30) = 102.5 * 1.266667 = 129.8333 -> "e1RM: 129.8kg"
+        val prs = detector.detectPRs(
+            exerciseId = 2L,
+            exerciseName = "Incline Bench",
+            currentSets = sets,
+            existingPRs = emptyList(),
+            workoutId = 12L
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        val e1rmPR = prs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+
+        assertEquals("102.5kg lifted", weightPR.details)
+        assertEquals("8 reps at 102.5kg", repPR.details)
+        assertEquals("Volume: 820kg", volumePR.details)
+        assertEquals("e1RM: 129.8kg", e1rmPR.details)
+
+        // Test bodyweight detail formatting separately
+        val bwSets = listOf(createSet(weight = 0.0, reps = 15, completed = true, setType = 0))
+        val bwPRs = detector.detectPRs(
+            exerciseId = 3L,
+            exerciseName = "Push Up",
+            currentSets = bwSets,
+            existingPRs = emptyList(),
+            workoutId = 13L
+        )
+        val bwE1rmPR = bwPRs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertEquals("Bodyweight e1RM: 22.5kg", bwE1rmPR.details)
+    }
+
+    @Test
+    fun `testRepClampingExactTransitionAt12RepsInE1RMFormula verifies precision boundary`() {
+        val load = 100.0
+        // 11 reps: 100 * (1 + 11/30) = 136.666666...
+        val at11 = detector.calculateEstimated1RM(load, 11)
+        assertEquals(136.667, at11, 0.001)
+
+        // 12 reps: 100 * (1 + 12/30) = 140.0
+        val at12 = detector.calculateEstimated1RM(load, 12)
+        assertEquals(140.0, at12, 0.001)
+
+        // 13 reps: clamped to 12 -> exactly 140.0
+        val at13 = detector.calculateEstimated1RM(load, 13)
+        assertEquals(140.0, at13, 0.001)
+
+        // 50 reps: clamped to 12 -> exactly 140.0
+        val at50 = detector.calculateEstimated1RM(load, 50)
+        assertEquals(140.0, at50, 0.001)
+
+        // Exact comparison
+        assertEquals(at12, at13, 0.0)
+        assertEquals(at12, at50, 0.0)
+        assertTrue(at12 > at11)
+    }
+
+    @Test
+    fun `detectPRs detects bodyweight e1RM PR across multi-set workout when all normal sets are bodyweight`() {
+        val currentSets = listOf(
+            createSet(weight = 0.0, reps = 15, completed = true, setType = 0),
+            createSet(weight = 0.0, reps = 25, completed = true, setType = 0),
+            createSet(weight = 0.0, reps = 20, completed = true, setType = 0)
+        )
+        val prs = detector.detectPRs(
+            exerciseId = 6L,
+            exerciseName = "Pull Up",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 20L
+        )
+
+        val e1rmPR = prs.firstOrNull { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertNotNull("Should detect bodyweight estimated 1RM from highest rep set", e1rmPR)
+        assertEquals(37.5, e1rmPR!!.value, 0.001) // 25 reps * 1.5 proxy
+        val repPR = prs.firstOrNull { it.type == PRDetector.PRType.REP }
+        assertNotNull("Should detect rep PR", repPR)
+        assertEquals(25.0, repPR!!.value, 0.001)
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

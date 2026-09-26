@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
@@ -342,7 +343,7 @@ fun WorkoutSessionScreen(
                         }
                     }
 
-                    item { Spacer(Modifier.height(16.dp)) }
+                    item(key = "workout_header_spacer") { Spacer(Modifier.height(16.dp)) }
 
                     workout.exercises.let { exercises ->
                         itemsIndexed(exercises, key = { _, ex -> ex.workoutExercise.id }) { exIdx, we ->
@@ -1410,7 +1411,8 @@ internal fun ExerciseSetCard(
                 )
             }
 
-            sets.sortedBy { it.setNumber }.forEachIndexed { index, set ->
+            val sortedSets = remember(sets) { sets.sortedBy { it.setNumber } }
+            sortedSets.forEachIndexed { index, set ->
                 val dismissState = rememberSwipeToDismissBoxState(
                     confirmValueChange = {
                         if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
@@ -1588,6 +1590,9 @@ private fun SetRow(
                 .height(38.dp)
                 .clip(GymCoachShapes.xs)
                 .background(setTypeColor.copy(alpha = 0.12f))
+                .semantics {
+                    contentDescription = "Set ${index + 1} type ${setType.name}, tap to change"
+                }
                 .clickable {
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
@@ -1613,7 +1618,11 @@ private fun SetRow(
                 weightText = v
                 v.toDoubleOrNull()?.let { onWeightChange(it) }
             },
-            modifier = Modifier.weight(0.22f),
+            modifier = Modifier
+                .weight(0.22f)
+                .semantics {
+                    contentDescription = "Set ${index + 1} weight in kilograms"
+                },
             singleLine = true,
             shape = GymCoachShapes.xs,
             colors = OutlinedTextFieldDefaults.colors(
@@ -1637,7 +1646,11 @@ private fun SetRow(
                 repsText = v
                 v.toIntOrNull()?.let { onRepsChange(it) }
             },
-            modifier = Modifier.weight(0.22f),
+            modifier = Modifier
+                .weight(0.22f)
+                .semantics {
+                    contentDescription = "Set ${index + 1} reps"
+                },
             singleLine = true,
             shape = GymCoachShapes.xs,
             colors = OutlinedTextFieldDefaults.colors(
@@ -1661,7 +1674,11 @@ private fun SetRow(
                 rpeText = v
                 v.toDoubleOrNull()?.let { onRpeChange(it) }
             },
-            modifier = Modifier.weight(0.16f),
+            modifier = Modifier
+                .weight(0.16f)
+                .semantics {
+                    contentDescription = "Set ${index + 1} RPE"
+                },
             singleLine = true,
             shape = GymCoachShapes.xs,
             colors = OutlinedTextFieldDefaults.colors(
@@ -1685,7 +1702,11 @@ private fun SetRow(
                 restText = v
                 v.toIntOrNull()?.let { onRestSecondsChange(it) }
             },
-            modifier = Modifier.weight(0.16f),
+            modifier = Modifier
+                .weight(0.16f)
+                .semantics {
+                    contentDescription = "Set ${index + 1} rest time in seconds"
+                },
             singleLine = true,
             shape = GymCoachShapes.xs,
             colors = OutlinedTextFieldDefaults.colors(
@@ -1709,8 +1730,8 @@ private fun SetRow(
                 .size(48.dp)
                 .semantics {
                     role = Role.Checkbox
-                    selected = completed
-                    contentDescription = if (completed) "Set completed" else "Mark set complete"
+                    stateDescription = if (completed) "Completed" else "Not completed"
+                    contentDescription = "Set ${index + 1} completion status"
                 }
                 .clickable {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)

@@ -282,8 +282,20 @@ fun ProfileScreen(
     ) { uri ->
         uri?.let {
             try {
-                val jsonString = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
-                    reader.readText()
+                val jsonString = context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    val maxBytes = 10 * 1024 * 1024 // 10MB safety limit
+                    val buffer = ByteArray(8192)
+                    val output = java.io.ByteArrayOutputStream()
+                    var bytesRead: Int
+                    var totalRead = 0
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        totalRead += bytesRead
+                        if (totalRead > maxBytes) {
+                            throw IllegalStateException("Import file exceeds 10MB limit")
+                        }
+                        output.write(buffer, 0, bytesRead)
+                    }
+                    output.toString(Charsets.UTF_8.name())
                 }
                 if (!jsonString.isNullOrBlank()) {
                     viewModel.importWorkoutsFromJson(jsonString)

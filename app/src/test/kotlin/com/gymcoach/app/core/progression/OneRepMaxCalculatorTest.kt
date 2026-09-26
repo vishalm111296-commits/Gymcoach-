@@ -271,5 +271,79 @@ class OneRepMaxCalculatorTest {
             assertTrue(lightProfile.zones[i].weight >= lightProfile.zones[i + 1].weight)
         }
     }
+
+    @Test
+    fun `formula enum and standard zone definitions integrity`() {
+        val formulas = OneRepMaxCalculator.Formula.values()
+        assertEquals(6, formulas.size)
+        assertEquals(
+            listOf("EPLEY", "BRZYCKI", "LOMBARDI", "MAYHEW", "WATHEN", "AVERAGE"),
+            formulas.map { it.name }
+        )
+
+        assertEquals(8, OneRepMaxCalculator.STANDARD_ZONES.size)
+        val expectedZones = listOf(
+            Triple(95, "1-2", "Maximal Strength & Neural Drive"),
+            Triple(90, "3-4", "Heavy Strength"),
+            Triple(85, "5-6", "Strength & High-Threshold Motor Units"),
+            Triple(80, "7-8", "Strength-Hypertrophy"),
+            Triple(75, "9-10", "Hypertrophy Zone"),
+            Triple(70, "11-12", "Hypertrophy & Muscular Endurance"),
+            Triple(65, "13-15", "Endurance & Conditioning"),
+            Triple(60, "16-20", "Active Recovery / Technique")
+        )
+        assertEquals(expectedZones, OneRepMaxCalculator.STANDARD_ZONES)
+    }
+
+    @Test
+    fun `mathematical ranking of formulas at five reps exhibits expected curve`() {
+        val weight = 100.0
+        val reps = 5
+
+        val b = OneRepMaxCalculator.brzycki(weight, reps)
+        val w = OneRepMaxCalculator.wathen(weight, reps)
+        val e = OneRepMaxCalculator.epley(weight, reps)
+        val l = OneRepMaxCalculator.lombardi(weight, reps)
+        val m = OneRepMaxCalculator.mayhew(weight, reps)
+
+        assertTrue("Brzycki must be less than Wathen at 5 reps", b < w)
+        assertTrue("Wathen must be less than Epley at 5 reps", w < e)
+        assertTrue("Epley must be less than Lombardi at 5 reps", e < l)
+        assertTrue("Lombardi must be less than Mayhew at 5 reps", l < m)
+    }
+
+    @Test
+    fun `average and formula outputs in profile strictly round to one decimal place`() {
+        val profile = OneRepMaxCalculator.calculateProfile(weight = 77.5, reps = 7)
+        val values = listOf(
+            profile.epley1RM,
+            profile.brzycki1RM,
+            profile.lombardi1RM,
+            profile.mayhew1RM,
+            profile.wathen1RM,
+            profile.average1RM
+        )
+        for (v in values) {
+            val scaled = v * 10.0
+            val diff = Math.abs(scaled - Math.round(scaled))
+            assertTrue("Value $v must have at most 1 decimal place", diff < 1e-6)
+        }
+    }
+
+    @Test
+    fun `training zones snap to plate step boundaries accurately`() {
+        // 100kg x 1 rep -> base1RM = 100.0kg
+        val profile25 = OneRepMaxCalculator.calculateProfile(weight = 100.0, reps = 1, plateStep = 2.5)
+        assertEquals(95.0, profile25.zones.first { it.percentage == 95 }.weight, 0.001)
+        assertEquals(75.0, profile25.zones.first { it.percentage == 75 }.weight, 0.001)
+
+        // 93.0kg x 1 rep -> 93.0kg base
+        // 95% of 93.0 = 88.35 -> round(88.35 / 1.25) = round(70.68) = 71 -> 71 * 1.25 = 88.75
+        val profile125 = OneRepMaxCalculator.calculateProfile(weight = 93.0, reps = 1, plateStep = 1.25)
+        assertEquals(88.75, profile125.zones.first { it.percentage == 95 }.weight, 0.001)
+
+        // 85% of 93.0 = 79.05 -> round(79.05 / 1.25) = round(63.24) = 63 -> 63 * 1.25 = 78.75
+        assertEquals(78.75, profile125.zones.first { it.percentage == 85 }.weight, 0.001)
+    }
 }
 

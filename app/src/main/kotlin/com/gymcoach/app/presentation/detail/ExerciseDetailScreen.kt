@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -659,9 +660,13 @@ fun ExerciseDetailScreen(
                         (ex.videoUrl.startsWith("http://") || ex.videoUrl.startsWith("https://") || ex.videoUrl.startsWith("android.resource://"))
                 val hasAnimation = animationDefinition != null
 
+                // State for Form Guide expansion
+                var showFormGuide by rememberSaveable { mutableStateOf(false) }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 240.dp)
                         .graphicsLayer {
                             alpha = mediaAlpha
                             scaleX = mediaScale
@@ -673,7 +678,7 @@ fun ExerciseDetailScreen(
                         var showVideo by remember { mutableStateOf(false) }
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
@@ -709,13 +714,13 @@ fun ExerciseDetailScreen(
                                         ExerciseVideoPlayer(
                                             videoUri = Uri.parse(ex.videoUrl),
                                             modifier = Modifier
-                                                .fillMaxWidth()
+                                                .fillMaxSize()
                                                 .clip(GymCoachShapes.md)
                                         )
                                     } else {
                                         ExerciseAnimationPlayer(
                                             definition = animationDefinition!!,
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier.fillMaxSize()
                                         )
                                     }
                                 }
@@ -724,7 +729,7 @@ fun ExerciseDetailScreen(
                     } else if (hasAnimation) {
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
@@ -732,14 +737,14 @@ fun ExerciseDetailScreen(
                             ExerciseAnimationPlayer(
                                 definition = animationDefinition!!,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                                     .padding(12.dp)
                             )
                         }
                     } else if (hasPlayableVideo) {
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceDeep)
@@ -747,54 +752,75 @@ fun ExerciseDetailScreen(
                             ExerciseVideoPlayer(
                                 videoUri = Uri.parse(ex.videoUrl),
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                                     .clip(GymCoachShapes.md)
                             )
                         }
                     } else {
-                        // Meaningful Exercise Glyph & Anatomy Placeholder (Zero fake 0:00 / 0:00 players!)
+                        // Gradient placeholder for missing media
+                        val primaryMuscleColor = when(ex.muscleGroup.lowercase()) {
+                            "chest" -> GymCoachColors.Primary
+                            "back" -> GymCoachColors.CyanAccent
+                            "legs" -> GymCoachColors.Success
+                            "shoulders" -> GymCoachColors.Warning
+                            "arms" -> GymCoachColors.GoldAccent
+                            "core" -> GymCoachColors.Danger
+                            else -> GymCoachColors.TextMuted
+                        }
+
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                    .fillMaxSize()
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                                            colors = listOf(
+                                                primaryMuscleColor.copy(alpha = 0.2f),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(CircleShape)
-                                        .background(GymCoachColors.Primary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = GymCoachColors.Primary,
-                                        modifier = Modifier.size(32.dp)
+                                        tint = primaryMuscleColor.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = ex.muscleGroup.uppercase(),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = primaryMuscleColor
                                     )
                                 }
-                                Spacer(Modifier.height(12.dp))
-                                Text(
-                                    text = "Technical Movement Profile",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = GymCoachColors.TextPrimary
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Biomechanical form notes and coaching cues detailed below",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = GymCoachColors.TextSecondary
-                                )
                             }
                         }
+                    }
+
+                    // Form Guide overlay
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(if (showFormGuide) GymCoachColors.Primary else Color(0x99000000))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .clickable { showFormGuide = !showFormGuide }
+                    ) {
+                        Text(
+                            text = if (showFormGuide) "HIDE GUIDE" else "FORM GUIDE",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
                     }
                 }
 
@@ -883,73 +909,40 @@ fun ExerciseDetailScreen(
                     }
                 }
 
-                // 5. OVERVIEW / DESCRIPTION
-                if (ex.description.isNotBlank()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.md)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
-                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                // Reusable Section Header Component
+                @Composable
+                fun SectionHeader(title: String) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Overview",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = GymCoachColors.TextPrimary
-                                )
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = ex.description,
-                                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                                color = GymCoachColors.TextSecondary
-                            )
-                        }
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height(20.dp)
+                                .background(GymCoachColors.Primary)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White
+                        )
                     }
                 }
 
-                // 6. COACHING CUES (Bullet Points with Green Checkmarks)
-                val cuesList = ex.tips.split(";").map { it.trim() }.filter { it.isNotBlank() }
-                if (cuesList.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.md)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
-                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                // 5. OVERVIEW / DESCRIPTION
+                if (ex.description.isNotBlank()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                text = "Coaching Cues",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = GymCoachColors.Success
-                                )
-                            )
-                            cuesList.forEach { cue ->
-                                Row(
-                                    verticalAlignment = Alignment.Top,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = GymCoachColors.Success,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                         text = cue,
-                                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                         color = GymCoachColors.TextPrimary
-                                     )
-                                 }
-                            }
-                        }
+                        SectionHeader("Overview")
+                        Text(
+                            text = ex.description,
+                            style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                            color = Color(0xFFDFE2EF)
+                        )
                     }
                 }
 
@@ -957,53 +950,39 @@ fun ExerciseDetailScreen(
                 val setup = ex.setupInstructions.ifBlank { "" }
                 val execution = ex.executionInstructions.ifBlank { ex.instructions }
                 if (setup.isNotBlank() || execution.isNotBlank()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.md)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
-                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = "Form & Execution Guide",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = GymCoachColors.TextPrimary
+                        SectionHeader("Form & Execution Guide")
+
+                        if (setup.isNotBlank()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "Setup",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = GymCoachColors.Primary
                                 )
-                            )
-
-                            if (setup.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(
-                                        text = "Setup Position",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = GymCoachColors.Primary
-                                    )
-                                    Text(
-                                        text = setup,
-                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = GymCoachColors.TextSecondary
-                                    )
-                                }
+                                Text(
+                                    text = setup,
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                    color = Color(0xFFDFE2EF)
+                                )
                             }
+                        }
 
-                            if (execution.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(
-                                        text = "Rep Execution",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = GymCoachColors.Primary
-                                    )
-                                    Text(
-                                        text = execution,
-                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = GymCoachColors.TextSecondary
-                                    )
-                                }
+                        if (execution.isNotBlank()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "Execution",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = GymCoachColors.Primary
+                                )
+                                Text(
+                                    text = execution,
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                    color = Color(0xFFDFE2EF)
+                                )
                             }
                         }
                     }
@@ -1012,48 +991,92 @@ fun ExerciseDetailScreen(
                 // 8. COMMON MISTAKES
                 val mistakesList = ex.commonMistakes.split(";").map { it.trim() }.filter { it.isNotBlank() }
                 if (mistakesList.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(GymCoachShapes.md)
-                            .border(GymCoachBorders.subtle, GymCoachShapes.md),
-                        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showFormGuide = !showFormGuide }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = GymCoachColors.Warning,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = "Common Mistakes to Avoid",
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = GymCoachColors.Warning
-                                    )
-                                )
+                            SectionHeader("Common Mistakes")
+                            Text(
+                                text = if (showFormGuide) "Hide" else "Show",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.TextMuted
+                            )
+                        }
+
+                        AnimatedVisibility(visible = showFormGuide) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                mistakesList.forEach { mistake ->
+                                    Row(
+                                        verticalAlignment = Alignment.Top,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "•",
+                                            color = GymCoachColors.Warning,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = mistake,
+                                            style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                            color = Color(0xFFDFE2EF)
+                                        )
+                                    }
+                                }
                             }
-                            mistakesList.forEach { mistake ->
-                                Row(
-                                    verticalAlignment = Alignment.Top,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "•",
-                                        color = GymCoachColors.Warning,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = mistake,
-                                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                        color = GymCoachColors.TextPrimary
-                                    )
+                        }
+                    }
+                }
+
+                // 6. COACHING CUES (Pro Tips)
+                val cuesList = ex.tips.split(";").map { it.trim() }.filter { it.isNotBlank() }
+                if (cuesList.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showFormGuide = !showFormGuide }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            SectionHeader("Pro Tips")
+                            Text(
+                                text = if (showFormGuide) "Hide" else "Show",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.TextMuted
+                            )
+                        }
+
+                        AnimatedVisibility(visible = showFormGuide) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                cuesList.forEach { cue ->
+                                    Row(
+                                        verticalAlignment = Alignment.Top,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = GymCoachColors.Success,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                             text = cue,
+                                             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                             color = Color(0xFFDFE2EF)
+                                         )
+                                     }
                                 }
                             }
                         }

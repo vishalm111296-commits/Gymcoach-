@@ -26,43 +26,48 @@ object GymCoachSpacing {
 }
 
 object GymCoachShapes {
+    // Legacy mapping to avoid breaking anything
     val xs = RoundedCornerShape(6.dp)
     val sm = RoundedCornerShape(10.dp)
     val md = RoundedCornerShape(14.dp)
     val lg = RoundedCornerShape(18.dp)
     val xl = RoundedCornerShape(24.dp)
-    val pill = RoundedCornerShape(999.dp)
-    val Card = lg
+
+    // Keep legacy card naming to prevent JVM signature clash, use it as the main card shape
+    val Card = RoundedCornerShape(12.dp)
+
+    val container = RoundedCornerShape(16.dp)
+    val pill = RoundedCornerShape(50.dp)
+    val input = RoundedCornerShape(8.dp)
+    val chip = RoundedCornerShape(8.dp)
 }
 
 object GymCoachColors {
-    // Deep layered surfaces for visual depth
+    // New Stitch design tokens
+    val SurfaceDeep = Color(0xFF111317)
+    val SurfaceCard = Color(0xFF1E2024)
+    val SurfaceElevated = Color(0xFF252930)
+    val CyanAccent = Color(0xFF00E5FF)
+    val AmberAccent = Color(0xFFFF9100)
+    val Emerald = Color(0xFF10B981)
+    val BorderSubtle = Color(0xFF2A2F36)
+    val TextPrimary = Color(0xFFE2E8F0)
+    val TextSecondary = Color(0xFF94A3B8)
+    val TextDisabled = Color(0xFF4B5563)
+    val ErrorRed = Color(0xFFEF4444)
+    val WarningAmber = Color(0xFFF59E0B)
+
+    // Legacy / Kept for compilation
     val PureDark = Color(0xFF0D111A)
-    val SurfaceDeep = Color(0xFF131926)
-    val SurfaceCard = Color(0xFF1A2234)
     val SurfaceCardElevated = Color(0xFF222C42)
     val SurfaceInput = Color(0xFF161E2E)
-
-    // Borders and dividers
-    val BorderSubtle = Color(0xFF26324B)
     val BorderLight = Color(0xFF374668)
-
-    // Primary Accents
     val Primary = Color(0xFF6C63FF)
     val PrimaryLight = Color(0xFF8B85FF)
     val PrimaryDark = Color(0xFF4E45D9)
     val PrimaryGlow = Color(0x336C63FF)
-
-    // Secondary Accent
-    val CyanAccent = Color(0xFF00E5FF)
     val GoldAccent = Color(0xFFFFB300)
-
-    // Text Hierarchy
-    val TextPrimary = Color(0xFFF8FAFC)
-    val TextSecondary = Color(0xFFCBD5E1)
     val TextMuted = Color(0xFF94A3B8)
-
-    // Status Colors
     val Success = Color(0xFF10B981)
     val SuccessBg = Color(0xFF064E3B)
     val Warning = Color(0xFFF59E0B)
@@ -99,4 +104,3 @@ object GymCoachMotion {
     const val durationMedium = 250
     const val durationSlow = 400
 }
-

@@ -18,23 +18,23 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentBlue,
-    onPrimary = TextPrimary,
-    primaryContainer = AccentBlueDark,
-    onPrimaryContainer = TextPrimary,
-    secondary = AccentBlueLight,
-    onSecondary = DarkBackground,
-    secondaryContainer = DarkSurfaceVariant,
-    onSecondaryContainer = TextPrimary,
-    tertiary = SuccessGreen,
-    onTertiary = DarkBackground,
-    background = DarkBackground,
+    primary = CyanAccent,
+    onPrimary = SurfaceDeep,
+    primaryContainer = CyanAccent,
+    onPrimaryContainer = SurfaceDeep,
+    secondary = AmberAccent,
+    onSecondary = SurfaceDeep,
+    secondaryContainer = AmberAccent,
+    onSecondaryContainer = SurfaceDeep,
+    tertiary = Emerald,
+    onTertiary = SurfaceDeep,
+    background = SurfaceDeep,
     onBackground = TextPrimary,
-    surface = DarkSurface,
+    surface = SurfaceCard,
     onSurface = TextPrimary,
-    surfaceVariant = DarkSurfaceVariant,
+    surfaceVariant = SurfaceElevated,
     onSurfaceVariant = TextSecondary,
-    outline = TextTertiary,
+    outline = BorderSubtle,
     error = ErrorRed,
     onError = TextPrimary,
     errorContainer = ErrorRed,
@@ -49,12 +49,13 @@ fun GymCoachTheme(content: @Composable () -> Unit) {
         SideEffect {
             val window = view.context.findActivity()?.window ?: return@SideEffect
             @Suppress("DEPRECATION")
-            window.statusBarColor = DarkBackground.toArgb()
+            window.statusBarColor = SurfaceDeep.toArgb()
             @Suppress("DEPRECATION")
-            window.navigationBarColor = DarkBackground.toArgb()
+            window.navigationBarColor = SurfaceDeep.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
         }
     }
+    // Note: Typography and Shapes will be supplied correctly when we define them.
     MaterialTheme(colorScheme = colorScheme, typography = GymCoachTypography, content = content)
 }

@@ -263,21 +263,17 @@ private fun QuickStatsRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        QuickStatChip(
-            icon = Icons.Filled.DateRange,
-            text = "$weeklyWorkoutCount Workouts",
+        QuickStatTile(
+            label = "WORKOUTS",
+            value = weeklyWorkoutCount.toString(),
+            subtitle = "This week",
             onClick = onNavigateToTrainingFrequency,
             modifier = Modifier.weight(1f)
         )
-        QuickStatChip(
-            icon = Icons.Filled.Favorite,
-            text = "$latestReadiness Readiness",
-            onClick = onNavigateToReadiness,
-            modifier = Modifier.weight(1f)
-        )
-        QuickStatChip(
-            icon = Icons.Filled.LocalDining,
-            text = "$todayCalories kcal today",
+        QuickStatTile(
+            label = "NUTRITION",
+            value = todayCalories.toString(),
+            subtitle = "kcal today",
             onClick = onNavigateToNutrition,
             modifier = Modifier.weight(1f)
         )
@@ -285,36 +281,38 @@ private fun QuickStatsRow(
 }
 
 @Composable
-private fun QuickStatChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
+private fun QuickStatTile(
+    label: String,
+    value: String,
+    subtitle: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = GymCoachColors.SurfaceDeep,
-        border = GymCoachBorders.subtleBorder()
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        shape = GymCoachShapes.md,
+        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
+        border = GymCoachBorders.subtle
     ) {
-        Row(
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = GymCoachColors.Primary,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(Modifier.width(4.dp))
             Text(
-                text = text,
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = GymCoachColors.TextSecondary
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF00F2FE)
+            )
+            Text(
+                text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = GymCoachColors.TextSecondary,
-                maxLines = 1,
-                fontSize = 10.sp
+                color = GymCoachColors.TextMuted
             )
         }
     }
@@ -426,8 +424,8 @@ private fun ReadinessDashboardCard(
                 ) {
                     Text(
                         text = "RECOVERY & READINESS",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.2.sp
                         ),
                         color = GymCoachColors.Primary
@@ -537,8 +535,8 @@ private fun WeeklyConsistencyCard(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "THIS WEEK'S CONSISTENCY",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
                         letterSpacing = 1.2.sp
                     ),
                     color = GymCoachColors.TextMuted
@@ -683,8 +681,8 @@ private fun CoachInsightCard(insight: String) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "ADAPTIVE COACH INSIGHT",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
                         letterSpacing = 1.2.sp
                     ),
                     color = GymCoachColors.Primary
@@ -708,35 +706,38 @@ private fun QuickActionsSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "QUICK ACTIONS",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.2.sp
             ),
             color = GymCoachColors.TextMuted
         )
 
-        Row(
+        androidx.compose.foundation.lazy.LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ActionTile(
-                title = "Free Session",
-                icon = Icons.Default.Add,
-                onClick = onStartBlankWorkout,
-                modifier = Modifier.weight(1f)
-            )
-            ActionTile(
-                title = "Templates",
-                icon = Icons.Default.Bookmark,
-                onClick = onNavigateToTemplates,
-                modifier = Modifier.weight(1f)
-            )
-            ActionTile(
-                title = "Exercises",
-                icon = Icons.Default.Search,
-                onClick = onNavigateToExercises,
-                modifier = Modifier.weight(1f)
-            )
+            item {
+                ActionTile(
+                    title = "Free Session",
+                    icon = Icons.Default.Add,
+                    onClick = onStartBlankWorkout
+                )
+            }
+            item {
+                ActionTile(
+                    title = "Templates",
+                    icon = Icons.Default.Bookmark,
+                    onClick = onNavigateToTemplates
+                )
+            }
+            item {
+                ActionTile(
+                    title = "Exercises",
+                    icon = Icons.Default.Search,
+                    onClick = onNavigateToExercises
+                )
+            }
         }
     }
 }
@@ -759,31 +760,29 @@ private fun ActionTile(
         label = "actionTileScale"
     )
 
-    Card(
+    Surface(
         onClick = onClick,
         interactionSource = interactionSource,
         modifier = modifier
+            .height(40.dp)
             .graphicsLayer {
                 scaleX = tileScale
                 scaleY = tileScale
-            }
-            .clip(GymCoachShapes.sm)
-            .border(GymCoachBorders.subtle, GymCoachShapes.sm),
-        colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
-        shape = GymCoachShapes.sm
+            },
+        color = Color.Transparent,
+        shape = CircleShape,
+        border = GymCoachBorders.subtleBorder()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = title,
                 tint = GymCoachColors.Primary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
             )
             Text(
                 text = title,
@@ -822,9 +821,9 @@ private fun EmptyProgramCard(onSetUpPlan: () -> Unit) {
         ) {
             Text(
                 text = "TRAINING PROGRAM SETUP",
-                style = MaterialTheme.typography.labelSmall.copy(
+                style = MaterialTheme.typography.titleSmall.copy(
                     letterSpacing = 1.5.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 ),
                 color = GymCoachColors.Primary
             )

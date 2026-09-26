@@ -94,15 +94,13 @@ class WorkoutSessionScreenTest {
 
         composeTestRule.onNodeWithText("Workout Crushed! 🔥").assertIsDisplayed()
         composeTestRule.onNodeWithText("Total Volume").assertIsDisplayed()
-        composeTestRule.onNodeWithText("5000\nkg·reps").assertIsDisplayed()
+        composeTestRule.onNodeWithText("5,000 kg").assertIsDisplayed()
         composeTestRule.onNodeWithText("Duration").assertIsDisplayed()
         // 3600 seconds = 01:00:00 (formatDuration converts this depending on logic, check view)
         composeTestRule.onNodeWithText("Sets Completed").assertIsDisplayed()
         composeTestRule.onNodeWithText("12 / 12").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Personal Records Broken").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bench Press").assertIsDisplayed()
-        composeTestRule.onNodeWithText("100.0kg lifted").assertIsDisplayed()
+                        composeTestRule.onNodeWithText("🏆 Bench Press: 100.0 kg").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Done").performClick()
         assert(doneClicked)

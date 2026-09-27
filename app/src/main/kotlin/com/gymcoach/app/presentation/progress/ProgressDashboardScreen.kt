@@ -31,8 +31,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -387,7 +389,7 @@ fun ProgressDashboardScreen(
                         )
                         StatCard(
                             label = "Avg Volume",
-                            value = "%.1f kg".format(Locale.getDefault(), animAvgVolume),
+                            value = java.text.NumberFormat.getNumberInstance().format(animAvgVolume.toLong()) + " kg",
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -519,7 +521,7 @@ fun ProgressDashboardScreen(
                         state.weeklySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = weekLabel(date),
-                                value = "%.0f kg".format(volume)
+                            value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " kg"
                             )
                         }
                     } else {
@@ -535,7 +537,7 @@ fun ProgressDashboardScreen(
                         state.monthlySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = monthLabel(date),
-                                value = "%.0f kg".format(volume)
+                                value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " kg"
                             )
                         }
                     } else {
@@ -557,19 +559,29 @@ private fun DateRangeSelector(
     onSelect: (ProgressDateRange) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         ProgressDateRange.entries.forEach { range ->
-            FilterChip(
-                selected = range == selected,
-                onClick = { onSelect(range) },
-                label = { Text(range.label) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+            val isSelected = range == selected
+            Surface(
+                modifier = Modifier
+                    .clip(GymCoachShapes.pill)
+                    .clickable { onSelect(range) },
+                shape = GymCoachShapes.pill,
+                color = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, if (isSelected) GymCoachColors.Primary else GymCoachColors.BorderSubtle)
+            ) {
+                Text(
+                    text = range.label,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    ),
+                    color = if (isSelected) GymCoachColors.Primary else GymCoachColors.TextSecondary,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                 )
-            )
+            }
         }
     }
 }
@@ -1009,11 +1021,12 @@ private fun PRCard(
 @Composable
 private fun SectionHeader(title: String) {
     Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Black,
-        color = MaterialTheme.colorScheme.primary,
-        letterSpacing = 1.sp
+        text = title,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.3.sp
+        ),
+        color = GymCoachColors.TextPrimary
     )
 }
 
@@ -1228,7 +1241,7 @@ private fun StatsOverview(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(label = "Reps", value = "$animReps", modifier = Modifier.weight(1f))
-            StatCard(label = "Volume", value = "%.1f kg".format(Locale.getDefault(), animVolume), modifier = Modifier.weight(1f))
+            StatCard(label = "Volume", value = java.text.NumberFormat.getNumberInstance().format(animVolume.toLong()) + " kg", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),

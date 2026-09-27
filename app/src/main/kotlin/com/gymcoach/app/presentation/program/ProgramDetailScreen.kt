@@ -76,6 +76,8 @@ import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
+import com.gymcoach.app.presentation.components.ShimmerBox
+import com.gymcoach.app.presentation.components.EmptyStateView
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -288,8 +290,11 @@ fun ProgramDetailScreen(
     ) { padding ->
         when {
             state.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = GymCoachColors.Primary)
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 24.dp)) {
+                    ShimmerBox(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        cornerRadius = 12.dp
+                    )
                 }
             }
             state.error != null && state.program == null -> {
@@ -349,8 +354,8 @@ fun ProgramDetailScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
-                            shape = GymCoachShapes.lg,
-                            border = GymCoachBorders.subtle
+                            shape = GymCoachShapes.Card,
+                            border = GymCoachBorders.subtleBorder()
                         ) {
                             Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
                                 Row(
@@ -415,8 +420,8 @@ fun ProgramDetailScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
-                            shape = GymCoachShapes.lg,
-                            border = GymCoachBorders.subtle
+                            shape = GymCoachShapes.Card,
+                            border = GymCoachBorders.subtleBorder()
                         ) {
                             Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)) {
                                 Row(

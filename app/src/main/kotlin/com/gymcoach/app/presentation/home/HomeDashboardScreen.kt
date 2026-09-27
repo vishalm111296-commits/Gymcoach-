@@ -99,7 +99,6 @@ fun HomeDashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val weeklyWorkoutCount by viewModel.weeklyWorkoutCount.collectAsStateWithLifecycle()
-    val latestReadiness by viewModel.latestReadiness.collectAsStateWithLifecycle()
     val todayCalories by viewModel.todayCalories.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -136,10 +135,8 @@ fun HomeDashboardScreen(
             StaggeredDashboardItem(index = 1, isLoading = state.isLoading) {
                 QuickStatsRow(
                     weeklyWorkoutCount = weeklyWorkoutCount,
-                    latestReadiness = latestReadiness,
                     todayCalories = todayCalories,
                     onNavigateToTrainingFrequency = onNavigateToTrainingFrequency,
-                    onNavigateToReadiness = onNavigateToReadiness,
                     onNavigateToNutrition = onNavigateToNutrition
                 )
             }
@@ -276,10 +273,8 @@ fun HomeDashboardScreen(
 @Composable
 private fun QuickStatsRow(
     weeklyWorkoutCount: Int,
-    latestReadiness: Int,
     todayCalories: Int,
     onNavigateToTrainingFrequency: () -> Unit,
-    onNavigateToReadiness: () -> Unit,
     onNavigateToNutrition: () -> Unit
 ) {
     Row(

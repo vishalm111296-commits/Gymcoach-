@@ -1,8 +1,12 @@
 package com.gymcoach.app.presentation.history
 
+import android.content.Intent
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,51 +16,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.unit.sp
-import androidx.compose.material3.HorizontalDivider
-import com.gymcoach.app.ui.theme.GymCoachBorders
-import com.gymcoach.app.ui.theme.GymCoachColors
-import com.gymcoach.app.ui.theme.GymCoachShapes
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import android.content.Intent
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.TextButton
-import com.gymcoach.app.presentation.components.EmptyStateView
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,6 +63,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,6 +71,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.domain.model.WorkoutWithStats
+import com.gymcoach.app.presentation.components.EmptyStateView
+import com.gymcoach.app.ui.theme.GymCoachBorders
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -232,55 +233,75 @@ fun WorkoutHistoryScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
+            // Search bar + Sort button (inline)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search workouts...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
-            )
-
-            // Filter tabs
-            ScrollableTabRow(
-                selectedTabIndex = filterOption.ordinal,
-                modifier = Modifier.fillMaxWidth(),
-                edgePadding = 16.dp
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                WorkoutHistoryViewModel.FilterOption.values().forEachIndexed { _, filter ->
-                    Tab(
-                        selected = filterOption == filter,
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Search workouts...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                )
+                Spacer(Modifier.width(4.dp))
+                Box {
+                    IconButton(onClick = { showSortOptions = true }) {
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort workouts")
+                    }
+                    DropdownMenu(
+                        expanded = showSortOptions,
+                        onDismissRequest = { showSortOptions = false }
+                    ) {
+                        WorkoutHistoryViewModel.SortOption.values().forEach { sortOpt ->
+                            DropdownMenuItem(
+                                text = { Text(sortOpt.name.replace("_", " ")) },
+                                onClick = {
+                                    viewModel.onSortChange(sortOpt)
+                                    showSortOptions = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Kinetic Pill Chip filter row
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(WorkoutHistoryViewModel.FilterOption.values()) { filter ->
+                    val isSelected = filterOption == filter
+                    Surface(
+                        shape = GymCoachShapes.pill,
+                        color = if (isSelected)
+                            GymCoachColors.Primary.copy(alpha = 0.15f)
+                        else
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = if (isSelected)
+                            BorderStroke(1.dp, GymCoachColors.Primary)
+                        else
+                            BorderStroke(1.dp, GymCoachColors.BorderSubtle),
                         onClick = {
                             viewModel.onFilterChange(filter)
                             if (filter == WorkoutHistoryViewModel.FilterOption.CUSTOM) {
                                 showDatePicker = true
                             }
-                        },
-                        text = { Text(filter.name.replace("_", " ")) }
-                    )
-                }
-            }
-
-            // Sort dropdown
-            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                IconButton(onClick = { showSortOptions = true }) {
-                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
-                }
-                DropdownMenu(
-                    expanded = showSortOptions,
-                    onDismissRequest = { showSortOptions = false }
-                ) {
-                    WorkoutHistoryViewModel.SortOption.values().forEach { sortOpt ->
-                        DropdownMenuItem(
-                            text = { Text(sortOpt.name.replace("_", " ")) },
-                            onClick = {
-                                viewModel.onSortChange(sortOpt)
-                                showSortOptions = false
-                            }
+                        }
+                    ) {
+                        Text(
+                            text = filter.name.replace("_", " ").lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            color = if (isSelected) GymCoachColors.Primary else GymCoachColors.TextSecondary,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -448,6 +469,7 @@ private fun HistoryWorkoutCard(
     workout: WorkoutWithStats,
     onClick: () -> Unit
 ) {
+    val nf = remember { java.text.NumberFormat.getNumberInstance() }
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
@@ -537,11 +559,10 @@ private fun HistoryWorkoutCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("VOLUME", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text("%.0f kg".format(workout.volume), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(nf.format(workout.volume.toLong()) + " kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         }
     }
 }
-

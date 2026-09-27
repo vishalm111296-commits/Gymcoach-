@@ -133,6 +133,9 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val _completed = MutableStateFlow(false)
     val completed: StateFlow<Boolean> = _completed.asStateFlow()
 
+    private val _discarded = MutableStateFlow(false)
+    val discarded: StateFlow<Boolean> = _discarded.asStateFlow()
+
     val restTimerState: StateFlow<RestTimerState> = restTimer.state
 
     private val _error = MutableStateFlow<String?>(null)
@@ -806,10 +809,46 @@ class WorkoutLoggingViewModel @Inject constructor(
         return "Workout Complete"
     }
 
+    fun hasCompletedSets(): Boolean {
+        return _currentWorkout.value?.exercises?.any { we -> we.sets.any { it.completed } } ?: false
+    }
+
+    fun getCompletedSetsCount(): Int {
+        return _currentWorkout.value?.exercises?.sumOf { we -> we.sets.count { it.completed } } ?: 0
+    }
+
+    fun discardWorkout(onSuccess: (() -> Unit)? = null) {
+        val workoutDetails = _currentWorkout.value
+        val workoutId = workoutDetails?.workout?.id
+        workoutTimerJob?.cancel()
+        workoutCollectorJob?.cancel()
+        restTimer.stop()
+        viewModelScope.launch {
+            try {
+                if (workoutId != null) {
+                    workoutRepository.deleteWorkout(workoutId)
+                }
+                _currentWorkout.value = null
+                _discarded.value = true
+                onSuccess?.invoke()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _error.value = e.message ?: "Failed to discard workout"
+            }
+        }
+    }
+
     fun completeWorkout() {
         val workoutDetails = _currentWorkout.value ?: return
         val workout = workoutDetails.workout
         if (workout.completed || workout.status == "COMPLETED" || workout.status == "ABANDONED") return
+
+        val completedCount = workoutDetails.exercises.sumOf { we -> we.sets.count { it.completed } }
+        if (completedCount == 0) {
+            discardWorkout()
+            return
+        }
+
         workoutTimerJob?.cancel()
         restTimer.stop()
         val now = Instant.now()

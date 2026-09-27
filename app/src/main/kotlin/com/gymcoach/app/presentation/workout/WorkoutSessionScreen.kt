@@ -175,6 +175,14 @@ fun WorkoutSessionScreen(
     val latestReadiness by viewModel.latestReadiness.collectAsState()
     var dismissReadinessAdvisory by rememberSaveable { mutableStateOf(false) }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    var showEmptyWorkoutDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    val discarded by viewModel.discarded.collectAsState()
+    LaunchedEffect(discarded) {
+        if (discarded) {
+            onBackClick()
+        }
+    }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
     var warmupDialogData by rememberSaveable { mutableStateOf<Triple<Int, String, Double>?>(null) }
     var substitutionDialogData by rememberSaveable { mutableStateOf<Triple<Int, Long, String>?>(null) }
@@ -230,28 +238,16 @@ fun WorkoutSessionScreen(
     }
 
     if (completed) {
-        if (workoutSummary != null) {
+        val summary = workoutSummary
+        if (summary != null && summary.completedSetsCount > 0) {
             WorkoutCompletionView(
-                summary = workoutSummary!!,
+                summary = summary,
                 onDone = onBackClick,
                 onViewHistoryDetail = onViewHistoryDetail
             )
         } else {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Workout Complete!",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = onBackClick) {
-                        Text("Go Back")
-                    }
-                }
+            LaunchedEffect(Unit) {
+                onBackClick()
             }
         }
         return
@@ -285,6 +281,15 @@ fun WorkoutSessionScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { showDiscardDialog = true }) {
+                        Text(
+                            text = "Discard",
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -396,6 +401,38 @@ fun WorkoutSessionScreen(
                                 maxLines = 4
                             )
                         }
+
+                        item {
+                            Spacer(Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = { showDiscardDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                                ),
+                                shape = GymCoachShapes.md
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Discard Workout",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Discard Workout",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                            Spacer(Modifier.height(16.dp))
+                        }
                     }
                 }
             }
@@ -430,7 +467,14 @@ fun WorkoutSessionScreen(
                         }
 
                         Button(
-                            onClick = { showFinishDialog = true },
+                            onClick = {
+                                val completedCount = currentWorkout?.exercises?.sumOf { we -> we.sets.count { it.completed } } ?: 0
+                                if (completedCount == 0) {
+                                    showEmptyWorkoutDiscardDialog = true
+                                } else {
+                                    showFinishDialog = true
+                                }
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = GymCoachColors.Primary,
                                 contentColor = androidx.compose.ui.graphics.Color.White
@@ -497,6 +541,60 @@ fun WorkoutSessionScreen(
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard Workout?") },
+            text = { Text("Are you sure you want to discard this workout? All progress in this session will be permanently deleted.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDiscardDialog = false
+                        viewModel.discardWorkout { onBackClick() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showEmptyWorkoutDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyWorkoutDiscardDialog = false },
+            title = { Text("No Completed Sets") },
+            text = { Text("You haven't completed any sets in this workout session. Would you like to discard it?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showEmptyWorkoutDiscardDialog = false
+                        viewModel.discardWorkout { onBackClick() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("Discard Workout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyWorkoutDiscardDialog = false }) {
+                    Text("Keep Editing")
                 }
             }
         )

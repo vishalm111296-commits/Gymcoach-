@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.time.Duration
 
 plugins {
     alias(libs.plugins.android.application)
@@ -121,6 +122,7 @@ android {
         unitTests.all {
             it.systemProperty("robolectric.conscryptMode", "OFF")
             it.systemProperty("robolectric.sqliteMode", "LEGACY")
+            it.timeout.set(Duration.ofMinutes(3))
         }
     }
 

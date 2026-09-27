@@ -78,27 +78,33 @@ class WorkoutLoggingViewModelTest {
             personalRecordDao,
             prDetector,
             null
-        )
+        ).apply { enableWorkoutTimer = false }
     }
 
     @After
     fun tearDown() {
+        viewModel.clearForTest()
         Dispatchers.resetMain()
     }
 
     private fun createTestWorkout(): WorkoutWithDetails {
-        val exercise = Exercise(id = 1L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "barbell", difficulty = "intermediate")
+        val exercise1 = Exercise(id = 1L, name = "Squat", description = "", muscleGroup = "Legs", equipment = "barbell", difficulty = "intermediate")
+        val exercise2 = Exercise(id = 2L, name = "Bench Press", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "intermediate")
         val set1 = WorkoutSet(id = 1L, workoutExerciseId = 1L, setNumber = 1, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = false, setType = com.gymcoach.app.domain.model.SetType.NORMAL)
-        val workoutExercise = WorkoutExercise(id = 1L, workoutId = 1L, exerciseId = exercise.id, orderIndex = 1)
-        val workoutExerciseWithSets = WorkoutExerciseWithSets(workoutExercise, exercise, listOf(set1))
+        val set2 = WorkoutSet(id = 2L, workoutExerciseId = 1L, setNumber = 2, weight = 100.0, reps = 10, rpe = 8.0, restSeconds = 60, completed = false, setType = com.gymcoach.app.domain.model.SetType.NORMAL)
+        val workoutExercise1 = WorkoutExercise(id = 1L, workoutId = 1L, exerciseId = exercise1.id, orderIndex = 1)
+        val workoutExercise2 = WorkoutExercise(id = 2L, workoutId = 1L, exerciseId = exercise2.id, orderIndex = 2)
+        val workoutExerciseWithSets1 = WorkoutExerciseWithSets(workoutExercise1, exercise1, listOf(set1, set2))
+        val workoutExerciseWithSets2 = WorkoutExerciseWithSets(workoutExercise2, exercise2, listOf(WorkoutSet(id = 3L, workoutExerciseId = 2L, setNumber = 1, weight = 80.0, reps = 8, rpe = 8.0, restSeconds = 60, completed = false, setType = com.gymcoach.app.domain.model.SetType.NORMAL)))
         val workout = Workout(id = 1L, date = Instant.now(), startTime = Instant.now(), endTime = Instant.now(), duration = 0, notes = "", completed = false, status = "IN_PROGRESS")
-        return WorkoutWithDetails(workout, listOf(workoutExerciseWithSets))
+        return WorkoutWithDetails(workout, listOf(workoutExerciseWithSets1, workoutExerciseWithSets2))
     }
 
     @Test
     fun givenIncompleteSet_whenToggleSetCompletion_thenSetIsCompletedAndTimerStarts() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
 
         viewModel.toggleSetCompletion(0, 0)
 
@@ -125,17 +131,19 @@ class WorkoutLoggingViewModelTest {
             personalRecordDao,
             prDetector,
             null
-        )
+        ).apply { enableWorkoutTimer = false }
         
         newViewModel.loadOrStartWorkout(1L)
         
         assertEquals(workout.workout.id, newViewModel.currentWorkout.value?.workout?.id)
+        newViewModel.clearForTest()
     }
 
     @Test
     fun givenValidWeightAndReps_whenUpdateSet_thenStateIsUpdated() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
         
         viewModel.updateSetWeight(0, 0, 150.0)
         coVerify { workoutRepository.updateSet(match { it.weight == 150.0 }) }
@@ -148,6 +156,7 @@ class WorkoutLoggingViewModelTest {
     fun givenNegativeWeightAndReps_whenUpdateSet_thenConstrainedToZero() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
         
         viewModel.updateSetWeight(0, 0, -10.0)
         coVerify { workoutRepository.updateSet(match { it.weight == 0.0 }) }
@@ -160,6 +169,7 @@ class WorkoutLoggingViewModelTest {
     fun givenLargeWeightAndReps_whenUpdateSet_thenStateIsUpdatedSuccessfully() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
         
         viewModel.updateSetWeight(0, 0, 1000.0)
         coVerify { workoutRepository.updateSet(match { it.weight == 1000.0 }) }
@@ -177,6 +187,7 @@ class WorkoutLoggingViewModelTest {
         val workout = Workout(id = 1L, date = Instant.now(), startTime = Instant.now().minusSeconds(3600), endTime = Instant.now(), duration = 0, notes = "", completed = false, status = "IN_PROGRESS")
         val workoutDetails = WorkoutWithDetails(workout, listOf(workoutExerciseWithSets))
         currentWorkoutFlow.value = workoutDetails
+        viewModel.loadOrStartWorkout(workout.id)
 
         // Mock PR detection
         val pr = PRDetector.PersonalRecord(
@@ -210,6 +221,7 @@ class WorkoutLoggingViewModelTest {
         val workout = Workout(id = 1L, date = Instant.now(), startTime = Instant.now().minusSeconds(3600), endTime = Instant.now(), duration = 0, notes = "", completed = false, status = "IN_PROGRESS")
         val workoutDetails = WorkoutWithDetails(workout, listOf(workoutExerciseWithSets))
         currentWorkoutFlow.value = workoutDetails
+        viewModel.loadOrStartWorkout(workout.id)
 
         viewModel.completeWorkout()
         
@@ -225,6 +237,7 @@ class WorkoutLoggingViewModelTest {
     fun givenTwoExercises_whenLinkExercisesAsSuperset_thenGroupIsAddedAndCanBeUnlinked() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
         
         viewModel.linkExercisesAsSuperset(0, 1)
         val superset = viewModel.getSupersetForExercise(0)
@@ -236,4 +249,34 @@ class WorkoutLoggingViewModelTest {
         assertEquals(null, viewModel.getSupersetForExercise(0))
     }
 
+    @Test
+    fun givenZeroCompletedSets_whenCompleteWorkout_thenWorkoutIsDiscardedAndNoCelebrationSummaryEmitted() = runTest {
+        val workout = createTestWorkout() // has 1 set with completed = false
+        currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
+
+        viewModel.completeWorkout()
+
+        coVerify { workoutRepository.deleteWorkout(workout.workout.id) }
+        assertEquals(null, viewModel.workoutSummary.value)
+        assertEquals(false, viewModel.completed.value)
+        assertEquals(true, viewModel.discarded.value)
+    }
+
+    @Test
+    fun givenActiveWorkout_whenDiscardWorkout_thenWorkoutIsDeletedAndStateIsCleared() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
+
+        var callbackCalled = false
+        viewModel.discardWorkout { callbackCalled = true }
+
+        coVerify { workoutRepository.deleteWorkout(workout.workout.id) }
+        assertEquals(true, callbackCalled)
+        assertEquals(true, viewModel.discarded.value)
+        assertEquals(null, viewModel.currentWorkout.value)
+    }
+
 }
+

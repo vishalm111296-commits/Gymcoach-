@@ -2,6 +2,7 @@ package com.gymcoach.app.data.repository
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import com.gymcoach.app.data.local.dao.WorkoutDao
 import com.gymcoach.app.data.local.database.GymCoachDatabase
@@ -50,8 +51,8 @@ class WorkoutRepositoryTransactionTest {
         var id = -1L
         
         try {
-            database.runInTransaction {
-                kotlinx.coroutines.runBlocking { id = workoutDao.insertWorkout(workout) }
+            database.withTransaction {
+                id = workoutDao.insertWorkout(workout)
                 throw Exception("Transaction aborted")
             }
         } catch (e: Exception) {

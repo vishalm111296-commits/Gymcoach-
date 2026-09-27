@@ -278,5 +278,27 @@ class WorkoutLoggingViewModelTest {
         assertEquals(null, viewModel.currentWorkout.value)
     }
 
+    @Test
+    fun givenIncompleteWorkout_whenCheckingCompletedSets_thenReportsAccurateCounts() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
+
+        // Initially 0 completed sets
+        assertEquals(false, viewModel.hasCompletedSets())
+        assertEquals(0, viewModel.getCompletedSetsCount())
+
+        // Mark 1 set completed
+        val exercise1 = workout.exercises[0]
+        val completedSet = exercise1.sets[0].copy(completed = true)
+        val updatedWe = exercise1.copy(sets = listOf(completedSet, exercise1.sets[1]))
+        val updatedWorkout = workout.copy(exercises = listOf(updatedWe, workout.exercises[1]))
+        currentWorkoutFlow.value = updatedWorkout
+
+        assertEquals(true, viewModel.hasCompletedSets())
+        assertEquals(1, viewModel.getCompletedSetsCount())
+    }
+
 }
+
 

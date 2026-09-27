@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,8 +23,18 @@ class WorkoutRepositoryTransactionTest {
     private lateinit var database: GymCoachDatabase
     private lateinit var workoutDao: WorkoutDao
 
+    class TestTransactionException(message: String) : RuntimeException(message)
+
     @Before
     fun setup() {
+        val osName = (System.getProperty("os.name") ?: "").lowercase()
+        val osArch = (System.getProperty("os.arch") ?: "").lowercase()
+        val isUnsupportedLinuxAarch64 = osName.contains("linux") && (osArch == "aarch64" || osArch == "arm64")
+        org.junit.Assume.assumeFalse(
+            "Robolectric SQLite runtime is not supported on Linux aarch64 by upstream Robolectric",
+            isUnsupportedLinuxAarch64
+        )
+
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, GymCoachDatabase::class.java)
             .allowMainThreadQueries()
@@ -33,7 +44,9 @@ class WorkoutRepositoryTransactionTest {
 
     @After
     fun tearDown() {
-        database.close()
+        if (::database.isInitialized) {
+            database.close()
+        }
     }
 
     @Test
@@ -49,17 +62,21 @@ class WorkoutRepositoryTransactionTest {
         )
         
         var id = -1L
-        
-        try {
+        val exceptionCaught = try {
             database.withTransaction {
                 id = workoutDao.insertWorkout(workout)
-                throw Exception("Transaction aborted")
+                if (id >= 0L) {
+                    throw TestTransactionException("Transaction aborted")
+                }
             }
-        } catch (e: Exception) {
-            // Expected
+            false
+        } catch (e: TestTransactionException) {
+            true
         }
         
-        val retrieved = if (id != -1L) workoutDao.getWorkoutById(id).first() else null
-        assertNull(retrieved)
+        assertTrue("Transaction abort exception should have been caught", exceptionCaught)
+        assertTrue("Insert should have generated an ID inside transaction before abort", id != -1L)
+        val retrieved = workoutDao.getWorkoutById(id).first()
+        assertNull("Rolled back entity must not exist in database", retrieved)
     }
 }

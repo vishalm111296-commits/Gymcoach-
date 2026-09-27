@@ -555,7 +555,7 @@ fun WorkoutSessionScreen(
                 Button(
                     onClick = {
                         showDiscardDialog = false
-                        viewModel.discardWorkout { onBackClick() }
+                        viewModel.discardWorkout()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
@@ -582,7 +582,7 @@ fun WorkoutSessionScreen(
                 Button(
                     onClick = {
                         showEmptyWorkoutDiscardDialog = false
-                        viewModel.discardWorkout { onBackClick() }
+                        viewModel.discardWorkout()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,

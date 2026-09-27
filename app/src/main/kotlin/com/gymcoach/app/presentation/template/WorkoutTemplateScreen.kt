@@ -22,9 +22,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.domain.model.TemplateExercise
 import com.gymcoach.app.domain.model.WorkoutTemplate
+import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
+import com.gymcoach.app.presentation.components.EmptyStateView
+import com.gymcoach.app.presentation.components.ShimmerBox
 
 
 
@@ -118,63 +121,35 @@ fun WorkoutTemplateScreen(
 
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    CircularProgressIndicator(color = GymCoachColors.CyanAccent)
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        cornerRadius = 12.dp
+                    )
                 }
             } else {
                 val currentList = if (selectedTab == 0) templates else archivedTemplates
 
                 if (currentList.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.FitnessCenter,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = if (selectedTab == 0) "No active templates" else "No archived templates",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = if (selectedTab == 0) {
-                                    "Build reusable workout templates with custom sets, reps, and exercises."
-                                } else {
-                                    "Archived templates will appear here."
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (selectedTab == 0) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        editingTemplate = null
-                                        showCreateDialog = true
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = GymCoachColors.CyanAccent,
-                                        contentColor = GymCoachColors.SurfaceCardElevated
-                                    )
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Create First Template", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
+                    EmptyStateView(
+                        icon = Icons.Default.FitnessCenter,
+                        headline = if (selectedTab == 0) "No Templates Yet" else "No Archived Templates",
+                        body = if (selectedTab == 0) {
+                            "Save a workout as a template to quickly start future sessions."
+                        } else {
+                            "Archived templates will appear here."
+                        },
+                        ctaText = if (selectedTab == 0) "Create First Template" else null,
+                        onCtaClick = if (selectedTab == 0) {
+                            { editingTemplate = null; showCreateDialog = true }
+                        } else null,
+                        modifier = Modifier.fillMaxSize().padding(24.dp)
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -235,10 +210,11 @@ private fun TemplateCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = GymCoachShapes.lg,
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+            containerColor = GymCoachColors.SurfaceCard
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(GymCoachSpacing.lg)) {
             Row(
@@ -251,13 +227,13 @@ private fun TemplateCard(
                         text = template.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = GymCoachColors.TextPrimary
                     )
                     if (template.description.isNotBlank()) {
                         Text(
                             text = template.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 }
@@ -310,12 +286,12 @@ private fun TemplateCard(
                             Text(
                                 text = "• ${ex.exerciseName}",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = GymCoachColors.TextPrimary
                             )
                             Text(
                                 text = "${ex.targetSets} sets × ${ex.targetReps}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -323,7 +299,7 @@ private fun TemplateCard(
                         Text(
                             text = "+ ${template.exercises.size - 4} more exercises",
                             style = MaterialTheme.typography.labelSmall,
-                            color = GymCoachColors.CyanAccent
+                            color = GymCoachColors.Primary
                         )
                     }
                 }
@@ -331,7 +307,7 @@ private fun TemplateCard(
                 Text(
                     text = "No exercises added",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
             }
 
@@ -443,9 +419,11 @@ private fun CreateEditTemplateDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
+                        shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                        )
+                            containerColor = GymCoachColors.SurfaceCard
+                        ),
+                        border = GymCoachBorders.subtleBorder()
                     ) {
                         Row(
                             modifier = Modifier

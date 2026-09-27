@@ -55,6 +55,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.TextButton
+import com.gymcoach.app.presentation.components.EmptyStateView
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -309,17 +310,14 @@ fun WorkoutHistoryScreen(
 
             // Workout list
             if (workouts.isEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No workouts found for \"$searchQuery\"" else "No workouts yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                EmptyStateView(
+                    icon = Icons.Default.History,
+                    headline = if (searchQuery.isNotBlank()) "No Matching Workouts" else "No Workouts Yet",
+                    body = if (searchQuery.isNotBlank()) "No workouts match \"$searchQuery\". Try checking your search or active filters." else "Complete your first workout to track your strength journey, PRs, and consistency.",
+                    ctaText = if (searchQuery.isBlank()) "Start Workout" else null,
+                    onCtaClick = if (searchQuery.isBlank()) onNewWorkout else null,
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier

@@ -53,6 +53,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import com.gymcoach.app.presentation.components.ShimmerBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -144,13 +145,35 @@ fun HomeDashboardScreen(
             }
 
             if (state.isLoading) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 48.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CircularProgressIndicator(color = GymCoachColors.Primary)
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        cornerRadius = 16.dp
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(90.dp),
+                            cornerRadius = 12.dp
+                        )
+                        ShimmerBox(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(90.dp),
+                            cornerRadius = 12.dp
+                        )
+                    }
                 }
             } else {
                 StaggeredDashboardItem(index = 2, isLoading = state.isLoading) {

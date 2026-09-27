@@ -41,6 +41,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.gymcoach.app.presentation.components.ShimmerBox
+import com.gymcoach.app.presentation.components.ErrorStateView
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -164,25 +166,51 @@ fun ProgressDashboardScreen(
         when {
             state.isLoading -> {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    CircularProgressIndicator()
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        cornerRadius = 16.dp
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(96.dp),
+                            cornerRadius = 12.dp
+                        )
+                        ShimmerBox(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(96.dp),
+                            cornerRadius = 12.dp
+                        )
+                    }
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                        cornerRadius = 12.dp
+                    )
                 }
             }
             state.error != null -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.error!!,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                ErrorStateView(
+                    message = state.error!!,
+                    onRetry = { viewModel.refresh() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                )
             }
             else -> {
                 Column(

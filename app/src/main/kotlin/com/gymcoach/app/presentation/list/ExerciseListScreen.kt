@@ -58,6 +58,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.gymcoach.app.presentation.components.EmptyStateView
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -469,54 +470,27 @@ fun ExerciseListScreen(
                 label = "catalogContentAnim"
             ) { isEmpty ->
                 if (isEmpty) {
-                    Box(
+                    EmptyStateView(
+                        icon = Icons.Default.Search,
+                        headline = "No exercises found",
+                        body = "Try adjusting your search keywords or resetting filters.",
+                        ctaText = if (hasActiveFilter) "Reset All Filters" else null,
+                        onCtaClick = if (hasActiveFilter) {
+                            {
+                                viewModel.onDifficultySelected("All")
+                                viewModel.onEquipmentSelected("All")
+                                viewModel.onMovementPatternSelected("All")
+                                if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
+                                if (showAnimationOnly) viewModel.toggleAnimationOnly()
+                                if (showCameraCoachOnly) viewModel.toggleCameraCoachOnly()
+                                textFieldValue = ""
+                                viewModel.onSearchQueryChange("")
+                            }
+                        } else null,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search exercises",
-                                tint = GymCoachColors.TextMuted,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Text(
-                                text = "No exercises found",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = GymCoachColors.TextPrimary
-                            )
-                            Text(
-                                text = "Try adjusting your search keywords or resetting filters.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = GymCoachColors.TextSecondary,
-                                modifier = Modifier.padding(horizontal = 24.dp)
-                            )
-                            if (hasActiveFilter) {
-                                Spacer(Modifier.height(8.dp))
-                                Button(
-                                    onClick = {
-                                        viewModel.onDifficultySelected("All")
-                                        viewModel.onEquipmentSelected("All")
-                                        viewModel.onMovementPatternSelected("All")
-                                        if (showFavoritesOnly) viewModel.toggleFavoritesOnly()
-                                        if (showAnimationOnly) viewModel.toggleAnimationOnly()
-                                        if (showCameraCoachOnly) viewModel.toggleCameraCoachOnly()
-                                        textFieldValue = ""
-                                        viewModel.onSearchQueryChange("")
-                                    },
-                                    shape = GymCoachShapes.pill
-                                ) {
-                                    Text("Reset All Filters")
-                                }
-                            }
-                        }
-                    }
+                            .padding(32.dp)
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

@@ -78,6 +78,7 @@ import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
 import com.gymcoach.app.presentation.components.ShimmerBox
 import com.gymcoach.app.presentation.components.EmptyStateView
+import com.gymcoach.app.presentation.components.ErrorStateView
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -298,51 +299,21 @@ fun ProgramDetailScreen(
                 }
             }
             state.error != null && state.program == null -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.xxl), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)) {
-                        Text(
-                            text = state.error ?: "Failed to load program",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Button(
-                            onClick = { viewModel.loadActiveProgram() },
-                            shape = GymCoachShapes.md,
-                            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
-                        ) {
-                            Text("Retry", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
+                ErrorStateView(
+                    message = state.error ?: "Failed to load program",
+                    onRetry = { viewModel.loadActiveProgram() },
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
             }
             state.program == null -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.xxl), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)) {
-                        Text(
-                            "No active training program.",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = GymCoachColors.TextPrimary
-                        )
-                        Button(
-                            onClick = { showBuilderSheet = true },
-                            shape = GymCoachShapes.md,
-                            colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Create Custom Routine", fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(
-                            onClick = { showGenerateSheet = true },
-                            shape = GymCoachShapes.md,
-                            border = GymCoachBorders.subtle,
-                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = GymCoachColors.TextPrimary)
-                        ) {
-                            Text("Adaptive Program Generator", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
+                EmptyStateView(
+                    icon = Icons.Default.FitnessCenter,
+                    headline = "No Active Program",
+                    body = "Build a tailored training routine or generate a science-based split to guide your workouts.",
+                    ctaText = "Create Custom Routine",
+                    onCtaClick = { showBuilderSheet = true },
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
             }
             else -> {
                 val program = state.program!!

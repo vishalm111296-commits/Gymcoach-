@@ -241,7 +241,8 @@ fun ExerciseListScreen(
     var showCreateCustomExerciseSheet by rememberSaveable { mutableStateOf(false) }
 
     val hasActiveFilter = filterDifficulty != "All" || filterEquipment != "All" ||
-            filterMovementPattern != "All" || showFavoritesOnly || showAnimationOnly || showCameraCoachOnly
+            filterMovementPattern != "All" || showFavoritesOnly || showAnimationOnly || showCameraCoachOnly ||
+            tabIndex != 0
 
     val favTint by animateColorAsState(
         targetValue = if (showFavoritesOnly) Color(0xFFF43F5E) else GymCoachColors.TextSecondary,
@@ -477,6 +478,8 @@ fun ExerciseListScreen(
                         ctaText = if (hasActiveFilter) "Reset All Filters" else null,
                         onCtaClick = if (hasActiveFilter) {
                             {
+                                tabIndex = 0
+                                viewModel.onCategorySelected(viewModel.categories.firstOrNull() ?: "All")
                                 viewModel.onDifficultySelected("All")
                                 viewModel.onEquipmentSelected("All")
                                 viewModel.onMovementPatternSelected("All")
@@ -625,6 +628,8 @@ fun ExerciseListScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = {
+                        tabIndex = 0
+                        viewModel.onCategorySelected(viewModel.categories.firstOrNull() ?: "All")
                         viewModel.onDifficultySelected("All")
                         viewModel.onEquipmentSelected("All")
                         viewModel.onMovementPatternSelected("All")

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.AlertDialog
@@ -60,13 +61,19 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymcoach.app.domain.model.WorkoutWithDetails
+import com.gymcoach.app.presentation.components.EmptyStateView
+import com.gymcoach.app.presentation.components.ErrorStateView
+import com.gymcoach.app.presentation.components.ShimmerBox
+import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
+import java.text.NumberFormat
 import com.gymcoach.app.domain.model.WorkoutWithStats
 import com.gymcoach.app.domain.repository.AnalyticsRepository
 import com.gymcoach.app.domain.repository.PersonalRecord
@@ -298,43 +305,43 @@ fun WorkoutHistoryDetailScreen(
         when {
             state.isLoading -> {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    CircularProgressIndicator()
+                    ShimmerBox(modifier = Modifier.fillMaxWidth().height(160.dp), cornerRadius = 12.dp)
+                    ShimmerBox(modifier = Modifier.fillMaxWidth().height(120.dp), cornerRadius = 12.dp)
+                    ShimmerBox(modifier = Modifier.fillMaxWidth().height(200.dp), cornerRadius = 12.dp)
                 }
             }
             state.error != null && state.workout == null -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(GymCoachSpacing.lg),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.error!!,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = GymCoachColors.Danger
-                    )
-                    Spacer(Modifier.height(GymCoachSpacing.md))
-                    Button(
-                        onClick = { viewModel.loadWorkout(workoutId) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
-                        shape = GymCoachShapes.md
-                    ) {
-                        Text("Retry", fontWeight = FontWeight.Bold)
-                    }
-                }
+                ErrorStateView(
+                    message = state.error ?: "An unexpected error occurred while loading this workout session.",
+                    onRetry = { viewModel.loadWorkout(workoutId) },
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
+            }
+            state.workout == null -> {
+                EmptyStateView(
+                    icon = Icons.Default.History,
+                    headline = "Workout Not Found",
+                    body = "This workout record could not be found or may have been deleted.",
+                    ctaText = "Go Back",
+                    onCtaClick = onBackClick,
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
+                )
             }
             else -> {
-                state.workout?.let { workout ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .padding(horizontal = 16.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
+                val workout = state.workout!!
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                         Spacer(Modifier.height(8.dp))
 
                         // Workout header
@@ -385,7 +392,6 @@ fun WorkoutHistoryDetailScreen(
 
                         Spacer(Modifier.height(16.dp))
                     }
-                }
             }
         }
     }
@@ -547,12 +553,15 @@ fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
         Triple(sets, reps, volume)
     }
     val exerciseCount = workout.exercises.size
+    val nf = remember { NumberFormat.getNumberInstance() }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCardElevated
-        )
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(
             modifier = Modifier.padding(GymCoachSpacing.lg),
@@ -579,7 +588,7 @@ fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 SummaryStatItem(label = "Reps", value = "$totalReps")
-                SummaryStatItem(label = "Volume", value = "%.1f kg".format(totalVolume))
+                SummaryStatItem(label = "Volume", value = "${nf.format(totalVolume.toLong())} kg")
                 val avgRepsPerSet = if (totalSets > 0) "%.1f".format(totalReps.toDouble() / totalSets) else "0"
                 SummaryStatItem(label = "Avg. Reps", value = avgRepsPerSet)
             }
@@ -611,13 +620,16 @@ private fun MuscleGroupRow(
     totalVolume: Double,
     totalReps: Int
 ) {
+    val nf = remember { NumberFormat.getNumberInstance() }
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCard
-        )
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Row(
             modifier = Modifier
@@ -635,15 +647,17 @@ private fun MuscleGroupRow(
             Text(
                 text = "$sets sets",
                 style = MaterialTheme.typography.bodySmall,
+                color = GymCoachColors.TextSecondary,
                 modifier = Modifier.weight(0.2f)
             )
             Text(
                 text = "$totalReps reps",
                 style = MaterialTheme.typography.bodySmall,
+                color = GymCoachColors.TextSecondary,
                 modifier = Modifier.weight(0.2f)
             )
             Text(
-                text = "%.0f kg".format(totalVolume),
+                text = "${nf.format(totalVolume.toLong())} kg",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = GymCoachColors.Primary,
@@ -657,19 +671,23 @@ private fun MuscleGroupRow(
 fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformAgain: () -> Unit = {}) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = GymCoachColors.PureDark
-        )
+            containerColor = GymCoachColors.SurfaceCard
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = workout.notes.ifBlank { "Workout" },
+                    text = workout.notes.ifBlank { "Completed Session" },
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = GymCoachColors.TextPrimary
                 )
                 Text(
                     text = formatDate(workout.date),
@@ -683,7 +701,7 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
                 horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.lg)
             ) {
                 StatItem(label = "Duration", value = formatDuration(workout.duration))
-                StatItem(label = "Completed", value = if (workout.completed) "Yes" else "No")
+                StatItem(label = "Status", value = if (workout.completed) "Completed" else "Incomplete")
                 if (workout.notes.isNotBlank()) {
                     StatItem(label = "Notes", value = workout.notes)
                 }
@@ -693,9 +711,11 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
 
             Button(
                 onClick = onPerformAgain,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = GymCoachShapes.pill,
+                colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary)
             ) {
-                Text("Perform Again")
+                Text("Perform Again", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -705,24 +725,29 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
 fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCard
-        )
+        ),
+        border = GymCoachBorders.subtleBorder()
     ) {
         Column(modifier = Modifier.padding(GymCoachSpacing.lg), verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = exerciseWithSets.exercise.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = GymCoachColors.TextPrimary
                 )
                 Text(
                     text = exerciseWithSets.exercise.muscleGroup,
                     style = MaterialTheme.typography.bodySmall,
-                    color = GymCoachColors.TextSecondary
+                    color = GymCoachColors.Primary,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -731,11 +756,11 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Set", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Weight", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("Reps", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.2f))
-                Text("RPE", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
-                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.15f))
+                Text("Set", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary, modifier = Modifier.weight(0.15f))
+                Text("Weight", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary, modifier = Modifier.weight(0.2f))
+                Text("Reps", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary, modifier = Modifier.weight(0.2f))
+                Text("RPE", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary, modifier = Modifier.weight(0.15f))
+                Text("Rest(s)", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary, modifier = Modifier.weight(0.15f))
                 Spacer(modifier = Modifier.width(24.dp))
             }
 
@@ -819,7 +844,12 @@ fun SetRow(
 fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = GymCoachColors.TextPrimary
+        )
     }
 }
 
@@ -827,8 +857,10 @@ fun StatItem(label: String, value: String) {
 fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.3.sp
+        ),
         color = GymCoachColors.Primary
     )
 }

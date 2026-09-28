@@ -116,4 +116,9 @@ object AppModule {
     @Singleton
     fun provideNutritionLogDao(database: GymCoachDatabase): com.gymcoach.app.data.local.dao.NutritionLogDao =
         database.nutritionLogDao()
+
+    @Provides
+    @Singleton
+    fun provideAppPreferences(@ApplicationContext ctx: android.content.Context): com.gymcoach.app.core.preferences.AppPreferences =
+        com.gymcoach.app.core.preferences.DefaultAppPreferences(ctx)
 }

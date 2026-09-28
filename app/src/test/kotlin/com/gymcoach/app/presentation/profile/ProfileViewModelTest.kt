@@ -260,4 +260,53 @@ class ProfileViewModelTest {
         viewModel.dismissError()
         org.junit.Assert.assertNull(viewModel.error.value)
     }
+
+    @Test
+    fun `preferences state default values are exposed when appPreferences is null`() {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+        val viewModel = ProfileViewModel(mockRepo, mockDao)
+
+        val state = viewModel.preferencesState.value
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.KG, state.weightUnit)
+        assertTrue(state.soundEnabled)
+        assertEquals(com.gymcoach.app.core.audio.AudioCoachPreset.CLASSIC_BEEPS, state.audioPreset)
+        assertTrue(state.autoStartRestTimer)
+        assertTrue(state.vibrationEnabled)
+        assertTrue(state.keepScreenOn)
+    }
+
+    @Test
+    fun `preferences delegators update appPreferences correctly`() {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+        val mockWorkoutRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.WorkoutRepository>(relaxed = true)
+        val mockPrefs = io.mockk.mockk<com.gymcoach.app.core.preferences.AppPreferences>(relaxed = true)
+
+        val viewModel = ProfileViewModel(
+            userProfileRepository = mockRepo,
+            bodyMeasurementDao = mockDao,
+            workoutRepository = mockWorkoutRepo,
+            workoutDataImporter = com.gymcoach.app.core.export.WorkoutDataImporter(),
+            appPreferences = mockPrefs
+        )
+
+        viewModel.setWeightUnit(com.gymcoach.app.core.preferences.WeightUnit.LBS)
+        io.mockk.verify { mockPrefs.setWeightUnit(com.gymcoach.app.core.preferences.WeightUnit.LBS) }
+
+        viewModel.setSoundEnabled(false)
+        io.mockk.verify { mockPrefs.setSoundEnabled(false) }
+
+        viewModel.setAudioPreset(com.gymcoach.app.core.audio.AudioCoachPreset.POWER_PULSE)
+        io.mockk.verify { mockPrefs.setAudioPreset(com.gymcoach.app.core.audio.AudioCoachPreset.POWER_PULSE) }
+
+        viewModel.setAutoStartRestTimer(false)
+        io.mockk.verify { mockPrefs.setAutoStartRestTimer(false) }
+
+        viewModel.setVibrationEnabled(false)
+        io.mockk.verify { mockPrefs.setVibrationEnabled(false) }
+
+        viewModel.setKeepScreenOn(false)
+        io.mockk.verify { mockPrefs.setKeepScreenOn(false) }
+    }
 }

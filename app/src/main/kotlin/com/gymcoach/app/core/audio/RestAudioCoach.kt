@@ -2,6 +2,7 @@ package com.gymcoach.app.core.audio
 
 import android.media.AudioManager
 import android.media.ToneGenerator
+import com.gymcoach.app.core.preferences.AppPreferences
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,10 +14,11 @@ enum class AudioCoachPreset(val displayName: String) {
 
 @Singleton
 class RestAudioCoach @Inject constructor(
-    private val evaluator: RestAudioCueEvaluator
+    private val evaluator: RestAudioCueEvaluator,
+    private val appPreferences: AppPreferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
 ) {
-    private var soundEnabled: Boolean = true
-    private var preset: AudioCoachPreset = AudioCoachPreset.CLASSIC_BEEPS
+    private var soundEnabled: Boolean = appPreferences.preferencesState.value.soundEnabled
+    private var preset: AudioCoachPreset = appPreferences.preferencesState.value.audioPreset
     private var toneGenerator: ToneGenerator? = null
 
     init {
@@ -56,12 +58,13 @@ class RestAudioCoach @Inject constructor(
     }
 
     fun playCue(cue: AudioCueType) {
-        if (!soundEnabled) return
+        if (!isSoundEnabled()) return
         try {
             if (toneGenerator == null) {
                 initToneGenerator()
             }
-            val (toneType, durationMs) = when (preset) {
+            val activePreset = getPreset()
+            val (toneType, durationMs) = when (activePreset) {
                 AudioCoachPreset.CLASSIC_BEEPS -> when (cue) {
                     AudioCueType.WARNING_15S -> ToneGenerator.TONE_PROP_PROMPT to 200
                     AudioCueType.HALFWAY -> ToneGenerator.TONE_PROP_BEEP to 100
@@ -110,13 +113,15 @@ class RestAudioCoach @Inject constructor(
 
     fun setPreset(newPreset: AudioCoachPreset) {
         preset = newPreset
+        appPreferences.setAudioPreset(newPreset)
     }
 
-    fun getPreset(): AudioCoachPreset = preset
+    fun getPreset(): AudioCoachPreset = appPreferences.preferencesState.value.audioPreset
 
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
+        appPreferences.setSoundEnabled(enabled)
     }
 
-    fun isSoundEnabled(): Boolean = soundEnabled
+    fun isSoundEnabled(): Boolean = appPreferences.preferencesState.value.soundEnabled
 }

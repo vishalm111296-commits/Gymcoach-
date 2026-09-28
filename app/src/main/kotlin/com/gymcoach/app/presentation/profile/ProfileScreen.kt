@@ -47,16 +47,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import com.gymcoach.app.core.audio.AudioCoachPreset
+import com.gymcoach.app.core.preferences.AppPreferencesState
+import com.gymcoach.app.core.preferences.WeightUnit
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -101,19 +109,36 @@ data class ProfileImportUiState(
 class ProfileViewModel @Inject constructor(
     private val userProfileRepository: UserProfileRepository,
     private val bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao,
-    private val workoutRepository: WorkoutRepository,
-    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter()
+    private val workoutRepository: WorkoutRepository = createFallbackWorkoutRepository(),
+    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter(),
+    private val appPreferences: com.gymcoach.app.core.preferences.AppPreferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
 ) : ViewModel() {
 
-    constructor(
-        userProfileRepository: UserProfileRepository,
-        bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao
-    ) : this(
-        userProfileRepository,
-        bodyMeasurementDao,
-        createFallbackWorkoutRepository(),
-        WorkoutDataImporter()
-    )
+    val preferencesState: StateFlow<AppPreferencesState> = appPreferences.preferencesState
+
+    fun setWeightUnit(unit: WeightUnit) {
+        appPreferences.setWeightUnit(unit)
+    }
+
+    fun setSoundEnabled(enabled: Boolean) {
+        appPreferences.setSoundEnabled(enabled)
+    }
+
+    fun setAudioPreset(preset: AudioCoachPreset) {
+        appPreferences.setAudioPreset(preset)
+    }
+
+    fun setAutoStartRestTimer(enabled: Boolean) {
+        appPreferences.setAutoStartRestTimer(enabled)
+    }
+
+    fun setVibrationEnabled(enabled: Boolean) {
+        appPreferences.setVibrationEnabled(enabled)
+    }
+
+    fun setKeepScreenOn(enabled: Boolean) {
+        appPreferences.setKeepScreenOn(enabled)
+    }
 
     private val _importUiState = MutableStateFlow(ProfileImportUiState())
     val importUiState: StateFlow<ProfileImportUiState> = _importUiState.asStateFlow()
@@ -274,6 +299,7 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val importUiState by viewModel.importUiState.collectAsState()
     val profileError by viewModel.error.collectAsState()
+    val preferences by viewModel.preferencesState.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     var showEditSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -554,6 +580,239 @@ fun ProfileScreen(
                     if (p.exercisesToAvoid.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         ProfileInfoRow(icon = Icons.Default.FitnessCenter, label = "Exercises to Avoid", value = p.exercisesToAvoid)
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // App Preferences & Settings
+                    SectionHeader("App Preferences & Settings")
+                    Spacer(Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = GymCoachShapes.Card,
+                        colors = CardDefaults.cardColors(
+                            containerColor = GymCoachColors.SurfaceCardElevated
+                        ),
+                        border = GymCoachBorders.subtle
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Unit System Selection
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Units of Measurement",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Weight calculation & display format",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    WeightUnit.entries.forEach { unit ->
+                                        val isSelected = preferences.weightUnit == unit
+                                        Surface(
+                                            modifier = Modifier
+                                                .clip(GymCoachShapes.pill)
+                                                .clickable { viewModel.setWeightUnit(unit) },
+                                            shape = GymCoachShapes.pill,
+                                            color = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.2f)
+                                                    else GymCoachColors.SurfaceDeep,
+                                            border = BorderStroke(
+                                                1.dp,
+                                                if (isSelected) GymCoachColors.Primary else GymCoachColors.BorderSubtle
+                                            )
+                                        ) {
+                                            Text(
+                                                text = unit.code.uppercase(),
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                                ),
+                                                color = if (isSelected) GymCoachColors.Primary else GymCoachColors.TextSecondary,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = GymCoachColors.BorderSubtle)
+
+                            // Rest Timer Audio Switch
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Rest Timer Audio",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Play chimes on halfway, 15s warning, and countdown",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
+                                }
+                                Switch(
+                                    checked = preferences.soundEnabled,
+                                    onCheckedChange = { viewModel.setSoundEnabled(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GymCoachColors.PureDark,
+                                        checkedTrackColor = GymCoachColors.Primary,
+                                        uncheckedThumbColor = GymCoachColors.TextSecondary,
+                                        uncheckedTrackColor = GymCoachColors.SurfaceDeep
+                                    )
+                                )
+                            }
+
+                            if (preferences.soundEnabled) {
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    text = "AUDIO COACH PROFILE",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 9.sp,
+                                        letterSpacing = 0.8.sp
+                                    ),
+                                    color = GymCoachColors.Primary
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    AudioCoachPreset.entries.forEach { preset ->
+                                        val isSelected = preferences.audioPreset == preset
+                                        Surface(
+                                            modifier = Modifier
+                                                .clip(GymCoachShapes.pill)
+                                                .clickable { viewModel.setAudioPreset(preset) },
+                                            shape = GymCoachShapes.pill,
+                                            color = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.2f)
+                                                    else GymCoachColors.SurfaceDeep,
+                                            border = BorderStroke(
+                                                1.dp,
+                                                if (isSelected) GymCoachColors.Primary else GymCoachColors.BorderSubtle
+                                            )
+                                        ) {
+                                            Text(
+                                                text = preset.displayName,
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                                ),
+                                                color = if (isSelected) GymCoachColors.Primary else GymCoachColors.TextSecondary,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = GymCoachColors.BorderSubtle)
+
+                            // Auto Start Rest Timer
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Auto-Start Rest Timer",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Automatically start rest interval when completing a set",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
+                                }
+                                Switch(
+                                    checked = preferences.autoStartRestTimer,
+                                    onCheckedChange = { viewModel.setAutoStartRestTimer(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GymCoachColors.PureDark,
+                                        checkedTrackColor = GymCoachColors.Primary,
+                                        uncheckedThumbColor = GymCoachColors.TextSecondary,
+                                        uncheckedTrackColor = GymCoachColors.SurfaceDeep
+                                    )
+                                )
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = GymCoachColors.BorderSubtle)
+
+                            // Haptic Vibration
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Haptic Vibration",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Tactile alerts for countdown and interval completions",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
+                                }
+                                Switch(
+                                    checked = preferences.vibrationEnabled,
+                                    onCheckedChange = { viewModel.setVibrationEnabled(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GymCoachColors.PureDark,
+                                        checkedTrackColor = GymCoachColors.Primary,
+                                        uncheckedThumbColor = GymCoachColors.TextSecondary,
+                                        uncheckedTrackColor = GymCoachColors.SurfaceDeep
+                                    )
+                                )
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = GymCoachColors.BorderSubtle)
+
+                            // Keep Screen Awake
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Keep Screen Awake",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GymCoachColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Keep display on during active workout sessions",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
+                                }
+                                Switch(
+                                    checked = preferences.keepScreenOn,
+                                    onCheckedChange = { viewModel.setKeepScreenOn(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = GymCoachColors.PureDark,
+                                        checkedTrackColor = GymCoachColors.Primary,
+                                        uncheckedThumbColor = GymCoachColors.TextSecondary,
+                                        uncheckedTrackColor = GymCoachColors.SurfaceDeep
+                                    )
+                                )
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))

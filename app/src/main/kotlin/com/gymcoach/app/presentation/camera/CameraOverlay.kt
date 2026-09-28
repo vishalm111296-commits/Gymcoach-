@@ -155,17 +155,50 @@ fun FormFeedbackView(feedback: String, modifier: Modifier = Modifier) {
 }
 
 private object FeedbackColors {
-    private val good = setOf("good form", "perfect", "great", "excellent", "keep it up")
-    private val warn = setOf(
-        "straighten back", "slow down", "go deeper", "control descent",
-        "don't lock out", "full range", "lower the weight"
+    private val goodExact = setOf(
+        "good form", "perfect", "great", "excellent", "keep it up",
+        "good rep", "good depth", "good plank position", "good hinge position",
+        "good height, lower with control", "plank hold complete", "full range of motion"
     )
+
+    private val warnExact = setOf(
+        "straighten back", "slow down", "go deeper", "control descent",
+        "don't lock out", "full range", "lower the weight",
+        "extend arm more", "go lower", "start squat", "lower your chest",
+        "keep body straight", "press weight up", "almost there", "start press",
+        "raise arms to shoulder height", "keep raising", "pull to your torso",
+        "extend arms forward", "start bent-over row", "squeeze core, keep straight",
+        "lower hips or raise up", "push hips back", "start deadlift",
+        "lower the bar", "press up", "start bench press"
+    )
+
+    private fun isGood(normalized: String): Boolean {
+        return normalized in goodExact ||
+            normalized.startsWith("good") ||
+            normalized.startsWith("hold for") ||
+            normalized.contains("complete") ||
+            normalized.contains("perfect")
+    }
+
+    private fun isWarn(normalized: String): Boolean {
+        return normalized in warnExact ||
+            normalized.startsWith("start") ||
+            normalized.startsWith("keep") ||
+            normalized.startsWith("raise") ||
+            normalized.startsWith("press") ||
+            normalized.startsWith("lower") ||
+            normalized.startsWith("extend") ||
+            normalized.startsWith("pull") ||
+            normalized.startsWith("push") ||
+            normalized.startsWith("go") ||
+            normalized.startsWith("almost")
+    }
 
     fun forText(feedback: String): Color {
         val normalized = feedback.trim().lowercase()
         return when {
-            normalized in good -> GymCoachColors.Success
-            normalized in warn -> GymCoachColors.Warning
+            isGood(normalized) -> GymCoachColors.Success
+            isWarn(normalized) -> GymCoachColors.Warning
             else -> GymCoachColors.Danger
         }
     }
@@ -173,8 +206,8 @@ private object FeedbackColors {
     fun iconForText(feedback: String): ImageVector {
         val normalized = feedback.trim().lowercase()
         return when {
-            normalized in good -> Icons.Filled.CheckCircle
-            normalized in warn -> Icons.Filled.Warning
+            isGood(normalized) -> Icons.Filled.CheckCircle
+            isWarn(normalized) -> Icons.Filled.Warning
             else -> Icons.Filled.Error
         }
     }

@@ -58,8 +58,11 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -1014,6 +1017,7 @@ internal fun ExerciseSetCard(
     onOpenTechniqueGuide: () -> Unit = {}
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
+    var showMoreMenu by rememberSaveable { mutableStateOf(false) }
     val isExerciseActive = sets.isNotEmpty() && sets.any { !it.completed }
     val isExerciseCompleted = sets.isNotEmpty() && sets.all { it.completed }
 
@@ -1172,39 +1176,12 @@ internal fun ExerciseSetCard(
                             )
                         }
                     }
-                    IconButton(onClick = {
-                        val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
-                        onOpenPlateCalculator(maxWeight)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.FitnessCenter,
-                            contentDescription = "Plate Calculator",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = {
-                        val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
-                        onOpenWarmupCalculator(maxWeight)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Whatshot,
-                            contentDescription = "Warm-Up Protocol",
-                            tint = GymCoachColors.Primary
-                        )
-                    }
-                    IconButton(onClick = onOpenSupersetDialog) {
-                        Icon(
-                            imageVector = if (supersetGroup != null) Icons.Default.LinkOff else Icons.Default.Link,
-                            contentDescription = if (supersetGroup != null) "Manage Superset" else "Pair as Superset",
-                            tint = if (supersetGroup != null) GymCoachColors.Primary else GymCoachColors.CyanAccent
-                        )
-                    }
                     Surface(
                         onClick = onOpenTechniqueGuide,
                         shape = RoundedCornerShape(12.dp),
                         color = GymCoachColors.CyanAccent.copy(alpha = 0.15f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.CyanAccent.copy(alpha = 0.6f)),
-                        modifier = Modifier.padding(end = 4.dp)
+                        modifier = Modifier.padding(end = 2.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1224,19 +1201,91 @@ internal fun ExerciseSetCard(
                             )
                         }
                     }
-                    IconButton(onClick = onSubstituteExercise) {
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Substitute Exercise",
-                            tint = GymCoachColors.CyanAccent
-                        )
-                    }
-                    IconButton(onClick = onRemoveExercise) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Remove Exercise",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Exercise Options",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Plate Calculator") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.FitnessCenter,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
+                                    onOpenPlateCalculator(maxWeight)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Warm-Up Protocol") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Whatshot,
+                                        contentDescription = null,
+                                        tint = GymCoachColors.Primary
+                                    )
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
+                                    onOpenWarmupCalculator(maxWeight)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (supersetGroup != null) "Manage Superset" else "Pair as Superset") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (supersetGroup != null) Icons.Default.LinkOff else Icons.Default.Link,
+                                        contentDescription = null,
+                                        tint = if (supersetGroup != null) GymCoachColors.Primary else GymCoachColors.CyanAccent
+                                    )
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onOpenSupersetDialog()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Substitute Exercise") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.SwapHoriz,
+                                        contentDescription = null,
+                                        tint = GymCoachColors.CyanAccent
+                                    )
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onSubstituteExercise()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Remove Exercise", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onRemoveExercise()
+                                }
+                            )
+                        }
                     }
                 }
             }

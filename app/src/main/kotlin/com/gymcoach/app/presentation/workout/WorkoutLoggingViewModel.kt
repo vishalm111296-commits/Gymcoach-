@@ -901,7 +901,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                             personalRecordDao.insert(
                                 com.gymcoach.app.data.local.entity.PersonalRecordEntity(
                                     exerciseId = pr.exerciseId,
-                                    weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT) pr.value else 0.0,
+                                    weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) pr.value else 0.0,
                                     reps = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value.toInt() else 0,
                                     oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) pr.value else 0.0,
                                     achievedAt = pr.date.toEpochMilli(),

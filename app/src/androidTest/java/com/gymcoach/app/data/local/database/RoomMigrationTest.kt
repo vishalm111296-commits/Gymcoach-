@@ -652,21 +652,43 @@ class RoomMigrationTest {
     }
 
     @Test
-    fun migrateFullChain1To14() {
+    fun migrate14To15_createsNutritionLogsTable() {
+        var db = migrationTestHelper.createDatabase(TEST_DB, 14)
+        db.close()
+
+        db = migrationTestHelper.runMigrationsAndValidate(
+            TEST_DB, 15, true,
+            GymCoachDatabase.MIGRATION_14_15
+        )
+
+        val cursor = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='nutrition_logs'")
+        assertTrue("nutrition_logs table should exist after 14→15 migration", cursor.moveToFirst())
+        cursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrateFullChain1To15() {
         migrationTestHelper.createDatabase(TEST_DB, 1).close()
 
         val db = migrationTestHelper.runMigrationsAndValidate(
-            TEST_DB, 14, true,
+            TEST_DB, 15, true,
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
             MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
             MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
             MIGRATION_10_11, GymCoachDatabase.MIGRATION_11_12,
-            GymCoachDatabase.MIGRATION_12_13, GymCoachDatabase.MIGRATION_13_14
+            GymCoachDatabase.MIGRATION_12_13, GymCoachDatabase.MIGRATION_13_14,
+            GymCoachDatabase.MIGRATION_14_15
         )
 
-        val cursor = db.query("SELECT COUNT(*) FROM workout_templates")
-        assertTrue(cursor.moveToFirst())
-        cursor.close()
+        val templateCursor = db.query("SELECT COUNT(*) FROM workout_templates")
+        assertTrue(templateCursor.moveToFirst())
+        templateCursor.close()
+
+        val nutritionCursor = db.query("SELECT COUNT(*) FROM nutrition_logs")
+        assertTrue(nutritionCursor.moveToFirst())
+        nutritionCursor.close()
 
         db.close()
     }

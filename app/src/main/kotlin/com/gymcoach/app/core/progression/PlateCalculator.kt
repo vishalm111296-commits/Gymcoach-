@@ -30,6 +30,16 @@ object PlateCalculator {
         1.25 to 0xFF9E9E9E  // Chrome/Silver
     )
 
+    // Standard Olympic plate colors (lbs standards: 45, 35, 25, 10, 5, 2.5)
+    val STANDARD_IMPERIAL_PLATES = listOf(
+        45.0 to 0xFF1976D2, // Blue (45 lbs)
+        35.0 to 0xFFFBC02D, // Yellow (35 lbs)
+        25.0 to 0xFF388E3C, // Green (25 lbs)
+        10.0 to 0xFF212121, // Black (10 lbs)
+        5.0 to 0xFFFFFFFF,  // White (5 lbs)
+        2.5 to 0xFF9E9E9E   // Chrome/Silver (2.5 lbs)
+    )
+
     /**
      * Calculates the plates needed on each side of the barbell.
      */

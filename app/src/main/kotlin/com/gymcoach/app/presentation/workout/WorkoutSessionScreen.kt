@@ -506,6 +506,7 @@ fun WorkoutSessionScreen(
     if (plateCalcWeight != null) {
         PlateCalculatorDialog(
             targetWeight = plateCalcWeight!!,
+            weightUnit = weightUnit,
             onDismiss = { plateCalcWeight = null }
         )
     }
@@ -515,6 +516,7 @@ fun WorkoutSessionScreen(
         WarmupCalculatorDialog(
             exerciseName = exName,
             targetWeight = targetWeight,
+            weightUnit = weightUnit,
             onInsertWarmupSets = { warmupSets ->
                 viewModel.addWarmupSets(exIdx, warmupSets)
             },

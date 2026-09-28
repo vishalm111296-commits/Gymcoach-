@@ -60,15 +60,21 @@ import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
 import com.gymcoach.app.ui.theme.GymCoachSpacing
 
+import com.gymcoach.app.core.preferences.WeightUnit
+
 @Composable
 fun WarmupCalculatorDialog(
     exerciseName: String,
     targetWeight: Double,
     barWeight: Double = 20.0,
+    weightUnit: WeightUnit = WeightUnit.KG,
     onInsertWarmupSets: ((List<WarmupCalculator.WarmupSetProtocol>) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
-    var selectedBarWeight by remember { mutableDoubleStateOf(barWeight) }
+    val isImperial = weightUnit == WeightUnit.LBS
+    val initialBarWeight = if (isImperial && barWeight == 20.0) 45.0 else barWeight
+    var selectedBarWeight by remember(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
+    val presets = if (isImperial) BARBELL_PRESETS_IMPERIAL else BARBELL_PRESETS_METRIC
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Warmup Protocol, 1 = 1RM & Zones
     var inserted by remember { androidx.compose.runtime.mutableStateOf(false) }
 
@@ -165,14 +171,14 @@ fun WarmupCalculatorDialog(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            BARBELL_PRESETS.forEach { preset ->
+                            presets.forEach { preset ->
                                 val isSelected = selectedBarWeight == preset.weight
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = { selectedBarWeight = preset.weight },
                                     label = {
                                         Text(
-                                            "${preset.name} (${preset.weight.toInt()}kg)",
+                                            "${preset.name} (${preset.weight.toInt()}${weightUnit.code})",
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     },
@@ -202,7 +208,7 @@ fun WarmupCalculatorDialog(
                                 Column {
                                     Text("Target Work Load", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
                                     Text(
-                                        "${warmupPlan.workingWeight} kg",
+                                        "${warmupPlan.workingWeight} ${weightUnit.code}",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = GymCoachColors.Primary
@@ -252,7 +258,7 @@ fun WarmupCalculatorDialog(
                                     }
                                     Column {
                                         Text(
-                                            text = "${ws.weight} kg × ${ws.reps} reps",
+                                            text = "${ws.weight} ${weightUnit.code} × ${ws.reps} reps",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             color = GymCoachColors.TextPrimary
@@ -297,13 +303,13 @@ fun WarmupCalculatorDialog(
                             ) {
                                 Text("Average Estimated 1RM", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
                                 Text(
-                                    "${oneRepMaxProfile.average1RM} kg",
+                                    "${oneRepMaxProfile.average1RM} ${weightUnit.code}",
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = GymCoachColors.GoldAccent
                                 )
                                 Text(
-                                    "Epley: ${oneRepMaxProfile.epley1RM}kg  •  Brzycki: ${oneRepMaxProfile.brzycki1RM}kg",
+                                    "Epley: ${oneRepMaxProfile.epley1RM}${weightUnit.code}  •  Brzycki: ${oneRepMaxProfile.brzycki1RM}${weightUnit.code}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = GymCoachColors.TextSecondary
                                 )
@@ -329,7 +335,7 @@ fun WarmupCalculatorDialog(
                             ) {
                                 Column {
                                     Text(
-                                        text = "${zone.percentage}% (${zone.weight} kg)",
+                                        text = "${zone.percentage}% (${zone.weight} ${weightUnit.code})",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = GymCoachColors.TextPrimary

@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.core.progression.PlateCalculator
 import com.gymcoach.app.ui.theme.GymCoachColors
 
@@ -54,21 +55,35 @@ data class BarbellPreset(
     val description: String
 )
 
-val BARBELL_PRESETS = listOf(
+val BARBELL_PRESETS_METRIC = listOf(
     BarbellPreset("Olympic", 20.0, "Standard 20kg"),
     BarbellPreset("Technique", 15.0, "Women / Junior 15kg"),
     BarbellPreset("EZ-Curl", 10.0, "Bicep / Tricep 10kg"),
     BarbellPreset("Light Bar", 5.0, "Light / Fixed 5kg")
 )
 
+val BARBELL_PRESETS_IMPERIAL = listOf(
+    BarbellPreset("Olympic", 45.0, "Standard 45 lbs"),
+    BarbellPreset("Women's", 35.0, "Women's / Junior 35 lbs"),
+    BarbellPreset("EZ-Curl", 25.0, "Bicep / Tricep 25 lbs"),
+    BarbellPreset("Technique", 15.0, "Light / Technique 15 lbs")
+)
+
+val BARBELL_PRESETS = BARBELL_PRESETS_METRIC
+
 @Composable
 fun PlateCalculatorDialog(
     targetWeight: Double,
     barWeight: Double = 20.0,
+    weightUnit: WeightUnit = WeightUnit.KG,
     onDismiss: () -> Unit
 ) {
-    var selectedBarWeight by remember { mutableDoubleStateOf(barWeight) }
-    val breakdown = PlateCalculator.calculatePlates(targetWeight, selectedBarWeight)
+    val isImperial = weightUnit == WeightUnit.LBS
+    val initialBarWeight = if (isImperial && barWeight == 20.0) 45.0 else barWeight
+    var selectedBarWeight by remember(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
+    val presets = if (isImperial) BARBELL_PRESETS_IMPERIAL else BARBELL_PRESETS_METRIC
+    val availablePlates = if (isImperial) PlateCalculator.STANDARD_IMPERIAL_PLATES else PlateCalculator.STANDARD_METRIC_PLATES
+    val breakdown = PlateCalculator.calculatePlates(targetWeight, selectedBarWeight, availablePlates)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -110,14 +125,14 @@ fun PlateCalculatorDialog(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        BARBELL_PRESETS.forEach { preset ->
+                        presets.forEach { preset ->
                             val isSelected = selectedBarWeight == preset.weight
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { selectedBarWeight = preset.weight },
                                 label = {
                                     Text(
-                                        text = "${preset.name} (${preset.weight.toInt()}kg)",
+                                        text = "${preset.name} (${preset.weight.toInt()}${weightUnit.code})",
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 },
@@ -147,7 +162,7 @@ fun PlateCalculatorDialog(
                         Column {
                             Text("Total Load", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${breakdown.totalWeight} kg",
+                                "${breakdown.totalWeight} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -156,7 +171,7 @@ fun PlateCalculatorDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Bar Weight", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${breakdown.barWeight} kg",
+                                "${breakdown.barWeight} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -164,7 +179,7 @@ fun PlateCalculatorDialog(
                         Column(horizontalAlignment = Alignment.End) {
                             Text("Per Side", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${breakdown.weightPerSide} kg",
+                                "${breakdown.weightPerSide} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -213,16 +228,16 @@ fun PlateCalculatorDialog(
                                 breakdown.platesPerSide.forEach { item ->
                                     repeat(item.count) {
                                         val plateHeight = when {
-                                            item.plateWeight >= 25.0 -> 56.dp
-                                            item.plateWeight >= 20.0 -> 52.dp
-                                            item.plateWeight >= 15.0 -> 46.dp
+                                            item.plateWeight >= (if (isImperial) 45.0 else 25.0) -> 56.dp
+                                            item.plateWeight >= (if (isImperial) 35.0 else 20.0) -> 52.dp
+                                            item.plateWeight >= (if (isImperial) 25.0 else 15.0) -> 46.dp
                                             item.plateWeight >= 10.0 -> 40.dp
                                             item.plateWeight >= 5.0 -> 34.dp
                                             item.plateWeight >= 2.5 -> 28.dp
                                             else -> 24.dp
                                         }
                                         val plateWidth = when {
-                                            item.plateWeight >= 20.0 -> 12.dp
+                                            item.plateWeight >= (if (isImperial) 35.0 else 20.0) -> 12.dp
                                             item.plateWeight >= 10.0 -> 10.dp
                                             else -> 8.dp
                                         }
@@ -255,7 +270,7 @@ fun PlateCalculatorDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (targetWeight <= selectedBarWeight) "Use empty barbell (${selectedBarWeight}kg)" else "No additional plates needed",
+                            text = if (targetWeight <= selectedBarWeight) "Use empty barbell (${selectedBarWeight}${weightUnit.code})" else "No additional plates needed",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -285,7 +300,7 @@ fun PlateCalculatorDialog(
                                     )
                                     Spacer(Modifier.width(12.dp))
                                     Text(
-                                        text = "${item.plateWeight} kg plate",
+                                        text = "${item.plateWeight} ${weightUnit.code} plate",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -304,7 +319,7 @@ fun PlateCalculatorDialog(
 
                 if (breakdown.remainder > 0.0) {
                     Text(
-                        text = "Remainder unachievable: ${breakdown.remainder} kg",
+                        text = "Remainder unachievable: ${breakdown.remainder} ${weightUnit.code}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )

@@ -387,5 +387,50 @@ class PlateCalculatorTest {
         assertEquals(10.0, result.platesPerSide[1].plateWeight, 0.001)
         assertEquals(1, result.platesPerSide[1].count)
     }
+
+    @Test
+    fun testImperialPlateCalculations() {
+        val imperialPlates = PlateCalculator.STANDARD_IMPERIAL_PLATES
+
+        // 225 lbs (two plates) on 45 lb bar: 90 lbs/side -> 2x 45 lb plates
+        val twoPlates = PlateCalculator.calculatePlates(
+            targetWeight = 225.0,
+            barWeight = 45.0,
+            availablePlates = imperialPlates
+        )
+        assertEquals(90.0, twoPlates.weightPerSide, 0.001)
+        assertEquals(0.0, twoPlates.remainder, 0.001)
+        assertEquals(1, twoPlates.platesPerSide.size)
+        assertEquals(45.0, twoPlates.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(2, twoPlates.platesPerSide[0].count)
+
+        // 185 lbs on 45 lb bar: 70 lbs/side -> 1x 45 lb + 1x 25 lb
+        val oneEightyFive = PlateCalculator.calculatePlates(
+            targetWeight = 185.0,
+            barWeight = 45.0,
+            availablePlates = imperialPlates
+        )
+        assertEquals(70.0, oneEightyFive.weightPerSide, 0.001)
+        assertEquals(0.0, oneEightyFive.remainder, 0.001)
+        assertEquals(2, oneEightyFive.platesPerSide.size)
+        assertEquals(45.0, oneEightyFive.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, oneEightyFive.platesPerSide[0].count)
+        assertEquals(25.0, oneEightyFive.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, oneEightyFive.platesPerSide[1].count)
+
+        // 65 lbs on 35 lb bar: 15 lbs/side -> 1x 10 lb + 1x 5 lb
+        val sixtyFive = PlateCalculator.calculatePlates(
+            targetWeight = 65.0,
+            barWeight = 35.0,
+            availablePlates = imperialPlates
+        )
+        assertEquals(15.0, sixtyFive.weightPerSide, 0.001)
+        assertEquals(0.0, sixtyFive.remainder, 0.001)
+        assertEquals(2, sixtyFive.platesPerSide.size)
+        assertEquals(10.0, sixtyFive.platesPerSide[0].plateWeight, 0.001)
+        assertEquals(1, sixtyFive.platesPerSide[0].count)
+        assertEquals(5.0, sixtyFive.platesPerSide[1].plateWeight, 0.001)
+        assertEquals(1, sixtyFive.platesPerSide[1].count)
+    }
 }
 

@@ -32,6 +32,7 @@ build_output_clean.txt
 
 # Ralph harness & task logs
 .ralph/
+.agents/
 progress.txt
 prd*.md
 prd*.json

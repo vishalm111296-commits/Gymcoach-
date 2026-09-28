@@ -773,7 +773,7 @@ fun ExerciseDetailScreen(
                                 .fillMaxSize()
                                 .clip(GymCoachShapes.lg)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.lg),
-                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard)
+                            colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCardElevated)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -781,25 +781,108 @@ fun ExerciseDetailScreen(
                                     .background(
                                         androidx.compose.ui.graphics.Brush.verticalGradient(
                                             colors = listOf(
-                                                primaryMuscleColor.copy(alpha = 0.2f),
-                                                Color.Transparent
+                                                primaryMuscleColor.copy(alpha = 0.22f),
+                                                GymCoachColors.SurfaceDeep
                                             )
                                         )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        imageVector = Icons.Default.FitnessCenter,
-                                        contentDescription = "Exercise muscle group icon",
-                                        tint = primaryMuscleColor.copy(alpha = 0.8f),
-                                        modifier = Modifier.size(48.dp)
                                     )
-                                    Spacer(Modifier.height(8.dp))
+                                    .padding(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Top tag strip
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(GymCoachShapes.xs)
+                                                .background(primaryMuscleColor.copy(alpha = 0.2f))
+                                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        ) {
+                                            Text(
+                                                text = ex.muscleGroup.uppercase(),
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                                                color = primaryMuscleColor
+                                            )
+                                        }
+                                        if (ex.movementPattern.isNotBlank()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(GymCoachShapes.xs)
+                                                    .background(GymCoachColors.CyanAccent.copy(alpha = 0.15f))
+                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                            ) {
+                                                Text(
+                                                    text = ex.movementPattern.replace("_", " ").uppercase(),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                                                    color = GymCoachColors.CyanAccent
+                                                )
+                                            }
+                                        }
+                                        if (ex.equipment.isNotBlank()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(GymCoachShapes.xs)
+                                                    .background(GymCoachColors.SurfaceCard)
+                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                            ) {
+                                                Text(
+                                                    text = ex.equipment.uppercase(),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                                                    color = GymCoachColors.TextSecondary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Center Biomechanical Icon & Title
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(54.dp)
+                                                .background(primaryMuscleColor.copy(alpha = 0.15f), shape = CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.FitnessCenter,
+                                                contentDescription = "Exercise muscle group icon",
+                                                tint = primaryMuscleColor,
+                                                modifier = Modifier.size(30.dp)
+                                            )
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            text = "BIOMECHANICAL FORM GUIDE",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp,
+                                                letterSpacing = 1.2.sp
+                                            ),
+                                            color = primaryMuscleColor
+                                        )
+                                        if (ex.secondaryMuscles.isNotBlank()) {
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(
+                                                text = "Secondary: ${ex.secondaryMuscles}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GymCoachColors.TextSecondary
+                                            )
+                                        }
+                                    }
+
+                                    // Bottom Quick Cue
                                     Text(
-                                        text = ex.muscleGroup.uppercase(),
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = primaryMuscleColor
+                                        text = if (ex.setupInstructions.isNotBlank()) "Setup: " + ex.setupInstructions.take(75) + "…" else "Standard biomechanical form cues active below",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GymCoachColors.TextSecondary,
+                                        maxLines = 1
                                     )
                                 }
                             }

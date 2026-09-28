@@ -199,7 +199,9 @@ fun WorkoutSessionScreen(
     var supersetDialogExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val animationRepository = remember { com.gymcoach.app.core.animation.AnimationRepository(context.applicationContext) }
-    var techniqueSheetData by rememberSaveable { mutableStateOf<Triple<String, String, String>?>(null) }
+    var selectedTechniqueExercise by remember { mutableStateOf<com.gymcoach.app.domain.model.Exercise?>(null) }
+    val preferencesState by viewModel.preferencesState.collectAsState()
+    val weightUnit = preferencesState.weightUnit
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -225,8 +227,13 @@ fun WorkoutSessionScreen(
         }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(preferencesState.keepScreenOn) {
+        val activity = context as? android.app.Activity
+        if (preferencesState.keepScreenOn) {
+            activity?.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         onDispose {
+            activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             viewModel.dismissError()
         }
     }
@@ -271,7 +278,7 @@ fun WorkoutSessionScreen(
                             if (sessionVolume > 0) {
                                 val volFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(sessionVolume)
                                 Text(
-                                    text = "$volFormatted kg·reps",
+                                    text = "$volFormatted ${weightUnit.code}·reps",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
@@ -368,6 +375,7 @@ fun WorkoutSessionScreen(
                                lastPerformance = lastPerf,
                                instructions = we.exercise.instructions,
                                recommendation = progressionRecommendations[we.exercise.id],
+                               weightUnit = weightUnit,
                                onAddSet = { viewModel.addSet(exIdx) },
                                onRemoveSet = { setIdx -> viewModel.removeSet(exIdx, setIdx) },
                                onRemoveExercise = { viewModel.removeExercise(exIdx) },
@@ -390,7 +398,7 @@ fun WorkoutSessionScreen(
                                supersetGroup = supersetGroups.firstOrNull { exIdx in it.exerciseIndices },
                                onOpenSupersetDialog = { supersetDialogExerciseIndex = exIdx },
                                onOpenTechniqueGuide = {
-                                   techniqueSheetData = Triple(we.exercise.name, we.exercise.muscleGroup, we.exercise.instructions)
+                                   selectedTechniqueExercise = we.exercise
                                }
                             )
                         }
@@ -727,13 +735,11 @@ fun WorkoutSessionScreen(
         )
     }
 
-    if (techniqueSheetData != null) {
+    if (selectedTechniqueExercise != null) {
         ExerciseTechniqueBottomSheet(
-            exerciseName = techniqueSheetData!!.first,
-            muscleGroup = techniqueSheetData!!.second,
-            instructions = techniqueSheetData!!.third,
+            exercise = selectedTechniqueExercise!!,
             animationRepository = animationRepository,
-            onDismiss = { techniqueSheetData = null }
+            onDismiss = { selectedTechniqueExercise = null }
         )
     }
 }
@@ -1014,7 +1020,8 @@ internal fun ExerciseSetCard(
     onCameraClick: ((com.gymcoach.app.core.ml.ExerciseType) -> Unit)? = null,
     supersetGroup: com.gymcoach.app.domain.model.SupersetGroup? = null,
     onOpenSupersetDialog: () -> Unit = {},
-    onOpenTechniqueGuide: () -> Unit = {}
+    onOpenTechniqueGuide: () -> Unit = {},
+    weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
 ) {
     var showInstructions by rememberSaveable { mutableStateOf(false) }
     var showMoreMenu by rememberSaveable { mutableStateOf(false) }
@@ -1358,7 +1365,7 @@ internal fun ExerciseSetCard(
                                     color = GymCoachColors.TextSecondary
                                 )
                                 Text(
-                                    text = "${recommendation.recommendedWeight} kg × ${recommendation.recommendedReps} reps",
+                                    text = "${recommendation.recommendedWeight} ${weightUnit.code} × ${recommendation.recommendedReps} reps",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
@@ -1400,7 +1407,7 @@ internal fun ExerciseSetCard(
                     .format(DateTimeFormatter.ofPattern("MMM d"))
                 val bestWeight = lastPerformance.maxWeight
                 val lastSetSummary = previousSets?.joinToString("  •  ") { 
-                    "${it.weight}kg × ${it.reps}" 
+                    "${it.weight}${weightUnit.code} × ${it.reps}" 
                 } ?: ""
 
                 Card(
@@ -1430,7 +1437,7 @@ internal fun ExerciseSetCard(
                                 color = GymCoachColors.TextMuted
                             )
                             Text(
-                                text = "Session Best: ${bestWeight}kg",
+                                text = "Session Best: ${bestWeight}${weightUnit.code}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp
@@ -1518,7 +1525,7 @@ internal fun ExerciseSetCard(
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    "KG",
+                    weightUnit.code.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1599,6 +1606,7 @@ internal fun ExerciseSetCard(
                         restSeconds = set.restSeconds,
                         completed = set.completed,
                         setType = set.setType,
+                        weightUnit = weightUnit,
                         onRepsChange = { reps -> onRepsChange(index, reps) },
                         onWeightChange = { weight -> onWeightChange(index, weight) },
                         onRpeChange = { rpe -> onRpeChange(index, rpe) },
@@ -1635,6 +1643,7 @@ private fun SetRow(
     restSeconds: Int,
     completed: Boolean,
     setType: com.gymcoach.app.domain.model.SetType,
+    weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG,
     onRepsChange: (Int) -> Unit,
     onWeightChange: (Double) -> Unit,
     onRpeChange: (Double) -> Unit,
@@ -1769,7 +1778,7 @@ private fun SetRow(
             modifier = Modifier
                 .weight(0.22f)
                 .semantics {
-                    contentDescription = "Set ${index + 1} weight in kilograms"
+                    contentDescription = "Set ${index + 1} weight in ${if (weightUnit == com.gymcoach.app.core.preferences.WeightUnit.LBS) "pounds" else "kilograms"}"
                 },
             singleLine = true,
             shape = GymCoachShapes.xs,

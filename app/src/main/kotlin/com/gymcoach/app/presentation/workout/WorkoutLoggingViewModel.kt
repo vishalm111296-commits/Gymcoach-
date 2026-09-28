@@ -38,6 +38,11 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
+import com.gymcoach.app.core.preferences.AppPreferences
+import com.gymcoach.app.core.preferences.InMemoryAppPreferences
+import com.gymcoach.app.core.preferences.AppPreferencesState
+import com.gymcoach.app.core.preferences.WeightUnit
+
 @HiltViewModel
 class WorkoutLoggingViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
@@ -48,7 +53,8 @@ class WorkoutLoggingViewModel @Inject constructor(
     private val readinessRepository: ReadinessRepository,
     private val personalRecordDao: com.gymcoach.app.data.local.dao.PersonalRecordDao,
     private val prDetector: com.gymcoach.app.core.progression.PRDetector,
-    private val substitutionEngine: com.gymcoach.app.core.exercise.SubstitutionEngine? = null
+    private val substitutionEngine: com.gymcoach.app.core.exercise.SubstitutionEngine? = null,
+    private val appPreferences: AppPreferences = InMemoryAppPreferences()
 ) : ViewModel() {
 
     // Test backward compatibility constructor
@@ -84,9 +90,11 @@ class WorkoutLoggingViewModel @Inject constructor(
             override suspend fun deleteById(id: Long): Int = 0
         },
         com.gymcoach.app.core.progression.PRDetector(),
-        null
+        null,
+        InMemoryAppPreferences()
     )
 
+    val preferencesState: StateFlow<AppPreferencesState> = appPreferences.preferencesState
     val latestReadiness: StateFlow<ReadinessEntity?> = readinessRepository.getLatestReadiness()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -555,10 +563,12 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to apply camera reps"
             }
         }
-        val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
-        val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
-        val nextSet = calculateNextSetLabel(workout, exerciseIndex, targetSetIndex)
-        restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+        if (appPreferences.preferencesState.value.autoStartRestTimer) {
+            val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
+            val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
+            val nextSet = calculateNextSetLabel(workout, exerciseIndex, targetSetIndex)
+            restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+        }
     }
 
     fun removeSet(exerciseIndex: Int, setIndex: Int) {
@@ -754,11 +764,13 @@ class WorkoutLoggingViewModel @Inject constructor(
             }
         }
         if (updated.completed) {
-            val supersetGroup = getSupersetForExercise(exerciseIndex)
-            val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
-                ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
-            val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
-            restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+            if (appPreferences.preferencesState.value.autoStartRestTimer) {
+                val supersetGroup = getSupersetForExercise(exerciseIndex)
+                val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
+                    ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
+                val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
+                restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+            }
         } else {
             restTimer.stop()
         }

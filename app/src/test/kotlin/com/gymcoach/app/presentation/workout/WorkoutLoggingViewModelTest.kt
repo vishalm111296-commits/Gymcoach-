@@ -113,6 +113,33 @@ class WorkoutLoggingViewModelTest {
     }
 
     @Test
+    fun givenAutoStartRestDisabled_whenToggleSetCompletion_thenSetIsCompletedButTimerDoesNotStart() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        val preferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
+        preferences.setAutoStartRestTimer(false)
+        val customViewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimerManager,
+            progressionEngine,
+            userProfileRepository,
+            readinessRepository,
+            personalRecordDao,
+            prDetector,
+            null,
+            preferences
+        ).apply { enableWorkoutTimer = false }
+
+        customViewModel.loadOrStartWorkout(workout.workout.id)
+        customViewModel.toggleSetCompletion(0, 0)
+
+        coVerify { workoutRepository.updateSet(any()) }
+        coVerify(exactly = 0) { restTimerManager.start(any(), any(), any(), any()) }
+        customViewModel.clearForTest()
+    }
+
+    @Test
     fun givenLoadedWorkout_whenViewModelRecreated_thenStateIsPersisted() = runTest {
         val workout = createTestWorkout()
         currentWorkoutFlow.value = workout

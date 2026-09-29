@@ -177,7 +177,7 @@ fun ExerciseAnimationPlayer(
                     IconButton(
                         onClick = { showTrajectory = !showTrajectory },
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .semantics {
                                 stateDescription = if (showTrajectory) "Trajectory visible" else "Trajectory hidden"
                             }
@@ -195,7 +195,7 @@ fun ExerciseAnimationPlayer(
                         IconButton(
                             onClick = { showAngles = !showAngles },
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(48.dp)
                                 .semantics {
                                     stateDescription = if (showAngles) "Joint angles visible" else "Joint angles hidden"
                                 }
@@ -243,7 +243,7 @@ fun ExerciseAnimationPlayer(
                     IconButton(
                         onClick = { controller.setLoop(!controller.isLooping) },
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .semantics {
                                 stateDescription = if (controller.isLooping) "Loop enabled" else "Loop disabled"
                             }

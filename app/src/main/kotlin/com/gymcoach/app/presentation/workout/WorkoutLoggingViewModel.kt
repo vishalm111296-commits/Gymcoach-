@@ -727,11 +727,13 @@ class WorkoutLoggingViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to log set"
             }
         }
-        val supersetGroup = getSupersetForExercise(exerciseIndex)
-        val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
-            ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
-        val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
-        restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+        if (appPreferences.preferencesState.value.autoStartRestTimer) {
+            val supersetGroup = getSupersetForExercise(exerciseIndex)
+            val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
+                ?: if (set.restSeconds > 0) set.restSeconds else RestPresets.recommended(set.setType, set.rpe)
+            val nextSet = calculateNextSetLabel(workout, exerciseIndex, setIndex)
+            restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
+        }
     }
 
     fun logSet(exerciseIndex: Int) {
@@ -892,14 +894,24 @@ class WorkoutLoggingViewModel @Inject constructor(
 
                         val existingEntityPRs = personalRecordDao.getByExerciseId(we.exercise.id).firstOrNull() ?: emptyList()
                         val existingPRs = existingEntityPRs.map { entity ->
+                            val type = when {
+                                entity.oneRepMaxKg > 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM
+                                entity.notes.startsWith("Volume", ignoreCase = true) -> com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME
+                                entity.notes.contains("reps at", ignoreCase = true) -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
+                                entity.reps > 0 && entity.weightKg == 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
+                                else -> com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT
+                            }
+                            val prValue = when (type) {
+                                com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM -> entity.oneRepMaxKg
+                                com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME -> entity.weightKg
+                                com.gymcoach.app.core.progression.PRDetector.PRType.REP -> if (entity.reps > 0) entity.reps.toDouble() else entity.weightKg
+                                com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT -> entity.weightKg
+                            }
                             com.gymcoach.app.core.progression.PRDetector.PersonalRecord(
                                 exerciseId = entity.exerciseId,
                                 exerciseName = we.exercise.name,
-                                type = if (entity.reps > 0) com.gymcoach.app.core.progression.PRDetector.PRType.REP
-                                       else if (entity.oneRepMaxKg > 0) com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM
-                                       else if (entity.notes.startsWith("Volume")) com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME
-                                       else com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT,
-                                value = if (entity.oneRepMaxKg > 0) entity.oneRepMaxKg else if (entity.reps > 0) entity.reps.toDouble() else entity.weightKg,
+                                type = type,
+                                value = prValue,
                                 details = entity.notes,
                                 date = Instant.ofEpochMilli(entity.achievedAt),
                                 workoutId = workout.id

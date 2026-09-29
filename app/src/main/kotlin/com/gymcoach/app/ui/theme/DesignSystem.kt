@@ -53,7 +53,7 @@ object GymCoachColors {
     val BorderSubtle = Color(0xFF2A2F36)
     val TextPrimary = Color(0xFFE2E8F0)
     val TextSecondary = Color(0xFF94A3B8)
-    val TextDisabled = Color(0xFF4B5563)
+    val TextDisabled = Color(0xFF7B8798)
     val ErrorRed = Color(0xFFEF4444)
     val WarningAmber = Color(0xFFF59E0B)
 
@@ -64,6 +64,7 @@ object GymCoachColors {
     val BorderLight = Color(0xFF374668)
     val Primary = Color(0xFF6C63FF)
     val PrimaryLight = Color(0xFF8B85FF)
+    val PrimaryText = Color(0xFF938DFF)
     val PrimaryDark = Color(0xFF4E45D9)
     val PrimaryGlow = Color(0x336C63FF)
     val GoldAccent = Color(0xFFFFB300)

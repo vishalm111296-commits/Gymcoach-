@@ -44,7 +44,25 @@ class RestTimerNotificationService : Service() {
         const val EXTRA_DELTA = "extra_delta"
 
         private val stateMachine = RestTimerStateMachine()
-        private val audioCoach = com.gymcoach.app.core.audio.RestAudioCoach(com.gymcoach.app.core.audio.RestAudioCueEvaluator())
+        private var appPreferencesInstance: com.gymcoach.app.core.preferences.AppPreferences? = null
+        private var audioCoachInstance: com.gymcoach.app.core.audio.RestAudioCoach? = null
+
+        private fun getAppPreferences(context: Context): com.gymcoach.app.core.preferences.AppPreferences {
+            return appPreferencesInstance ?: synchronized(this) {
+                appPreferencesInstance ?: com.gymcoach.app.core.preferences.DefaultAppPreferences(context.applicationContext).also {
+                    appPreferencesInstance = it
+                }
+            }
+        }
+
+        private fun getAudioCoach(context: Context): com.gymcoach.app.core.audio.RestAudioCoach {
+            return audioCoachInstance ?: synchronized(this) {
+                audioCoachInstance ?: com.gymcoach.app.core.audio.RestAudioCoach(
+                    com.gymcoach.app.core.audio.RestAudioCueEvaluator(),
+                    getAppPreferences(context)
+                ).also { audioCoachInstance = it }
+            }
+        }
 
         val remainingSeconds: StateFlow<Int> = stateMachine.remainingSeconds
         val isPaused: StateFlow<Boolean> = stateMachine.isPaused
@@ -54,6 +72,7 @@ class RestTimerNotificationService : Service() {
         val nextSetLabel: String get() = stateMachine.nextSetLabel
 
         fun start(context: Context, seconds: Int, nextSet: String = "", workoutId: Long = -1L) {
+            getAudioCoach(context)
             val safeSeconds = seconds.coerceAtLeast(0)
             val now = System.currentTimeMillis()
             val endMillis = now + safeSeconds * 1000L
@@ -222,7 +241,7 @@ class RestTimerNotificationService : Service() {
             override fun onTick(millisUntilFinished: Long) {
                 val sec = (millisUntilFinished / 1000L).toInt()
                 stateMachine.tick(sec)
-                audioCoach.onTick(sec)
+                getAudioCoach(this@RestTimerNotificationService).onTick(sec)
                 updateNotification()
             }
 
@@ -296,7 +315,7 @@ class RestTimerNotificationService : Service() {
         RestTimerPreferences.clear(this)
         if (isCompleted) {
             triggerCompletionHaptics()
-            audioCoach.onComplete()
+            getAudioCoach(this).onComplete()
             stateMachine.complete()
         } else {
             stateMachine.cancel()
@@ -308,6 +327,7 @@ class RestTimerNotificationService : Service() {
     }
 
     private fun triggerCompletionHaptics() {
+        if (!getAppPreferences(this).preferencesState.value.vibrationEnabled) return
         try {
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager

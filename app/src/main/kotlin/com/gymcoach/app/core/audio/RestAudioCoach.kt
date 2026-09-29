@@ -17,8 +17,6 @@ class RestAudioCoach @Inject constructor(
     private val evaluator: RestAudioCueEvaluator,
     private val appPreferences: AppPreferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
 ) {
-    private var soundEnabled: Boolean = appPreferences.preferencesState.value.soundEnabled
-    private var preset: AudioCoachPreset = appPreferences.preferencesState.value.audioPreset
     private var toneGenerator: ToneGenerator? = null
 
     init {
@@ -28,7 +26,7 @@ class RestAudioCoach @Inject constructor(
     private fun initToneGenerator() {
         try {
             toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-        } catch (_: Throwable) {
+        } catch (_: Exception) {
             toneGenerator = null
         }
     }
@@ -112,14 +110,12 @@ class RestAudioCoach @Inject constructor(
     }
 
     fun setPreset(newPreset: AudioCoachPreset) {
-        preset = newPreset
         appPreferences.setAudioPreset(newPreset)
     }
 
     fun getPreset(): AudioCoachPreset = appPreferences.preferencesState.value.audioPreset
 
     fun setSoundEnabled(enabled: Boolean) {
-        soundEnabled = enabled
         appPreferences.setSoundEnabled(enabled)
     }
 

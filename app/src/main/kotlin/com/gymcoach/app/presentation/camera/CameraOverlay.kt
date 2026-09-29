@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -164,12 +165,12 @@ private object FeedbackColors {
     private val warnExact = setOf(
         "straighten back", "slow down", "go deeper", "control descent",
         "don't lock out", "full range", "lower the weight",
-        "extend arm more", "go lower", "start squat", "lower your chest",
-        "keep body straight", "press weight up", "almost there", "start press",
+        "extend arm more", "go lower", "lower your chest",
+        "keep body straight", "press weight up", "almost there",
         "raise arms to shoulder height", "keep raising", "pull to your torso",
-        "extend arms forward", "start bent-over row", "squeeze core, keep straight",
-        "lower hips or raise up", "push hips back", "start deadlift",
-        "lower the bar", "press up", "start bench press"
+        "extend arms forward", "squeeze core, keep straight",
+        "lower hips or raise up", "push hips back",
+        "lower the bar", "press up"
     )
 
     private fun isGood(normalized: String): Boolean {
@@ -180,9 +181,15 @@ private object FeedbackColors {
             normalized.contains("perfect")
     }
 
+    private fun isInfo(normalized: String): Boolean {
+        return normalized.startsWith("start") ||
+            normalized.startsWith("ready") ||
+            normalized.startsWith("prepare") ||
+            normalized.contains("setup")
+    }
+
     private fun isWarn(normalized: String): Boolean {
         return normalized in warnExact ||
-            normalized.startsWith("start") ||
             normalized.startsWith("keep") ||
             normalized.startsWith("raise") ||
             normalized.startsWith("press") ||
@@ -198,6 +205,7 @@ private object FeedbackColors {
         val normalized = feedback.trim().lowercase()
         return when {
             isGood(normalized) -> GymCoachColors.Success
+            isInfo(normalized) -> GymCoachColors.Primary
             isWarn(normalized) -> GymCoachColors.Warning
             else -> GymCoachColors.Danger
         }
@@ -207,6 +215,7 @@ private object FeedbackColors {
         val normalized = feedback.trim().lowercase()
         return when {
             isGood(normalized) -> Icons.Filled.CheckCircle
+            isInfo(normalized) -> Icons.Filled.Info
             isWarn(normalized) -> Icons.Filled.Warning
             else -> Icons.Filled.Error
         }

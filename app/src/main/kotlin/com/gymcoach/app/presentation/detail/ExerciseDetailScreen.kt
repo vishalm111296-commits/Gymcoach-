@@ -108,6 +108,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -130,8 +131,11 @@ class ExerciseDetailViewModel @Inject constructor(
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
 
+    private var loadJob: Job? = null
+
     fun loadExercise(id: Long) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             try {
                 repository.getExerciseById(id).collect { ex ->
                     _exercise.value = ex

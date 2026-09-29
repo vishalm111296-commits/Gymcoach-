@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
@@ -865,20 +867,23 @@ private fun RestTimerCard(
                         // Center Play/Pause button
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(48.dp)
                                 .clip(androidx.compose.foundation.shape.CircleShape)
                                 .background(
                                     if (isPaused) GymCoachColors.SurfaceDeep
                                     else GymCoachColors.Primary.copy(alpha = 0.2f)
                                 )
-                                .clickable { onPauseResume() },
+                                .clickable(
+                                    role = androidx.compose.ui.semantics.Role.Button,
+                                    onClick = onPauseResume
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                                 contentDescription = if (isPaused) "Resume Rest" else "Pause Rest",
                                 tint = GymCoachColors.Primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -1746,13 +1751,13 @@ private fun SetRow(
         Box(
             modifier = Modifier
                 .weight(0.12f)
-                .height(38.dp)
+                .heightIn(min = 44.dp)
                 .clip(GymCoachShapes.xs)
                 .background(setTypeColor.copy(alpha = 0.12f))
                 .semantics {
                     contentDescription = "Set ${index + 1} type ${setType.name}, tap to change"
                 }
-                .clickable {
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) {
                     val nextType = when (setType) {
                         com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
                         com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
@@ -1888,14 +1893,16 @@ private fun SetRow(
             modifier = Modifier
                 .size(48.dp)
                 .semantics {
-                    role = Role.Checkbox
-                    stateDescription = if (completed) "Completed" else "Not completed"
                     contentDescription = "Set ${index + 1} completion status"
                 }
-                .clickable {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleComplete()
-                },
+                .toggleable(
+                    value = completed,
+                    role = Role.Checkbox,
+                    onValueChange = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleComplete()
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Box(

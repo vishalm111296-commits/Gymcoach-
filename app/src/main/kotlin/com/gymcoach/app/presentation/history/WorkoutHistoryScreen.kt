@@ -277,7 +277,7 @@ fun WorkoutHistoryScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(WorkoutHistoryViewModel.FilterOption.values()) { filter ->
+                items(WorkoutHistoryViewModel.FilterOption.values(), key = { it.name }) { filter ->
                     val isSelected = filterOption == filter
                     Surface(
                         shape = GymCoachShapes.pill,

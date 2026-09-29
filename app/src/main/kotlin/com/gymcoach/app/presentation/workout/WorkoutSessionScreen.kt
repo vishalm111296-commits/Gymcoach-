@@ -616,12 +616,14 @@ fun WorkoutSessionScreen(
     }
 
     if (showPicker) {
-        val filteredExercises = allExercises.filter { exercise ->
-            val matchesCategory = pickerSelectedCategory == "All" || exercise.muscleGroup.equals(pickerSelectedCategory, ignoreCase = true)
-            val matchesQuery = pickerSearchQuery.isBlank() ||
-                exercise.name.contains(pickerSearchQuery, ignoreCase = true) ||
-                exercise.muscleGroup.contains(pickerSearchQuery, ignoreCase = true)
-            matchesCategory && matchesQuery
+        val filteredExercises = remember(allExercises, pickerSelectedCategory, pickerSearchQuery) {
+            allExercises.filter { exercise ->
+                val matchesCategory = pickerSelectedCategory == "All" || exercise.muscleGroup.equals(pickerSelectedCategory, ignoreCase = true)
+                val matchesQuery = pickerSearchQuery.isBlank() ||
+                    exercise.name.contains(pickerSearchQuery, ignoreCase = true) ||
+                    exercise.muscleGroup.contains(pickerSearchQuery, ignoreCase = true)
+                matchesCategory && matchesQuery
+            }
         }
 
         AlertDialog(
@@ -2133,7 +2135,7 @@ internal fun WorkoutCompletionView(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(summary.newPRs) { pr ->
+                    items(summary.newPRs, key = { "${it.exerciseId}_${it.type.name}" }) { pr ->
                         Surface(
                             shape = GymCoachShapes.pill,
                             color = androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.15f),
@@ -2157,7 +2159,7 @@ internal fun WorkoutCompletionView(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(summary.musclesTrained) { muscle ->
+                    items(summary.musclesTrained, key = { it }) { muscle ->
                         Surface(
                             shape = GymCoachShapes.pill,
                             color = GymCoachColors.Primary.copy(alpha = 0.15f),

@@ -113,7 +113,7 @@ fun MuscleBalanceContent(report: MuscleBalanceReport) {
                     modifier = Modifier.padding(top = GymCoachSpacing.sm, bottom = GymCoachSpacing.xs)
                 )
             }
-            items(report.correctivePrescriptions) { prescription ->
+            items(report.correctivePrescriptions, key = { "${it.targetMuscle}_${it.exerciseName}" }) { prescription ->
                 PrescriptionCard(prescription = prescription)
             }
         }

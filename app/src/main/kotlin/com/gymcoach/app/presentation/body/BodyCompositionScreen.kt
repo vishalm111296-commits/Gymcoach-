@@ -148,7 +148,7 @@ fun BodyCompositionContent(
             )
         }
 
-        items(trend.history) { entity ->
+        items(trend.history, key = { it.id }) { entity ->
             HistoryCard(entity, onDelete)
             Spacer(modifier = Modifier.height(GymCoachSpacing.md))
         }

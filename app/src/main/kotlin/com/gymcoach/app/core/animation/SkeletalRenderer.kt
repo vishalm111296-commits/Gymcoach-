@@ -194,11 +194,29 @@ object SkeletalRenderer {
         val nearColor = primaryColor
         val activeMuscles = frame.activeMuscles
 
-        val isLegActive = activeMuscles.any { it.contains("quad", true) || it.contains("glute", true) || it.contains("ham", true) || it.contains("leg", true) }
-        val isArmActive = activeMuscles.any { it.contains("bicep", true) || it.contains("tricep", true) || it.contains("arm", true) }
-        val isChestActive = activeMuscles.any { it.contains("chest", true) || it.contains("pec", true) }
-        val isBackActive = activeMuscles.any { it.contains("back", true) || it.contains("lat", true) }
-        val isDeltActive = activeMuscles.any { it.contains("delt", true) || it.contains("shoulder", true) }
+        var isLegActive = false
+        var isArmActive = false
+        var isChestActive = false
+        var isBackActive = false
+        var isDeltActive = false
+        for (i in activeMuscles.indices) {
+            val m = activeMuscles[i]
+            if (!isLegActive && (m.contains("quad", true) || m.contains("glute", true) || m.contains("ham", true) || m.contains("leg", true))) {
+                isLegActive = true
+            }
+            if (!isArmActive && (m.contains("bicep", true) || m.contains("tricep", true) || m.contains("arm", true))) {
+                isArmActive = true
+            }
+            if (!isChestActive && (m.contains("chest", true) || m.contains("pec", true))) {
+                isChestActive = true
+            }
+            if (!isBackActive && (m.contains("back", true) || m.contains("lat", true))) {
+                isBackActive = true
+            }
+            if (!isDeltActive && (m.contains("delt", true) || m.contains("shoulder", true))) {
+                isDeltActive = true
+            }
+        }
 
         if (perspective == ViewPerspective.SIDE) {
             // 2. Far leg (background layer)

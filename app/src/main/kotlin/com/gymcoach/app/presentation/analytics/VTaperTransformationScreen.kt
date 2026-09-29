@@ -107,7 +107,7 @@ fun VTaperReportContent(
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(report.limbSymmetries) { symmetry ->
+            items(report.limbSymmetries, key = { it.limbName }) { symmetry ->
                 LimbSymmetryCard(symmetry = symmetry)
             }
         }
@@ -120,7 +120,7 @@ fun VTaperReportContent(
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(report.history) { measurement ->
+            items(report.history, key = { it.id }) { measurement ->
                 MeasurementHistoryCard(measurement = measurement, onDelete = { onDeleteMeasurement(measurement.id) })
             }
         }

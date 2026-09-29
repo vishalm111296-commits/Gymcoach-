@@ -202,7 +202,7 @@ fun ProgressionAnalyticsScreen(
                                     item {
                                         SectionHeader("PERSONAL RECORDS")
                                     }
-                                    items(state.prHistory.take(5)) { pr ->
+                                    items(state.prHistory.take(5), key = { "preview_${it.date}_${it.weight}_${it.reps}" }) { pr ->
                                         PREntryCard(pr)
                                     }
                                 }
@@ -293,7 +293,7 @@ fun ProgressionAnalyticsScreen(
                                     item {
                                         SectionHeader("ALL PERSONAL RECORDS (${state.prHistory.size})")
                                     }
-                                    items(state.prHistory) { pr ->
+                                    items(state.prHistory, key = { "${it.date}_${it.weight}_${it.reps}" }) { pr ->
                                         PREntryCard(pr)
                                     }
                                 } else {

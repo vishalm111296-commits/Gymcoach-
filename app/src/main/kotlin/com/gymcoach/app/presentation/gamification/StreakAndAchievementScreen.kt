@@ -282,8 +282,10 @@ private fun AchievementsSection(report: StreakReport) {
             }
         }
 
-        val filteredBadges = report.badges.filter {
-            selectedCategory == BadgeCategory.ALL || it.category == selectedCategory
+        val filteredBadges = remember(report.badges, selectedCategory) {
+            report.badges.filter {
+                selectedCategory == BadgeCategory.ALL || it.category == selectedCategory
+            }
         }
 
         LazyVerticalGrid(
@@ -293,7 +295,7 @@ private fun AchievementsSection(report: StreakReport) {
             modifier = Modifier.heightIn(max = 1000.dp),
             userScrollEnabled = false
         ) {
-            items(filteredBadges) { badge ->
+            items(filteredBadges, key = { it.id }) { badge ->
                 BadgeCard(badge)
             }
         }

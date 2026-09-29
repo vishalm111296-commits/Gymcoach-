@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
@@ -195,7 +196,11 @@ fun GymCoachNavHost(
                 navArgument("exerciseId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
+            val exerciseId = backStackEntry.arguments?.getLong("exerciseId")
+            if (exerciseId == null || exerciseId <= 0L) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
             ExerciseDetailScreen(
                 exerciseId = exerciseId,
                 onBackClick = { navController.popBackStack() },
@@ -225,7 +230,11 @@ fun GymCoachNavHost(
                 navArgument("workoutId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: return@composable
+            val workoutId = backStackEntry.arguments?.getLong("workoutId")
+            if (workoutId == null || workoutId <= 0L) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
             WorkoutHistoryDetailScreen(
                 workoutId = workoutId,
                 onBackClick = { navController.popBackStack() },
@@ -411,7 +420,11 @@ fun GymCoachNavHost(
                 }
             )
         ) { backStackEntry ->
-            val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: return@composable
+            val exerciseId = backStackEntry.arguments?.getLong("exerciseId")
+            if (exerciseId == null || exerciseId <= 0L) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
             val exerciseName = backStackEntry.arguments?.getString("exerciseName") ?: ""
             ProgressionAnalyticsScreen(
                 exerciseId = exerciseId,

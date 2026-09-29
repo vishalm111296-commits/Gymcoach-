@@ -579,7 +579,21 @@ class WorkoutLoggingViewModel @Inject constructor(
         val set = we.sets[setIndex]
         viewModelScope.launch {
             try {
-                workoutRepository.deleteSet(set.id)
+                addSetMutex.withLock {
+                    val currentWorkout = _currentWorkout.value
+                    if (currentWorkout != null && exerciseIndex in currentWorkout.exercises.indices) {
+                        val currentWe = currentWorkout.exercises[exerciseIndex]
+                        if (setIndex in currentWe.sets.indices) {
+                            val updatedSets = currentWe.sets.toMutableList().also { it.removeAt(setIndex) }
+                            val updatedWe = currentWe.copy(sets = updatedSets)
+                            val updatedExercises = currentWorkout.exercises.toMutableList().also { it[exerciseIndex] = updatedWe }
+                            val updatedWorkout = currentWorkout.copy(exercises = updatedExercises)
+                            _currentWorkout.value = updatedWorkout
+                            calculateSessionVolume(updatedWorkout)
+                        }
+                    }
+                    workoutRepository.deleteSet(set.id)
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to remove set"
@@ -713,14 +727,23 @@ class WorkoutLoggingViewModel @Inject constructor(
         val we = workout.exercises[exerciseIndex]
         if (setIndex !in we.sets.indices) return
         val set = we.sets[setIndex]
-        val updated = set.copy(completed = true)
         viewModelScope.launch {
             try {
-                workoutRepository.updateSet(updated)
-                val refreshed = _currentWorkout.value
-                calculateSessionVolume(refreshed)
-                if (refreshed != null) {
-                    calculateProgressionRecommendations(refreshed.exercises)
+                addSetMutex.withLock {
+                    val currentWorkout = _currentWorkout.value ?: return@withLock
+                    val currentWe = currentWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                    val currentSet = currentWe.sets.getOrNull(setIndex) ?: return@withLock
+                    val updated = currentSet.copy(completed = true)
+
+                    val updatedSets = currentWe.sets.toMutableList().also { it[setIndex] = updated }
+                    val updatedWe = currentWe.copy(sets = updatedSets)
+                    val updatedExercises = currentWorkout.exercises.toMutableList().also { it[exerciseIndex] = updatedWe }
+                    val updatedWorkout = currentWorkout.copy(exercises = updatedExercises)
+                    _currentWorkout.value = updatedWorkout
+
+                    workoutRepository.updateSet(updated)
+                    calculateSessionVolume(updatedWorkout)
+                    calculateProgressionRecommendations(updatedWorkout.exercises)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -751,21 +774,32 @@ class WorkoutLoggingViewModel @Inject constructor(
         val we = workout.exercises[exerciseIndex]
         if (setIndex !in we.sets.indices) return
         val set = we.sets[setIndex]
-        val updated = set.copy(completed = !set.completed)
+        val willBeCompleted = !set.completed
+
         viewModelScope.launch {
             try {
-                workoutRepository.updateSet(updated)
-                val refreshed = _currentWorkout.value
-                calculateSessionVolume(refreshed)
-                if (refreshed != null) {
-                    calculateProgressionRecommendations(refreshed.exercises)
+                addSetMutex.withLock {
+                    val currentWorkout = _currentWorkout.value ?: return@withLock
+                    val currentWe = currentWorkout.exercises.getOrNull(exerciseIndex) ?: return@withLock
+                    val currentSet = currentWe.sets.getOrNull(setIndex) ?: return@withLock
+                    val updated = currentSet.copy(completed = !currentSet.completed)
+
+                    val updatedSets = currentWe.sets.toMutableList().also { it[setIndex] = updated }
+                    val updatedWe = currentWe.copy(sets = updatedSets)
+                    val updatedExercises = currentWorkout.exercises.toMutableList().also { it[exerciseIndex] = updatedWe }
+                    val updatedWorkout = currentWorkout.copy(exercises = updatedExercises)
+                    _currentWorkout.value = updatedWorkout
+
+                    workoutRepository.updateSet(updated)
+                    calculateSessionVolume(updatedWorkout)
+                    calculateProgressionRecommendations(updatedWorkout.exercises)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to update set"
             }
         }
-        if (updated.completed) {
+        if (willBeCompleted) {
             if (appPreferences.preferencesState.value.autoStartRestTimer) {
                 val supersetGroup = getSupersetForExercise(exerciseIndex)
                 val restSeconds = supersetGroup?.getRecommendedRestSeconds(exerciseIndex)
@@ -998,18 +1032,25 @@ class WorkoutLoggingViewModel @Inject constructor(
         setIndex: Int,
         transform: (WorkoutSet) -> WorkoutSet
     ) {
-        val workout = _currentWorkout.value ?: return
-        if (exerciseIndex !in workout.exercises.indices) return
-        val we = workout.exercises[exerciseIndex]
-        if (setIndex !in we.sets.indices) return
-        val updated = transform(we.sets[setIndex])
         viewModelScope.launch {
             try {
-                workoutRepository.updateSet(updated)
-                calculateSessionVolume(_currentWorkout.value)
-                val refreshed = _currentWorkout.value
-                if (refreshed != null) {
-                    calculateProgressionRecommendations(refreshed.exercises)
+                addSetMutex.withLock {
+                    val workout = _currentWorkout.value ?: return@withLock
+                    if (exerciseIndex !in workout.exercises.indices) return@withLock
+                    val we = workout.exercises[exerciseIndex]
+                    if (setIndex !in we.sets.indices) return@withLock
+                    val targetSet = we.sets[setIndex]
+                    val updated = transform(targetSet)
+
+                    val updatedSets = we.sets.toMutableList().also { it[setIndex] = updated }
+                    val updatedWe = we.copy(sets = updatedSets)
+                    val updatedExercises = workout.exercises.toMutableList().also { it[exerciseIndex] = updatedWe }
+                    val updatedWorkout = workout.copy(exercises = updatedExercises)
+                    _currentWorkout.value = updatedWorkout
+
+                    workoutRepository.updateSet(updated)
+                    calculateSessionVolume(updatedWorkout)
+                    calculateProgressionRecommendations(updatedWorkout.exercises)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e

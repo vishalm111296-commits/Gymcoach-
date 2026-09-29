@@ -387,7 +387,7 @@ fun ProgramDetailScreen(
                         }
                     }
 
-                    items(state.daysWithExercises) { dayWithEx ->
+                    items(state.daysWithExercises, key = { it.day.id }) { dayWithEx ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
@@ -931,12 +931,14 @@ private fun RoutineBuilderContent(
                         }
                     }
 
-                    val filteredExercises = availableExercises.filter { ex ->
-                        val matchesCat = pickerCategory == "All" || ex.muscleGroup.lowercase().contains(pickerCategory.lowercase())
-                        val matchesQuery = pickerSearch.isBlank() ||
-                                ex.name.lowercase().contains(pickerSearch.lowercase()) ||
-                                ex.muscleGroup.lowercase().contains(pickerSearch.lowercase())
-                        matchesCat && matchesQuery
+                    val filteredExercises = remember(availableExercises, pickerCategory, pickerSearch) {
+                        availableExercises.filter { ex ->
+                            val matchesCat = pickerCategory == "All" || ex.muscleGroup.lowercase().contains(pickerCategory.lowercase())
+                            val matchesQuery = pickerSearch.isBlank() ||
+                                    ex.name.lowercase().contains(pickerSearch.lowercase()) ||
+                                    ex.muscleGroup.lowercase().contains(pickerSearch.lowercase())
+                            matchesCat && matchesQuery
+                        }
                     }
 
                     LazyColumn(
@@ -953,7 +955,7 @@ private fun RoutineBuilderContent(
                                 )
                             }
                         } else {
-                            items(filteredExercises) { exercise ->
+                            items(filteredExercises, key = { it.id }) { exercise ->
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCard),
                                     shape = GymCoachShapes.sm,

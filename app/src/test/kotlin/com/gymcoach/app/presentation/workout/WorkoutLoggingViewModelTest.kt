@@ -326,6 +326,45 @@ class WorkoutLoggingViewModelTest {
         assertEquals(1, viewModel.getCompletedSetsCount())
     }
 
+    @Test
+    fun `rapid sequential updates to set fields preserve in memory state integrity without lost updates`() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
+
+        // Rapid updates to weight, reps, and completion sequentially
+        viewModel.updateSetWeight(0, 0, 142.5)
+        viewModel.updateSetReps(0, 0, 12)
+
+        val updatedSet = viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.get(0)
+        assertNotNull(updatedSet)
+        assertEquals(142.5, updatedSet!!.weight, 0.001)
+        assertEquals(12, updatedSet.reps)
+
+        // Now toggle completion
+        viewModel.toggleSetCompletion(0, 0)
+        val completedSet = viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.get(0)
+        assertNotNull(completedSet)
+        assertEquals(true, completedSet!!.completed)
+        assertEquals(142.5, completedSet.weight, 0.001)
+        assertEquals(12, completedSet.reps)
+    }
+
+    @Test
+    fun `removeSet updates in memory state immediately to prevent stale indices`() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        viewModel.loadOrStartWorkout(workout.workout.id)
+
+        assertEquals(2, viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.size)
+
+        viewModel.removeSet(0, 0)
+
+        // In-memory sets list should immediately be 1 set
+        assertEquals(1, viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.size)
+        assertEquals(2L, viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.get(0)?.id)
+        coVerify { workoutRepository.deleteSet(1L) }
+    }
 }
 
 

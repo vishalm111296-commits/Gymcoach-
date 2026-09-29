@@ -19,16 +19,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.getValue
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 private const val RingSizeDp = 220
 
@@ -55,8 +56,8 @@ fun RestTimerOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.97f))
-            .padding(24.dp),
+            .background(GymCoachColors.PureDark.copy(alpha = 0.97f))
+            .padding(GymCoachSpacing.xxl),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -65,28 +66,29 @@ fun RestTimerOverlay(
                     progress = { animatedProgress },
                     modifier = Modifier.size(RingSizeDp.dp),
                     strokeWidth = 8.dp,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    color = GymCoachColors.Primary,
+                    trackColor = GymCoachColors.SurfaceElevated
                 )
                 Text(
                     text = formatCountdown(timeRemaining),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = GymCoachColors.TextPrimary
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(GymCoachSpacing.xxl))
 
             Text(
                 text = "NEXT SET: ${nextSet.uppercase()}",
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(GymCoachSpacing.xxxl))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TimerControlButton(
@@ -97,10 +99,10 @@ fun RestTimerOverlay(
                 TimerControlButton(label = "SKIP", onClick = onSkip)
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(GymCoachSpacing.md))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TimerControlButton(label = "+15s", onClick = onAddFifteen)
@@ -120,19 +122,11 @@ private fun TimerControlButton(
         onClick = onClick,
         modifier = Modifier.heightIn(min = 48.dp).width(120.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (emphasized) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (emphasized) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            containerColor = if (emphasized) GymCoachColors.Primary else GymCoachColors.SurfaceElevated,
+            contentColor = if (emphasized) GymCoachColors.TextPrimary else GymCoachColors.TextSecondary
         )
     ) {
-        Text(text = label, fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
+        Text(text = label, fontWeight = FontWeight.SemiBold)
     }
 }
 

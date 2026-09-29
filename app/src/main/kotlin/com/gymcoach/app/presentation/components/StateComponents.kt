@@ -116,7 +116,7 @@ fun EmptyStateView(
                 Text(
                     text = ctaText,
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color.White
+                    color = GymCoachColors.TextPrimary
                 )
             }
         }
@@ -139,7 +139,7 @@ fun ErrorStateView(
         Icon(
             imageVector = Icons.Default.ErrorOutline,
             contentDescription = "Error",
-            tint = MaterialTheme.colorScheme.error,
+            tint = GymCoachColors.ErrorRed,
             modifier = Modifier.size(64.dp)
         )
 

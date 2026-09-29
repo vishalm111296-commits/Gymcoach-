@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -284,7 +283,7 @@ fun WorkoutHistoryScreen(
                         color = if (isSelected)
                             GymCoachColors.Primary.copy(alpha = 0.15f)
                         else
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            GymCoachColors.SurfaceDeep,
                         border = if (isSelected)
                             BorderStroke(1.dp, GymCoachColors.Primary)
                         else
@@ -475,7 +474,7 @@ private fun HistoryWorkoutCard(
         onClick = onClick,
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -489,14 +488,14 @@ private fun HistoryWorkoutCard(
                     text = workout.notes.ifBlank { "Logged Workout" },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = GymCoachColors.TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
                 Box(
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                            shape = RoundedCornerShape(6.dp)
+                            GymCoachColors.SurfaceElevated,
+                            shape = GymCoachShapes.xs
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
@@ -504,7 +503,7 @@ private fun HistoryWorkoutCard(
                         text = formatDate(workout.date),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -517,49 +516,49 @@ private fun HistoryWorkoutCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape = GymCoachShapes.xs)
+                        .background(GymCoachColors.SurfaceElevated, shape = GymCoachShapes.xs)
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("DURATION", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(formatDuration(workout.duration), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black)
+                        Text("DURATION", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.TextSecondary)
+                        Text(formatDuration(workout.duration), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.TextPrimary)
                     }
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape = GymCoachShapes.xs)
+                        .background(GymCoachColors.SurfaceElevated, shape = GymCoachShapes.xs)
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("EXERCISES", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${workout.exerciseCount}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black)
+                        Text("EXERCISES", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.TextSecondary)
+                        Text("${workout.exerciseCount}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.TextPrimary)
                     }
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape = GymCoachShapes.xs)
+                        .background(GymCoachColors.SurfaceElevated, shape = GymCoachShapes.xs)
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("SETS", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${workout.setCount}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black)
+                        Text("SETS", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.TextSecondary)
+                        Text("${workout.setCount}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.TextPrimary)
                     }
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape = GymCoachShapes.xs)
+                        .background(GymCoachColors.SurfaceElevated, shape = GymCoachShapes.xs)
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("VOLUME", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(nf.format(workout.volume.toLong()) + " kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text("VOLUME", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.Primary)
+                        Text(nf.format(workout.volume.toLong()) + " kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.Primary)
                     }
                 }
             }

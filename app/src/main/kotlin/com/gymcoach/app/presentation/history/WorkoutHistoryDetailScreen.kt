@@ -271,7 +271,7 @@ fun WorkoutHistoryDetailScreen(
                         if (shareState is ShareState.Rendering) {
                             CircularProgressIndicator(
                                 modifier = Modifier.padding(12.dp),
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = GymCoachColors.TextPrimary,
                                 strokeWidth = 2.dp
                             )
                         } else {

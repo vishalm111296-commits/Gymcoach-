@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.gymcoach.app.ui.theme.GymCoachColors
 
 /** One recorded set from a previous session. */
 data class SetData(val weightKg: Double, val reps: Int)
@@ -27,7 +28,7 @@ fun PreviousPerformanceRow(
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = GymCoachColors.TextSecondary,
         modifier = modifier.fillMaxWidth()
     )
 }

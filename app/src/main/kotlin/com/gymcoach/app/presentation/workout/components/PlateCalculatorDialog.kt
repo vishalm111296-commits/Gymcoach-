@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -44,10 +43,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.core.progression.PlateCalculator
+import com.gymcoach.app.ui.theme.GymCoachBorders
 import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachShapes
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 data class BarbellPreset(
     val name: String,
@@ -83,23 +84,30 @@ fun PlateCalculatorDialog(
     var selectedBarWeight by remember(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
     val presets = if (isImperial) BARBELL_PRESETS_IMPERIAL else BARBELL_PRESETS_METRIC
     val availablePlates = if (isImperial) PlateCalculator.STANDARD_IMPERIAL_PLATES else PlateCalculator.STANDARD_METRIC_PLATES
-    val breakdown = PlateCalculator.calculatePlates(targetWeight, selectedBarWeight, availablePlates)
+
+    // Memoize: only recalculate when weight inputs actually change
+    val breakdown = remember(targetWeight, selectedBarWeight, availablePlates) {
+        PlateCalculator.calculatePlates(targetWeight, selectedBarWeight, availablePlates)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = GymCoachColors.SurfaceDeep,
+        tonalElevation = 0.dp,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.FitnessCenter,
                     contentDescription = "Barbell Plate Calculator",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(24.dp)
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(GymCoachSpacing.sm))
                 Text(
                     text = "Plate Calculator",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = GymCoachColors.TextPrimary
                 )
             }
         },
@@ -109,21 +117,21 @@ fun PlateCalculatorDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow)),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
             ) {
                 // Barbell Selection Chips
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.xs)) {
                     Text(
                         text = "Barbell Type:",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = GymCoachColors.TextSecondary
                     )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
                     ) {
                         presets.forEach { preset ->
                             val isSelected = selectedBarWeight == preset.weight
@@ -148,41 +156,55 @@ fun PlateCalculatorDialog(
                 // Summary Load Card
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        containerColor = GymCoachColors.SurfaceCardElevated
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    border = GymCoachBorders.subtle,
+                    shape = GymCoachShapes.sm
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .padding(GymCoachSpacing.md),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Total Load", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Total Load",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.TextSecondary
+                            )
                             Text(
                                 "${breakdown.totalWeight} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = GymCoachColors.Primary
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Bar Weight", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Bar Weight",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.TextSecondary
+                            )
                             Text(
                                 "${breakdown.barWeight} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                color = GymCoachColors.TextPrimary
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Per Side", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Per Side",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GymCoachColors.TextSecondary
+                            )
                             Text(
                                 "${breakdown.weightPerSide} ${weightUnit.code}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = GymCoachColors.Primary
                             )
                         }
                     }
@@ -190,34 +212,35 @@ fun PlateCalculatorDialog(
 
                 // Visual Barbell Sleeve Representation
                 if (breakdown.platesPerSide.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.xs)) {
                         Text(
                             text = "Barbell Sleeve Preview (1 Side):",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = GymCoachColors.TextSecondary
                         )
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(64.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(GymCoachShapes.sm)
                                 .background(GymCoachColors.SurfaceDeep)
-                                .padding(horizontal = 8.dp),
+                                .border(GymCoachBorders.subtle, GymCoachShapes.sm)
+                                .padding(horizontal = GymCoachSpacing.sm),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            // Collar
-                            Box(
-                                modifier = Modifier
-                                    .width(8.dp)
-                                    .height(48.dp)
-                                    .background(Color.Gray, RoundedCornerShape(2.dp))
-                            )
-                            // Shaft line
+                            // Shaft line — metal bar
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(8.dp)
-                                    .background(Color.DarkGray)
+                                    .background(GymCoachColors.SurfaceElevated)
+                            )
+                            // Collar — visible lock end
+                            Box(
+                                modifier = Modifier
+                                    .width(8.dp)
+                                    .height(48.dp)
+                                    .background(GymCoachColors.BorderSubtle, GymCoachShapes.xs)
                             )
                             // Stacked Plates from inside to outside
                             Row(
@@ -245,9 +268,9 @@ fun PlateCalculatorDialog(
                                             modifier = Modifier
                                                 .width(plateWidth)
                                                 .height(plateHeight)
-                                                .clip(RoundedCornerShape(2.dp))
+                                                .clip(GymCoachShapes.xs)
                                                 .background(Color(item.hexColor))
-                                                .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                                                .border(0.5.dp, Color.White.copy(alpha = 0.4f), GymCoachShapes.xs)
                                         )
                                     }
                                 }
@@ -259,34 +282,39 @@ fun PlateCalculatorDialog(
                 Text(
                     text = "Plates required per side:",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = GymCoachColors.TextPrimary
                 )
 
                 if (breakdown.platesPerSide.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(GymCoachSpacing.lg),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (targetWeight <= selectedBarWeight) "Use empty barbell (${selectedBarWeight}${weightUnit.code})" else "No additional plates needed",
+                            text = if (targetWeight <= selectedBarWeight)
+                                "Use empty barbell (${selectedBarWeight}${weightUnit.code})"
+                            else
+                                "No additional plates needed",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = GymCoachColors.TextSecondary
                         )
                     }
                 } else {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
                     ) {
                         breakdown.platesPerSide.forEach { item ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .clip(GymCoachShapes.sm)
+                                    .background(GymCoachColors.SurfaceDeep)
+                                    .border(GymCoachBorders.subtle, GymCoachShapes.sm)
+                                    .padding(horizontal = GymCoachSpacing.md, vertical = GymCoachSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -296,13 +324,14 @@ fun PlateCalculatorDialog(
                                             .size(22.dp)
                                             .clip(CircleShape)
                                             .background(Color(item.hexColor))
-                                            .border(1.dp, Color.Gray, CircleShape)
+                                            .border(1.dp, GymCoachColors.BorderSubtle, CircleShape)
                                     )
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(GymCoachSpacing.md))
                                     Text(
                                         text = "${item.plateWeight} ${weightUnit.code} plate",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Medium,
+                                        color = GymCoachColors.TextPrimary
                                     )
                                 }
 
@@ -310,7 +339,7 @@ fun PlateCalculatorDialog(
                                     text = "× ${item.count}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = GymCoachColors.Primary
                                 )
                             }
                         }
@@ -321,14 +350,18 @@ fun PlateCalculatorDialog(
                     Text(
                         text = "Remainder unachievable: ${breakdown.remainder} ${weightUnit.code}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = GymCoachColors.ErrorRed
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", fontWeight = FontWeight.Bold)
+                Text(
+                    "Close",
+                    fontWeight = FontWeight.Bold,
+                    color = GymCoachColors.TextSecondary
+                )
             }
         }
     )

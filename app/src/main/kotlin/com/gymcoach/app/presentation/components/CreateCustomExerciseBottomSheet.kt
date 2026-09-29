@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -77,7 +76,7 @@ fun CreateCustomExerciseBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = GymCoachColors.SurfaceCard,
         dragHandle = null,
         modifier = modifier
     ) {
@@ -98,19 +97,19 @@ fun CreateCustomExerciseBottomSheet(
                         text = "Create Custom Exercise",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = GymCoachColors.TextPrimary
                     )
                     Text(
                         text = "Add to your personal adaptive library",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = GymCoachColors.TextSecondary
                     )
                 }
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -128,13 +127,13 @@ fun CreateCustomExerciseBottomSheet(
                 placeholder = { Text("e.g., Swiss Ball Hex Press") },
                 singleLine = true,
                 isError = errorMessage != null,
-                supportingText = errorMessage?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                supportingText = errorMessage?.let { { Text(it, color = GymCoachColors.ErrorRed) } },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AccentColor,
                     focusedLabelColor = AccentColor
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = GymCoachShapes.sm
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -144,7 +143,7 @@ fun CreateCustomExerciseBottomSheet(
                 text = "Target Muscle Group",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             FlowRow(
@@ -173,7 +172,7 @@ fun CreateCustomExerciseBottomSheet(
                 text = "Equipment",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             FlowRow(
@@ -202,7 +201,7 @@ fun CreateCustomExerciseBottomSheet(
                 text = "Difficulty",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -235,7 +234,7 @@ fun CreateCustomExerciseBottomSheet(
                     focusedBorderColor = AccentColor,
                     focusedLabelColor = AccentColor
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = GymCoachShapes.sm
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -248,7 +247,7 @@ fun CreateCustomExerciseBottomSheet(
                 OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = GymCoachShapes.sm
                 ) {
                     Text("Cancel")
                 }
@@ -267,7 +266,7 @@ fun CreateCustomExerciseBottomSheet(
                         containerColor = AccentColor,
                         contentColor = AccentTextColor
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = GymCoachShapes.sm
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,

@@ -88,10 +88,12 @@ fun WarmupCalculatorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = GymCoachColors.SurfaceDeep,
+        tonalElevation = 0.dp,
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
             ) {
                 Icon(
                     imageVector = Icons.Default.Whatshot,
@@ -139,7 +141,8 @@ fun WarmupCalculatorDialog(
                             Text(
                                 "Warm-Up Ramp",
                                 fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                style = MaterialTheme.typography.labelMedium
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selectedTab == 0) GymCoachColors.Primary else GymCoachColors.TextSecondary
                             )
                         }
                     )
@@ -150,7 +153,8 @@ fun WarmupCalculatorDialog(
                             Text(
                                 "1RM & Zones",
                                 fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                style = MaterialTheme.typography.labelMedium
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selectedTab == 1) GymCoachColors.Primary else GymCoachColors.TextSecondary
                             )
                         }
                     )
@@ -169,7 +173,7 @@ fun WarmupCalculatorDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
                         ) {
                             presets.forEach { preset ->
                                 val isSelected = selectedBarWeight == preset.weight
@@ -206,7 +210,11 @@ fun WarmupCalculatorDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Target Work Load", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
+                                    Text(
+                                        "Target Work Load",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
                                     Text(
                                         "${warmupPlan.workingWeight} ${weightUnit.code}",
                                         style = MaterialTheme.typography.titleMedium,
@@ -215,7 +223,11 @@ fun WarmupCalculatorDialog(
                                     )
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Est. Warm-up Time", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
+                                    Text(
+                                        "Est. Warm-up Time",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GymCoachColors.TextSecondary
+                                    )
                                     Text(
                                         "~${warmupPlan.estimatedDurationMinutes} min",
                                         style = MaterialTheme.typography.titleMedium,
@@ -234,13 +246,13 @@ fun WarmupCalculatorDialog(
                                     .clip(GymCoachShapes.sm)
                                     .background(GymCoachColors.SurfaceDeep)
                                     .border(GymCoachBorders.subtle, GymCoachShapes.sm)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .padding(horizontal = GymCoachSpacing.md, vertical = GymCoachSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm + GymCoachSpacing.xs)
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -299,9 +311,13 @@ fun WarmupCalculatorDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(GymCoachSpacing.md),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.xs)
                             ) {
-                                Text("Average Estimated 1RM", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextSecondary)
+                                Text(
+                                    "Average Estimated 1RM",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GymCoachColors.TextSecondary
+                                )
                                 Text(
                                     "${oneRepMaxProfile.average1RM} ${weightUnit.code}",
                                     style = MaterialTheme.typography.headlineSmall,
@@ -329,7 +345,8 @@ fun WarmupCalculatorDialog(
                                     .fillMaxWidth()
                                     .clip(GymCoachShapes.sm)
                                     .background(GymCoachColors.SurfaceDeep)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    .border(GymCoachBorders.subtle, GymCoachShapes.sm)
+                                    .padding(horizontal = GymCoachSpacing.md, vertical = GymCoachSpacing.sm),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -359,7 +376,7 @@ fun WarmupCalculatorDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)) {
                 if (onInsertWarmupSets != null && selectedTab == 0) {
                     Button(
                         onClick = {
@@ -376,7 +393,7 @@ fun WarmupCalculatorDialog(
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(GymCoachSpacing.xs))
                         Text(if (inserted) "Added" else "Add Warm-Up Sets")
                     }
                 }

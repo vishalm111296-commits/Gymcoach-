@@ -243,7 +243,7 @@ private fun TemplateCard(
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = "Duplicate Template",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = GymCoachColors.TextSecondary
                         )
                     }
                     if (isArchived) {
@@ -251,7 +251,7 @@ private fun TemplateCard(
                             Icon(
                                 imageVector = Icons.Default.Unarchive,
                                 contentDescription = "Unarchive Template",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = GymCoachColors.TextSecondary
                             )
                         }
                     } else {
@@ -259,7 +259,7 @@ private fun TemplateCard(
                             Icon(
                                 imageVector = Icons.Default.Archive,
                                 contentDescription = "Archive Template",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -267,7 +267,7 @@ private fun TemplateCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete Template",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = GymCoachColors.ErrorRed
                         )
                     }
                 }
@@ -381,7 +381,7 @@ private fun CreateEditTemplateDialog(
                     label = { Text("Template Name *") },
                     placeholder = { Text("e.g., Push Day A") },
                     isError = validationErrors.containsKey("name"),
-                    supportingText = validationErrors["name"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                    supportingText = validationErrors["name"]?.let { { Text(it, color = GymCoachColors.ErrorRed) } },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -408,7 +408,7 @@ private fun CreateEditTemplateDialog(
                     Text(
                         text = validationErrors["exercises"] ?: "",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = GymCoachColors.ErrorRed
                     )
                 }
 
@@ -440,7 +440,7 @@ private fun CreateEditTemplateDialog(
                                 Text(
                                     text = "${ex.targetSets} sets × ${ex.targetReps}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = GymCoachColors.TextSecondary
                                 )
                             }
                             IconButton(onClick = {
@@ -449,7 +449,7 @@ private fun CreateEditTemplateDialog(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove Exercise",
-                                    tint = MaterialTheme.colorScheme.error,
+                                    tint = GymCoachColors.ErrorRed,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }

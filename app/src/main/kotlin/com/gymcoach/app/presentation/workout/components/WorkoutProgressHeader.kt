@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gymcoach.app.ui.theme.GymCoachColors
+import com.gymcoach.app.ui.theme.GymCoachSpacing
 
 @Composable
 fun WorkoutProgressHeader(
@@ -24,7 +26,11 @@ fun WorkoutProgressHeader(
     elapsedTime: Int,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = GymCoachSpacing.lg, vertical = GymCoachSpacing.sm)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -33,31 +39,31 @@ fun WorkoutProgressHeader(
                 text = workoutName.uppercase(),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = GymCoachColors.TextPrimary,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = formatElapsedTime(elapsedTime),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(GymCoachSpacing.sm))
 
         LinearProgressIndicator(
             progress = { if (totalSets > 0) completedSets.toFloat() / totalSets else 0f },
             modifier = Modifier.fillMaxWidth().heightIn(min = 6.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            color = GymCoachColors.Primary,
+            trackColor = GymCoachColors.SurfaceElevated
         )
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(GymCoachSpacing.xs))
 
         Text(
             text = "$completedSets / $totalSets sets",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = GymCoachColors.TextSecondary
         )
     }
 }

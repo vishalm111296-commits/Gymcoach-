@@ -61,7 +61,7 @@ fun MuscleDistributionPieChart(
                 text = "Muscle Group Distribution",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
 
             val totalReps = stats.sumOf { it.totalReps }
@@ -76,7 +76,7 @@ fun MuscleDistributionPieChart(
                     Text(
                         text = "No muscle volume logged yet",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        color = GymCoachColors.TextSecondary.copy(alpha = 0.6f)
                     )
                 }
             } else {
@@ -142,14 +142,14 @@ fun MuscleDistributionPieChart(
                                         text = stat.name.replaceFirstChar { it.uppercase() },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                                 Text(
                                     text = "%.0f%%".format(percentage),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = GymCoachColors.Primary
                                 )
                             }
                         }

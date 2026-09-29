@@ -570,7 +570,7 @@ private fun DateRangeSelector(
                     .clickable { onSelect(range) },
                 shape = GymCoachShapes.pill,
                 color = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.15f)
-                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        else GymCoachColors.SurfaceCard,
                 border = BorderStroke(1.dp, if (isSelected) GymCoachColors.Primary else GymCoachColors.BorderSubtle)
             ) {
                 Text(
@@ -607,7 +607,7 @@ private fun WorkoutAdherenceCard(
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -624,7 +624,7 @@ private fun WorkoutAdherenceCard(
                         text = "WEEKLY ADHERENCE",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = GymCoachColors.TextSecondary,
                         letterSpacing = 1.sp
                     )
                     Spacer(Modifier.height(2.dp))
@@ -632,14 +632,14 @@ private fun WorkoutAdherenceCard(
                         text = "$workoutsThisWeek of $targetSessionsPerWeek sessions completed",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = GymCoachColors.TextPrimary
                     )
                 }
                 Box(
                     modifier = Modifier
                         .background(
                             if (adherence >= 0.8f) Color(0xFF10B981).copy(alpha = 0.15f)
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            else GymCoachColors.Primary.copy(alpha = 0.15f),
                             shape = RoundedCornerShape(6.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -648,7 +648,7 @@ private fun WorkoutAdherenceCard(
                         text = "$animatedPercent%",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
-                        color = if (adherence >= 0.8f) Color(0xFF10B981) else MaterialTheme.colorScheme.primary
+                        color = if (adherence >= 0.8f) Color(0xFF10B981) else GymCoachColors.Primary
                     )
                 }
             }
@@ -660,10 +660,10 @@ private fun WorkoutAdherenceCard(
                     .height(8.dp),
                 color = when {
                     adherence >= 0.8f -> Color(0xFF10B981)
-                    adherence >= 0.5f -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.error
+                    adherence >= 0.5f -> GymCoachColors.Primary
+                    else -> GymCoachColors.ErrorRed
                 },
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                trackColor = GymCoachColors.SurfaceElevated
             )
         }
     }
@@ -678,12 +678,12 @@ private fun StrengthLineChart(
         modifier = modifier,
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = GymCoachColors.SurfaceDeep
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
-        val lineColor = MaterialTheme.colorScheme.primary
-        val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        val lineColor = GymCoachColors.Primary
+        val gridColor = GymCoachColors.BorderSubtle.copy(alpha = 0.3f)
 
         val animProgress by animateFloatAsState(
             targetValue = 1f,
@@ -773,7 +773,7 @@ private fun ExerciseSelector(
                 .clickable { expanded = true },
             shape = GymCoachShapes.sm,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                containerColor = GymCoachColors.SurfaceCard
             ),
             border = GymCoachBorders.subtleBorder()
         ) {
@@ -787,12 +787,12 @@ private fun ExerciseSelector(
                     text = selectedExercise,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = GymCoachColors.TextPrimary
                 )
                 Text(
                     text = "\u25bc",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = GymCoachColors.Primary
                 )
             }
         }
@@ -844,7 +844,7 @@ private fun MuscleVolumeBar(
             .padding(vertical = 4.dp),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -860,14 +860,14 @@ private fun MuscleVolumeBar(
                     text = muscleName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = GymCoachColors.TextPrimary
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "$animatedSets / $targetMax sets",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = GymCoachColors.TextSecondary
                     )
                     Box(
                         modifier = Modifier
@@ -875,7 +875,7 @@ private fun MuscleVolumeBar(
                                 when {
                                     inRange -> Color(0xFF10B981).copy(alpha = 0.15f)
                                     isOver -> Color(0xFFF59E0B).copy(alpha = 0.15f)
-                                    else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    else -> GymCoachColors.Primary.copy(alpha = 0.15f)
                                 },
                                 shape = RoundedCornerShape(4.dp)
                             )
@@ -893,7 +893,7 @@ private fun MuscleVolumeBar(
                             color = when {
                                 inRange -> Color(0xFF10B981)
                                 isOver -> Color(0xFFF59E0B)
-                                else -> MaterialTheme.colorScheme.primary
+                                else -> GymCoachColors.Primary
                             }
                         )
                     }
@@ -908,9 +908,9 @@ private fun MuscleVolumeBar(
                 color = when {
                     inRange -> Color(0xFF10B981)
                     isOver -> Color(0xFFF59E0B)
-                    else -> MaterialTheme.colorScheme.primary
+                    else -> GymCoachColors.Primary
                 },
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                trackColor = GymCoachColors.SurfaceElevated
             )
         }
     }
@@ -944,7 +944,7 @@ private fun PRCard(
             .padding(vertical = 4.dp),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD54F).copy(alpha = 0.35f))
     ) {
@@ -982,7 +982,7 @@ private fun PRCard(
                         text = exerciseName,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = GymCoachColors.TextPrimary
                     )
                     Box(
                         modifier = Modifier
@@ -1006,13 +1006,13 @@ private fun PRCard(
                 Text(
                     text = achievement,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
             }
             Text(
                 text = date.toString(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = GymCoachColors.TextSecondary.copy(alpha = 0.7f)
             )
         }
     }
@@ -1038,7 +1038,7 @@ private fun EmptyPlaceholder(message: String) {
             .padding(vertical = 6.dp),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = GymCoachColors.SurfaceDeep
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -1051,7 +1051,7 @@ private fun EmptyPlaceholder(message: String) {
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
         }
     }
@@ -1065,7 +1065,7 @@ private fun SummaryRow(label: String, value: String) {
             .padding(vertical = 4.dp),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -1079,13 +1079,13 @@ private fun SummaryRow(label: String, value: String) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = GymCoachColors.Primary
             )
         }
     }
@@ -1100,12 +1100,12 @@ private fun VolumeLineChart(
         modifier = modifier,
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = GymCoachColors.SurfaceDeep
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
-        val lineColor = MaterialTheme.colorScheme.primary
-        val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        val lineColor = GymCoachColors.Primary
+        val gridColor = GymCoachColors.BorderSubtle.copy(alpha = 0.3f)
 
         val animProgress by animateFloatAsState(
             targetValue = 1f,
@@ -1268,7 +1268,7 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
         modifier = modifier,
         shape = GymCoachShapes.sm,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -1281,13 +1281,13 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
         }
     }

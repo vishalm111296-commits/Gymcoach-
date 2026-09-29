@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import com.gymcoach.app.ui.theme.GymCoachColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -121,7 +122,7 @@ fun ExerciseVideoPlayer(
             androidx.compose.material3.Text(
                 text = "Video preview unavailable offline. Biomechanical cues available below.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
         }
     } else {
@@ -175,7 +176,7 @@ fun ExerciseVideoPlayer(
                             isPlaying -> "Pause"
                             else -> "Play"
                         },
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = GymCoachColors.Primary,
                         modifier = Modifier.size(24.dp),
                     )
                 }
@@ -192,9 +193,9 @@ fun ExerciseVideoPlayer(
                     },
                     modifier = Modifier.weight(1f),
                     colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        thumbColor = GymCoachColors.Primary,
+                        activeTrackColor = GymCoachColors.Primary,
+                        inactiveTrackColor = GymCoachColors.SurfaceElevated,
                     ),
                 )
             }
@@ -207,7 +208,7 @@ fun ExerciseVideoPlayer(
                 androidx.compose.material3.Text(
                     text = "$formattedPosition / $formattedDuration",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                 )
             }
         }

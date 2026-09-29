@@ -593,12 +593,12 @@ private fun RoutineBuilderContent(
 
         if (errorMessage != null) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                colors = CardDefaults.cardColors(containerColor = GymCoachColors.DangerBg),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = GymCoachColors.Danger,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(GymCoachSpacing.md)
                 )
@@ -660,7 +660,7 @@ private fun RoutineBuilderContent(
                             text = "Day ${day.dayNumber}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = GymCoachColors.Primary
                         )
                         if (days.size > 1) {
                             IconButton(
@@ -672,7 +672,7 @@ private fun RoutineBuilderContent(
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Remove Day",
-                                    tint = MaterialTheme.colorScheme.error,
+                                    tint = GymCoachColors.ErrorRed,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -710,13 +710,13 @@ private fun RoutineBuilderContent(
                         Text(
                             text = "No exercises added yet. Tap '+ Add Exercise' below.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = GymCoachColors.TextSecondary
                         )
                     } else {
                         for ((exIndex, ex) in day.exercises.withIndex()) {
                             Card(
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    containerColor = GymCoachColors.SurfaceElevated.copy(alpha = 0.5f)
                                 ),
                                 shape = GymCoachShapes.sm,
                                 modifier = Modifier.fillMaxWidth()
@@ -739,7 +739,7 @@ private fun RoutineBuilderContent(
                                             Text(
                                                 text = ex.muscleGroup,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary
+                                                color = GymCoachColors.Primary
                                             )
                                         }
                                         IconButton(
@@ -752,7 +752,7 @@ private fun RoutineBuilderContent(
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Remove Exercise",
-                                                tint = MaterialTheme.colorScheme.error,
+                                                tint = GymCoachColors.ErrorRed,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                         }
@@ -950,7 +950,7 @@ private fun RoutineBuilderContent(
                                 Text(
                                     text = "No matching exercises found.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = GymCoachColors.TextSecondary,
                                     modifier = Modifier.padding(GymCoachSpacing.lg)
                                 )
                             }
@@ -1004,13 +1004,13 @@ private fun RoutineBuilderContent(
                                             Text(
                                                 text = "${exercise.muscleGroup} • ${exercise.equipment}",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = GymCoachColors.TextSecondary
                                             )
                                         }
                                         Icon(
                                             imageVector = Icons.Default.Add,
                                             contentDescription = "Add",
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            tint = GymCoachColors.Primary,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }

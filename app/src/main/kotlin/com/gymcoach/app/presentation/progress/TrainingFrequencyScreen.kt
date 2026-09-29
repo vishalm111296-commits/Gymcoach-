@@ -277,7 +277,7 @@ private fun MonthlyBreakdownChart(monthlyData: Map<Month, Int>) {
                     Text(
                         text = count.toString(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = GymCoachColors.TextPrimary,
                         modifier = Modifier.width(24.dp),
                         textAlign = TextAlign.End
                     )

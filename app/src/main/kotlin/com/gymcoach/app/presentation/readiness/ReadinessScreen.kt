@@ -152,7 +152,7 @@ fun ReadinessScreen(
                                 Text(
                                     text = "Tap + to log how you're feeling today. This helps determine your training readiness.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = GymCoachColors.TextSecondary
                                 )
                             }
                         }
@@ -185,7 +185,7 @@ fun ReadinessScreen(
                                     Text(
                                         text = "Consider a rest day or very light activity.",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error
+                                        color = GymCoachColors.ErrorRed
                                     )
                                 }
                             }
@@ -557,7 +557,7 @@ private fun MetricRow(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = GymCoachColors.TextPrimary,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
@@ -609,7 +609,7 @@ private fun ReadinessHistoryItem(readiness: ReadinessEntity) {
                 Text(
                     text = dateFormat.format(Date(readiness.recordedAt)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
                 Text(
                     text = readiness.trainingRecommendation,

@@ -824,7 +824,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = GymCoachColors.SurfaceCard
                         ),
                         border = GymCoachBorders.subtleBorder()
                     ) {
@@ -838,7 +838,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Export your completed workouts in standard Strong/Hevy CSV format or complete JSON backup directly from the Workout History screen.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = GymCoachColors.TextSecondary
                             )
                             Spacer(Modifier.height(12.dp))
                             Button(
@@ -863,7 +863,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = GymCoachShapes.Card,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = GymCoachColors.SurfaceCard
                         ),
                         border = GymCoachBorders.subtleBorder()
                     ) {
@@ -899,7 +899,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Deterministic fitness coach with smart program generation, V-taper optimization, and progressive overload tracking. Exercise substitutions use rule-based matching with zero cloud latency.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -989,7 +989,7 @@ private fun SectionHeader(title: String) {
         text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Black,
-        color = MaterialTheme.colorScheme.primary,
+        color = GymCoachColors.Primary,
         letterSpacing = 1.sp
     )
 }
@@ -1010,7 +1010,7 @@ private fun ProfileInfoRow(
             },
         shape = GymCoachShapes.sm,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = GymCoachBorders.subtleBorder()
     ) {
@@ -1024,7 +1024,7 @@ private fun ProfileInfoRow(
                 modifier = Modifier
                     .size(34.dp)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        GymCoachColors.Primary.copy(alpha = 0.12f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -1032,7 +1032,7 @@ private fun ProfileInfoRow(
                 Icon(
                     imageVector = icon,
                     contentDescription = "Profile information",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = GymCoachColors.Primary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -1041,13 +1041,13 @@ private fun ProfileInfoRow(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = GymCoachColors.TextPrimary
             )
         }
     }

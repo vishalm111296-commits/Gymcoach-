@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gymcoach.app.core.analytics.*
 import com.gymcoach.app.data.local.entity.BodyMeasurementEntity
+import com.gymcoach.app.ui.theme.GymCoachColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,7 +57,7 @@ fun VTaperTransformationScreen(
                 is VTaperUiState.Error -> {
                     Text(
                         text = state.message,
-                        color = MaterialTheme.colorScheme.error,
+                        color = GymCoachColors.ErrorRed,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -153,8 +154,8 @@ fun HeroCard(adonisIndex: AdonisIndex, latest: BodyMeasurementEntity?) {
                     progress = { adonisIndex.progressPct / 100f },
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 12.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    color = GymCoachColors.Primary,
+                    trackColor = GymCoachColors.SurfaceElevated,
                 )
                 Column(
                     modifier = Modifier.align(Alignment.Center),
@@ -240,7 +241,7 @@ fun DeltaCard(
     invertGood: Boolean = false
 ) {
     val isGood = if (invertGood) deltaValue <= 0 else deltaValue >= 0
-    val color = if (isGood) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val color = if (isGood) GymCoachColors.Primary else GymCoachColors.ErrorRed
     val sign = if (deltaValue > 0) "+" else ""
 
     Card(modifier = modifier) {
@@ -277,7 +278,7 @@ fun LimbSymmetryCard(symmetry: LimbSymmetry) {
                 Text(text = symmetry.limbName, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = if (symmetry.isBalanced) "Balanced" else "Imbalance (${String.format(Locale.US, "%.1f", symmetry.deltaCm)}cm)",
-                    color = if (symmetry.isBalanced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    color = if (symmetry.isBalanced) GymCoachColors.Primary else GymCoachColors.ErrorRed,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

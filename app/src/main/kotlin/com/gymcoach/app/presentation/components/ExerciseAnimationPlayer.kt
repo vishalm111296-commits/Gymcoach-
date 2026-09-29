@@ -185,7 +185,7 @@ fun ExerciseAnimationPlayer(
                         Icon(
                             imageVector = Icons.Default.AutoGraph,
                             contentDescription = "Toggle ROM Trajectory",
-                            tint = if (showTrajectory) GymCoachColors.CyanAccent else Color.Gray,
+                            tint = if (showTrajectory) GymCoachColors.CyanAccent else GymCoachColors.TextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -203,7 +203,7 @@ fun ExerciseAnimationPlayer(
                             Icon(
                                 imageVector = Icons.Default.SquareFoot,
                                 contentDescription = "Toggle Joint Angles",
-                                tint = if (showAngles) GymCoachColors.GoldAccent else Color.Gray,
+                                tint = if (showAngles) GymCoachColors.GoldAccent else GymCoachColors.TextSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -235,7 +235,7 @@ fun ExerciseAnimationPlayer(
                         },
                         modifier = Modifier.height(28.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                            selectedContainerColor = GymCoachColors.Primary.copy(alpha = 0.25f)
                         )
                     )
 
@@ -251,7 +251,7 @@ fun ExerciseAnimationPlayer(
                         Icon(
                             imageVector = Icons.Default.Repeat,
                             contentDescription = "Loop",
-                            tint = if (controller.isLooping) MaterialTheme.colorScheme.primary else Color.Gray,
+                            tint = if (controller.isLooping) GymCoachColors.Primary else GymCoachColors.TextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -266,7 +266,7 @@ fun ExerciseAnimationPlayer(
                     .fillMaxWidth()
                     .aspectRatio(if (compact) 1.35f else 1.25f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)),
+                    .background(GymCoachColors.SurfaceDeep),
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.fillMaxSize().padding(14.dp)) {
@@ -313,7 +313,7 @@ fun ExerciseAnimationPlayer(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = if (compact) 13.sp else 14.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = GymCoachColors.TextPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
@@ -335,7 +335,7 @@ fun ExerciseAnimationPlayer(
                     Icon(
                         imageVector = Icons.Default.Replay,
                         contentDescription = "Replay",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = GymCoachColors.TextSecondary
                     )
                 }
 
@@ -344,14 +344,14 @@ fun ExerciseAnimationPlayer(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Previous Phase Step",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = GymCoachColors.TextSecondary
                     )
                 }
 
                 // Play / Pause Main Button
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = GymCoachColors.Primary,
                     modifier = Modifier
                         .size(if (compact) 48.dp else 52.dp)
                         .graphicsLayer {
@@ -370,7 +370,7 @@ fun ExerciseAnimationPlayer(
                         Icon(
                             imageVector = if (controller.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (controller.isPlaying) "Pause" else "Play",
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = GymCoachColors.TextPrimary,
                             modifier = Modifier.size(26.dp)
                         )
                     }
@@ -381,7 +381,7 @@ fun ExerciseAnimationPlayer(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Next Phase Step",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = GymCoachColors.TextSecondary
                     )
                 }
 
@@ -399,7 +399,7 @@ fun ExerciseAnimationPlayer(
                     Text(
                         text = if (controller.isStepMode) "Smooth" else "Step",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = if (controller.isStepMode) MaterialTheme.colorScheme.primary else Color.Gray
+                        color = if (controller.isStepMode) GymCoachColors.Primary else GymCoachColors.TextSecondary
                     )
                 }
             }
@@ -461,9 +461,9 @@ private fun AnimationScrubber(
                 contentDescription = "Animation progress: ${(controller.progress * 100).toInt()}%"
             },
         colors = SliderDefaults.colors(
-            thumbColor = MaterialTheme.colorScheme.primary,
-            activeTrackColor = MaterialTheme.colorScheme.primary,
-            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+            thumbColor = GymCoachColors.Primary,
+            activeTrackColor = GymCoachColors.Primary,
+            inactiveTrackColor = GymCoachColors.BorderSubtle
         )
     )
 }

@@ -275,14 +275,14 @@ fun WorkoutSessionScreen(
                             Text(
                                 text = formatDuration(elapsedSeconds),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = GymCoachColors.Primary
                             )
                             if (sessionVolume > 0) {
                                 val volFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(sessionVolume)
                                 Text(
                                     text = "$volFormatted ${weightUnit.code}·reps",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.tertiary
+                                    color = GymCoachColors.CyanAccent
                                 )
                             }
                         }
@@ -300,7 +300,7 @@ fun WorkoutSessionScreen(
                     TextButton(onClick = { showDiscardDialog = true }) {
                         Text(
                             text = "Discard",
-                            color = MaterialTheme.colorScheme.error,
+                            color = GymCoachColors.ErrorRed,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -423,11 +423,11 @@ fun WorkoutSessionScreen(
                                     .fillMaxWidth()
                                     .height(48.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
+                                    contentColor = GymCoachColors.ErrorRed
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(
                                     1.dp,
-                                    MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                                    GymCoachColors.ErrorRed.copy(alpha = 0.5f)
                                 ),
                                 shape = GymCoachShapes.md
                             ) {
@@ -435,13 +435,13 @@ fun WorkoutSessionScreen(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Discard Workout",
                                     modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = GymCoachColors.ErrorRed
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     "Discard Workout",
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.error
+                                    color = GymCoachColors.ErrorRed
                                 )
                             }
                             Spacer(Modifier.height(16.dp))
@@ -573,8 +573,8 @@ fun WorkoutSessionScreen(
                         viewModel.discardWorkout()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
+                        containerColor = GymCoachColors.ErrorRed,
+                        contentColor = GymCoachColors.TextPrimary
                     )
                 ) {
                     Text("Discard")
@@ -600,8 +600,8 @@ fun WorkoutSessionScreen(
                         viewModel.discardWorkout()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
+                        containerColor = GymCoachColors.ErrorRed,
+                        contentColor = GymCoachColors.TextPrimary
                     )
                 ) {
                     Text("Discard Workout")
@@ -677,7 +677,7 @@ fun WorkoutSessionScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = { viewModel.addExerciseToWorkout(exercise) },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    containerColor = GymCoachColors.SurfaceDeep
                                 )
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
@@ -689,7 +689,7 @@ fun WorkoutSessionScreen(
                                     Text(
                                         text = exercise.muscleGroup,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                             }
@@ -1188,7 +1188,7 @@ internal fun ExerciseSetCard(
                             Icon(
                                 Icons.Default.CameraAlt,
                                 contentDescription = "Camera Form Coach",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = GymCoachColors.Primary
                             )
                         }
                     }
@@ -1222,7 +1222,7 @@ internal fun ExerciseSetCard(
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Exercise Options",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = GymCoachColors.TextSecondary
                             )
                         }
                         DropdownMenu(
@@ -1235,7 +1235,7 @@ internal fun ExerciseSetCard(
                                     Icon(
                                         imageVector = Icons.Default.FitnessCenter,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = GymCoachColors.Primary
                                     )
                                 },
                                 onClick = {
@@ -1288,12 +1288,12 @@ internal fun ExerciseSetCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Remove Exercise", color = MaterialTheme.colorScheme.error) },
+                                text = { Text("Remove Exercise", color = GymCoachColors.ErrorRed) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = GymCoachColors.ErrorRed
                                     )
                                 },
                                 onClick = {
@@ -1478,7 +1478,7 @@ internal fun ExerciseSetCard(
                     Text(
                         if (showInstructions) "Hide Instructions" else "View Instructions",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = GymCoachColors.Primary
                     )
                 }
     
@@ -1510,7 +1510,7 @@ internal fun ExerciseSetCard(
                             Text(
                                 instructions,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = GymCoachColors.TextSecondary
                             )
                         }
                     }
@@ -1529,7 +1529,7 @@ internal fun ExerciseSetCard(
                     "SET",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.weight(0.12f),
                     textAlign = TextAlign.Center
                 )
@@ -1537,7 +1537,7 @@ internal fun ExerciseSetCard(
                     weightUnit.code.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.weight(0.22f),
                     textAlign = TextAlign.Center
                 )
@@ -1545,7 +1545,7 @@ internal fun ExerciseSetCard(
                     "REPS",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.weight(0.22f),
                     textAlign = TextAlign.Center
                 )
@@ -1553,7 +1553,7 @@ internal fun ExerciseSetCard(
                     "RPE",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.weight(0.16f),
                     textAlign = TextAlign.Center
                 )
@@ -1561,7 +1561,7 @@ internal fun ExerciseSetCard(
                     "REST",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.weight(0.16f),
                     textAlign = TextAlign.Center
                 )
@@ -1569,7 +1569,7 @@ internal fun ExerciseSetCard(
                     "DONE",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GymCoachColors.TextSecondary,
                     modifier = Modifier.width(44.dp),
                     textAlign = TextAlign.Center
                 )
@@ -1590,9 +1590,9 @@ internal fun ExerciseSetCard(
                     state = dismissState,
                     backgroundContent = {
                         val color = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                            MaterialTheme.colorScheme.errorContainer
+                            GymCoachColors.DangerBg
                         } else {
-                            MaterialTheme.colorScheme.surfaceVariant
+                            GymCoachColors.SurfaceElevated
                         }
                         Box(
                             modifier = Modifier
@@ -1602,7 +1602,7 @@ internal fun ExerciseSetCard(
                             contentAlignment = Alignment.CenterEnd
                         ) {
                             if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = GymCoachColors.Danger)
                             }
                         }
                     }
@@ -1670,7 +1670,7 @@ private fun SetRow(
         com.gymcoach.app.domain.model.SetType.WARMUP -> androidx.compose.ui.graphics.Color(0xFFFFB74D)
         com.gymcoach.app.domain.model.SetType.DROP -> androidx.compose.ui.graphics.Color(0xFFBA68C8)
         com.gymcoach.app.domain.model.SetType.FAILURE -> androidx.compose.ui.graphics.Color(0xFFE57373)
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> GymCoachColors.TextPrimary
     }
     val setTypeText = when (setType) {
         com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
@@ -2037,7 +2037,7 @@ internal fun WorkoutCompletionView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(GymCoachColors.PureDark)
     ) {
         Column(
             modifier = Modifier
@@ -2115,7 +2115,7 @@ internal fun WorkoutCompletionView(
             Text(
                 text = "Workout Crushed! 🔥",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = GymCoachColors.Primary,
                 fontWeight = FontWeight.Bold
             )
 
@@ -2124,7 +2124,7 @@ internal fun WorkoutCompletionView(
             Text(
                 text = "${summary.workoutName} • ${java.time.LocalDate.now()}",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GymCoachColors.TextSecondary
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -2256,10 +2256,10 @@ private fun StatCard(
         modifier = modifier.aspectRatio(1.15f),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = if (highlight) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                             else MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = if (highlight) GymCoachColors.SurfaceCardElevated.copy(alpha = 0.4f)
+                             else GymCoachColors.SurfaceCard
         ),
-        border = if (highlight) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        border = if (highlight) androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.Primary.copy(alpha = 0.5f))
                  else GymCoachBorders.subtleBorder()
     ) {
         Column(
@@ -2272,7 +2272,7 @@ private fun StatCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (highlight) GymCoachColors.Primary else GymCoachColors.TextSecondary,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.8.sp,
                 textAlign = TextAlign.Center
@@ -2281,7 +2281,7 @@ private fun StatCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
-                color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                color = if (highlight) GymCoachColors.Primary else GymCoachColors.TextPrimary,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
@@ -2295,7 +2295,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = GymCoachColors.SurfaceCard
         ),
         border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.35f))
     ) {
@@ -2327,13 +2327,13 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
                     text = pr.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = GymCoachColors.TextPrimary
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = pr.details,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = GymCoachColors.TextSecondary
                 )
             }
             Box(

@@ -435,6 +435,7 @@ class WorkoutDataExporterTest {
         val we = WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), exercise, sets)
         val wePerc = WorkoutExerciseWithSets(WorkoutExercise(2, 1, 2, 0), exercisePerc, sets)
         val wePipe = WorkoutExerciseWithSets(WorkoutExercise(3, 1, 3, 0), exercisePipe, sets)
+        val weTab = WorkoutExerciseWithSets(WorkoutExercise(4, 1, 4, 0), exerciseTab, sets)
         val exerciseSpace = Exercise(id = 5L, name = "  =HYPERLINK(\"http://evil.com\")", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
         val exerciseCtrl = Exercise(id = 6L, name = "\r\n-cmd", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
         val weSpace = WorkoutExerciseWithSets(WorkoutExercise(5, 1, 5, 0), exerciseSpace, sets)

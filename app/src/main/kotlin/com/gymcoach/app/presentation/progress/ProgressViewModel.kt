@@ -90,27 +90,13 @@ class ProgressViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val workoutRepository: WorkoutRepository,
     private val bodyMeasurementDao: BodyMeasurementDao,
-    private val programRepository: com.gymcoach.app.domain.repository.ProgramRepository
+    private val programRepository: com.gymcoach.app.domain.repository.ProgramRepository,
+    appPreferences: com.gymcoach.app.core.preferences.AppPreferences
 ) : ViewModel() {
 
-    // Secondary constructor for existing unit tests
-    constructor(
-        analyticsRepository: AnalyticsRepository,
-        workoutRepository: WorkoutRepository,
-        bodyMeasurementDao: BodyMeasurementDao
-    ) : this(
-        analyticsRepository,
-        workoutRepository,
-        bodyMeasurementDao,
-        object : com.gymcoach.app.domain.repository.ProgramRepository {
-            override fun getActiveProgram() = kotlinx.coroutines.flow.flowOf<com.gymcoach.app.data.local.entity.ProgramEntity?>(null)
-            override fun getDaysForProgram(programId: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.ProgramDayEntity>())
-            override fun getExercisesForDay(dayId: Long) = kotlinx.coroutines.flow.flowOf(emptyList<com.gymcoach.app.data.local.entity.ProgramExerciseEntity>())
-            override fun getExercisesForDays(dayIds: List<Long>) = kotlinx.coroutines.flow.flowOf(emptyMap<Long, List<com.gymcoach.app.data.local.entity.ProgramExerciseEntity>>())
-            override suspend fun saveGeneratedProgram(program: com.gymcoach.app.core.program.ProgramGenerator.GeneratedProgram) = 0L
-            override suspend fun saveCustomRoutine(name: String, description: String, goal: String, days: List<com.gymcoach.app.domain.repository.CustomRoutineDay>, setAsActive: Boolean) = 0L
-        }
-    )
+
+    val preferencesState = appPreferences.preferencesState
+
 
     private val _uiState = MutableStateFlow(ProgressUiState())
     val uiState: StateFlow<ProgressUiState> = _uiState.asStateFlow()

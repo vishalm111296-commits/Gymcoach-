@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -325,7 +326,7 @@ private fun QuickStatTile(
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF00F2FE)
+                color = GymCoachColors.CyanAccent
             )
             Text(
                 text = subtitle,
@@ -782,7 +783,7 @@ private fun ActionTile(
         onClick = onClick,
         interactionSource = interactionSource,
         modifier = modifier
-            .height(40.dp)
+            .heightIn(min = 48.dp)
             .graphicsLayer {
                 scaleX = tileScale
                 scaleY = tileScale

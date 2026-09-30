@@ -665,7 +665,7 @@ fun ExerciseDetailScreen(
                 val hasAnimation = animationDefinition != null
 
                 // State for Form Guide expansion
-                var showFormGuide by rememberSaveable { mutableStateOf(false) }
+                var showVideoOverlay by rememberSaveable { mutableStateOf(false) }
 
                 Box(
                     modifier = Modifier
@@ -899,14 +899,14 @@ fun ExerciseDetailScreen(
                             .align(Alignment.BottomEnd)
                             .padding(16.dp)
                             .clip(RoundedCornerShape(50.dp))
-                            .background(if (showFormGuide) GymCoachColors.Primary else Color(0x99000000))
+                            .background(if (showVideoOverlay) GymCoachColors.Primary else GymCoachColors.PureDark.copy(alpha = 0.6f))
                             .padding(horizontal = 12.dp, vertical = 6.dp)
-                            .clickable { showFormGuide = !showFormGuide }
+                            .clickable { showVideoOverlay = !showVideoOverlay }
                     ) {
                         Text(
-                            text = if (showFormGuide) "HIDE GUIDE" else "FORM GUIDE",
+                            text = if (showVideoOverlay) "HIDE GUIDE" else "FORM GUIDE",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -1013,7 +1013,7 @@ fun ExerciseDetailScreen(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -1028,7 +1028,7 @@ fun ExerciseDetailScreen(
                         Text(
                             text = ex.description,
                             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                            color = Color(0xFFDFE2EF)
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -1053,7 +1053,7 @@ fun ExerciseDetailScreen(
                                 Text(
                                     text = setup,
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                    color = Color(0xFFDFE2EF)
+                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -1068,7 +1068,7 @@ fun ExerciseDetailScreen(
                                 Text(
                                     text = execution,
                                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                    color = Color(0xFFDFE2EF)
+                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -1082,23 +1082,24 @@ fun ExerciseDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        var showCommonMistakes by rememberSaveable { mutableStateOf(false) }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showFormGuide = !showFormGuide }
+                                .clickable { showCommonMistakes = !showCommonMistakes }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             SectionHeader("Common Mistakes")
                             Text(
-                                text = if (showFormGuide) "Hide" else "Show",
+                                text = if (showCommonMistakes) "Hide" else "Show",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = GymCoachColors.TextMuted
                             )
                         }
 
-                        AnimatedVisibility(visible = showFormGuide) {
+                        AnimatedVisibility(visible = showCommonMistakes) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 mistakesList.forEach { mistake ->
                                     Row(
@@ -1113,7 +1114,7 @@ fun ExerciseDetailScreen(
                                         Text(
                                             text = mistake,
                                             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                            color = Color(0xFFDFE2EF)
+                                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -1129,23 +1130,24 @@ fun ExerciseDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        var showProTips by rememberSaveable { mutableStateOf(false) }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showFormGuide = !showFormGuide }
+                                .clickable { showProTips = !showProTips }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             SectionHeader("Pro Tips")
                             Text(
-                                text = if (showFormGuide) "Hide" else "Show",
+                                text = if (showProTips) "Hide" else "Show",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = GymCoachColors.TextMuted
                             )
                         }
 
-                        AnimatedVisibility(visible = showFormGuide) {
+                        AnimatedVisibility(visible = showProTips) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 cuesList.forEach { cue ->
                                     Row(
@@ -1161,7 +1163,7 @@ fun ExerciseDetailScreen(
                                         Text(
                                              text = cue,
                                              style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-                                             color = Color(0xFFDFE2EF)
+                                             color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                                          )
                                      }
                                 }

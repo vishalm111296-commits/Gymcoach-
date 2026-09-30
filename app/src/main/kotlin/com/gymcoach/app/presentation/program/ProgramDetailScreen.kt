@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -415,7 +416,7 @@ fun ProgramDetailScreen(
                                         }
                                         Button(
                                             onClick = { viewModel.startWorkoutForDay(dayWithEx.day.id, onStartWorkout) },
-                                            modifier = Modifier.height(32.dp),
+                                            modifier = Modifier.heightIn(min = 48.dp),
                                             shape = GymCoachShapes.xs,
                                             colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
                                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 0.dp)

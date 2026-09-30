@@ -46,19 +46,14 @@ class WorkoutHistoryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val restTimer: RestTimerManager,
     private val workoutDataExporter: WorkoutDataExporter,
-    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter()
+    private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter(),
+    appPreferences: com.gymcoach.app.core.preferences.AppPreferences
 ) : ViewModel() {
 
-    // Test backward compatibility constructor
-    constructor(
-        workoutRepository: WorkoutRepository,
-        restTimer: RestTimerManager
-    ) : this(
-        workoutRepository,
-        restTimer,
-        WorkoutDataExporter(),
-        WorkoutDataImporter()
-    )
+    val preferencesState = appPreferences.preferencesState
+
+
+    // Removed secondary constructor
 
     private val _exportResult = MutableStateFlow<ExportResult?>(null)
     val exportResult: StateFlow<ExportResult?> = _exportResult.asStateFlow()

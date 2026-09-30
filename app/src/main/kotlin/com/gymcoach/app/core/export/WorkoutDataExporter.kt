@@ -97,7 +97,12 @@ class WorkoutDataExporter @Inject constructor() {
 
     private fun escapeCsv(str: String): String {
         var sanitized = str
-        if (sanitized.isNotEmpty() && (sanitized.startsWith("=") || sanitized.startsWith("+") || sanitized.startsWith("-") || sanitized.startsWith("@"))) {
+        if (sanitized.isNotEmpty() && (
+            sanitized.startsWith("=") || sanitized.startsWith("+") || 
+            sanitized.startsWith("-") || sanitized.startsWith("@") ||
+            sanitized.startsWith("%") || sanitized.startsWith("|") ||
+            sanitized.startsWith("\t")
+        )) {
             sanitized = "'$sanitized"
         }
         if (sanitized.contains(',') || sanitized.contains('"') || sanitized.contains('\n') || sanitized.contains('\r')) {

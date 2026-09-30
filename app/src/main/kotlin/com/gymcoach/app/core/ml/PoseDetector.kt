@@ -101,19 +101,22 @@ class PoseDetector private constructor(
             // Check if model file is pre-packaged in app assets for offline support
             try {
                 context.assets.open(MODEL_FILE_NAME).use { input ->
-                    val tmp = File(context.filesDir, "$MODEL_FILE_NAME.asset.tmp")
-                    tmp.outputStream().use { output -> input.copyTo(output) }
-                    if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
-                        if (target.exists()) target.delete()
-                        if (tmp.renameTo(target)) return target
+                    val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.cacheDir)
+                    try {
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                        if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
+                            if (target.exists()) target.delete()
+                            if (tmp.renameTo(target)) return target
+                        }
+                    } finally {
+                        tmp.delete()
                     }
-                    tmp.delete()
                 }
             } catch (_: Exception) {
                 // Not bundled in assets; proceed to network download
             }
 
-            val tmp = File(context.filesDir, "$MODEL_FILE_NAME.tmp")
+            val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.cacheDir)
             var connection: HttpsURLConnection? = null
             try {
                 connection = (URL(MODEL_URL).openConnection() as HttpsURLConnection).apply {

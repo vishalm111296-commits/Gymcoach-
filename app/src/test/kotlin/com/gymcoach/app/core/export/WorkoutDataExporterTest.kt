@@ -425,13 +425,25 @@ class WorkoutDataExporterTest {
     fun `exportToCsv neutralizes spreadsheet formula injection characters`() {
         val exercise = Exercise(id = 1L, name = "=CMD|' /C calc'!A0", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
         val now = Instant.now()
-        val workout = Workout(id = 1, date = now, startTime = now, endTime = now.plusSeconds(3600), duration = 3600, notes = "+2.5kg PR, @admin", completed = true)
+        val workout = Workout(id = 1, date = now, startTime = now, endTime = now.plusSeconds(3600), duration = 3600, notes = "+2.5kg PR, @admin\n%test\n|test\n\ttest", completed = true)
+        
+        val exercisePerc = Exercise(id = 2L, name = "%calc", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        val exercisePipe = Exercise(id = 3L, name = "|calc", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        val exerciseTab = Exercise(id = 4L, name = "\tcalc", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        
         val sets = listOf(WorkoutSet(1, 1, 1, 100.0, 5, 8.0, 90, true, SetType.NORMAL))
         val we = WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), exercise, sets)
+        val wePerc = WorkoutExerciseWithSets(WorkoutExercise(2, 1, 2, 0), exercisePerc, sets)
+        val wePipe = WorkoutExerciseWithSets(WorkoutExercise(3, 1, 3, 0), exercisePipe, sets)
+        val weTab = WorkoutExerciseWithSets(WorkoutExercise(4, 1, 4, 0), exerciseTab, sets)
 
-        val csv = exporter.exportToCsv(listOf(WorkoutWithDetails(workout, listOf(we))))
+
+        val csv = exporter.exportToCsv(listOf(WorkoutWithDetails(workout, listOf(we, wePerc, wePipe, weTab))))
 
         assertTrue("Formula prefix = must be neutralized with leading single quote", csv.contains("'=CMD|' /C calc'!A0"))
-        assertTrue("Formula prefix + must be neutralized with leading single quote", csv.contains("'+2.5kg PR"))
+        assertTrue("Formula prefix + must be neutralized with leading single quote", csv.contains("'+2.5kg PR, @admin"))
+        assertTrue("Formula prefix % must be neutralized with leading single quote", csv.contains("'%calc"))
+        assertTrue("Formula prefix | must be neutralized with leading single quote", csv.contains("'|calc"))
+        assertTrue("Formula prefix tab must be neutralized with leading single quote", csv.contains("'\tcalc"))
     }
 }

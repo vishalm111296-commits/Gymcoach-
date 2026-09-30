@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.VideoCameraBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,7 +32,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -114,8 +112,6 @@ fun ExerciseTechniqueBottomSheet(
 ) {
     var animationDefinition by remember { mutableStateOf<ExerciseAnimationDefinition?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    // Allow user to bypass the unavailability notice to still use camera for rep counting
-    var showCameraAnyway by remember { mutableStateOf(false) }
 
     LaunchedEffect(exerciseName) {
         isLoading = true
@@ -178,10 +174,6 @@ fun ExerciseTechniqueBottomSheet(
             }
 
             // Animation Player or Loading / Kinetic Biomechanical Card
-            // Determine if this exercise supports AI form analysis
-            val isFormAnalysisUnsupported = remember(exerciseName, isCustomExercise) {
-                isCustomExercise || com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(exerciseName) == null
-            }
             when {
                 isLoading -> {
                     Box(
@@ -193,47 +185,6 @@ fun ExerciseTechniqueBottomSheet(
                         CircularProgressIndicator(color = GymCoachColors.Primary)
                     }
                 }
-                isFormAnalysisUnsupported && !showCameraAnyway -> {
-                    // "Form Analysis Not Available" notice for custom or unrecognised exercises
-                    Surface(
-                        shape = GymCoachShapes.md,
-                        color = GymCoachColors.SurfaceCardElevated,
-                        border = GymCoachBorders.subtle
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VideoCameraBack,
-                                contentDescription = "Form analysis unavailable",
-                                tint = GymCoachColors.TextSecondary,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Text(
-                                text = "Form Analysis Not Available",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = GymCoachColors.TextPrimary
-                            )
-                            Text(
-                                text = "AI-powered form analysis is available for 9 standard exercises: squats, deadlifts, bench press, overhead press, bent-over rows, bicep curls, push-ups, lateral raises, and planks.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = GymCoachColors.TextSecondary,
-                                lineHeight = 18.sp
-                            )
-                            TextButton(onClick = { showCameraAnyway = true }) {
-                                Text(
-                                    "Use Camera for Rep Counting",
-                                    color = GymCoachColors.Primary,
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        }
-                    }
-                }
                 animationDefinition != null -> {
                     ExerciseAnimationPlayer(
                         definition = animationDefinition!!,
@@ -242,73 +193,106 @@ fun ExerciseTechniqueBottomSheet(
                     )
                 }
                 else -> {
-                    // Biomechanical movement overview hero card for exercises without skeletal keyframes
-                    Surface(
-                        shape = GymCoachShapes.md,
-                        color = GymCoachColors.SurfaceCardElevated,
-                        border = GymCoachBorders.subtle
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                        if (isCustomExercise) {
+                            Surface(
+                                shape = GymCoachShapes.sm,
+                                color = GymCoachColors.CyanAccent.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, GymCoachColors.CyanAccent.copy(alpha = 0.35f))
                             ) {
-                                Box(
+                                Row(
                                     modifier = Modifier
-                                        .size(38.dp)
-                                        .background(GymCoachColors.Primary.copy(alpha = 0.18f), shape = GymCoachShapes.sm),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.FitnessCenter,
+                                        imageVector = Icons.Default.Info,
                                         contentDescription = null,
-                                        tint = GymCoachColors.Primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "BIOMECHANICAL TARGET",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 9.sp,
-                                            letterSpacing = 1.sp
-                                        ),
-                                        color = GymCoachColors.Primary
+                                        tint = GymCoachColors.CyanAccent,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = if (secondaryMuscles.isNotBlank()) {
-                                            "Target: ${muscleGroup.ifBlank { "Primary" }} (Secondary: $secondaryMuscles)"
-                                        } else {
-                                            "Target Muscle: ${muscleGroup.ifBlank { "Primary" }}"
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = GymCoachColors.TextPrimary
+                                        text = "Custom exercise: technique cues derived from movement pattern.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                             }
+                        }
 
-                            if (difficulty.isNotBlank() || movementPattern.isNotBlank()) {
-                                Spacer(Modifier.height(10.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (difficulty.isNotBlank()) {
-                                        Text(
-                                            text = "Level: ${difficulty.replaceFirstChar { it.uppercase() }}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = GymCoachColors.TextSecondary
+                        // Biomechanical movement overview hero card for exercises without skeletal keyframes
+                        Surface(
+                            shape = GymCoachShapes.md,
+                            color = GymCoachColors.SurfaceCardElevated,
+                            border = GymCoachBorders.subtle
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .background(GymCoachColors.Primary.copy(alpha = 0.18f), shape = GymCoachShapes.sm),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FitnessCenter,
+                                            contentDescription = null,
+                                            tint = GymCoachColors.Primary,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
-                                    if (movementPattern.isNotBlank()) {
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "• Pattern: ${movementPattern.replace("_", " ")}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = GymCoachColors.TextSecondary
+                                            text = "BIOMECHANICAL TARGET",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp,
+                                                letterSpacing = 1.sp
+                                            ),
+                                            color = GymCoachColors.Primary
                                         )
+                                        Text(
+                                            text = if (secondaryMuscles.isNotBlank()) {
+                                                "Target: ${muscleGroup.ifBlank { "Primary" }} (Secondary: $secondaryMuscles)"
+                                            } else {
+                                                "Target Muscle: ${muscleGroup.ifBlank { "Primary" }}"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = GymCoachColors.TextPrimary
+                                        )
+                                    }
+                                }
+
+                                if (difficulty.isNotBlank() || movementPattern.isNotBlank()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        if (difficulty.isNotBlank()) {
+                                            Text(
+                                                text = "Level: ${difficulty.replaceFirstChar { it.uppercase() }}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GymCoachColors.TextSecondary
+                                            )
+                                        }
+                                        if (movementPattern.isNotBlank()) {
+                                            Text(
+                                                text = "• Pattern: ${movementPattern.replace("_", " ")}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GymCoachColors.TextSecondary
+                                            )
+                                        }
                                     }
                                 }
                             }

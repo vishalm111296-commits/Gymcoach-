@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import androidx.room.withTransaction
+import com.gymcoach.app.data.local.database.GymCoachDatabase
 import java.time.Instant
 import javax.inject.Inject
 
@@ -33,8 +35,17 @@ class WorkoutRepositoryImpl @Inject constructor(
     private val workoutDao: WorkoutDao,
     private val exerciseDao: ExerciseDao,
     private val programDayDao: ProgramDayDao,
-    private val programExerciseDao: ProgramExerciseDao
+    private val programExerciseDao: ProgramExerciseDao,
+    private val database: GymCoachDatabase? = null
 ) : WorkoutRepository {
+
+    // Test backward compatibility constructor
+    constructor(
+        workoutDao: WorkoutDao,
+        exerciseDao: ExerciseDao,
+        programDayDao: ProgramDayDao,
+        programExerciseDao: ProgramExerciseDao
+    ) : this(workoutDao, exerciseDao, programDayDao, programExerciseDao, null)
 
     override fun getAllWorkouts(): Flow<List<Workout>> {
         return workoutDao.getAllWorkouts().map { entities ->
@@ -241,7 +252,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     }
 
     override suspend fun importWorkouts(workouts: List<WorkoutWithDetails>): Result<com.gymcoach.app.domain.repository.ImportStats> {
-        return try {
+        val executeImport: suspend () -> com.gymcoach.app.domain.repository.ImportStats = {
             var importedCount = 0
             var skippedCount = 0
             var setsCount = 0
@@ -250,7 +261,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                 val workout = workoutWithDetails.workout
                 val workoutEpoch = workout.startTime.toEpochMilli()
 
-                // ── PHASE 1: Read-only duplicate detection BEFORE any writes ────────────────
+                // ── PHASE 1: Duplicate detection within transaction ─────────────────────────
                 // Resolve exercise IDs from existing exercises (name lookup only, no inserts yet)
                 val existingWorkouts = workoutDao.getWorkoutsByDateDirect(workoutEpoch)
                 val existingExerciseNames = workoutWithDetails.exercises.map { it.exercise.name.trim() }
@@ -275,7 +286,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                     continue
                 }
 
-                // ── PHASE 2: Writes — only reached when this is a genuinely new workout ─────
+                // ── PHASE 2: Atomic writes (custom exercises + workout + exercises + sets) ───
                 val resolvedExercises = mutableListOf<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>()
 
                 for ((index, weWithSets) in workoutWithDetails.exercises.withIndex()) {
@@ -284,7 +295,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                     val exerciseId = if (existingExercise != null) {
                         existingExercise.id
                     } else {
-                        // Custom exercise insert: only runs because we passed the duplicate check above
+                        // Custom exercise insert: atomic with workout import transaction
                         exerciseDao.insert(
                             ExerciseEntity(
                                 id = 0,
@@ -337,13 +348,20 @@ class WorkoutRepositoryImpl @Inject constructor(
                 setsCount += resolvedExercises.sumOf { it.second.size }
             }
 
-            Result.success(
-                com.gymcoach.app.domain.repository.ImportStats(
-                    workoutsImported = importedCount,
-                    workoutsSkipped = skippedCount,
-                    setsImported = setsCount
-                )
+            com.gymcoach.app.domain.repository.ImportStats(
+                workoutsImported = importedCount,
+                workoutsSkipped = skippedCount,
+                setsImported = setsCount
             )
+        }
+
+        return try {
+            val stats = if (database != null) {
+                database.withTransaction { executeImport() }
+            } else {
+                executeImport()
+            }
+            Result.success(stats)
         } catch (e: Exception) {
             Result.failure(e)
         }

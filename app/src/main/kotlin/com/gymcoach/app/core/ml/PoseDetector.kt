@@ -151,16 +151,7 @@ class PoseDetector private constructor(
                 )
                 true
             } catch (_: Exception) {
-                try {
-                    java.nio.file.Files.move(
-                        source.toPath(),
-                        target.toPath(),
-                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                    )
-                    true
-                } catch (_: Exception) {
-                    source.renameTo(target)
-                }
+                false
             }
         }
     }

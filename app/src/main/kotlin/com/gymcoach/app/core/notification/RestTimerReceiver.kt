@@ -26,7 +26,7 @@ class RestTimerReceiver : BroadcastReceiver() {
             try {
                 val serviceIntent = Intent(context, RestTimerNotificationService::class.java).setAction(action)
                 intent.extras?.let { serviceIntent.putExtras(it) }
-                context.startService(serviceIntent)
+                androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent)
             } catch (_: Exception) {
                 // Service may have already completed or background start was restricted
             }

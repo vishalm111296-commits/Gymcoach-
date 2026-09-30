@@ -154,6 +154,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 
+@kotlinx.parcelize.Parcelize
+data class WarmupDialogState(val exerciseIndex: Int, val exerciseName: String, val targetWeight: Double) : android.os.Parcelable
+
+@kotlinx.parcelize.Parcelize
+data class SubstitutionDialogState(val exerciseIndex: Int, val exerciseId: Long, val exerciseName: String) : android.os.Parcelable
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutSessionScreen(
@@ -189,8 +195,8 @@ fun WorkoutSessionScreen(
         }
     }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
-    var warmupDialogData by rememberSaveable { mutableStateOf<Triple<Int, String, Double>?>(null) }
-    var substitutionDialogData by rememberSaveable { mutableStateOf<Triple<Int, Long, String>?>(null) }
+    var warmupDialogData by rememberSaveable { mutableStateOf<WarmupDialogState?>(null) }
+    var substitutionDialogData by rememberSaveable { mutableStateOf<SubstitutionDialogState?>(null) }
     val substitutes by viewModel.substitutes.collectAsState()
     val isSubstitutionLoading by viewModel.isSubstitutionLoading.collectAsState()
     var pickerSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -388,9 +394,9 @@ fun WorkoutSessionScreen(
                                onSetTypeChange = { setIdx, type -> viewModel.updateSetType(exIdx, setIdx, type) },
                                onToggleComplete = { setIdx -> viewModel.toggleSetCompletion(exIdx, setIdx) },
                                onOpenPlateCalculator = { w -> plateCalcWeight = w },
-                               onOpenWarmupCalculator = { w -> warmupDialogData = Triple(exIdx, we.exercise.name, w) },
+                               onOpenWarmupCalculator = { w -> warmupDialogData = WarmupDialogState(exIdx, we.exercise.name, w) },
                                onSubstituteExercise = {
-                                   substitutionDialogData = Triple(exIdx, we.exercise.id, we.exercise.name)
+                                   substitutionDialogData = SubstitutionDialogState(exIdx, we.exercise.id, we.exercise.name)
                                    viewModel.loadSubstitutesForExercise(we.exercise.id)
                                },
                                onCameraClick = { type ->
@@ -697,10 +703,9 @@ fun WorkoutSessionScreen(
                     }
                 }
             },
-            confirmButton = {},
-            dismissButton = {
+            confirmButton = {
                 TextButton(onClick = { viewModel.hideExercisePicker() }) {
-                    Text("Cancel")
+                    Text("Close")
                 }
             }
         )

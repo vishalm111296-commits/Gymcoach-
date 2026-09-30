@@ -542,32 +542,39 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     fun applyCameraReps(exerciseIndex: Int, reps: Int, setIndex: Int? = null) {
         val validReps = maxOf(0, reps)
-        val workout = _currentWorkout.value ?: return
-        if (exerciseIndex !in workout.exercises.indices) return
-        val we = workout.exercises[exerciseIndex]
-        if (we.sets.isEmpty()) return
-        val targetSetIndex = setIndex ?: we.sets.indexOfFirst { !it.completed }.let { if (it == -1) we.sets.lastIndex else it }
-        if (targetSetIndex !in we.sets.indices) return
-        val set = we.sets[targetSetIndex]
-        val updated = set.copy(reps = validReps, completed = true)
         viewModelScope.launch {
             try {
-                workoutRepository.updateSet(updated)
-                val refreshed = _currentWorkout.value
-                calculateSessionVolume(refreshed)
-                if (refreshed != null) {
-                    calculateProgressionRecommendations(refreshed.exercises)
+                addSetMutex.withLock {
+                    val workout = _currentWorkout.value ?: return@withLock
+                    if (exerciseIndex !in workout.exercises.indices) return@withLock
+                    val we = workout.exercises[exerciseIndex]
+                    if (we.sets.isEmpty()) return@withLock
+                    val targetSetIndex = setIndex ?: we.sets.indexOfFirst { !it.completed }.let { if (it == -1) we.sets.lastIndex else it }
+                    if (targetSetIndex !in we.sets.indices) return@withLock
+                    val set = we.sets[targetSetIndex]
+                    val updated = set.copy(reps = validReps, completed = true)
+
+                    val updatedSets = we.sets.toMutableList().also { it[targetSetIndex] = updated }
+                    val updatedWe = we.copy(sets = updatedSets)
+                    val updatedExercises = workout.exercises.toMutableList().also { it[exerciseIndex] = updatedWe }
+                    val updatedWorkout = workout.copy(exercises = updatedExercises)
+                    _currentWorkout.value = updatedWorkout
+
+                    workoutRepository.updateSet(updated)
+                    calculateSessionVolume(updatedWorkout)
+                    calculateProgressionRecommendations(updatedWorkout.exercises)
+
+                    if (appPreferences.preferencesState.value.autoStartRestTimer) {
+                        val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
+                        val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
+                        val nextSet = calculateNextSetLabel(updatedWorkout, exerciseIndex, targetSetIndex)
+                        restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = updatedWorkout.workout.id)
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _error.value = e.message ?: "Failed to apply camera reps"
             }
-        }
-        if (appPreferences.preferencesState.value.autoStartRestTimer) {
-            val recommendedRest = RestPresets.recommended(set.setType, set.rpe)
-            val restSeconds = if (set.restSeconds > 0) set.restSeconds else recommendedRest
-            val nextSet = calculateNextSetLabel(workout, exerciseIndex, targetSetIndex)
-            restTimer.start(restSeconds, viewModelScope, nextSet = nextSet, workoutId = workout.workout.id)
         }
     }
 

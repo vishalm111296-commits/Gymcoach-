@@ -145,6 +145,7 @@ fun CameraPreviewScreen(
             analyzerExecutor.shutdown()
             detector?.close()
             formAnalyzer.close()
+            frameConverter.release()
         }
     }
 
@@ -430,5 +431,12 @@ private class FrameConverter {
 
         canvas?.drawBitmap(src, matrix, paint)
         return out
+    }
+
+    fun release() {
+        sourceBitmap?.takeIf { !it.isRecycled }?.recycle()
+        sourceBitmap = null
+        rotatedBitmap?.takeIf { !it.isRecycled }?.recycle()
+        rotatedBitmap = null
     }
 }

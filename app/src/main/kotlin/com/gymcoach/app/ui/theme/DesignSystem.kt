@@ -57,6 +57,23 @@ object GymCoachColors {
     val ErrorRed = Color(0xFFEF4444)
     val WarningAmber = Color(0xFFF59E0B)
 
+    // Set Types
+    val SetWarmup = Color(0xFFFFB74D) // Amber Warmup
+    val SetDrop = Color(0xFFBA68C8)   // Violet Dropset
+    val SetFailure = Color(0xFFE57373)// Coral Failure
+    val SetPR = Color(0xFFFFD54F)     // Gold PR Accent
+
+    // Gamification & Badges
+    val BadgeBronze = Color(0xFFCD7F32)
+    val BadgeSilver = Color(0xFFC0C0C0)
+    val BadgeGold = Color(0xFFFFD700)
+    val BadgeObsidian = Color(0xFF8A2BE2)
+
+    // Interactivity & Accents
+    val Favorite = Color(0xFFF43F5E)
+    val NeonCyan = Color(0xFF00F2FE)
+    val MuscleGlow = Color(0xFFFF5722).copy(alpha = 0.35f)
+
     // Legacy / Kept for compilation
     val PureDark = Color(0xFF0D111A)
     val SurfaceCardElevated = Color(0xFF222C42)

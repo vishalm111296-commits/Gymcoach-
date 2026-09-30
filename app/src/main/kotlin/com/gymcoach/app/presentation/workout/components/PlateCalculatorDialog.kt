@@ -11,6 +11,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,18 +27,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.core.progression.PlateCalculator
 import com.gymcoach.app.ui.theme.GymCoachBorders
@@ -72,22 +81,26 @@ val BARBELL_PRESETS_IMPERIAL = listOf(
 
 val BARBELL_PRESETS = BARBELL_PRESETS_METRIC
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlateCalculatorDialog(
     targetWeight: Double,
     barWeight: Double = 20.0,
     weightUnit: WeightUnit = WeightUnit.KG,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onWeightSelected: ((Double) -> Unit)? = null
 ) {
     val isImperial = weightUnit == WeightUnit.LBS
     val initialBarWeight = if (isImperial && barWeight == 20.0) 45.0 else barWeight
-    var selectedBarWeight by remember(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
+    var selectedBarWeight by rememberSaveable(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
+    var currentTargetWeight by rememberSaveable(targetWeight, weightUnit) { mutableDoubleStateOf(targetWeight) }
+
     val presets = if (isImperial) BARBELL_PRESETS_IMPERIAL else BARBELL_PRESETS_METRIC
     val availablePlates = if (isImperial) PlateCalculator.STANDARD_IMPERIAL_PLATES else PlateCalculator.STANDARD_METRIC_PLATES
 
-    // Memoize: only recalculate when weight inputs actually change
-    val breakdown = remember(targetWeight, selectedBarWeight, availablePlates) {
-        PlateCalculator.calculatePlates(targetWeight, selectedBarWeight, availablePlates)
+    // Recalculate plate breakdown based on interactive target weight & selected bar
+    val breakdown = remember(currentTargetWeight, selectedBarWeight, availablePlates) {
+        PlateCalculator.calculatePlates(currentTargetWeight, selectedBarWeight, availablePlates)
     }
 
     AlertDialog(
@@ -119,6 +132,97 @@ fun PlateCalculatorDialog(
                     .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow)),
                 verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.md)
             ) {
+                // Interactive Target Weight Steppers
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = GymCoachColors.SurfaceCardElevated),
+                    border = GymCoachBorders.subtle,
+                    shape = GymCoachShapes.sm
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Target Weight:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = GymCoachColors.TextSecondary
+                            )
+                            val displayWeight = if (currentTargetWeight % 1.0 == 0.0) {
+                                currentTargetWeight.toInt().toString()
+                            } else {
+                                currentTargetWeight.toString()
+                            }
+                            Text(
+                                text = "$displayWeight ${weightUnit.code}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = GymCoachColors.Primary
+                            )
+                        }
+
+                        val stepSmall = if (isImperial) 5.0 else 2.5
+                        val stepLarge = if (isImperial) 10.0 else 5.0
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    currentTargetWeight = (currentTargetWeight - stepLarge).coerceAtLeast(selectedBarWeight)
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                shape = GymCoachShapes.xs,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.BorderSubtle)
+                            ) {
+                                Text("-$stepLarge", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextPrimary)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    currentTargetWeight = (currentTargetWeight - stepSmall).coerceAtLeast(selectedBarWeight)
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                shape = GymCoachShapes.xs,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.BorderSubtle)
+                            ) {
+                                Text("-$stepSmall", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.TextPrimary)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    currentTargetWeight = currentTargetWeight + stepSmall
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                shape = GymCoachShapes.xs,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.BorderSubtle)
+                            ) {
+                                Text("+$stepSmall", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.Primary)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    currentTargetWeight = currentTargetWeight + stepLarge
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                shape = GymCoachShapes.xs,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.BorderSubtle)
+                            ) {
+                                Text("+$stepLarge", style = MaterialTheme.typography.labelSmall, color = GymCoachColors.Primary)
+                            }
+                        }
+                    }
+                }
+
                 // Barbell Selection Chips
                 Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.xs)) {
                     Text(
@@ -210,7 +314,7 @@ fun PlateCalculatorDialog(
                     }
                 }
 
-                // Visual Barbell Sleeve Representation
+                // Visual Barbell Sleeve Representation (Wrapped in horizontalScroll for 6+ plates without clipping)
                 if (breakdown.platesPerSide.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.xs)) {
                         Text(
@@ -225,13 +329,14 @@ fun PlateCalculatorDialog(
                                 .clip(GymCoachShapes.sm)
                                 .background(GymCoachColors.SurfaceDeep)
                                 .border(GymCoachBorders.subtle, GymCoachShapes.sm)
+                                .horizontalScroll(rememberScrollState())
                                 .padding(horizontal = GymCoachSpacing.sm),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             // Shaft line — metal bar
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .width(420.dp)
                                     .height(8.dp)
                                     .background(GymCoachColors.SurfaceElevated)
                             )
@@ -270,7 +375,7 @@ fun PlateCalculatorDialog(
                                                 .height(plateHeight)
                                                 .clip(GymCoachShapes.xs)
                                                 .background(Color(item.hexColor))
-                                                .border(0.5.dp, Color.White.copy(alpha = 0.4f), GymCoachShapes.xs)
+                                                .border(0.5.dp, GymCoachColors.BorderSubtle, GymCoachShapes.xs)
                                         )
                                     }
                                 }
@@ -290,12 +395,12 @@ fun PlateCalculatorDialog(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(GymCoachSpacing.lg),
+                            .padding(GymCoachSpacing.md),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (targetWeight <= selectedBarWeight)
-                                "Use empty barbell (${selectedBarWeight}${weightUnit.code})"
+                            text = if (currentTargetWeight <= selectedBarWeight)
+                                "Use empty barbell (${selectedBarWeight.toInt()}${weightUnit.code})"
                             else
                                 "No additional plates needed",
                             style = MaterialTheme.typography.bodyMedium,
@@ -303,44 +408,48 @@ fun PlateCalculatorDialog(
                         )
                     }
                 } else {
-                    Column(
+                    // Space-efficient compact plate badges/chips
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(GymCoachSpacing.sm)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         breakdown.platesPerSide.forEach { item ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(GymCoachShapes.sm)
-                                    .background(GymCoachColors.SurfaceDeep)
-                                    .border(GymCoachBorders.subtle, GymCoachShapes.sm)
-                                    .padding(horizontal = GymCoachSpacing.md, vertical = GymCoachSpacing.sm),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Surface(
+                                shape = GymCoachShapes.sm,
+                                color = GymCoachColors.SurfaceCardElevated,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.BorderSubtle)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(22.dp)
+                                            .size(16.dp)
                                             .clip(CircleShape)
                                             .background(Color(item.hexColor))
-                                            .border(1.dp, GymCoachColors.BorderSubtle, CircleShape)
+                                            .border(0.5.dp, GymCoachColors.BorderSubtle, CircleShape)
                                     )
-                                    Spacer(Modifier.width(GymCoachSpacing.md))
                                     Text(
-                                        text = "${item.plateWeight} ${weightUnit.code} plate",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
+                                        text = "${item.plateWeight}${weightUnit.code}",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = GymCoachColors.TextPrimary
                                     )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(GymCoachShapes.xs)
+                                            .background(GymCoachColors.Primary.copy(alpha = 0.15f))
+                                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "× ${item.count}",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                            color = GymCoachColors.Primary
+                                        )
+                                    }
                                 }
-
-                                Text(
-                                    text = "× ${item.count}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GymCoachColors.Primary
-                                )
                             }
                         }
                     }
@@ -356,13 +465,50 @@ fun PlateCalculatorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    "Close",
-                    fontWeight = FontWeight.Bold,
-                    color = GymCoachColors.TextSecondary
-                )
+            if (onWeightSelected != null && currentTargetWeight != targetWeight) {
+                Button(
+                    onClick = {
+                        onWeightSelected(currentTargetWeight)
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GymCoachColors.Primary),
+                    shape = GymCoachShapes.sm
+                ) {
+                    val displayWeight = if (currentTargetWeight % 1.0 == 0.0) currentTargetWeight.toInt().toString() else currentTargetWeight.toString()
+                    Text("Apply ($displayWeight${weightUnit.code})", fontWeight = FontWeight.Bold)
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        "Close",
+                        fontWeight = FontWeight.Bold,
+                        color = GymCoachColors.TextSecondary
+                    )
+                }
             }
-        }
+        },
+        dismissButton = if (onWeightSelected != null && currentTargetWeight != targetWeight) {
+            {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = GymCoachColors.TextSecondary)
+                }
+            }
+        } else null
     )
 }
+
+@Composable
+fun PlateCalculatorDialog(
+    initialTargetWeight: Double,
+    weightUnit: WeightUnit,
+    onDismiss: () -> Unit,
+    onWeightSelected: (Double) -> Unit
+) {
+    PlateCalculatorDialog(
+        targetWeight = initialTargetWeight,
+        weightUnit = weightUnit,
+        onDismiss = onDismiss,
+        onWeightSelected = onWeightSelected
+    )
+}
+

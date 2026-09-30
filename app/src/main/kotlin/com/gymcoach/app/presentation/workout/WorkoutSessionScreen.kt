@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.workout
 
+import com.gymcoach.app.presentation.workout.components.ActiveWorkoutSetRow
 import com.gymcoach.app.presentation.workout.components.ExerciseSubstitutionDialog
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
 import com.gymcoach.app.presentation.workout.components.SupersetLinkDialog
@@ -207,9 +208,20 @@ fun WorkoutSessionScreen(
     var supersetDialogExerciseIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val animationRepository = remember { com.gymcoach.app.core.animation.AnimationRepository(context.applicationContext) }
-    var selectedTechniqueExercise by remember { mutableStateOf<com.gymcoach.app.domain.model.Exercise?>(null) }
+    var selectedTechniqueExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val selectedTechniqueExercise = currentWorkout?.exercises?.firstOrNull { it.exercise.id == selectedTechniqueExerciseId }?.exercise
     val preferencesState by viewModel.preferencesState.collectAsState()
     val weightUnit = preferencesState.weightUnit
+
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.prEvents.collect { pr ->
+            snackbarHostState.showSnackbar(
+                message = "🏆 NEW PR: ${pr.exerciseName} - ${pr.details}!",
+                duration = androidx.compose.material3.SnackbarDuration.Short
+            )
+        }
+    }
 
     val haptic = LocalHapticFeedback.current
     val rememberRestTimer = rememberSaveable { mutableStateOf(false) }
@@ -312,7 +324,8 @@ fun WorkoutSessionScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -336,36 +349,6 @@ fun WorkoutSessionScreen(
                         }
                     }
 
-                    // Rest timer card with preset buttons
-                    if (restTimerState.isRunning) {
-                        item(key = "rest_timer_card") {
-                            AnimatedVisibility(
-                                visible = restTimerState.isRunning,
-                                enter = fadeIn() + expandVertically(
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
-                                ),
-                                exit = fadeOut() + shrinkVertically(),
-                                modifier = Modifier.animateItemPlacement()
-                            ) {
-                                RestTimerCard(
-                                    timeRemaining = restTimerState.timeRemaining,
-                                    totalDuration = restTimerState.totalDuration,
-                                    isPaused = restTimerState.isPaused,
-                                    onPauseResume = {
-                                        if (restTimerState.isPaused) viewModel.resumeRestTimer()
-                                        else viewModel.pauseRestTimer()
-                                    },
-                                    onSkip = { viewModel.stopRestTimer() },
-                                    onAddFifteen = { viewModel.adjustRestTimer(15) },
-                                    onSubtractFifteen = { viewModel.adjustRestTimer(-15) },
-                                    onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
-                                )
-                            }
-                        }
-                    }
 
                     item(key = "workout_header_spacer") { Spacer(Modifier.height(8.dp)) }
 
@@ -406,7 +389,7 @@ fun WorkoutSessionScreen(
                                supersetGroup = supersetGroups.firstOrNull { exIdx in it.exerciseIndices },
                                onOpenSupersetDialog = { supersetDialogExerciseIndex = exIdx },
                                onOpenTechniqueGuide = {
-                                   selectedTechniqueExercise = we.exercise
+                                   selectedTechniqueExerciseId = we.exercise.id
                                }
                             )
                         }
@@ -453,6 +436,38 @@ fun WorkoutSessionScreen(
                             Spacer(Modifier.height(16.dp))
                         }
                     }
+                }
+            }
+
+            // Persistent Floating Rest Timer Dock
+            AnimatedVisibility(
+                visible = restTimerState.isRunning,
+                enter = fadeIn() + expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    RestTimerCard(
+                        timeRemaining = restTimerState.timeRemaining,
+                        totalDuration = restTimerState.totalDuration,
+                        isPaused = restTimerState.isPaused,
+                        onPauseResume = {
+                            if (restTimerState.isPaused) viewModel.resumeRestTimer()
+                            else viewModel.pauseRestTimer()
+                        },
+                        onSkip = { viewModel.stopRestTimer() },
+                        onAddFifteen = { viewModel.adjustRestTimer(15) },
+                        onSubtractFifteen = { viewModel.adjustRestTimer(-15) },
+                        onPresetTap = { seconds -> viewModel.changeRestTimerDuration(seconds) }
+                    )
                 }
             }
 
@@ -748,9 +763,9 @@ fun WorkoutSessionScreen(
 
     if (selectedTechniqueExercise != null) {
         ExerciseTechniqueBottomSheet(
-            exercise = selectedTechniqueExercise!!,
+            exercise = selectedTechniqueExercise,
             animationRepository = animationRepository,
-            onDismiss = { selectedTechniqueExercise = null }
+            onDismiss = { selectedTechniqueExerciseId = null }
         )
     }
 }
@@ -1025,7 +1040,7 @@ internal fun ExerciseSetCard(
     onRepsChange: (Int, Int) -> Unit,
     onWeightChange: (Int, Double) -> Unit,
     onRpeChange: (Int, Double) -> Unit,
-    onRestSecondsChange: (Int, Int) -> Unit,
+    @Suppress("UNUSED_PARAMETER") onRestSecondsChange: (Int, Int) -> Unit,
     onSetTypeChange: (Int, com.gymcoach.app.domain.model.SetType) -> Unit,
     onToggleComplete: (Int) -> Unit,
     onOpenPlateCalculator: (Double) -> Unit = {},
@@ -1526,8 +1541,8 @@ internal fun ExerciseSetCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -1535,7 +1550,7 @@ internal fun ExerciseSetCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.weight(0.12f),
+                    modifier = Modifier.width(36.dp),
                     textAlign = TextAlign.Center
                 )
                 Text(
@@ -1543,7 +1558,7 @@ internal fun ExerciseSetCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.weight(0.22f),
+                    modifier = Modifier.weight(1.2f),
                     textAlign = TextAlign.Center
                 )
                 Text(
@@ -1551,23 +1566,7 @@ internal fun ExerciseSetCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.weight(0.22f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    "RPE",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.weight(0.16f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    "REST",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.weight(0.16f),
+                    modifier = Modifier.weight(1.0f),
                     textAlign = TextAlign.Center
                 )
                 Text(
@@ -1575,7 +1574,7 @@ internal fun ExerciseSetCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = GymCoachColors.TextSecondary,
-                    modifier = Modifier.width(44.dp),
+                    modifier = Modifier.width(40.dp),
                     textAlign = TextAlign.Center
                 )
             }
@@ -1612,21 +1611,24 @@ internal fun ExerciseSetCard(
                         }
                     }
                 ) {
-                    SetRow(
-                        index = index,
-                        weight = set.weight,
-                        reps = set.reps,
-                        rpe = set.rpe,
-                        restSeconds = set.restSeconds,
-                        completed = set.completed,
-                        setType = set.setType,
+                    val prevPerfStr = previousSets?.getOrNull(index)?.let {
+                        "${it.weight}${weightUnit.code} × ${it.reps}"
+                    }
+                    ActiveWorkoutSetRow(
+                        set = set,
+                        previousPerformance = prevPerfStr,
                         weightUnit = weightUnit,
-                        onRepsChange = { reps -> onRepsChange(index, reps) },
                         onWeightChange = { weight -> onWeightChange(index, weight) },
+                        onRepsChange = { reps -> onRepsChange(index, reps) },
                         onRpeChange = { rpe -> onRpeChange(index, rpe) },
-                        onRestSecondsChange = { rest -> onRestSecondsChange(index, rest) },
                         onSetTypeChange = { type -> onSetTypeChange(index, type) },
-                        onToggleComplete = { onToggleComplete(index) }
+                        onCompleteToggle = { onToggleComplete(index) },
+                        onQuickFill = {
+                            previousSets?.getOrNull(index)?.let { prev ->
+                                onWeightChange(index, prev.weight)
+                                onRepsChange(index, prev.reps)
+                            }
+                        }
                     )
                 }
             }
@@ -1643,297 +1645,6 @@ internal fun ExerciseSetCard(
                 Icon(Icons.Default.Add, contentDescription = "Add set", modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Add Set", fontWeight = FontWeight.SemiBold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SetRow(
-    index: Int,
-    weight: Double,
-    reps: Int,
-    rpe: Double,
-    restSeconds: Int,
-    completed: Boolean,
-    setType: com.gymcoach.app.domain.model.SetType,
-    weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG,
-    onRepsChange: (Int) -> Unit,
-    onWeightChange: (Double) -> Unit,
-    onRpeChange: (Double) -> Unit,
-    onRestSecondsChange: (Int) -> Unit,
-    onSetTypeChange: (com.gymcoach.app.domain.model.SetType) -> Unit,
-    onToggleComplete: () -> Unit
-) {
-    var weightText by rememberSaveable { mutableStateOf(if (weight > 0) weight.toString() else "") }
-    var repsText by rememberSaveable { mutableStateOf(if (reps > 0) reps.toString() else "") }
-    var rpeText by rememberSaveable { mutableStateOf(if (rpe > 0) rpe.toString() else "") }
-    var restText by rememberSaveable { mutableStateOf(if (restSeconds > 0) restSeconds.toString() else "") }
-    val haptic = LocalHapticFeedback.current
-
-    val setTypeColor = when (setType) {
-        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup
-        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.ui.theme.GymCoachColors.SetDrop
-        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.ui.theme.GymCoachColors.SetFailure
-        else -> GymCoachColors.TextPrimary
-    }
-    val setTypeText = when (setType) {
-        com.gymcoach.app.domain.model.SetType.WARMUP -> "W"
-        com.gymcoach.app.domain.model.SetType.DROP -> "D"
-        com.gymcoach.app.domain.model.SetType.FAILURE -> "F"
-        else -> "${index + 1}"
-    }
-
-    // Tactile checkmark pop: spring bounce scale from 0.8f to 1.2f to 1.0f upon checking off a set
-    val checkScale = androidx.compose.runtime.remember { Animatable(1.0f) }
-    LaunchedEffect(completed) {
-        if (completed) {
-            checkScale.snapTo(0.8f)
-            checkScale.animateTo(
-                targetValue = 1.2f,
-                animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
-            )
-            checkScale.animateTo(
-                targetValue = 1.0f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            )
-        } else {
-            checkScale.animateTo(
-                targetValue = 1.0f,
-                animationSpec = tween(durationMillis = 150)
-            )
-        }
-    }
-
-    // Smooth color transitions upon checking off a set
-    val rowBackgroundColor by animateColorAsState(
-        targetValue = if (completed) GymCoachColors.Success.copy(alpha = 0.09f)
-                      else GymCoachColors.SurfaceDeep,
-        animationSpec = tween(durationMillis = 280),
-        label = "rowBgColor"
-    )
-    val rowBorderColor by animateColorAsState(
-        targetValue = if (completed) GymCoachColors.Success.copy(alpha = 0.65f)
-                      else GymCoachColors.BorderSubtle,
-        animationSpec = tween(durationMillis = 280),
-        label = "rowBorderColor"
-    )
-    val checkButtonBgColor by animateColorAsState(
-        targetValue = if (completed) GymCoachColors.Success
-                      else GymCoachColors.SurfaceCardElevated,
-        animationSpec = tween(durationMillis = 220),
-        label = "checkButtonBgColor"
-    )
-    val checkIconColor by animateColorAsState(
-        targetValue = if (completed) Color.White
-                      else GymCoachColors.TextMuted,
-        animationSpec = tween(durationMillis = 220),
-        label = "checkIconColor"
-    )
-    val checkBorderColor by animateColorAsState(
-        targetValue = if (completed) GymCoachColors.Success
-                      else GymCoachColors.BorderSubtle,
-        animationSpec = tween(durationMillis = 220),
-        label = "checkBorderColor"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(GymCoachShapes.sm)
-            .background(rowBackgroundColor)
-            .border(
-                1.dp,
-                rowBorderColor,
-                GymCoachShapes.sm
-            )
-            .padding(vertical = 4.dp, horizontal = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Set Number / Type Pill button (tap to cycle)
-        Box(
-            modifier = Modifier
-                .weight(0.12f)
-                .heightIn(min = 44.dp)
-                .clip(GymCoachShapes.xs)
-                .background(setTypeColor.copy(alpha = 0.12f))
-                .semantics {
-                    contentDescription = "Set ${index + 1} type ${setType.name}, tap to change"
-                }
-                .clickable(role = androidx.compose.ui.semantics.Role.Button) {
-                    val nextType = when (setType) {
-                        com.gymcoach.app.domain.model.SetType.NORMAL -> com.gymcoach.app.domain.model.SetType.WARMUP
-                        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.domain.model.SetType.DROP
-                        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.domain.model.SetType.FAILURE
-                        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.domain.model.SetType.NORMAL
-                    }
-                    onSetTypeChange(nextType)
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = setTypeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = setTypeColor,
-                fontWeight = FontWeight.Black
-            )
-        }
-
-        OutlinedTextField(
-            value = weightText,
-            onValueChange = { v ->
-                weightText = v
-                v.toDoubleOrNull()?.let { onWeightChange(it) }
-            },
-            modifier = Modifier
-                .weight(0.22f)
-                .semantics {
-                    contentDescription = "Set ${index + 1} weight in ${if (weightUnit == com.gymcoach.app.core.preferences.WeightUnit.LBS) "pounds" else "kilograms"}"
-                },
-            singleLine = true,
-            shape = GymCoachShapes.xs,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = GymCoachColors.SurfaceInput,
-                unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = GymCoachColors.Primary,
-                unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = GymCoachColors.TextPrimary,
-                unfocusedTextColor = GymCoachColors.TextPrimary
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
-        )
-
-        OutlinedTextField(
-            value = repsText,
-            onValueChange = { v ->
-                repsText = v
-                v.toIntOrNull()?.let { onRepsChange(it) }
-            },
-            modifier = Modifier
-                .weight(0.22f)
-                .semantics {
-                    contentDescription = "Set ${index + 1} reps"
-                },
-            singleLine = true,
-            shape = GymCoachShapes.xs,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = GymCoachColors.SurfaceInput,
-                unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = GymCoachColors.Primary,
-                unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = GymCoachColors.TextPrimary,
-                unfocusedTextColor = GymCoachColors.TextPrimary
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
-        )
-
-        OutlinedTextField(
-            value = rpeText,
-            onValueChange = { v ->
-                rpeText = v
-                v.toDoubleOrNull()?.let { onRpeChange(it) }
-            },
-            modifier = Modifier
-                .weight(0.16f)
-                .semantics {
-                    contentDescription = "Set ${index + 1} RPE"
-                },
-            singleLine = true,
-            shape = GymCoachShapes.xs,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = GymCoachColors.SurfaceInput,
-                unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = GymCoachColors.Primary,
-                unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = GymCoachColors.TextPrimary,
-                unfocusedTextColor = GymCoachColors.TextPrimary
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
-        )
-
-        OutlinedTextField(
-            value = restText,
-            onValueChange = { v ->
-                restText = v
-                v.toIntOrNull()?.let { onRestSecondsChange(it) }
-            },
-            modifier = Modifier
-                .weight(0.16f)
-                .semantics {
-                    contentDescription = "Set ${index + 1} rest time in seconds"
-                },
-            singleLine = true,
-            shape = GymCoachShapes.xs,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = GymCoachColors.SurfaceInput,
-                unfocusedContainerColor = GymCoachColors.SurfaceInput,
-                focusedBorderColor = GymCoachColors.Primary,
-                unfocusedBorderColor = GymCoachColors.BorderSubtle,
-                focusedTextColor = GymCoachColors.TextPrimary,
-                unfocusedTextColor = GymCoachColors.TextPrimary
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
-        )
-
-        // Tactile set completion button
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .semantics {
-                    contentDescription = "Set ${index + 1} completion status"
-                }
-                .toggleable(
-                    value = completed,
-                    role = Role.Checkbox,
-                    onValueChange = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onToggleComplete()
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .graphicsLayer {
-                        scaleX = checkScale.value
-                        scaleY = checkScale.value
-                    }
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(checkButtonBgColor)
-                    .border(
-                        1.dp,
-                        checkBorderColor,
-                        androidx.compose.foundation.shape.CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = if (completed) "Unmark set" else "Mark set complete",
-                    tint = checkIconColor,
-                    modifier = Modifier.size(18.dp)
-                )
             }
         }
     }
@@ -2294,69 +2005,4 @@ private fun StatCard(
     }
 }
 
-@Composable
-private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalRecord) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = GymCoachShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = GymCoachColors.SurfaceCard
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.35f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.15f),
-                        shape = androidx.compose.foundation.shape.CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "PR Icon",
-                    tint = com.gymcoach.app.ui.theme.GymCoachColors.SetPR,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = pr.exerciseName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = GymCoachColors.TextPrimary
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = pr.details,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GymCoachColors.TextSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .background(
-                        com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = "NEW PR",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Black,
-                    color = com.gymcoach.app.ui.theme.GymCoachColors.SetPR,
-                    letterSpacing = 0.5.sp
-                )
-            }
-        }
-    }
-}
+

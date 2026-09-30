@@ -297,7 +297,7 @@ fun ExerciseAnimationPlayer(
                 Text(
                     text = "${definition.perspective.name} VIEW • BIOMECHANICAL FORM",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                    color = Color.Gray.copy(alpha = 0.7f),
+                    color = GymCoachColors.TextMuted.copy(alpha = 0.7f),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)

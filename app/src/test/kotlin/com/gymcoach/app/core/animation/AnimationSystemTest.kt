@@ -25,7 +25,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals("Must parse 20 high-value exercise animations", 20, definitions.size)
+        assertEquals("Must parse 26 high-value exercise animations", 26, definitions.size)
 
         for (def in definitions) {
             assertTrue("Exercise ID must not be blank", def.exerciseId.isNotBlank())
@@ -164,7 +164,7 @@ class AnimationSystemTest {
     fun testAll20DefinitionsInterpolationAtRequiredProgressPoints() {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
-        assertEquals(20, definitions.size)
+        assertEquals(26, definitions.size)
 
         val progressPoints = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)
 
@@ -556,7 +556,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals(20, definitions.size)
+        assertEquals(26, definitions.size)
 
         val benchmarkSet = setOf(
             "barbell_squat", "bench_press", "deadlift", "barbell_row",

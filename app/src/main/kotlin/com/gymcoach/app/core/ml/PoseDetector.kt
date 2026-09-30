@@ -105,7 +105,7 @@ class PoseDetector private constructor(
                     try {
                         tmp.outputStream().use { output -> input.copyTo(output) }
                         if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
-                            if (tmp.renameTo(target) || (target.delete() && tmp.renameTo(target))) return target
+                            if (atomicReplace(tmp, target)) return target
                         }
                     } finally {
                         if (tmp.exists()) tmp.delete()
@@ -131,13 +131,36 @@ class PoseDetector private constructor(
                 check(tmp.length() >= MIN_VALID_MODEL_BYTES) {
                     "Downloaded model incomplete (${tmp.length()} bytes)"
                 }
-                if (tmp.renameTo(target) || (target.delete() && tmp.renameTo(target))) {
+                if (atomicReplace(tmp, target)) {
                     return target
                 }
                 error("Could not finalize model file")
             } finally {
                 if (tmp.exists()) tmp.delete()
                 connection?.disconnect()
+            }
+        }
+
+        private fun atomicReplace(source: File, target: File): Boolean {
+            return try {
+                java.nio.file.Files.move(
+                    source.toPath(),
+                    target.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE
+                )
+                true
+            } catch (_: Exception) {
+                try {
+                    java.nio.file.Files.move(
+                        source.toPath(),
+                        target.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                    )
+                    true
+                } catch (_: Exception) {
+                    source.renameTo(target)
+                }
             }
         }
     }

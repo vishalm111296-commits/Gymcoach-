@@ -97,7 +97,7 @@ class WorkoutDataExporter @Inject constructor() {
 
     private fun escapeCsv(str: String): String {
         var sanitized = str
-        val trimmed = sanitized.trimStart(' ', '\t', '\r', '\n')
+        val trimmed = sanitized.trimStart { it.isWhitespace() || it.isISOControl() }
         if (trimmed.isNotEmpty() && (
             trimmed.startsWith("=") || trimmed.startsWith("+") || 
             trimmed.startsWith("-") || trimmed.startsWith("@") ||

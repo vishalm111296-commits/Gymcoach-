@@ -68,6 +68,7 @@ fun ExerciseTechniqueBottomSheet(
 ) {
     ExerciseTechniqueBottomSheet(
         exerciseName = exercise.name,
+        isCustomExercise = exercise.isCustom,
         muscleGroup = exercise.muscleGroup,
         instructions = exercise.instructions,
         setupInstructions = exercise.setupInstructions,
@@ -91,6 +92,7 @@ fun ExerciseTechniqueBottomSheet(
 @Composable
 fun ExerciseTechniqueBottomSheet(
     exerciseName: String,
+    isCustomExercise: Boolean = false,
     muscleGroup: String = "",
     instructions: String = "",
     setupInstructions: String = "",
@@ -191,73 +193,106 @@ fun ExerciseTechniqueBottomSheet(
                     )
                 }
                 else -> {
-                    // Biomechanical movement overview hero card for exercises without skeletal keyframes
-                    Surface(
-                        shape = GymCoachShapes.md,
-                        color = GymCoachColors.SurfaceCardElevated,
-                        border = GymCoachBorders.subtle
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                        if (isCustomExercise) {
+                            Surface(
+                                shape = GymCoachShapes.sm,
+                                color = GymCoachColors.CyanAccent.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, GymCoachColors.CyanAccent.copy(alpha = 0.35f))
                             ) {
-                                Box(
+                                Row(
                                     modifier = Modifier
-                                        .size(38.dp)
-                                        .background(GymCoachColors.Primary.copy(alpha = 0.18f), shape = GymCoachShapes.sm),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.FitnessCenter,
+                                        imageVector = Icons.Default.Info,
                                         contentDescription = null,
-                                        tint = GymCoachColors.Primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "BIOMECHANICAL TARGET",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 9.sp,
-                                            letterSpacing = 1.sp
-                                        ),
-                                        color = GymCoachColors.Primary
+                                        tint = GymCoachColors.CyanAccent,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = if (secondaryMuscles.isNotBlank()) {
-                                            "Target: ${muscleGroup.ifBlank { "Primary" }} (Secondary: $secondaryMuscles)"
-                                        } else {
-                                            "Target Muscle: ${muscleGroup.ifBlank { "Primary" }}"
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = GymCoachColors.TextPrimary
+                                        text = "Custom exercise: technique cues derived from movement pattern.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GymCoachColors.TextSecondary
                                     )
                                 }
                             }
+                        }
 
-                            if (difficulty.isNotBlank() || movementPattern.isNotBlank()) {
-                                Spacer(Modifier.height(10.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (difficulty.isNotBlank()) {
-                                        Text(
-                                            text = "Level: ${difficulty.replaceFirstChar { it.uppercase() }}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = GymCoachColors.TextSecondary
+                        // Biomechanical movement overview hero card for exercises without skeletal keyframes
+                        Surface(
+                            shape = GymCoachShapes.md,
+                            color = GymCoachColors.SurfaceCardElevated,
+                            border = GymCoachBorders.subtle
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .background(GymCoachColors.Primary.copy(alpha = 0.18f), shape = GymCoachShapes.sm),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FitnessCenter,
+                                            contentDescription = null,
+                                            tint = GymCoachColors.Primary,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
-                                    if (movementPattern.isNotBlank()) {
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "• Pattern: ${movementPattern.replace("_", " ")}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = GymCoachColors.TextSecondary
+                                            text = "BIOMECHANICAL TARGET",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 9.sp,
+                                                letterSpacing = 1.sp
+                                            ),
+                                            color = GymCoachColors.Primary
                                         )
+                                        Text(
+                                            text = if (secondaryMuscles.isNotBlank()) {
+                                                "Target: ${muscleGroup.ifBlank { "Primary" }} (Secondary: $secondaryMuscles)"
+                                            } else {
+                                                "Target Muscle: ${muscleGroup.ifBlank { "Primary" }}"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = GymCoachColors.TextPrimary
+                                        )
+                                    }
+                                }
+
+                                if (difficulty.isNotBlank() || movementPattern.isNotBlank()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        if (difficulty.isNotBlank()) {
+                                            Text(
+                                                text = "Level: ${difficulty.replaceFirstChar { it.uppercase() }}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GymCoachColors.TextSecondary
+                                            )
+                                        }
+                                        if (movementPattern.isNotBlank()) {
+                                            Text(
+                                                text = "• Pattern: ${movementPattern.replace("_", " ")}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = GymCoachColors.TextSecondary
+                                            )
+                                        }
                                     }
                                 }
                             }

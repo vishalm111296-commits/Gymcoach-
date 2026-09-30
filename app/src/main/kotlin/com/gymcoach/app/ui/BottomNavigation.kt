@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -118,6 +117,11 @@ fun GymCoachBottomNav(
                         ),
                         label = "iconScale"
                     )
+                    val indicatorAlpha by animateFloatAsState(
+                        targetValue = if (active) 1f else 0f,
+                        animationSpec = tween(durationMillis = 200),
+                        label = "indicatorAlpha"
+                    )
 
                     Box(
                         modifier = Modifier
@@ -164,15 +168,14 @@ fun GymCoachBottomNav(
                                 ),
                                 color = iconTint
                             )
-                            if (active) {
-                                Spacer(Modifier.height(2.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .size(width = 12.dp, height = 2.dp)
-                                        .clip(CircleShape)
-                                        .background(GymCoachColors.Primary)
-                                )
-                            }
+                            Spacer(Modifier.height(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 12.dp, height = 2.dp)
+                                    .graphicsLayer { alpha = indicatorAlpha }
+                                    .clip(CircleShape)
+                                    .background(GymCoachColors.Primary)
+                            )
                         }
                     }
                 }

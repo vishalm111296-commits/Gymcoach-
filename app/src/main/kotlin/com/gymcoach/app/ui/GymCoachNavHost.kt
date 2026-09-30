@@ -77,12 +77,39 @@ fun GymCoachNavHost(
 
     val onBottomNavigate: (String) -> Unit = { route ->
         when (route) {
-            "home" -> navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = false } }
-            "workout" -> navController.navigate(Routes.workoutSession())
-            "exercise_list" -> navController.navigate(Routes.EXERCISE_LIST)
-            "program_detail" -> navController.navigate(Routes.PROGRAM_DETAIL)
-            "progress" -> navController.navigate(Routes.PROGRESS)
-            "profile" -> navController.navigate(Routes.PROFILE)
+            "home" -> navController.navigate(Routes.HOME) {
+                popUpTo(Routes.HOME) {
+                    inclusive = false
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+            "workout" -> navController.navigate(Routes.workoutSession()) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            "exercise_list" -> navController.navigate(Routes.EXERCISE_LIST) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            "program_detail" -> navController.navigate(Routes.PROGRAM_DETAIL) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            "progress" -> navController.navigate(Routes.PROGRESS) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            "profile" -> navController.navigate(Routes.PROFILE) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
         }
     }
 

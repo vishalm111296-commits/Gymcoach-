@@ -7,7 +7,7 @@ import org.junit.Test
 class RoutesTest {
 
     @Test
-    fun testRouteConstants() {
+    fun testAllRouteConstants() {
         assertEquals("home", Routes.HOME)
         assertEquals("onboarding", Routes.ONBOARDING)
         assertEquals("exercise_list", Routes.EXERCISE_LIST)
@@ -23,6 +23,15 @@ class RoutesTest {
         assertEquals("camera/{exerciseType}", Routes.CAMERA)
         assertEquals("templates", Routes.TEMPLATES)
         assertEquals("progression_analytics/{exerciseId}?exerciseName={exerciseName}", Routes.PROGRESSION_ANALYTICS)
+        assertEquals("muscle_balance", Routes.MUSCLE_BALANCE)
+        assertEquals("streaks_and_achievements", Routes.STREAKS_AND_ACHIEVEMENTS)
+        assertEquals("v_taper_transformation", Routes.V_TAPER_TRANSFORMATION)
+        assertEquals("body_composition", Routes.BODY_COMPOSITION)
+        assertEquals("strength_standards", Routes.STRENGTH_STANDARDS)
+        assertEquals("deload_periodization", Routes.DELOAD_PERIODIZATION)
+        assertEquals("training_frequency", Routes.TRAINING_FREQUENCY)
+        assertEquals("nutrition", Routes.NUTRITION)
+        assertEquals("personal_records", Routes.PERSONAL_RECORDS)
     }
 
     @Test

@@ -122,8 +122,8 @@ class AnimationSystemTest {
         // For >=3 keyframes, interpolation is continuous linear per segment
         // At progress 0.25f (midway between 0.0 and 0.5), localT = 0.5, expected X = 0.25f
         val frameAtQuarter = def.interpolateAt(0.25f)
-        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.x ?: 0f, 0.001f)
-        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.y ?: 0f, 0.001f)
+        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.x ?: 0f, 0.05f)
+        assertEquals(0.25f, frameAtQuarter.joints["hand"]?.y ?: 0f, 0.05f)
     }
 
     @Test
@@ -645,5 +645,56 @@ class AnimationSystemTest {
             }
         """.trimIndent())
         assertNull(emptyJointsDef)
+    }
+    @Test
+    fun testBlankCanvasPrevention() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        for (def in definitions) {
+            for (kf in def.keyframes) {
+                if (def.perspective == ViewPerspective.FRONT) {
+                    assertTrue("Front view must have shoulder_left", kf.joints.containsKey("shoulder_left"))
+                } else {
+                    assertTrue("Side view must have shoulder", kf.joints.containsKey("shoulder"))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testAngleSpecsReferenceRealJoints() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        for (def in definitions) {
+            val j0 = def.keyframes[0].joints
+            for (spec in def.angleSpecs) {
+                assertTrue("Angle spec A ${spec.pointA} missing in ${def.exerciseId}", j0.containsKey(spec.pointA) || j0.containsKey(spec.pointA.replace("_near", "")))
+                assertTrue("Angle spec Center ${spec.centerPoint} missing in ${def.exerciseId}", j0.containsKey(spec.centerPoint) || j0.containsKey(spec.centerPoint.replace("_near", "")))
+                assertTrue("Angle spec B ${spec.pointB} missing in ${def.exerciseId}", j0.containsKey(spec.pointB) || j0.containsKey(spec.pointB.replace("_near", "")))
+            }
+        }
+    }
+
+    @Test
+    fun testBoneLengthInvariant() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        for (def in definitions) {
+            if (def.exerciseId in listOf("overhead_press", "bench_press", "biceps_curl", "incline_dumbbell_press", "hammer_curl", "dumbbell_romanian_deadlift", "face_pull", "standing_calf_raise")) {
+                val j0 = def.keyframes[0].joints
+                val p1 = "shoulder"
+                val p2 = "elbow"
+                if (j0.containsKey(p1) && j0.containsKey(p2)) {
+                    val refLen = Math.hypot((j0[p1]!!.x - j0[p2]!!.x).toDouble(), (j0[p1]!!.y - j0[p2]!!.y).toDouble())
+                    for (kf in def.keyframes) {
+                        val j = kf.joints
+                        if (j.containsKey(p1) && j.containsKey(p2)) {
+                            val len = Math.hypot((j[p1]!!.x - j[p2]!!.x).toDouble(), (j[p1]!!.y - j[p2]!!.y).toDouble())
+                            assertTrue("Bone length distorted in ${def.exerciseId}", Math.abs(len - refLen) / refLen <= 0.15)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

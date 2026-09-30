@@ -122,7 +122,13 @@ fun ExerciseAnimationPlayer(
             AnimationPhase.SETUP -> GymCoachColors.CyanAccent
             AnimationPhase.START -> GymCoachColors.Primary
             AnimationPhase.ECCENTRIC -> GymCoachColors.Warning
-            AnimationPhase.BOTTOM -> GymCoachColors.Danger
+            AnimationPhase.BOTTOM -> {
+                if (definition.exerciseId in listOf("pull_up", "overhead_press", "biceps_curl", "lat_pulldown")) {
+                    GymCoachColors.NeonCyan
+                } else {
+                    GymCoachColors.Danger
+                }
+            }
             AnimationPhase.CONCENTRIC -> GymCoachColors.Success
             AnimationPhase.END -> GymCoachColors.Primary
         },
@@ -163,8 +169,13 @@ fun ExerciseAnimationPlayer(
                     color = phaseBadgeColor.copy(alpha = 0.18f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, phaseBadgeColor)
                 ) {
+                    val displayName = if (phase == AnimationPhase.BOTTOM && definition.exerciseId in listOf("pull_up", "overhead_press", "biceps_curl", "lat_pulldown")) {
+                        "PEAK / LOCKOUT"
+                    } else {
+                        phase.displayName.uppercase()
+                    }
                     Text(
-                        text = phase.displayName.uppercase(),
+                        text = displayName,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = phaseBadgeColor,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)

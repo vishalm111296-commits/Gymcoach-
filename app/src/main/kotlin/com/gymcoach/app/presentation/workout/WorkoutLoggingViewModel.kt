@@ -25,10 +25,13 @@ import com.gymcoach.app.domain.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -112,6 +115,9 @@ class WorkoutLoggingViewModel @Inject constructor(
 
     private val _workoutSummary = MutableStateFlow<WorkoutSummary?>(null)
     val workoutSummary: StateFlow<WorkoutSummary?> = _workoutSummary.asStateFlow()
+
+    private val _prEvents = MutableSharedFlow<com.gymcoach.app.core.progression.PRDetector.PersonalRecord>(extraBufferCapacity = 10)
+    val prEvents: SharedFlow<com.gymcoach.app.core.progression.PRDetector.PersonalRecord> = _prEvents.asSharedFlow()
 
     private var defaultRestSeconds = 90
 
@@ -800,6 +806,62 @@ class WorkoutLoggingViewModel @Inject constructor(
                     workoutRepository.updateSet(updated)
                     calculateSessionVolume(updatedWorkout)
                     calculateProgressionRecommendations(updatedWorkout.exercises)
+
+                    if (willBeCompleted) {
+                        try {
+                            val exerciseCompletedSets = updatedWe.sets.filter { it.completed }
+                            val existingEntities = personalRecordDao.getByExerciseId(currentWe.exercise.id).firstOrNull() ?: emptyList()
+                            val existingPRs = existingEntities.map { entity ->
+                                val type = when {
+                                    entity.oneRepMaxKg > 0 -> com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM
+                                    entity.notes.startsWith("Volume", ignoreCase = true) -> com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME
+                                    entity.notes.contains("reps at", ignoreCase = true) -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
+                                    entity.reps > 0 && entity.weightKg == 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
+                                    else -> com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT
+                                }
+                                val prValue = when (type) {
+                                    com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM -> entity.oneRepMaxKg
+                                    com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME -> entity.weightKg
+                                    com.gymcoach.app.core.progression.PRDetector.PRType.REP -> if (entity.reps > 0) entity.reps.toDouble() else entity.weightKg
+                                    com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT -> entity.weightKg
+                                }
+                                com.gymcoach.app.core.progression.PRDetector.PersonalRecord(
+                                    exerciseId = entity.exerciseId,
+                                    exerciseName = currentWe.exercise.name,
+                                    type = type,
+                                    value = prValue,
+                                    details = entity.notes,
+                                    date = Instant.ofEpochMilli(entity.achievedAt),
+                                    workoutId = currentWorkout.workout.id
+                                )
+                            }
+
+                            val currentSetEntities = exerciseCompletedSets.map { it.toEntity() }
+                            val detectedPRs = prDetector.detectPRs(
+                                currentWe.exercise.id,
+                                currentWe.exercise.name,
+                                currentSetEntities,
+                                existingPRs,
+                                currentWorkout.workout.id
+                            )
+
+                            for (pr in detectedPRs) {
+                                personalRecordDao.insert(
+                                    com.gymcoach.app.data.local.entity.PersonalRecordEntity(
+                                        exerciseId = pr.exerciseId,
+                                        weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) pr.value else 0.0,
+                                        reps = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value.toInt() else 0,
+                                        oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) pr.value else 0.0,
+                                        achievedAt = pr.date.toEpochMilli(),
+                                        notes = pr.details
+                                    )
+                                )
+                                _prEvents.emit(pr)
+                            }
+                        } catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e

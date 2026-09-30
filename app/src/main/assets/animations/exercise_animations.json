@@ -5192,5 +5192,1072 @@
         "pointB": "ankle"
       }
     ]
+  },
+  {
+    "exerciseId": "incline_dumbbell_press",
+    "exerciseName": "Incline Dumbbell Press",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Upper chest focus with dumbbells.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Retract scapulae and press feet firmly into floor",
+        "activeMuscles": [
+          "upper_chest",
+          "front_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower dumbbells with controlled tempo, elbows at 45 degrees",
+        "activeMuscles": [
+          "upper_chest",
+          "front_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.4,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Feel full stretch across clavicular head of pectoralis",
+        "activeMuscles": [
+          "upper_chest",
+          "front_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.35,
+              0.5
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive upward along natural converging arc",
+        "activeMuscles": [
+          "upper_chest",
+          "front_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.45,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lock out dumbbells directly over upper chest",
+        "activeMuscles": [
+          "upper_chest",
+          "front_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ]
+  },
+  {
+    "exerciseId": "dumbbell_shoulder_press",
+    "exerciseName": "Dumbbell Shoulder Press",
+    "perspective": "FRONT",
+    "durationMs": 3000,
+    "description": "Seated shoulder press for deltoid development.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Brace core, chest up",
+        "activeMuscles": [
+          "front_delts",
+          "side_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower weight slowly",
+        "activeMuscles": [
+          "front_delts",
+          "side_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.4,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Deep stretch at bottom",
+        "activeMuscles": [
+          "front_delts",
+          "side_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.35,
+              0.5
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Press up and slightly in",
+        "activeMuscles": [
+          "front_delts",
+          "side_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.45,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lockout at the top",
+        "activeMuscles": [
+          "front_delts",
+          "side_delts",
+          "triceps"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ]
+  },
+  {
+    "exerciseId": "hammer_curl",
+    "exerciseName": "Hammer Curl",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Biceps curl with neutral grip.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Neutral grip, elbows at sides",
+        "activeMuscles": [
+          "biceps",
+          "forearms",
+          "brachialis"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower weight slowly",
+        "activeMuscles": [
+          "biceps",
+          "forearms",
+          "brachialis"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.4,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Full extension at bottom",
+        "activeMuscles": [
+          "biceps",
+          "forearms",
+          "brachialis"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.35,
+              0.5
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Curl weight up",
+        "activeMuscles": [
+          "biceps",
+          "forearms",
+          "brachialis"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.45,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Squeeze at top",
+        "activeMuscles": [
+          "biceps",
+          "forearms",
+          "brachialis"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ]
+  },
+  {
+    "exerciseId": "dumbbell_romanian_deadlift",
+    "exerciseName": "Dumbbell Romanian Deadlift",
+    "perspective": "SIDE",
+    "durationMs": 3400,
+    "description": "Hip hinge movement for hamstrings and glutes.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Stand tall, dumbbells in front",
+        "activeMuscles": [
+          "hamstrings",
+          "glutes",
+          "lower_back"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Hinge at hips, keep back straight",
+        "activeMuscles": [
+          "hamstrings",
+          "glutes",
+          "lower_back"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.4,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Feel stretch in hamstrings",
+        "activeMuscles": [
+          "hamstrings",
+          "glutes",
+          "lower_back"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.35,
+              0.5
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive hips forward",
+        "activeMuscles": [
+          "hamstrings",
+          "glutes",
+          "lower_back"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.45,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Squeeze glutes at top",
+        "activeMuscles": [
+          "hamstrings",
+          "glutes",
+          "lower_back"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Hip",
+        "pointA": "shoulder",
+        "centerPoint": "hip",
+        "pointB": "knee"
+      }
+    ]
+  },
+  {
+    "exerciseId": "face_pull",
+    "exerciseName": "Face Pull",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Cable exercise for rear delts and upper back.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Cable pulley at eye level",
+        "activeMuscles": [
+          "rear_delts",
+          "rhomboids",
+          "rotator_cuff"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Control weight back",
+        "activeMuscles": [
+          "rear_delts",
+          "rhomboids",
+          "rotator_cuff"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.4,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Full extension",
+        "activeMuscles": [
+          "rear_delts",
+          "rhomboids",
+          "rotator_cuff"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.35,
+              0.5
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Pull to face, elbows high",
+        "activeMuscles": [
+          "rear_delts",
+          "rhomboids",
+          "rotator_cuff"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.45,
+              0.55
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Squeeze rear delts",
+        "activeMuscles": [
+          "rear_delts",
+          "rhomboids",
+          "rotator_cuff"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "cable",
+          "points": [
+            [
+              0.5,
+              0.6
+            ]
+          ]
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ]
+  },
+  {
+    "exerciseId": "standing_calf_raise",
+    "exerciseName": "Standing Calf Raise",
+    "perspective": "SIDE",
+    "durationMs": 2600,
+    "description": "Ankle plantarflexion.",
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Stand on block or edge",
+        "activeMuscles": [
+          "calves",
+          "gastrocnemius",
+          "soleus"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "none",
+          "points": []
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower heels slowly",
+        "activeMuscles": [
+          "calves",
+          "gastrocnemius",
+          "soleus"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.4,
+            0.45
+          ],
+          "wrist": [
+            0.4,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "none",
+          "points": []
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Deep stretch at bottom",
+        "activeMuscles": [
+          "calves",
+          "gastrocnemius",
+          "soleus"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.35,
+            0.45
+          ],
+          "wrist": [
+            0.35,
+            0.5
+          ]
+        },
+        "equipment": {
+          "type": "none",
+          "points": []
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Raise heels high",
+        "activeMuscles": [
+          "calves",
+          "gastrocnemius",
+          "soleus"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.45,
+            0.45
+          ],
+          "wrist": [
+            0.45,
+            0.55
+          ]
+        },
+        "equipment": {
+          "type": "none",
+          "points": []
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Squeeze calves at top",
+        "activeMuscles": [
+          "calves",
+          "gastrocnemius",
+          "soleus"
+        ],
+        "joints": {
+          "shoulder": [
+            0.5,
+            0.4
+          ],
+          "elbow": [
+            0.5,
+            0.5
+          ],
+          "wrist": [
+            0.5,
+            0.6
+          ]
+        },
+        "equipment": {
+          "type": "none",
+          "points": []
+        }
+      }
+    ],
+    "angleSpecs": [
+      {
+        "label": "Ankle",
+        "pointA": "knee",
+        "centerPoint": "ankle",
+        "pointB": "foot"
+      }
+    ]
   }
 ]

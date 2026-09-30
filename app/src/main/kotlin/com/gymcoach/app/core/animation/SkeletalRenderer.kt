@@ -1,5 +1,7 @@
 package com.gymcoach.app.core.animation
 
+import com.gymcoach.app.ui.theme.GymCoachColors
+
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -140,7 +142,7 @@ object SkeletalRenderer {
 
             // Muscle activation glow
             if (isMuscleActive && pMid != null) {
-                val glowColor = Color(0xFFFF5722).copy(alpha = 0.35f)
+                val glowColor = GymCoachColors.Warning.copy(alpha = 0.35f)
                 drawLine(
                     color = glowColor,
                     start = pStart,
@@ -236,7 +238,7 @@ object SkeletalRenderer {
             if (neck != null && hip != null) {
                 if (isChestActive || isBackActive) {
                     drawLine(
-                        color = Color(0xFFFF5722).copy(alpha = 0.35f),
+                        color = GymCoachColors.Warning.copy(alpha = 0.35f),
                         start = neck,
                         end = hip,
                         strokeWidth = boneStroke * 2.4f,
@@ -260,7 +262,7 @@ object SkeletalRenderer {
             if (hipNear != null && kneeNear != null) {
                 if (isLegActive) {
                     drawLine(
-                        color = Color(0xFFFF5722).copy(alpha = 0.35f),
+                        color = GymCoachColors.Warning.copy(alpha = 0.35f),
                         start = hipNear,
                         end = kneeNear,
                         strokeWidth = boneStroke * 2.2f,
@@ -286,7 +288,7 @@ object SkeletalRenderer {
             if (shoulderNear != null && elbowNear != null) {
                 if (isDeltActive || isArmActive) {
                     drawLine(
-                        color = Color(0xFFFF5722).copy(alpha = 0.35f),
+                        color = GymCoachColors.Warning.copy(alpha = 0.35f),
                         start = shoulderNear,
                         end = elbowNear,
                         strokeWidth = boneStroke * 2.0f,
@@ -310,7 +312,7 @@ object SkeletalRenderer {
             if (midChest != null && midPelvis != null) {
                 if (isChestActive || isBackActive) {
                     drawLine(
-                        color = Color(0xFFFF5722).copy(alpha = 0.35f),
+                        color = GymCoachColors.Warning.copy(alpha = 0.35f),
                         start = midChest,
                         end = midPelvis,
                         strokeWidth = boneStroke * 2.4f,
@@ -326,7 +328,7 @@ object SkeletalRenderer {
             if (sLeft != null && sRight != null) {
                 if (isDeltActive) {
                     drawLine(
-                        color = Color(0xFFFF5722).copy(alpha = 0.35f),
+                        color = GymCoachColors.Warning.copy(alpha = 0.35f),
                         start = sLeft,
                         end = sRight,
                         strokeWidth = boneStroke * 2.0f,

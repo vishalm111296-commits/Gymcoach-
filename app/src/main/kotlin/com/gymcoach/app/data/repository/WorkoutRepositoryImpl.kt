@@ -250,11 +250,33 @@ class WorkoutRepositoryImpl @Inject constructor(
                 val workout = workoutWithDetails.workout
                 val workoutEpoch = workout.startTime.toEpochMilli()
 
-                // Deduplicate workouts with identical date and exercise composition
+                // ── PHASE 1: Read-only duplicate detection BEFORE any writes ────────────────
+                // Resolve exercise IDs from existing exercises (name lookup only, no inserts yet)
                 val existingWorkouts = workoutDao.getWorkoutsByDateDirect(workoutEpoch)
+                val existingExerciseNames = workoutWithDetails.exercises.map { it.exercise.name.trim() }
+                val resolvedExistingIds = existingExerciseNames.map { name ->
+                    exerciseDao.getByName(name)?.id ?: -1L  // -1 = would be a new custom exercise
+                }
 
+                // Deduplicate workouts with identical date and exercise composition
+                var isDuplicate = false
+                for (existing in existingWorkouts) {
+                    val existingExIds = workoutDao.getExercisesForWorkoutDirect(existing.id).map { it.exerciseId }
+                    // Compare by name-based resolved IDs; new custom exercises (-1) never match existing
+                    if (existingExIds == resolvedExistingIds.filter { it != -1L } &&
+                        resolvedExistingIds.none { it == -1L }) {
+                        isDuplicate = true
+                        break
+                    }
+                }
+
+                if (isDuplicate) {
+                    skippedCount++
+                    continue
+                }
+
+                // ── PHASE 2: Writes — only reached when this is a genuinely new workout ─────
                 val resolvedExercises = mutableListOf<Pair<WorkoutExerciseEntity, List<WorkoutSetEntity>>>()
-                val inputExerciseIds = mutableListOf<Long>()
 
                 for ((index, weWithSets) in workoutWithDetails.exercises.withIndex()) {
                     val exerciseName = weWithSets.exercise.name.trim()
@@ -262,6 +284,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                     val exerciseId = if (existingExercise != null) {
                         existingExercise.id
                     } else {
+                        // Custom exercise insert: only runs because we passed the duplicate check above
                         exerciseDao.insert(
                             ExerciseEntity(
                                 id = 0,
@@ -274,7 +297,6 @@ class WorkoutRepositoryImpl @Inject constructor(
                             )
                         )
                     }
-                    inputExerciseIds.add(exerciseId)
 
                     val weEntity = WorkoutExerciseEntity(
                         id = 0,
@@ -298,22 +320,6 @@ class WorkoutRepositoryImpl @Inject constructor(
                     resolvedExercises.add(weEntity to setEntities)
                 }
 
-                // Check identical exercise composition against existing workouts at this date
-                var isDuplicate = false
-                for (existing in existingWorkouts) {
-                    val existingExercises = workoutDao.getExercisesForWorkoutDirect(existing.id)
-                    val existingExIds = existingExercises.map { it.exerciseId }
-                    if (existingExIds == inputExerciseIds) {
-                        isDuplicate = true
-                        break
-                    }
-                }
-
-                if (isDuplicate) {
-                    skippedCount++
-                    continue
-                }
-
                 val workoutEntity = WorkoutEntity(
                     id = 0,
                     date = workoutEpoch,
@@ -325,6 +331,7 @@ class WorkoutRepositoryImpl @Inject constructor(
                     status = if (workout.completed) "COMPLETED" else "ACTIVE"
                 )
 
+                // Atomic insert: workout + exercises + sets in a single @Transaction
                 workoutDao.importSingleWorkoutTransaction(workoutEntity, resolvedExercises)
                 importedCount++
                 setsCount += resolvedExercises.sumOf { it.second.size }

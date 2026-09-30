@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.VideoCameraBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +33,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +70,7 @@ fun ExerciseTechniqueBottomSheet(
 ) {
     ExerciseTechniqueBottomSheet(
         exerciseName = exercise.name,
+        isCustomExercise = exercise.isCustom,
         muscleGroup = exercise.muscleGroup,
         instructions = exercise.instructions,
         setupInstructions = exercise.setupInstructions,
@@ -91,6 +94,7 @@ fun ExerciseTechniqueBottomSheet(
 @Composable
 fun ExerciseTechniqueBottomSheet(
     exerciseName: String,
+    isCustomExercise: Boolean = false,
     muscleGroup: String = "",
     instructions: String = "",
     setupInstructions: String = "",
@@ -110,6 +114,8 @@ fun ExerciseTechniqueBottomSheet(
 ) {
     var animationDefinition by remember { mutableStateOf<ExerciseAnimationDefinition?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    // Allow user to bypass the unavailability notice to still use camera for rep counting
+    var showCameraAnyway by remember { mutableStateOf(false) }
 
     LaunchedEffect(exerciseName) {
         isLoading = true
@@ -172,6 +178,10 @@ fun ExerciseTechniqueBottomSheet(
             }
 
             // Animation Player or Loading / Kinetic Biomechanical Card
+            // Determine if this exercise supports AI form analysis
+            val isFormAnalysisUnsupported = remember(exerciseName, isCustomExercise) {
+                isCustomExercise || com.gymcoach.app.core.ml.ExerciseType.fromExerciseName(exerciseName) == null
+            }
             when {
                 isLoading -> {
                     Box(
@@ -181,6 +191,47 @@ fun ExerciseTechniqueBottomSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = GymCoachColors.Primary)
+                    }
+                }
+                isFormAnalysisUnsupported && !showCameraAnyway -> {
+                    // "Form Analysis Not Available" notice for custom or unrecognised exercises
+                    Surface(
+                        shape = GymCoachShapes.md,
+                        color = GymCoachColors.SurfaceCardElevated,
+                        border = GymCoachBorders.subtle
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VideoCameraBack,
+                                contentDescription = "Form analysis unavailable",
+                                tint = GymCoachColors.TextSecondary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "Form Analysis Not Available",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = GymCoachColors.TextPrimary
+                            )
+                            Text(
+                                text = "AI-powered form analysis is available for 9 standard exercises: squats, deadlifts, bench press, overhead press, bent-over rows, bicep curls, push-ups, lateral raises, and planks.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GymCoachColors.TextSecondary,
+                                lineHeight = 18.sp
+                            )
+                            TextButton(onClick = { showCameraAnyway = true }) {
+                                Text(
+                                    "Use Camera for Rep Counting",
+                                    color = GymCoachColors.Primary,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                        }
                     }
                 }
                 animationDefinition != null -> {

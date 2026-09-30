@@ -186,10 +186,11 @@ fun ExerciseSubstitutionDialog(
                 }
             }
         },
-        confirmButton = {
+        dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = GymCoachColors.TextSecondary)
+                Text("Close", color = GymCoachColors.TextSecondary)
             }
-        }
+        },
+        confirmButton = {}
     )
 }

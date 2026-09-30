@@ -435,15 +435,19 @@ class WorkoutDataExporterTest {
         val we = WorkoutExerciseWithSets(WorkoutExercise(1, 1, 1, 0), exercise, sets)
         val wePerc = WorkoutExerciseWithSets(WorkoutExercise(2, 1, 2, 0), exercisePerc, sets)
         val wePipe = WorkoutExerciseWithSets(WorkoutExercise(3, 1, 3, 0), exercisePipe, sets)
-        val weTab = WorkoutExerciseWithSets(WorkoutExercise(4, 1, 4, 0), exerciseTab, sets)
+        val exerciseSpace = Exercise(id = 5L, name = "  =HYPERLINK(\"http://evil.com\")", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        val exerciseCtrl = Exercise(id = 6L, name = "\r\n-cmd", description = "", muscleGroup = "Chest", equipment = "barbell", difficulty = "Advanced")
+        val weSpace = WorkoutExerciseWithSets(WorkoutExercise(5, 1, 5, 0), exerciseSpace, sets)
+        val weCtrl = WorkoutExerciseWithSets(WorkoutExercise(6, 1, 6, 0), exerciseCtrl, sets)
 
-
-        val csv = exporter.exportToCsv(listOf(WorkoutWithDetails(workout, listOf(we, wePerc, wePipe, weTab))))
+        val csv = exporter.exportToCsv(listOf(WorkoutWithDetails(workout, listOf(we, wePerc, wePipe, weTab, weSpace, weCtrl))))
 
         assertTrue("Formula prefix = must be neutralized with leading single quote", csv.contains("'=CMD|' /C calc'!A0"))
         assertTrue("Formula prefix + must be neutralized with leading single quote", csv.contains("'+2.5kg PR, @admin"))
         assertTrue("Formula prefix % must be neutralized with leading single quote", csv.contains("'%calc"))
         assertTrue("Formula prefix | must be neutralized with leading single quote", csv.contains("'|calc"))
         assertTrue("Formula prefix tab must be neutralized with leading single quote", csv.contains("'\tcalc"))
+        assertTrue("Whitespace-prefixed formula must be neutralized with leading single quote", csv.contains("'  =HYPERLINK"))
+        assertTrue("Control-character-prefixed formula must be neutralized with leading single quote", csv.contains("'\r\n-cmd"))
     }
 }

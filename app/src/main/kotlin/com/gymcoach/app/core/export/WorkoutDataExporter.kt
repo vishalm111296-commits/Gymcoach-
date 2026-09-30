@@ -97,11 +97,11 @@ class WorkoutDataExporter @Inject constructor() {
 
     private fun escapeCsv(str: String): String {
         var sanitized = str
-        if (sanitized.isNotEmpty() && (
-            sanitized.startsWith("=") || sanitized.startsWith("+") || 
-            sanitized.startsWith("-") || sanitized.startsWith("@") ||
-            sanitized.startsWith("%") || sanitized.startsWith("|") ||
-            sanitized.startsWith("\t")
+        val trimmed = sanitized.trimStart(' ', '\t', '\r', '\n')
+        if (trimmed.isNotEmpty() && (
+            trimmed.startsWith("=") || trimmed.startsWith("+") || 
+            trimmed.startsWith("-") || trimmed.startsWith("@") ||
+            trimmed.startsWith("%") || trimmed.startsWith("|")
         )) {
             sanitized = "'$sanitized"
         }

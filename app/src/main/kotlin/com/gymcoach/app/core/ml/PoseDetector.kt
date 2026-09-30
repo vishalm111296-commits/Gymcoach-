@@ -101,22 +101,21 @@ class PoseDetector private constructor(
             // Check if model file is pre-packaged in app assets for offline support
             try {
                 context.assets.open(MODEL_FILE_NAME).use { input ->
-                    val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.cacheDir)
+                    val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.filesDir)
                     try {
                         tmp.outputStream().use { output -> input.copyTo(output) }
                         if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
-                            if (target.exists()) target.delete()
-                            if (tmp.renameTo(target)) return target
+                            if (tmp.renameTo(target) || (target.delete() && tmp.renameTo(target))) return target
                         }
                     } finally {
-                        tmp.delete()
+                        if (tmp.exists()) tmp.delete()
                     }
                 }
             } catch (_: Exception) {
                 // Not bundled in assets; proceed to network download
             }
 
-            val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.cacheDir)
+            val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.filesDir)
             var connection: HttpsURLConnection? = null
             try {
                 connection = (URL(MODEL_URL).openConnection() as HttpsURLConnection).apply {
@@ -132,11 +131,12 @@ class PoseDetector private constructor(
                 check(tmp.length() >= MIN_VALID_MODEL_BYTES) {
                     "Downloaded model incomplete (${tmp.length()} bytes)"
                 }
-                if (target.exists()) target.delete()
-                check(tmp.renameTo(target)) { "Could not finalize model file" }
-                return target
+                if (tmp.renameTo(target) || (target.delete() && tmp.renameTo(target))) {
+                    return target
+                }
+                error("Could not finalize model file")
             } finally {
-                tmp.delete()
+                if (tmp.exists()) tmp.delete()
                 connection?.disconnect()
             }
         }

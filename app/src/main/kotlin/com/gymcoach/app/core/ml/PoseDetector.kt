@@ -101,19 +101,21 @@ class PoseDetector private constructor(
             // Check if model file is pre-packaged in app assets for offline support
             try {
                 context.assets.open(MODEL_FILE_NAME).use { input ->
-                    val tmp = File(context.filesDir, "$MODEL_FILE_NAME.asset.tmp")
-                    tmp.outputStream().use { output -> input.copyTo(output) }
-                    if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
-                        if (target.exists()) target.delete()
-                        if (tmp.renameTo(target)) return target
+                    val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.filesDir)
+                    try {
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                        if (tmp.length() >= MIN_VALID_MODEL_BYTES) {
+                            if (atomicReplace(tmp, target)) return target
+                        }
+                    } finally {
+                        if (tmp.exists()) tmp.delete()
                     }
-                    tmp.delete()
                 }
             } catch (_: Exception) {
                 // Not bundled in assets; proceed to network download
             }
 
-            val tmp = File(context.filesDir, "$MODEL_FILE_NAME.tmp")
+            val tmp = File.createTempFile("pose_landmarker_", ".tmp", context.filesDir)
             var connection: HttpsURLConnection? = null
             try {
                 connection = (URL(MODEL_URL).openConnection() as HttpsURLConnection).apply {
@@ -129,12 +131,26 @@ class PoseDetector private constructor(
                 check(tmp.length() >= MIN_VALID_MODEL_BYTES) {
                     "Downloaded model incomplete (${tmp.length()} bytes)"
                 }
-                if (target.exists()) target.delete()
-                check(tmp.renameTo(target)) { "Could not finalize model file" }
-                return target
+                if (atomicReplace(tmp, target)) {
+                    return target
+                }
+                error("Could not finalize model file")
             } finally {
-                tmp.delete()
+                if (tmp.exists()) tmp.delete()
                 connection?.disconnect()
+            }
+        }
+
+        private fun atomicReplace(source: File, target: File): Boolean {
+            return try {
+                java.nio.file.Files.move(
+                    source.toPath(),
+                    target.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                )
+                true
+            } catch (_: Exception) {
+                false
             }
         }
     }

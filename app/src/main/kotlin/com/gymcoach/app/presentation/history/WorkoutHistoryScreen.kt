@@ -123,7 +123,7 @@ fun WorkoutHistoryScreen(
         exportResult?.let { result ->
             try {
                 val exportDir = java.io.File(context.cacheDir, "exports").apply { mkdirs() }
-                val exportFile = java.io.File(exportDir, result.filename)
+                val exportFile = java.io.File(exportDir, java.io.File(result.filename).name)
                 exportFile.writeText(result.content, Charsets.UTF_8)
 
                 val contentUri = androidx.core.content.FileProvider.getUriForFile(

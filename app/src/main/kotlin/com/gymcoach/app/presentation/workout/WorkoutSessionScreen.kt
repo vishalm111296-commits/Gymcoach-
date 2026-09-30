@@ -273,7 +273,8 @@ fun WorkoutSessionScreen(
             WorkoutCompletionView(
                 summary = summary,
                 onDone = onBackClick,
-                onViewHistoryDetail = onViewHistoryDetail
+                onViewHistoryDetail = onViewHistoryDetail,
+                weightUnit = weightUnit
             )
         } else {
             LaunchedEffect(Unit) {
@@ -1708,7 +1709,8 @@ private fun RecoveryAdvisoryBanner(
 internal fun WorkoutCompletionView(
     summary: WorkoutLoggingViewModel.WorkoutSummary,
     onDone: () -> Unit,
-    onViewHistoryDetail: (Long) -> Unit
+    onViewHistoryDetail: (Long) -> Unit,
+    weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
 ) {
     // Animated fade-in entrance
     val enterAlpha = androidx.compose.runtime.remember { Animatable(0f) }
@@ -1902,7 +1904,7 @@ internal fun WorkoutCompletionView(
                 Box(modifier = Modifier.weight(1f)) {
                     StatCard(
                         title = "Total Volume",
-                        value = "$volumeFormatted kg"
+                        value = "$volumeFormatted ${weightUnit.code}"
                     )
                 }
                 Box(modifier = Modifier.weight(1f)) {

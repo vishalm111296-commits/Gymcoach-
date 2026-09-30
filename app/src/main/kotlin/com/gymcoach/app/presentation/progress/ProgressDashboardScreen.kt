@@ -109,6 +109,7 @@ fun ProgressDashboardScreen(
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val weightUnit = viewModel.preferencesState.collectAsState().value.weightUnit
 
     // Measurement dialog
     if (state.showMeasurementDialog) {
@@ -155,12 +156,12 @@ fun ProgressDashboardScreen(
             FloatingActionButton(
                 onClick = { viewModel.showMeasurementDialog() },
                 containerColor = GymCoachColors.Primary,
-                contentColor = androidx.compose.ui.graphics.Color.White
+                contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Log Measurement",
-                    tint = androidx.compose.ui.graphics.Color.White
+                    tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -329,7 +330,8 @@ fun ProgressDashboardScreen(
 
                     // Stats Overview
                     StatsOverview(
-                        totalWorkouts = state.workoutCounts.total,
+                weightUnit = weightUnit,
+                totalWorkouts = state.workoutCounts.total,
                         todayWorkouts = state.workoutCounts.today,
                         weekWorkouts = state.workoutCounts.week,
                         monthWorkouts = state.workoutCounts.month,
@@ -389,7 +391,7 @@ fun ProgressDashboardScreen(
                         )
                         StatCard(
                             label = "Avg Volume",
-                            value = java.text.NumberFormat.getNumberInstance().format(animAvgVolume.toLong()) + " kg",
+                            value = java.text.NumberFormat.getNumberInstance().format(animAvgVolume.toLong()) + " ${weightUnit.code}",
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -521,7 +523,7 @@ fun ProgressDashboardScreen(
                         state.weeklySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = weekLabel(date),
-                            value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " kg"
+                            value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " ${weightUnit.code}"
                             )
                         }
                     } else {
@@ -537,7 +539,7 @@ fun ProgressDashboardScreen(
                         state.monthlySummary.forEach { (date, volume) ->
                             SummaryRow(
                                 label = monthLabel(date),
-                                value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " kg"
+                                value = java.text.NumberFormat.getNumberInstance().format(volume.toLong()) + " ${weightUnit.code}"
                             )
                         }
                     } else {
@@ -638,7 +640,7 @@ private fun WorkoutAdherenceCard(
                 Box(
                     modifier = Modifier
                         .background(
-                            if (adherence >= 0.8f) Color(0xFF10B981).copy(alpha = 0.15f)
+                            if (adherence >= 0.8f) GymCoachColors.Success.copy(alpha = 0.15f)
                             else GymCoachColors.Primary.copy(alpha = 0.15f),
                             shape = RoundedCornerShape(6.dp)
                         )
@@ -648,7 +650,7 @@ private fun WorkoutAdherenceCard(
                         text = "$animatedPercent%",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
-                        color = if (adherence >= 0.8f) Color(0xFF10B981) else GymCoachColors.Primary
+                        color = if (adherence >= 0.8f) GymCoachColors.Success else GymCoachColors.Primary
                     )
                 }
             }
@@ -659,7 +661,7 @@ private fun WorkoutAdherenceCard(
                     .fillMaxWidth()
                     .height(8.dp),
                 color = when {
-                    adherence >= 0.8f -> Color(0xFF10B981)
+                    adherence >= 0.8f -> GymCoachColors.Success
                     adherence >= 0.5f -> GymCoachColors.Primary
                     else -> GymCoachColors.ErrorRed
                 },
@@ -754,7 +756,7 @@ private fun StrengthLineChart(
                 val targetY = chartHeight - ((point.value - minVal) / range * chartHeight).toFloat()
                 val y = baselineY - (baselineY - targetY) * animProgress
                 drawCircle(color = lineColor, radius = 5f * animProgress, center = Offset(x, y))
-                drawCircle(color = Color.White, radius = 2.5f * animProgress, center = Offset(x, y))
+                drawCircle(color = GymCoachColors.TextPrimary, radius = 2.5f * animProgress, center = Offset(x, y))
             }
         }
     }
@@ -873,8 +875,8 @@ private fun MuscleVolumeBar(
                         modifier = Modifier
                             .background(
                                 when {
-                                    inRange -> Color(0xFF10B981).copy(alpha = 0.15f)
-                                    isOver -> Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                    inRange -> GymCoachColors.Success.copy(alpha = 0.15f)
+                                    isOver -> GymCoachColors.Warning.copy(alpha = 0.15f)
                                     else -> GymCoachColors.Primary.copy(alpha = 0.15f)
                                 },
                                 shape = RoundedCornerShape(4.dp)
@@ -891,8 +893,8 @@ private fun MuscleVolumeBar(
                             fontWeight = FontWeight.Black,
                             fontSize = 9.sp,
                             color = when {
-                                inRange -> Color(0xFF10B981)
-                                isOver -> Color(0xFFF59E0B)
+                                inRange -> GymCoachColors.Success
+                                isOver -> GymCoachColors.Warning
                                 else -> GymCoachColors.Primary
                             }
                         )
@@ -906,8 +908,8 @@ private fun MuscleVolumeBar(
                     .fillMaxWidth()
                     .height(6.dp),
                 color = when {
-                    inRange -> Color(0xFF10B981)
-                    isOver -> Color(0xFFF59E0B)
+                    inRange -> GymCoachColors.Success
+                    isOver -> GymCoachColors.Warning
                     else -> GymCoachColors.Primary
                 },
                 trackColor = GymCoachColors.SurfaceElevated
@@ -946,7 +948,7 @@ private fun PRCard(
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCard
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD54F).copy(alpha = 0.35f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, GymCoachColors.SetPR.copy(alpha = 0.35f))
     ) {
         Row(
             modifier = Modifier
@@ -962,13 +964,13 @@ private fun PRCard(
                         alpha = alphaAnim.value
                     }
                     .size(42.dp)
-                    .background(Color(0xFFFFD54F).copy(alpha = 0.2f), shape = CircleShape),
+                    .background(GymCoachColors.SetPR.copy(alpha = 0.2f), shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = "PR",
-                    tint = Color(0xFFFFD54F),
+                    tint = GymCoachColors.SetPR,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -990,7 +992,7 @@ private fun PRCard(
                                 scaleX = scaleAnim.value
                                 scaleY = scaleAnim.value
                             }
-                            .background(Color(0xFFFFD54F).copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp))
+                            .background(GymCoachColors.SetPR.copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -998,7 +1000,7 @@ private fun PRCard(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
                             fontSize = 9.sp,
-                            color = Color(0xFFFFD54F)
+                            color = GymCoachColors.SetPR
                         )
                     }
                 }
@@ -1176,7 +1178,7 @@ private fun VolumeLineChart(
                 val targetY = chartHeight - ((point.second - minVal) / range * chartHeight).toFloat()
                 val y = baselineY - (baselineY - targetY) * animProgress
                 drawCircle(color = lineColor, radius = 5f * animProgress, center = Offset(x, y))
-                drawCircle(color = Color.White, radius = 2.5f * animProgress, center = Offset(x, y))
+                drawCircle(color = GymCoachColors.TextPrimary, radius = 2.5f * animProgress, center = Offset(x, y))
             }
         }
     }
@@ -1194,6 +1196,7 @@ private fun monthLabel(date: Date): String {
 
 @Composable
 private fun StatsOverview(
+    weightUnit: com.gymcoach.app.core.preferences.WeightUnit,
     totalWorkouts: Int,
     todayWorkouts: Int,
     weekWorkouts: Int,
@@ -1241,7 +1244,7 @@ private fun StatsOverview(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(label = "Reps", value = "$animReps", modifier = Modifier.weight(1f))
-            StatCard(label = "Volume", value = java.text.NumberFormat.getNumberInstance().format(animVolume.toLong()) + " kg", modifier = Modifier.weight(1f))
+            StatCard(label = "Volume", value = java.text.NumberFormat.getNumberInstance().format(animVolume.toLong()) + " ${weightUnit.code}", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1314,7 +1317,7 @@ private fun AdvancedAnalyticsHub(
             title = "V-Taper",
             subtitle = "Adonis Telemetry",
             icon = Icons.Filled.Whatshot,
-            accentColor = Color(0xFF6C63FF),
+            accentColor = GymCoachColors.Primary,
             onClick = onNavigateToVTaper,
             modifier = Modifier.weight(1f)
         )
@@ -1322,7 +1325,7 @@ private fun AdvancedAnalyticsHub(
             title = "Balance",
             subtitle = "Antagonist Ratios",
             icon = Icons.Filled.FitnessCenter,
-            accentColor = Color(0xFF00F2FE),
+            accentColor = GymCoachColors.CyanAccent,
             onClick = onNavigateToMuscleBalance,
             modifier = Modifier.weight(1f)
         )
@@ -1336,7 +1339,7 @@ private fun AdvancedAnalyticsHub(
             title = "Standards",
             subtitle = "Strength Tier & PRs",
             icon = Icons.Filled.EmojiEvents,
-            accentColor = Color(0xFFFFB300),
+            accentColor = GymCoachColors.GoldAccent,
             onClick = onNavigateToStrengthStandards,
             modifier = Modifier.weight(1f)
         )
@@ -1344,7 +1347,7 @@ private fun AdvancedAnalyticsHub(
             title = "Streaks",
             subtitle = "Consistency Badges",
             icon = Icons.Filled.EmojiEvents,
-            accentColor = Color(0xFFFFB300),
+            accentColor = GymCoachColors.GoldAccent,
             onClick = onNavigateToStreaks,
             modifier = Modifier.weight(1f)
         )
@@ -1366,7 +1369,7 @@ private fun AdvancedAnalyticsHub(
             title = "Frequency",
             subtitle = "Training Calendar",
             icon = Icons.Filled.DateRange,
-            accentColor = Color(0xFF10B981),
+            accentColor = GymCoachColors.Success,
             onClick = onNavigateToTrainingFrequency,
             modifier = Modifier.weight(1f)
         )
@@ -1380,7 +1383,7 @@ private fun AdvancedAnalyticsHub(
             title = "Hall of Fame",
             subtitle = "Personal Records",
             icon = Icons.Filled.EmojiEvents,
-            accentColor = Color(0xFFFFB300),
+            accentColor = GymCoachColors.GoldAccent,
             onClick = onNavigateToPersonalRecords,
             modifier = Modifier.weight(1f)
         )
@@ -1388,7 +1391,7 @@ private fun AdvancedAnalyticsHub(
             title = "Nutrition",
             subtitle = "Macros & Calories",
             icon = Icons.Filled.FitnessCenter,
-            accentColor = Color(0xFF00F2FE),
+            accentColor = GymCoachColors.CyanAccent,
             onClick = onNavigateToNutrition,
             modifier = Modifier.weight(1f)
         )

@@ -119,7 +119,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `exportData CSV_SPREADSHEET generates valid csv result`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.exportData(ExportFormat.CSV_SPREADSHEET)
 
@@ -134,7 +134,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `exportData CSV_STRONG generates exact Strong app compatible header and rows`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.exportData(ExportFormat.CSV_STRONG)
 
@@ -150,7 +150,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `exportData JSON generates valid json result with non-backup filename`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.exportData(ExportFormat.JSON)
 
@@ -166,7 +166,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `clearExportResult resets state to null`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
         viewModel.exportData(ExportFormat.CSV_SPREADSHEET)
         assertNotNull(viewModel.exportResult.value)
 
@@ -176,7 +176,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `filter and sort options update state cleanly`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.onFilterChange(WorkoutHistoryViewModel.FilterOption.THIS_MONTH)
         assertEquals(WorkoutHistoryViewModel.FilterOption.THIS_MONTH, viewModel.filterOption.value)
@@ -190,7 +190,7 @@ class WorkoutHistoryViewModelTest {
 
     @Test
     fun `importWorkoutsFromJson handles invalid json with descriptive error`() = runTest {
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.importWorkoutsFromJson("invalid json structure")
 
@@ -208,7 +208,7 @@ class WorkoutHistoryViewModelTest {
         every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Corrupted DB")
         coEvery { workoutRepository.getIncompleteWorkout() } returns null
 
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         assertNotNull(viewModel.error.value)
         assertTrue(viewModel.error.value!!.contains("Corrupted DB"))
@@ -221,7 +221,7 @@ class WorkoutHistoryViewModelTest {
         coEvery { workoutRepository.getIncompleteWorkout() } returns null
         coEvery { workoutRepository.deleteWorkout(any()) } throws RuntimeException("Constraint violation")
 
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         viewModel.onDeleteClick(99L)
         viewModel.confirmDelete()
@@ -235,7 +235,7 @@ class WorkoutHistoryViewModelTest {
         every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Corrupted DB")
         coEvery { workoutRepository.getIncompleteWorkout() } returns null
 
-        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter)
+        viewModel = WorkoutHistoryViewModel(workoutRepository, restTimer, workoutDataExporter, mockk(relaxed = true), mockk(relaxed = true))
 
         assertNotNull(viewModel.error.value)
         viewModel.dismissError()

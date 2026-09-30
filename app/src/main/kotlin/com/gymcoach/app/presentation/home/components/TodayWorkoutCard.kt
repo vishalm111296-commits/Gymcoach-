@@ -160,7 +160,7 @@ fun TodayWorkoutCard(
                 text = workoutName,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -225,7 +225,7 @@ fun TodayWorkoutCard(
                 shape = GymCoachShapes.md,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = GymCoachColors.Primary,
-                    contentColor = Color.White
+                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .fillMaxWidth()

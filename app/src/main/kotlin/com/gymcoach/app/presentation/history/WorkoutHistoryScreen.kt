@@ -101,6 +101,7 @@ fun WorkoutHistoryScreen(
     val importUiState by viewModel.importUiState.collectAsState()
     val generalError by viewModel.error.collectAsState()
     val context = LocalContext.current
+    val weightUnit = viewModel.preferencesState.collectAsState().value.weightUnit
 
     val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
@@ -349,6 +350,7 @@ fun WorkoutHistoryScreen(
                     items(workouts, key = { it.id }) { workout ->
                         HistoryWorkoutCard(
                             workout = workout,
+                            weightUnit = weightUnit,
                             onClick = { onDetailClick(workout.id) }
                         )
                     }
@@ -466,6 +468,7 @@ fun WorkoutHistoryScreen(
 @Composable
 private fun HistoryWorkoutCard(
     workout: WorkoutWithStats,
+    weightUnit: com.gymcoach.app.core.preferences.WeightUnit,
     onClick: () -> Unit
 ) {
     val nf = remember { java.text.NumberFormat.getNumberInstance() }
@@ -558,7 +561,7 @@ private fun HistoryWorkoutCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("VOLUME", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.Primary)
-                        Text(nf.format(workout.volume.toLong()) + " kg", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.Primary)
+                        Text(nf.format(workout.volume.toLong()) + " ${weightUnit.code}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.Primary)
                     }
                 }
             }

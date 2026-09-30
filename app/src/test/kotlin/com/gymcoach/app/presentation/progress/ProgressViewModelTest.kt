@@ -56,7 +56,7 @@ class ProgressViewModelTest {
         )
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
 
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
 
         val state = viewModel.uiState.value
         assertEquals(120.0, state.latestShoulders!!, 0.01)
@@ -76,7 +76,7 @@ class ProgressViewModelTest {
         )
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
 
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
 
         val state = viewModel.uiState.value
         assertNull("Shoulder-to-waist ratio must be null when shoulders are 0", state.latestShoulderToWaistRatio)
@@ -94,7 +94,7 @@ class ProgressViewModelTest {
         )
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(measurement))
 
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
 
         val state = viewModel.uiState.value
         assertNull(state.latestShoulderToWaistRatio)
@@ -108,7 +108,7 @@ class ProgressViewModelTest {
         val m2 = BodyMeasurementEntity(recordedAt = now, waistCm = 80.0, shouldersCm = 120.0) // 1.50
         every { bodyMeasurementDao.getAll() } returns flowOf(listOf(m2, m1))
 
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
 
         val state = viewModel.uiState.value
         assertEquals(2, state.shoulderToWaistTrend.size)
@@ -121,7 +121,7 @@ class ProgressViewModelTest {
     fun `load repository exception surfaces as error state with isLoading false`() = runTest {
         every { workoutRepository.getCompletedWorkouts() } throws RuntimeException("Network error")
 
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
 
         val state = viewModel.uiState.value
         assertEquals("Network error", state.error)
@@ -130,7 +130,7 @@ class ProgressViewModelTest {
 
     @Test
     fun `saveMeasurement dao insert exception surfaces as error state`() = runTest {
-        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao)
+        viewModel = ProgressViewModel(analyticsRepository, workoutRepository, bodyMeasurementDao, mockk(relaxed = true), mockk(relaxed = true))
         coEvery { bodyMeasurementDao.insert(any()) } throws RuntimeException("Disk full")
 
         viewModel.saveMeasurement(

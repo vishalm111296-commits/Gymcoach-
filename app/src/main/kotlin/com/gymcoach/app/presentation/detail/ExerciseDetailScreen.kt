@@ -66,6 +66,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.gymcoach.app.presentation.components.MuscleHighlightCanvas
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -850,15 +851,14 @@ fun ExerciseDetailScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(54.dp)
-                                                .background(primaryMuscleColor.copy(alpha = 0.15f), shape = CircleShape),
+                                                .size(100.dp)
+                                                .background(primaryMuscleColor.copy(alpha = 0.05f), shape = CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.FitnessCenter,
-                                                contentDescription = "Exercise muscle group icon",
-                                                tint = primaryMuscleColor,
-                                                modifier = Modifier.size(30.dp)
+                                            MuscleHighlightCanvas(
+                                                primaryMuscle = ex.muscleGroup,
+                                                secondaryMuscles = ex.secondaryMuscles,
+                                                modifier = Modifier.size(80.dp)
                                             )
                                         }
                                         Spacer(Modifier.height(8.dp))

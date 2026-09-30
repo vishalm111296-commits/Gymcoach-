@@ -153,20 +153,54 @@ data class ExerciseAnimationDefinition(
         val range = next.progress - prev.progress
         val localT = if (range <= 0.0001f) 0.0f else ((clamped - prev.progress) / range).coerceIn(0.0f, 1.0f)
 
+        // Find p0 and p3 for Catmull-Rom spline
+        var p0 = keyframes.first()
+        var p3 = keyframes.last()
+
+        for (i in 0 until keyframes.size - 1) {
+            if (clamped in keyframes[i].progress..keyframes[i + 1].progress) {
+                p0 = if (i > 0) keyframes[i - 1] else keyframes[i]
+                p3 = if (i + 2 < keyframes.size) keyframes[i + 2] else keyframes[i + 1]
+                break
+            }
+        }
+
         // Smooth cosine easing
         val eased = if (keyframes.size == 2) {
             (1.0f - kotlin.math.cos(localT * Math.PI.toFloat())) / 2.0f
         } else {
-            // Apply slight cubic hermite smoothstep for local segment transitions
-            localT * localT * (3.0f - 2.0f * localT)
+            // Use localT directly since we'll apply spline below
+            localT
         }
 
         val interpolatedJoints = HashMap<String, JointPoint>(prev.joints.size)
         for ((name, p1) in prev.joints) {
             val p2 = next.joints[name] ?: p1
-            val ix = p1.x + (p2.x - p1.x) * eased
-            val iy = p1.y + (p2.y - p1.y) * eased
-            interpolatedJoints[name] = JointPoint(ix, iy)
+            if (keyframes.size == 2) {
+                val ix = p1.x + (p2.x - p1.x) * eased
+                val iy = p1.y + (p2.y - p1.y) * eased
+                interpolatedJoints[name] = JointPoint(ix, iy)
+            } else {
+                val p0pt = p0.joints[name] ?: p1
+                val p3pt = p3.joints[name] ?: p2
+                val t = localT
+                val t2 = t * t
+                val t3 = t2 * t
+
+                val ix = 0.5f * (
+                    (2f * p1.x) +
+                    (-p0pt.x + p2.x) * t +
+                    (2f * p0pt.x - 5f * p1.x + 4f * p2.x - p3pt.x) * t2 +
+                    (-p0pt.x + 3f * p1.x - 3f * p2.x + p3pt.x) * t3
+                )
+                val iy = 0.5f * (
+                    (2f * p1.y) +
+                    (-p0pt.y + p2.y) * t +
+                    (2f * p0pt.y - 5f * p1.y + 4f * p2.y - p3pt.y) * t2 +
+                    (-p0pt.y + 3f * p1.y - 3f * p2.y + p3pt.y) * t3
+                )
+                interpolatedJoints[name] = JointPoint(ix, iy)
+            }
         }
 
         val prevEq = prev.equipment

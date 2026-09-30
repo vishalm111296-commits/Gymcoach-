@@ -305,10 +305,10 @@ private fun AchievementsSection(report: StreakReport) {
 @Composable
 private fun BadgeCard(badge: AchievementBadge) {
     val tierColor = when (badge.tier) {
-        BadgeTier.BRONZE -> Color(0xFFCD7F32)
-        BadgeTier.SILVER -> Color(0xFFC0C0C0)
-        BadgeTier.GOLD -> Color(0xFFFFD700)
-        BadgeTier.OBSIDIAN -> Color(0xFF8A2BE2)
+        BadgeTier.BRONZE -> GymCoachColors.BadgeBronze
+        BadgeTier.SILVER -> GymCoachColors.BadgeSilver
+        BadgeTier.GOLD -> GymCoachColors.BadgeGold
+        BadgeTier.OBSIDIAN -> GymCoachColors.BadgeObsidian
     }
 
     val bgColor = if (badge.isUnlocked) GymCoachColors.SurfaceCardElevated else GymCoachColors.SurfaceCard

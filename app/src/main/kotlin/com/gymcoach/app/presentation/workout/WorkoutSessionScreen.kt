@@ -1667,9 +1667,9 @@ private fun SetRow(
     val haptic = LocalHapticFeedback.current
 
     val setTypeColor = when (setType) {
-        com.gymcoach.app.domain.model.SetType.WARMUP -> androidx.compose.ui.graphics.Color(0xFFFFB74D)
-        com.gymcoach.app.domain.model.SetType.DROP -> androidx.compose.ui.graphics.Color(0xFFBA68C8)
-        com.gymcoach.app.domain.model.SetType.FAILURE -> androidx.compose.ui.graphics.Color(0xFFE57373)
+        com.gymcoach.app.domain.model.SetType.WARMUP -> com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup
+        com.gymcoach.app.domain.model.SetType.DROP -> com.gymcoach.app.ui.theme.GymCoachColors.SetDrop
+        com.gymcoach.app.domain.model.SetType.FAILURE -> com.gymcoach.app.ui.theme.GymCoachColors.SetFailure
         else -> GymCoachColors.TextPrimary
     }
     val setTypeText = when (setType) {
@@ -1953,7 +1953,7 @@ private fun RecoveryAdvisoryBanner(
         ),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.4f)
+            com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.4f)
         )
     ) {
         Row(
@@ -1966,7 +1966,7 @@ private fun RecoveryAdvisoryBanner(
                 Text(
                     text = "RECOVERY ADVISORY (Readiness: %.1f/5.0)".format(readiness.readinessScore),
                     style = MaterialTheme.typography.labelSmall,
-                    color = androidx.compose.ui.graphics.Color(0xFFFFB74D),
+                    color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
                 )
@@ -1981,7 +1981,7 @@ private fun RecoveryAdvisoryBanner(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Dismiss",
-                    tint = androidx.compose.ui.graphics.Color(0xFFFFB74D)
+                    tint = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup
                 )
             }
         }
@@ -2138,13 +2138,13 @@ internal fun WorkoutCompletionView(
                     items(summary.newPRs, key = { "${it.exerciseId}_${it.type.name}" }) { pr ->
                         Surface(
                             shape = GymCoachShapes.pill,
-                            color = androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.15f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFB74D).copy(alpha = 0.4f))
+                            color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.4f))
                         ) {
                             Text(
                                 text = "🏆 ${pr.exerciseName}: ${pr.value} ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else "kg"}",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = androidx.compose.ui.graphics.Color(0xFFFFB74D),
+                                color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
@@ -2297,7 +2297,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
         colors = CardDefaults.cardColors(
             containerColor = GymCoachColors.SurfaceCard
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.35f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.35f))
     ) {
         Row(
             modifier = Modifier
@@ -2309,7 +2309,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.15f),
+                        com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.15f),
                         shape = androidx.compose.foundation.shape.CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -2317,7 +2317,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "PR Icon",
-                    tint = androidx.compose.ui.graphics.Color(0xFFFFD54F),
+                    tint = com.gymcoach.app.ui.theme.GymCoachColors.SetPR,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -2339,7 +2339,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
             Box(
                 modifier = Modifier
                     .background(
-                        androidx.compose.ui.graphics.Color(0xFFFFD54F).copy(alpha = 0.15f),
+                        com.gymcoach.app.ui.theme.GymCoachColors.SetPR.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(4.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 3.dp)
@@ -2348,7 +2348,7 @@ private fun PRCard(pr: com.gymcoach.app.core.progression.PRDetector.PersonalReco
                     text = "NEW PR",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Black,
-                    color = androidx.compose.ui.graphics.Color(0xFFFFD54F),
+                    color = com.gymcoach.app.ui.theme.GymCoachColors.SetPR,
                     letterSpacing = 0.5.sp
                 )
             }

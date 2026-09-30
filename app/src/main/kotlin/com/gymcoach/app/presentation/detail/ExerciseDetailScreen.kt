@@ -533,7 +533,7 @@ fun ExerciseDetailScreen(
     }
 
     val favTint by animateColorAsState(
-        targetValue = if (isFavorite) Color(0xFFF43F5E) else GymCoachColors.TextSecondary,
+        targetValue = if (isFavorite) GymCoachColors.Favorite else GymCoachColors.TextSecondary,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "favTint"
     )

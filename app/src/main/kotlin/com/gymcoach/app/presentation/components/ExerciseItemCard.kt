@@ -128,7 +128,7 @@ fun ExerciseItemCard(
     )
 
     val favoriteTint by animateColorAsState(
-        targetValue = if (isFavorite) Color(0xFFF43F5E) else GymCoachColors.TextMuted,
+        targetValue = if (isFavorite) GymCoachColors.Favorite else GymCoachColors.TextMuted,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "favTint"
     )
@@ -219,8 +219,8 @@ fun ExerciseItemCard(
                         Box(
                             modifier = Modifier
                                 .clip(GymCoachShapes.xs)
-                                .background(Color(0x3300E5FF))
-                                .border(1.dp, Color(0x5500E5FF), GymCoachShapes.xs)
+                                .background(GymCoachColors.NeonCyan.copy(alpha = 0.2f))
+                                .border(1.dp, GymCoachColors.NeonCyan.copy(alpha = 0.33f), GymCoachShapes.xs)
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
@@ -229,7 +229,7 @@ fun ExerciseItemCard(
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
-                                color = Color(0xFF00E5FF)
+                                color = GymCoachColors.CyanAccent
                             )
                         }
                     }
@@ -255,7 +255,7 @@ fun ExerciseItemCard(
                         Icon(
                             imageVector = Icons.Filled.Favorite,
                             contentDescription = "Favorite",
-                            tint = Color(0xFFF43F5E),
+                            tint = GymCoachColors.Favorite,
                             modifier = Modifier
                                 .size(18.dp)
                                 .graphicsLayer {

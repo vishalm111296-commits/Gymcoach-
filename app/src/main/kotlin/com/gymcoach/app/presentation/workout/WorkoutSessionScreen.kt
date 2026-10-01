@@ -1,5 +1,6 @@
 package com.gymcoach.app.presentation.workout
 
+import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.presentation.workout.components.ActiveWorkoutSetRow
 import com.gymcoach.app.presentation.workout.components.ExerciseSubstitutionDialog
 import com.gymcoach.app.presentation.workout.components.PlateCalculatorDialog
@@ -198,6 +199,8 @@ fun WorkoutSessionScreen(
         }
     }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
+    var preferredBarWeight by rememberSaveable { mutableStateOf<Double?>(null) }
+    var preferredBarUnit by rememberSaveable { mutableStateOf<WeightUnit?>(null) }
     var warmupDialogData by rememberSaveable { mutableStateOf<WarmupDialogState?>(null) }
     var substitutionDialogData by rememberSaveable { mutableStateOf<SubstitutionDialogState?>(null) }
     val substitutes by viewModel.substitutes.collectAsState()
@@ -532,10 +535,20 @@ fun WorkoutSessionScreen(
     }
 
     if (plateCalcWeight != null) {
+        val resolvedBarWeight = if (preferredBarWeight != null && preferredBarUnit == weightUnit) {
+            preferredBarWeight!!
+        } else {
+            if (weightUnit == WeightUnit.LBS) 45.0 else 20.0
+        }
         PlateCalculatorDialog(
             targetWeight = plateCalcWeight!!,
+            barWeight = resolvedBarWeight,
             weightUnit = weightUnit,
-            onDismiss = { plateCalcWeight = null }
+            onDismiss = { plateCalcWeight = null },
+            onBarWeightChange = { weight ->
+                preferredBarWeight = weight
+                preferredBarUnit = weightUnit
+            }
         )
     }
 

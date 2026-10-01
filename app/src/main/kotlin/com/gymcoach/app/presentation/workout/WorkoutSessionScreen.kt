@@ -200,6 +200,7 @@ fun WorkoutSessionScreen(
     }
     var plateCalcWeight by rememberSaveable { mutableStateOf<Double?>(null) }
     var preferredBarWeight by rememberSaveable { mutableStateOf<Double?>(null) }
+    var preferredBarUnit by rememberSaveable { mutableStateOf<WeightUnit?>(null) }
     var warmupDialogData by rememberSaveable { mutableStateOf<WarmupDialogState?>(null) }
     var substitutionDialogData by rememberSaveable { mutableStateOf<SubstitutionDialogState?>(null) }
     val substitutes by viewModel.substitutes.collectAsState()
@@ -534,13 +535,20 @@ fun WorkoutSessionScreen(
     }
 
     if (plateCalcWeight != null) {
+        val resolvedBarWeight = if (preferredBarWeight != null && preferredBarUnit == weightUnit) {
+            preferredBarWeight!!
+        } else {
+            if (weightUnit == WeightUnit.LBS) 45.0 else 20.0
+        }
         PlateCalculatorDialog(
             targetWeight = plateCalcWeight!!,
-            barWeight = preferredBarWeight ?: (if (weightUnit == WeightUnit.LBS) 45.0 else 20.0),
+            barWeight = resolvedBarWeight,
             weightUnit = weightUnit,
             onDismiss = { plateCalcWeight = null },
-
-            onBarWeightChange = { preferredBarWeight = it }
+            onBarWeightChange = { weight ->
+                preferredBarWeight = weight
+                preferredBarUnit = weightUnit
+            }
         )
     }
 

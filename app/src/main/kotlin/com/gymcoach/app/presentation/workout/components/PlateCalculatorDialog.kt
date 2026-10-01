@@ -92,7 +92,11 @@ fun PlateCalculatorDialog(
     onBarWeightChange: ((Double) -> Unit)? = null
 ) {
     val isImperial = weightUnit == WeightUnit.LBS
-    val initialBarWeight = if (isImperial && barWeight == 20.0) 45.0 else barWeight
+    val initialBarWeight = when {
+        isImperial && barWeight == 20.0 -> 45.0
+        !isImperial && barWeight == 45.0 -> 20.0
+        else -> barWeight
+    }
     var selectedBarWeight by rememberSaveable(weightUnit, barWeight) { mutableDoubleStateOf(initialBarWeight) }
     var currentTargetWeight by rememberSaveable(targetWeight, weightUnit) { mutableDoubleStateOf(targetWeight) }
 

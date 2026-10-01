@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +46,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
@@ -209,6 +211,7 @@ fun WorkoutSessionScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val animationRepository = remember { com.gymcoach.app.core.animation.AnimationRepository(context.applicationContext) }
     var selectedTechniqueExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val workoutListState = rememberLazyListState()
     val selectedTechniqueExercise = currentWorkout?.exercises?.firstOrNull { it.exercise.id == selectedTechniqueExerciseId }?.exercise
     val preferencesState by viewModel.preferencesState.collectAsState()
     val weightUnit = preferencesState.weightUnit
@@ -334,6 +337,7 @@ fun WorkoutSessionScreen(
                 .padding(padding)
         ) {
             LazyColumn(
+                state = workoutListState,
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1634,18 +1638,54 @@ internal fun ExerciseSetCard(
                 }
             }
 
-            FilledTonalButton(
-                onClick = onAddSet,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = GymCoachShapes.sm,
-                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                    containerColor = GymCoachColors.SurfaceCardElevated,
-                    contentColor = GymCoachColors.TextPrimary
-                )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add set", modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Add Set", fontWeight = FontWeight.SemiBold)
+                val hasWorkingWeight = sets.any { it.weight > 0 }
+                if (hasWorkingWeight) {
+                    FilledTonalButton(
+                        onClick = {
+                            val maxWeight = sets.map { it.weight }.filter { it > 0 }.maxOrNull() ?: 20.0
+                            onOpenWarmupCalculator(maxWeight)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        shape = GymCoachShapes.sm,
+                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                            containerColor = GymCoachColors.SurfaceDeep,
+                            contentColor = GymCoachColors.TextPrimary
+                        )
+                    ) {
+                        Icon(Icons.Default.Whatshot, contentDescription = "Warm-Up", modifier = Modifier.size(16.dp), tint = GymCoachColors.Primary)
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Warm-Up",
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                FilledTonalButton(
+                    onClick = onAddSet,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    shape = GymCoachShapes.sm,
+                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                        containerColor = GymCoachColors.SurfaceCardElevated,
+                        contentColor = GymCoachColors.TextPrimary
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add set", modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Add Set",
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -93,6 +94,7 @@ fun WorkoutHistoryScreen(
     val incompleteWorkout by viewModel.incompleteWorkout.collectAsState()
     val deleteTarget by viewModel.deleteTarget.collectAsState()
     val showDeleteConfirmation = deleteTarget != null
+    val historyListState = rememberLazyListState()
     var showSortOptions by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showExportMenu by remember { mutableStateOf(false) }
@@ -341,6 +343,7 @@ fun WorkoutHistoryScreen(
                 )
             } else {
                 LazyColumn(
+                    state = historyListState,
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 16.dp),

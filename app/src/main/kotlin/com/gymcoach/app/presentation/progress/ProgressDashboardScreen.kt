@@ -1244,7 +1244,8 @@ private fun StatsOverview(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(label = "Reps", value = "$animReps", modifier = Modifier.weight(1f))
-            StatCard(label = "Volume", value = java.text.NumberFormat.getNumberInstance().format(animVolume.toLong()) + " ${weightUnit.code}", modifier = Modifier.weight(1f))
+            val displayVolume = weightUnit.toDisplayWeight(animVolume.toDouble())
+            StatCard(label = "Volume", value = java.text.NumberFormat.getNumberInstance().format(displayVolume.toLong()) + " ${weightUnit.code}", modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),

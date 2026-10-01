@@ -325,15 +325,26 @@ private fun PRHallOfFameCard(
                 } else {
                     String.format(Locale.US, "%.1f $unit", displayWeight)
                 }
+                val isVolumePR = record.notes.startsWith("Volume", ignoreCase = true)
+                val primaryText = if (isVolumePR) {
+                    "Total Volume: $weightStr"
+                } else {
+                    "$weightStr × ${record.reps} reps"
+                }
                 Text(
-                    text = "$weightStr × ${record.reps} reps",
+                    text = primaryText,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = accentColor
                 )
                 Spacer(Modifier.height(2.dp))
+                val secondaryText = if (isVolumePR) {
+                    dateStr
+                } else {
+                    "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} $unit  •  $dateStr"
+                }
                 Text(
-                    text = "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} $unit  •  $dateStr",
+                    text = secondaryText,
                     style = MaterialTheme.typography.labelSmall,
                     color = GymCoachColors.TextSecondary
                 )

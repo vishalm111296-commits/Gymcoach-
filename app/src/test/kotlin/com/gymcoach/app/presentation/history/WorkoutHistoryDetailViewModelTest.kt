@@ -212,4 +212,19 @@ class WorkoutHistoryDetailViewModelTest {
         val vm = WorkoutHistoryDetailViewModel(workoutRepository, prefs)
         assertEquals(com.gymcoach.app.core.preferences.WeightUnit.LBS, vm.weightUnit.value)
     }
+
+    @Test
+    fun `WeightUnit converts stored kg volume and set weights correctly to lbs`() {
+        val storedKgWeight = 100.0
+        val storedKgVolume = 5000.0
+
+        val lbsUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+        val kgUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
+
+        assertEquals(100.0, kgUnit.toDisplayWeight(storedKgWeight), 0.001)
+        assertEquals(220.462, lbsUnit.toDisplayWeight(storedKgWeight), 0.01)
+
+        assertEquals(5000.0, kgUnit.toDisplayWeight(storedKgVolume), 0.001)
+        assertEquals(11023.11, lbsUnit.toDisplayWeight(storedKgVolume), 0.1)
+    }
 }

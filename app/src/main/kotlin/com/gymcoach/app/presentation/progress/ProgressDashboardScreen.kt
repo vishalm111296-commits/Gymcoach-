@@ -282,12 +282,14 @@ fun ProgressDashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val displayBodyweight = state.latestWeight?.let { weightUnit.toDisplayWeight(it) } ?: 0.0
+                        val displayTrend = state.bodyweightTrend.map { it.copy(value = weightUnit.toDisplayWeight(it.value)) }
                         BodyMeasurementTrend(
                             label = "Bodyweight",
-                            currentValue = state.latestWeight ?: 0.0,
-                            unit = "kg",
+                            currentValue = displayBodyweight,
+                            unit = weightUnit.code,
                             trend = state.bodyweightDirection,
-                            dataPoints = state.bodyweightTrend,
+                            dataPoints = displayTrend,
                             modifier = Modifier.weight(1f),
                             goodWhenDown = false
                         )

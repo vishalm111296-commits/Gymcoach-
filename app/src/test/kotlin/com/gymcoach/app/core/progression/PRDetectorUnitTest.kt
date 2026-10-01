@@ -611,6 +611,24 @@ class PRDetectorUnitTest {
         assertTrue(prsLower.none { it.type == PRDetector.PRType.WEIGHT })
     }
 
+    @Test
+    fun `detectPRs defaults to WeightUnit KG code when unit parameter omitted`() {
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 5, completed = true, setType = 0)
+        )
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 10L
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals("100.0kg lifted", weightPR.details)
+        assertEquals("kg", com.gymcoach.app.core.preferences.WeightUnit.KG.code)
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

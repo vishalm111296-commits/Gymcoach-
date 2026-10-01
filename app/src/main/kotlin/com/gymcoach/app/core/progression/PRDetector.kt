@@ -27,7 +27,7 @@ class PRDetector @Inject constructor() {
         currentSets: List<WorkoutSetEntity>,
         existingPRs: List<PersonalRecord>,
         workoutId: Long,
-        unit: String = "kg"
+        unit: String = com.gymcoach.app.core.preferences.WeightUnit.KG.code
     ): List<PersonalRecord> {
         val detected = mutableListOf<PersonalRecord>()
         val now = Instant.now()

@@ -234,4 +234,16 @@ class PersonalRecordsViewModelTest {
         assertEquals(100.0, lbsUnit.toCanonicalKg(220.462262185), 0.001)
         assertEquals(100.0, kgUnit.toCanonicalKg(100.0), 0.001)
     }
+
+    @Test
+    fun `WeightUnit bidirectional conversion maintains precision across diverse weights`() {
+        val testWeightsKg = listOf(20.0, 60.0, 82.5, 100.0, 142.5, 227.27)
+        val lbsUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+
+        for (kg in testWeightsKg) {
+            val lbs = lbsUnit.toDisplayWeight(kg)
+            val convertedBackKg = lbsUnit.toCanonicalKg(lbs)
+            assertEquals(kg, convertedBackKg, 0.0001)
+        }
+    }
 }

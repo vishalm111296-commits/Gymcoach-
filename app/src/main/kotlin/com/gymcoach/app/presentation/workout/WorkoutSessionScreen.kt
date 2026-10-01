@@ -1949,8 +1949,7 @@ internal fun WorkoutCompletionView(
             }
 
             // 2x2 Grid using Rows and Columns
-            val displayVolume = weightUnit.toDisplayWeight(summary.totalVolumeKg)
-            val volumeFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(displayVolume)
+            val volumeFormatted = java.text.NumberFormat.getNumberInstance(Locale.US).format(summary.totalVolumeKg)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

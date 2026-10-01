@@ -484,14 +484,13 @@ private fun shareWorkoutSummary(
         muscleGroups[muscle] = (muscleGroups[muscle] ?: 0) + doneSets.size
     }
 
-    val displayVolume = weightUnit.toDisplayWeight(totalVolume)
     val unit = weightUnit.code
 
     val sb = StringBuilder()
     sb.appendLine("\uD83C\uDFCB\uFE0F Workout Summary")
     sb.appendLine("Date: $date")
     sb.appendLine("Duration: $duration")
-    sb.appendLine("Total Volume: %.1f $unit".format(Locale.US, displayVolume))
+    sb.appendLine("Total Volume: %.1f $unit".format(Locale.US, totalVolume))
     sb.appendLine("Sets: $totalSets | Reps: $totalReps")
     sb.appendLine()
 
@@ -510,8 +509,7 @@ private fun shareWorkoutSummary(
         sb.appendLine("  ${entry.exercise.name}")
         entry.sets.sortedBy { it.setNumber }.forEach { set ->
             if (set.completed) {
-                val displayWeight = weightUnit.toDisplayWeight(set.weight)
-                val weightFormatted = if (displayWeight == displayWeight.toLong().toDouble()) "${displayWeight.toInt()}" else String.format(Locale.US, "%.1f", displayWeight)
+                val weightFormatted = if (set.weight == set.weight.toLong().toDouble()) "${set.weight.toInt()}" else String.format(Locale.US, "%.1f", set.weight)
                 sb.appendLine("    Set ${set.setNumber}: $weightFormatted$unit x ${set.reps} reps (RPE ${set.rpe})")
             }
         }
@@ -575,7 +573,6 @@ fun WorkoutSummaryCard(
     }
     val exerciseCount = workout.exercises.size
     val nf = remember { NumberFormat.getNumberInstance() }
-    val displayVolume = weightUnit.toDisplayWeight(totalVolume)
     val unit = weightUnit.code
 
     Card(
@@ -611,7 +608,7 @@ fun WorkoutSummaryCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 SummaryStatItem(label = "Reps", value = "$totalReps")
-                SummaryStatItem(label = "Volume", value = "${nf.format(displayVolume.toLong())} $unit")
+                SummaryStatItem(label = "Volume", value = "${nf.format(totalVolume.toLong())} $unit")
                 val avgRepsPerSet = if (totalSets > 0) "%.1f".format(totalReps.toDouble() / totalSets) else "0"
                 SummaryStatItem(label = "Avg. Reps", value = avgRepsPerSet)
             }
@@ -645,7 +642,6 @@ private fun MuscleGroupRow(
     weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
 ) {
     val nf = remember { NumberFormat.getNumberInstance() }
-    val displayVolume = weightUnit.toDisplayWeight(totalVolume)
     val unit = weightUnit.code
     Card(
         modifier = Modifier
@@ -683,7 +679,7 @@ private fun MuscleGroupRow(
                 modifier = Modifier.weight(0.2f)
             )
             Text(
-                text = "${nf.format(displayVolume.toLong())} $unit",
+                text = "${nf.format(totalVolume.toLong())} $unit",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = GymCoachColors.Primary,
@@ -821,10 +817,9 @@ fun SetRow(
     completed: Boolean,
     weightUnit: com.gymcoach.app.core.preferences.WeightUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
 ) {
-    val displayWeight = weightUnit.toDisplayWeight(weight)
     val unit = weightUnit.code
     val completionText = if (completed) "completed" else "incomplete"
-    val rowDescription = "Set $setNumber, %.1f $unit, $reps reps, RPE %.1f, rest $restSeconds seconds, $completionText".format(displayWeight, rpe)
+    val rowDescription = "Set $setNumber, %.1f $unit, $reps reps, RPE %.1f, rest $restSeconds seconds, $completionText".format(weight, rpe)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -841,7 +836,7 @@ fun SetRow(
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = "%.1f $unit".format(displayWeight),
+            text = "%.1f $unit".format(weight),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.2f)
         )

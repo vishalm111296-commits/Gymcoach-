@@ -564,8 +564,7 @@ private fun HistoryWorkoutCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("VOLUME", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GymCoachColors.Primary)
-                        val displayVolume = weightUnit.toDisplayWeight(workout.volume)
-                        Text(nf.format(displayVolume.toLong()) + " ${weightUnit.code}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.Primary)
+                        Text(nf.format(workout.volume.toLong()) + " ${weightUnit.code}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black, color = GymCoachColors.Primary)
                     }
                 }
             }

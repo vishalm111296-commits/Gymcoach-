@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -1649,6 +1650,7 @@ internal fun ExerciseSetCard(
                             onOpenWarmupCalculator(maxWeight)
                         },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
                         shape = GymCoachShapes.sm,
                         colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                             containerColor = GymCoachColors.SurfaceDeep,
@@ -1656,13 +1658,19 @@ internal fun ExerciseSetCard(
                         )
                     ) {
                         Icon(Icons.Default.Whatshot, contentDescription = "Warm-Up", modifier = Modifier.size(16.dp), tint = GymCoachColors.Primary)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Warm-Up", fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Warm-Up",
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
                 FilledTonalButton(
                     onClick = onAddSet,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
                     shape = GymCoachShapes.sm,
                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                         containerColor = GymCoachColors.SurfaceCardElevated,
@@ -1670,8 +1678,13 @@ internal fun ExerciseSetCard(
                     )
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add set", modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Add Set", fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Add Set",
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }

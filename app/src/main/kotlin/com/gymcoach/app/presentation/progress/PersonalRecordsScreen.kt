@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.data.local.entity.PersonalRecordWithExercise
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
@@ -73,6 +74,7 @@ fun PersonalRecordsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sortBy by viewModel.sortBy.collectAsState()
+    val weightUnit by viewModel.weightUnit.collectAsState()
 
     Scaffold(
         topBar = {
@@ -159,7 +161,8 @@ fun PersonalRecordsScreen(
                             AnimatedPRCard(
                                 record = record,
                                 rank = index,
-                                animationDelay = (index * 60).coerceAtMost(480)
+                                animationDelay = (index * 60).coerceAtMost(480),
+                                weightUnit = weightUnit
                             )
                         }
                     }
@@ -216,7 +219,8 @@ private fun SortChipRow(
 private fun AnimatedPRCard(
     record: PersonalRecordWithExercise,
     rank: Int,
-    animationDelay: Int
+    animationDelay: Int,
+    weightUnit: WeightUnit = WeightUnit.KG
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(record.id) {
@@ -231,14 +235,15 @@ private fun AnimatedPRCard(
             animationSpec = tween(300)
         )
     ) {
-        PRHallOfFameCard(record = record, rank = rank)
+        PRHallOfFameCard(record = record, rank = rank, weightUnit = weightUnit)
     }
 }
 
 @Composable
 private fun PRHallOfFameCard(
     record: PersonalRecordWithExercise,
-    rank: Int
+    rank: Int,
+    weightUnit: WeightUnit = WeightUnit.KG
 ) {
     val accentColor = when (rank) {
         0 -> GoldColor
@@ -265,6 +270,8 @@ private fun PRHallOfFameCard(
     } else {
         record.weightKg * (1.0 + record.reps.coerceAtMost(12) / 30.0)
     }
+
+    val unit = weightUnit.code
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -312,9 +319,9 @@ private fun PRHallOfFameCard(
                 )
                 Spacer(Modifier.height(3.dp))
                 val weightStr = if (record.weightKg == record.weightKg.toLong().toDouble()) {
-                    "${record.weightKg.toInt()} kg"
+                    "${record.weightKg.toInt()} $unit"
                 } else {
-                    String.format(Locale.US, "%.1f kg", record.weightKg)
+                    String.format(Locale.US, "%.1f $unit", record.weightKg)
                 }
                 Text(
                     text = "$weightStr × ${record.reps} reps",
@@ -324,7 +331,7 @@ private fun PRHallOfFameCard(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} kg  •  $dateStr",
+                    text = "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} $unit  •  $dateStr",
                     style = MaterialTheme.typography.labelSmall,
                     color = GymCoachColors.TextSecondary
                 )

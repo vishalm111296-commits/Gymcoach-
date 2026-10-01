@@ -26,7 +26,8 @@ class PRDetector @Inject constructor() {
         exerciseName: String,
         currentSets: List<WorkoutSetEntity>,
         existingPRs: List<PersonalRecord>,
-        workoutId: Long
+        workoutId: Long,
+        unit: String = "kg"
     ): List<PersonalRecord> {
         val detected = mutableListOf<PersonalRecord>()
         val now = Instant.now()
@@ -37,28 +38,28 @@ class PRDetector @Inject constructor() {
         val maxWeight = normalSets.maxOf { it.weight }
         val eWPR = existingPRs.filter { it.type == PRType.WEIGHT }.maxByOrNull { it.value }
         if (maxWeight > (eWPR?.value ?: 0.0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.WEIGHT, maxWeight, "${maxWeight}kg lifted", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.WEIGHT, maxWeight, "${maxWeight}${unit} lifted", now, workoutId))
         }
 
         // Rep PR (most reps at any weight)
         val bestReps = normalSets.maxBy { it.reps }
         val eRPR = existingPRs.filter { it.type == PRType.REP }.maxByOrNull { it.value }
         if (bestReps.reps > (eRPR?.value?.toInt() ?: 0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.REP, bestReps.reps.toDouble(), "${bestReps.reps} reps at ${bestReps.weight}kg", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.REP, bestReps.reps.toDouble(), "${bestReps.reps} reps at ${bestReps.weight}${unit}", now, workoutId))
         }
 
         // Estimated 1RM PR (Epley formula, capped at 12 reps)
         val bestE1RM = normalSets.maxOf { calculateEstimated1RM(it.weight, it.reps) }
         val e1PR = existingPRs.filter { it.type == PRType.ESTIMATED_1RM }.maxByOrNull { it.value }
         if (bestE1RM > (e1PR?.value ?: 0.0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bestE1RM, "e1RM: ${String.format(Locale.US, "%.1f", bestE1RM)}kg", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bestE1RM, "e1RM: ${String.format(Locale.US, "%.1f", bestE1RM)}${unit}", now, workoutId))
         }
 
         // Volume PR (session volume for this exercise)
         val volume = calculateVolume(normalSets)
         val eVPR = existingPRs.filter { it.type == PRType.VOLUME }.maxByOrNull { it.value }
         if (volume > (eVPR?.value ?: 0.0)) {
-            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.VOLUME, volume, "Volume: ${String.format(Locale.US, "%.0f", volume)}kg", now, workoutId))
+            detected.add(PersonalRecord(exerciseId, exerciseName, PRType.VOLUME, volume, "Volume: ${String.format(Locale.US, "%.0f", volume)}${unit}", now, workoutId))
         }
 
         // Bodyweight exercises: rep-based e1RM and volume
@@ -68,7 +69,7 @@ class PRDetector @Inject constructor() {
             val bodyweightE1RM = bodyweightReps.toDouble() * 1.5 // Simple bodyweight strength proxy
             val bwE1PR = existingPRs.filter { it.type == PRType.ESTIMATED_1RM }.maxByOrNull { it.value }
             if (bodyweightE1RM > (bwE1PR?.value ?: 0.0)) {
-                detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bodyweightE1RM, "Bodyweight e1RM: ${String.format(Locale.US, "%.1f", bodyweightE1RM)}kg", now, workoutId))
+                detected.add(PersonalRecord(exerciseId, exerciseName, PRType.ESTIMATED_1RM, bodyweightE1RM, "Bodyweight e1RM: ${String.format(Locale.US, "%.1f", bodyweightE1RM)}${unit}", now, workoutId))
             }
         }
 

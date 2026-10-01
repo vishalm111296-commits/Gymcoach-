@@ -842,7 +842,8 @@ class WorkoutLoggingViewModel @Inject constructor(
                                 currentWe.exercise.name,
                                 currentSetEntities,
                                 existingPRs,
-                                currentWorkout.workout.id
+                                currentWorkout.workout.id,
+                                unit = appPreferences.preferencesState.value.weightUnit.code
                             )
 
                             for (pr in detectedPRs) {
@@ -1022,7 +1023,14 @@ class WorkoutLoggingViewModel @Inject constructor(
                         }
 
                         val currentSetEntities = exerciseCompletedSets.map { it.toEntity() }
-                        val newPRs = prDetector.detectPRs(we.exercise.id, we.exercise.name, currentSetEntities, existingPRs, workout.id)
+                        val newPRs = prDetector.detectPRs(
+                            we.exercise.id,
+                            we.exercise.name,
+                            currentSetEntities,
+                            existingPRs,
+                            workout.id,
+                            unit = appPreferences.preferencesState.value.weightUnit.code
+                        )
 
                         for (pr in newPRs) {
                             personalRecordDao.insert(

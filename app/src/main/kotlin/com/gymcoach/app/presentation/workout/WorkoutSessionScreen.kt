@@ -1912,8 +1912,9 @@ internal fun WorkoutCompletionView(
                             color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.15f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.4f))
                         ) {
+                            val prValueFormatted = if (pr.value % 1.0 == 0.0) pr.value.toInt().toString() else String.format(Locale.US, "%.1f", pr.value)
                             Text(
-                                text = "🏆 ${pr.exerciseName}: ${pr.value} ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else "kg"}",
+                                text = "🏆 ${pr.exerciseName}: $prValueFormatted ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else weightUnit.code}",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -1994,9 +1995,13 @@ internal fun WorkoutCompletionView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GymCoachColors.Primary,
+                    contentColor = Color.White
+                ),
+                shape = GymCoachShapes.md
             ) {
-                Text("Done", style = MaterialTheme.typography.titleMedium)
+                Text("Done", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -2006,9 +2011,13 @@ internal fun WorkoutCompletionView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = GymCoachColors.TextPrimary
+                ),
+                border = GymCoachBorders.subtleBorder(),
+                shape = GymCoachShapes.md
             ) {
-                Text("View Detailed Breakdown", style = MaterialTheme.typography.titleMedium)
+                Text("View Detailed Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(modifier = Modifier.height(20.dp))

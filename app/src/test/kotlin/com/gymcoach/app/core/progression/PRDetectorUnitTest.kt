@@ -544,6 +544,33 @@ class PRDetectorUnitTest {
         assertEquals(25.0, repPR!!.value, 0.001)
     }
 
+    @Test
+    fun `detectPRs formats details with custom unit such as lbs`() {
+        val currentSets = listOf(
+            createSet(weight = 225.0, reps = 10, completed = true, setType = 0)
+        )
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 99L,
+            unit = "lbs"
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals("225.0lbs lifted", weightPR.details)
+
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        assertEquals("10 reps at 225.0lbs", repPR.details)
+
+        val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        assertEquals("Volume: 2250lbs", volumePR.details)
+
+        val e1rmPR = prs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertTrue("e1RM details should contain lbs: ${e1rmPR.details}", e1rmPR.details.endsWith("lbs"))
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

@@ -94,10 +94,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WorkoutHistoryDetailViewModel @Inject constructor(
-    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository
+    private val workoutRepository: com.gymcoach.app.domain.repository.WorkoutRepository,
+    private val appPreferences: com.gymcoach.app.core.preferences.AppPreferences? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<WorkoutHistoryDetailUiState>(WorkoutHistoryDetailUiState())
     val uiState: StateFlow<WorkoutHistoryDetailUiState> = _uiState.asStateFlow()
+
+    val weightUnit: StateFlow<com.gymcoach.app.core.preferences.WeightUnit> = appPreferences?.preferencesState
+        ?.let { flow -> MutableStateFlow(flow.value.weightUnit).also { mutable ->
+            viewModelScope.launch { flow.collect { mutable.value = it.weightUnit } }
+        } }
+        ?: MutableStateFlow(com.gymcoach.app.core.preferences.WeightUnit.KG)
 
     private val _showDeleteConfirmation = MutableStateFlow(false)
     val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation
@@ -210,6 +217,7 @@ fun WorkoutHistoryDetailScreen(
     val state by viewModel.uiState.collectAsState()
     val shareState by shareViewModel.shareState.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
+    val weightUnit by viewModel.weightUnit.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -281,7 +289,7 @@ fun WorkoutHistoryDetailScreen(
                     // Share text button
                     IconButton(onClick = {
                         state.workout?.let { workout ->
-                            shareWorkoutSummary(context, workout)
+                            shareWorkoutSummary(context, workout, weightUnit.code)
                         }
                     }) {
                         Icon(Icons.Filled.Share, contentDescription = "Share")
@@ -355,7 +363,7 @@ fun WorkoutHistoryDetailScreen(
                         Spacer(Modifier.height(16.dp))
 
                         // Workout Summary Card
-                        WorkoutSummaryCard(workout = workout)
+                        WorkoutSummaryCard(workout = workout, unit = weightUnit.code)
 
                         Spacer(Modifier.height(16.dp))
 
@@ -369,7 +377,8 @@ fun WorkoutHistoryDetailScreen(
                                     muscleName = muscle,
                                     sets = data.sets,
                                     totalVolume = data.volume,
-                                    totalReps = data.reps
+                                    totalReps = data.reps,
+                                    unit = weightUnit.code
                                 )
                             }
                         } else {
@@ -386,7 +395,7 @@ fun WorkoutHistoryDetailScreen(
                         SectionHeader("Exercises")
                         Spacer(Modifier.height(8.dp))
                         workout.exercises.forEach { exerciseWithSets ->
-                            ExerciseDetailCard(exerciseWithSets = exerciseWithSets)
+                            ExerciseDetailCard(exerciseWithSets = exerciseWithSets, unit = weightUnit.code)
                             Spacer(Modifier.height(12.dp))
                         }
 
@@ -451,7 +460,7 @@ fun WorkoutHistoryDetailScreen(
 
 // --- Share ---
 
-private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
+private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails, unit: String = "kg") {
     val w = workout.workout
     val date = formatDate(w.date)
     val duration = formatDuration(w.duration)
@@ -475,7 +484,7 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
     sb.appendLine("\uD83C\uDFCB\uFE0F Workout Summary")
     sb.appendLine("Date: $date")
     sb.appendLine("Duration: $duration")
-    sb.appendLine("Total Volume: %.1f kg".format(totalVolume))
+    sb.appendLine("Total Volume: %.1f $unit".format(totalVolume))
     sb.appendLine("Sets: $totalSets | Reps: $totalReps")
     sb.appendLine()
 
@@ -494,7 +503,7 @@ private fun shareWorkoutSummary(context: Context, workout: WorkoutWithDetails) {
         sb.appendLine("  ${entry.exercise.name}")
         entry.sets.sortedBy { it.setNumber }.forEach { set ->
             if (set.completed) {
-                sb.appendLine("    Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps (RPE ${set.rpe})")
+                sb.appendLine("    Set ${set.setNumber}: ${set.weight}$unit x ${set.reps} reps (RPE ${set.rpe})")
             }
         }
     }
@@ -538,7 +547,7 @@ private fun calculateMuscleBreakdown(workout: WorkoutWithDetails): Map<String, M
 // --- UI Components ---
 
 @Composable
-fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
+fun WorkoutSummaryCard(workout: WorkoutWithDetails, unit: String = "kg") {
     val w = workout.workout
     val (totalSets, totalReps, totalVolume) = remember(workout) {
         var sets = 0
@@ -588,7 +597,7 @@ fun WorkoutSummaryCard(workout: WorkoutWithDetails) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 SummaryStatItem(label = "Reps", value = "$totalReps")
-                SummaryStatItem(label = "Volume", value = "${nf.format(totalVolume.toLong())} kg")
+                SummaryStatItem(label = "Volume", value = "${nf.format(totalVolume.toLong())} $unit")
                 val avgRepsPerSet = if (totalSets > 0) "%.1f".format(totalReps.toDouble() / totalSets) else "0"
                 SummaryStatItem(label = "Avg. Reps", value = avgRepsPerSet)
             }
@@ -618,7 +627,8 @@ private fun MuscleGroupRow(
     muscleName: String,
     sets: Int,
     totalVolume: Double,
-    totalReps: Int
+    totalReps: Int,
+    unit: String = "kg"
 ) {
     val nf = remember { NumberFormat.getNumberInstance() }
     Card(
@@ -657,7 +667,7 @@ private fun MuscleGroupRow(
                 modifier = Modifier.weight(0.2f)
             )
             Text(
-                text = "${nf.format(totalVolume.toLong())} kg",
+                text = "${nf.format(totalVolume.toLong())} $unit",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = GymCoachColors.Primary,
@@ -722,7 +732,7 @@ fun WorkoutHeaderCard(workout: com.gymcoach.app.domain.model.Workout, onPerformA
 }
 
 @Composable
-fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets) {
+fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutExerciseWithSets, unit: String = "kg") {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = GymCoachShapes.Card,
@@ -774,7 +784,8 @@ fun ExerciseDetailCard(exerciseWithSets: com.gymcoach.app.domain.model.WorkoutEx
                     reps = set.reps,
                     rpe = set.rpe,
                     restSeconds = set.restSeconds,
-                    completed = set.completed
+                    completed = set.completed,
+                    unit = unit
                 )
             }
         }
@@ -788,10 +799,11 @@ fun SetRow(
     reps: Int,
     rpe: Double,
     restSeconds: Int,
-    completed: Boolean
+    completed: Boolean,
+    unit: String = "kg"
 ) {
     val completionText = if (completed) "completed" else "incomplete"
-    val rowDescription = "Set $setNumber, %.1f kg, $reps reps, RPE %.1f, rest $restSeconds seconds, $completionText".format(weight, rpe)
+    val rowDescription = "Set $setNumber, %.1f $unit, $reps reps, RPE %.1f, rest $restSeconds seconds, $completionText".format(weight, rpe)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -808,7 +820,7 @@ fun SetRow(
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = "%.1f kg".format(weight),
+            text = "%.1f $unit".format(weight),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.2f)
         )

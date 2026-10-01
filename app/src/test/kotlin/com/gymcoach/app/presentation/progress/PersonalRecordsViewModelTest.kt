@@ -196,4 +196,29 @@ class PersonalRecordsViewModelTest {
         viewModel.setSortBy(SortBy.EXERCISE_NAME)
         assertEquals(SortBy.EXERCISE_NAME, viewModel.sortBy.value)
     }
+
+    @Test
+    fun `weightUnit defaults to KG when AppPreferences is not provided`() = runTest(testDispatcher) {
+        every { personalRecordDao.getAllWithExerciseName() } returns flowOf(emptyList())
+
+        val viewModel = PersonalRecordsViewModel(personalRecordDao)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.KG, viewModel.weightUnit.value)
+    }
+
+    @Test
+    fun `weightUnit reflects AppPreferences when provided`() = runTest(testDispatcher) {
+        every { personalRecordDao.getAllWithExerciseName() } returns flowOf(emptyList())
+
+        val prefs = com.gymcoach.app.core.preferences.InMemoryAppPreferences(
+            com.gymcoach.app.core.preferences.AppPreferencesState(
+                weightUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+            )
+        )
+        val viewModel = PersonalRecordsViewModel(personalRecordDao, prefs)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.LBS, viewModel.weightUnit.value)
+    }
 }

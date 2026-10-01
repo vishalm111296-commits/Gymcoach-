@@ -196,4 +196,20 @@ class WorkoutHistoryDetailViewModelTest {
         viewModel.dismissError()
         assertNull(viewModel.uiState.value.error)
     }
+
+    @Test
+    fun `weightUnit defaults to KG when AppPreferences is not provided`() = runTest {
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.KG, viewModel.weightUnit.value)
+    }
+
+    @Test
+    fun `weightUnit reflects AppPreferences when provided`() = runTest {
+        val prefs = com.gymcoach.app.core.preferences.InMemoryAppPreferences(
+            com.gymcoach.app.core.preferences.AppPreferencesState(
+                weightUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+            )
+        )
+        val vm = WorkoutHistoryDetailViewModel(workoutRepository, prefs)
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.LBS, vm.weightUnit.value)
+    }
 }

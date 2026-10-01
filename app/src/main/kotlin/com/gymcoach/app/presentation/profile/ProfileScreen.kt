@@ -111,8 +111,16 @@ class ProfileViewModel @Inject constructor(
     private val bodyMeasurementDao: com.gymcoach.app.data.local.dao.BodyMeasurementDao,
     private val workoutRepository: WorkoutRepository = createFallbackWorkoutRepository(),
     private val workoutDataImporter: WorkoutDataImporter = WorkoutDataImporter(),
-    private val appPreferences: com.gymcoach.app.core.preferences.AppPreferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
+    private val appPreferences: com.gymcoach.app.core.preferences.AppPreferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences(),
+    private val audioCoach: com.gymcoach.app.core.audio.RestAudioCoach? = null
 ) : ViewModel() {
+
+    private val activeAudioCoach: com.gymcoach.app.core.audio.RestAudioCoach by lazy {
+        audioCoach ?: com.gymcoach.app.core.audio.RestAudioCoach(
+            com.gymcoach.app.core.audio.RestAudioCueEvaluator(),
+            appPreferences
+        )
+    }
 
     val preferencesState: StateFlow<AppPreferencesState> = appPreferences.preferencesState
 
@@ -126,6 +134,11 @@ class ProfileViewModel @Inject constructor(
 
     fun setAudioPreset(preset: AudioCoachPreset) {
         appPreferences.setAudioPreset(preset)
+    }
+
+    fun previewAudioPreset(preset: AudioCoachPreset) {
+        setAudioPreset(preset)
+        activeAudioCoach.playCue(com.gymcoach.app.core.audio.AudioCueType.TIMER_FINISHED)
     }
 
     fun setAutoStartRestTimer(enabled: Boolean) {
@@ -695,7 +708,7 @@ fun ProfileScreen(
                                         Surface(
                                             modifier = Modifier
                                                 .clip(GymCoachShapes.pill)
-                                                .clickable { viewModel.setAudioPreset(preset) },
+                                                .clickable { viewModel.previewAudioPreset(preset) },
                                             shape = GymCoachShapes.pill,
                                             color = if (isSelected) GymCoachColors.Primary.copy(alpha = 0.2f)
                                                     else GymCoachColors.SurfaceDeep,

@@ -7005,5 +7005,1522 @@
         "pointB": "foot"
       }
     ]
+  },
+  {
+    "exerciseId": "db_goblet_squat",
+    "exerciseName": "Dumbbell Goblet Squat",
+    "perspective": "SIDE",
+    "durationMs": 3200,
+    "description": "Anterior-loaded squat building quadriceps, glutes, and core stability with a vertical dumbbell.",
+    "angleSpecs": [
+      {
+        "label": "Knee",
+        "pointA": "hip",
+        "centerPoint": "knee",
+        "pointB": "ankle"
+      },
+      {
+        "label": "Hip",
+        "pointA": "shoulder",
+        "centerPoint": "hip",
+        "pointB": "knee"
+      }
+    ],
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Hold dumbbell vertically against sternum, elbows tucked, feet shoulder-width",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "core"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.48,
+            "y": 0.16
+          },
+          "neck": {
+            "x": 0.48,
+            "y": 0.23
+          },
+          "shoulder": {
+            "x": 0.48,
+            "y": 0.28
+          },
+          "elbow": {
+            "x": 0.41,
+            "y": 0.413
+          },
+          "wrist": {
+            "x": 0.54,
+            "y": 0.36
+          },
+          "hip": {
+            "x": 0.48,
+            "y": 0.52
+          },
+          "knee": {
+            "x": 0.48,
+            "y": 0.72
+          },
+          "ankle": {
+            "x": 0.48,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.54,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.54,
+              0.36
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Break at hips and knees, sitting down between heels with proud chest",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "core"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.452,
+            "y": 0.264
+          },
+          "neck": {
+            "x": 0.452,
+            "y": 0.334
+          },
+          "shoulder": {
+            "x": 0.452,
+            "y": 0.384
+          },
+          "elbow": {
+            "x": 0.382,
+            "y": 0.517
+          },
+          "wrist": {
+            "x": 0.512,
+            "y": 0.464
+          },
+          "hip": {
+            "x": 0.41,
+            "y": 0.62
+          },
+          "knee": {
+            "x": 0.568,
+            "y": 0.743
+          },
+          "ankle": {
+            "x": 0.48,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.54,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.512,
+              0.464
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Thighs parallel to floor, elbows tracking just inside knees, spine neutral",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "adductors"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.422,
+            "y": 0.374
+          },
+          "neck": {
+            "x": 0.422,
+            "y": 0.444
+          },
+          "shoulder": {
+            "x": 0.422,
+            "y": 0.494
+          },
+          "elbow": {
+            "x": 0.352,
+            "y": 0.627
+          },
+          "wrist": {
+            "x": 0.482,
+            "y": 0.574
+          },
+          "hip": {
+            "x": 0.34,
+            "y": 0.72
+          },
+          "knee": {
+            "x": 0.54,
+            "y": 0.73
+          },
+          "ankle": {
+            "x": 0.48,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.54,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.482,
+              0.574
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive through midfoot, extending knees and hips together",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "core"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.452,
+            "y": 0.264
+          },
+          "neck": {
+            "x": 0.452,
+            "y": 0.334
+          },
+          "shoulder": {
+            "x": 0.452,
+            "y": 0.384
+          },
+          "elbow": {
+            "x": 0.382,
+            "y": 0.517
+          },
+          "wrist": {
+            "x": 0.512,
+            "y": 0.464
+          },
+          "hip": {
+            "x": 0.41,
+            "y": 0.62
+          },
+          "knee": {
+            "x": 0.568,
+            "y": 0.743
+          },
+          "ankle": {
+            "x": 0.48,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.54,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.512,
+              0.464
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Stand tall at full lockout without arching lower back",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "core"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.48,
+            "y": 0.16
+          },
+          "neck": {
+            "x": 0.48,
+            "y": 0.23
+          },
+          "shoulder": {
+            "x": 0.48,
+            "y": 0.28
+          },
+          "elbow": {
+            "x": 0.41,
+            "y": 0.413
+          },
+          "wrist": {
+            "x": 0.54,
+            "y": 0.36
+          },
+          "hip": {
+            "x": 0.48,
+            "y": 0.52
+          },
+          "knee": {
+            "x": 0.48,
+            "y": 0.72
+          },
+          "ankle": {
+            "x": 0.48,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.54,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.54,
+              0.36
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "db_bulgarian_split_squat",
+    "exerciseName": "Dumbbell Bulgarian Split Squat",
+    "perspective": "SIDE",
+    "durationMs": 3400,
+    "description": "Unilateral lower-body compound movement emphasizing quadriceps, glutes, and pelvic stability.",
+    "angleSpecs": [
+      {
+        "label": "Front Knee",
+        "pointA": "hip",
+        "centerPoint": "knee",
+        "pointB": "ankle"
+      },
+      {
+        "label": "Hip",
+        "pointA": "shoulder",
+        "centerPoint": "hip",
+        "pointB": "knee"
+      }
+    ],
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Rear foot elevated on bench behind, front foot planted forward, dumbbells at sides",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.48,
+            "y": 0.2
+          },
+          "neck": {
+            "x": 0.48,
+            "y": 0.27
+          },
+          "shoulder": {
+            "x": 0.48,
+            "y": 0.32
+          },
+          "elbow": {
+            "x": 0.48,
+            "y": 0.47
+          },
+          "wrist": {
+            "x": 0.48,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.48,
+            "y": 0.54
+          },
+          "knee": {
+            "x": 0.537,
+            "y": 0.73
+          },
+          "ankle": {
+            "x": 0.58,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.64,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.48,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Descend straight down under control, loading front leg heel",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.43,
+            "y": 0.27
+          },
+          "neck": {
+            "x": 0.43,
+            "y": 0.34
+          },
+          "shoulder": {
+            "x": 0.43,
+            "y": 0.39
+          },
+          "elbow": {
+            "x": 0.43,
+            "y": 0.54
+          },
+          "wrist": {
+            "x": 0.43,
+            "y": 0.69
+          },
+          "hip": {
+            "x": 0.43,
+            "y": 0.61
+          },
+          "knee": {
+            "x": 0.591,
+            "y": 0.725
+          },
+          "ankle": {
+            "x": 0.58,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.64,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.43,
+              0.69
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Front thigh parallel to floor, back knee hovering above ground",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes",
+          "hamstrings"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.39,
+            "y": 0.33
+          },
+          "neck": {
+            "x": 0.39,
+            "y": 0.4
+          },
+          "shoulder": {
+            "x": 0.39,
+            "y": 0.45
+          },
+          "elbow": {
+            "x": 0.39,
+            "y": 0.6
+          },
+          "wrist": {
+            "x": 0.39,
+            "y": 0.75
+          },
+          "hip": {
+            "x": 0.39,
+            "y": 0.67
+          },
+          "knee": {
+            "x": 0.58,
+            "y": 0.725
+          },
+          "ankle": {
+            "x": 0.58,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.64,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.39,
+              0.75
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive through midfoot of front leg to return upward",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.43,
+            "y": 0.27
+          },
+          "neck": {
+            "x": 0.43,
+            "y": 0.34
+          },
+          "shoulder": {
+            "x": 0.43,
+            "y": 0.39
+          },
+          "elbow": {
+            "x": 0.43,
+            "y": 0.54
+          },
+          "wrist": {
+            "x": 0.43,
+            "y": 0.69
+          },
+          "hip": {
+            "x": 0.43,
+            "y": 0.61
+          },
+          "knee": {
+            "x": 0.591,
+            "y": 0.725
+          },
+          "ankle": {
+            "x": 0.58,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.64,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.43,
+              0.69
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Full lockout of front knee and hip at top of movement",
+        "activeMuscles": [
+          "quadriceps",
+          "glutes"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.48,
+            "y": 0.2
+          },
+          "neck": {
+            "x": 0.48,
+            "y": 0.27
+          },
+          "shoulder": {
+            "x": 0.48,
+            "y": 0.32
+          },
+          "elbow": {
+            "x": 0.48,
+            "y": 0.47
+          },
+          "wrist": {
+            "x": 0.48,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.48,
+            "y": 0.54
+          },
+          "knee": {
+            "x": 0.537,
+            "y": 0.73
+          },
+          "ankle": {
+            "x": 0.58,
+            "y": 0.9
+          },
+          "foot": {
+            "x": 0.64,
+            "y": 0.92
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.48,
+              0.62
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "db_bench_press",
+    "exerciseName": "Dumbbell Bench Press",
+    "perspective": "SIDE",
+    "durationMs": 3000,
+    "description": "Horizontal dumbbell press maximizing chest contraction with convergent pressing path.",
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ],
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Dumbbells extended over chest, wrists stacked over elbows, feet firmly planted",
+        "activeMuscles": [
+          "chest",
+          "triceps",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.42,
+            "y": 0.41
+          },
+          "wrist": {
+            "x": 0.42,
+            "y": 0.24
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.42,
+              0.24
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower dumbbells under control with elbows tracking at ~45-60 degrees from torso",
+        "activeMuscles": [
+          "chest",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.5,
+            "y": 0.43
+          },
+          "wrist": {
+            "x": 0.5,
+            "y": 0.26
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.26
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Full chest stretch at bottom, forearms vertical, elbows flared ~50 degrees",
+        "activeMuscles": [
+          "chest"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.58,
+            "y": 0.61
+          },
+          "wrist": {
+            "x": 0.58,
+            "y": 0.44
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.58,
+              0.44
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive dumbbells upward in slight inward arc toward midline",
+        "activeMuscles": [
+          "chest",
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.5,
+            "y": 0.43
+          },
+          "wrist": {
+            "x": 0.5,
+            "y": 0.26
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.5,
+              0.26
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Lockout over chest, squeezing pectorals at peak contraction",
+        "activeMuscles": [
+          "chest",
+          "triceps",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.42,
+            "y": 0.41
+          },
+          "wrist": {
+            "x": 0.42,
+            "y": 0.24
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.42,
+              0.24
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "db_skull_crusher",
+    "exerciseName": "Dumbbell Skull Crusher",
+    "perspective": "SIDE",
+    "durationMs": 2800,
+    "description": "Lying triceps extension isolating the long and lateral heads of the triceps brachii.",
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ],
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "START",
+        "cue": "Arms extended slightly past vertical toward crown of head, elbows tucked",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.38,
+            "y": 0.415
+          },
+          "wrist": {
+            "x": 0.34,
+            "y": 0.26
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.34,
+              0.26
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Hinge at elbows only, lowering dumbbells toward sides of forehead",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.38,
+            "y": 0.415
+          },
+          "wrist": {
+            "x": 0.252,
+            "y": 0.319
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.252,
+              0.319
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Full triceps stretch with forearms past 90 degrees without flaring elbows",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.38,
+            "y": 0.415
+          },
+          "wrist": {
+            "x": 0.22,
+            "y": 0.42
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.22,
+              0.42
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Extend forearms upward, locking elbow hinge into place",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.38,
+            "y": 0.415
+          },
+          "wrist": {
+            "x": 0.252,
+            "y": 0.319
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.252,
+              0.319
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Squeeze triceps at top while maintaining slight backward lean for constant tension",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.28,
+            "y": 0.58
+          },
+          "neck": {
+            "x": 0.35,
+            "y": 0.58
+          },
+          "shoulder": {
+            "x": 0.42,
+            "y": 0.58
+          },
+          "elbow": {
+            "x": 0.38,
+            "y": 0.415
+          },
+          "wrist": {
+            "x": 0.34,
+            "y": 0.26
+          },
+          "hip": {
+            "x": 0.6,
+            "y": 0.58
+          },
+          "knee": {
+            "x": 0.74,
+            "y": 0.68
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "dumbbell",
+          "points": [
+            [
+              0.34,
+              0.26
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "exerciseId": "bench_dip",
+    "exerciseName": "Bench Dip",
+    "perspective": "SIDE",
+    "durationMs": 2600,
+    "description": "Bodyweight triceps and anterior deltoid exercise performed with hands braced on bench.",
+    "angleSpecs": [
+      {
+        "label": "Elbow",
+        "pointA": "shoulder",
+        "centerPoint": "elbow",
+        "pointB": "wrist"
+      }
+    ],
+    "keyframes": [
+      {
+        "progress": 0.0,
+        "phase": "SETUP",
+        "cue": "Hands on bench edge, arms locked, feet extended forward, hips close to bench",
+        "activeMuscles": [
+          "triceps",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.36,
+            "y": 0.2
+          },
+          "neck": {
+            "x": 0.36,
+            "y": 0.27
+          },
+          "shoulder": {
+            "x": 0.36,
+            "y": 0.32
+          },
+          "elbow": {
+            "x": 0.36,
+            "y": 0.47
+          },
+          "wrist": {
+            "x": 0.36,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.44,
+            "y": 0.6
+          },
+          "knee": {
+            "x": 0.644,
+            "y": 0.682
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.18,
+              0.62
+            ],
+            [
+              0.38,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.25,
+        "phase": "ECCENTRIC",
+        "cue": "Lower hips straight down, keeping back brushing close to bench edge",
+        "activeMuscles": [
+          "triceps",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.36,
+            "y": 0.26
+          },
+          "neck": {
+            "x": 0.36,
+            "y": 0.33
+          },
+          "shoulder": {
+            "x": 0.36,
+            "y": 0.38
+          },
+          "elbow": {
+            "x": 0.27,
+            "y": 0.5
+          },
+          "wrist": {
+            "x": 0.36,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.44,
+            "y": 0.67
+          },
+          "knee": {
+            "x": 0.66,
+            "y": 0.675
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.18,
+              0.62
+            ],
+            [
+              0.38,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.5,
+        "phase": "BOTTOM",
+        "cue": "Elbows reach ~75-degree flexion, shoulders depressed without shrugging",
+        "activeMuscles": [
+          "triceps",
+          "front_delts"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.36,
+            "y": 0.32
+          },
+          "neck": {
+            "x": 0.36,
+            "y": 0.39
+          },
+          "shoulder": {
+            "x": 0.36,
+            "y": 0.44
+          },
+          "elbow": {
+            "x": 0.24,
+            "y": 0.53
+          },
+          "wrist": {
+            "x": 0.36,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.44,
+            "y": 0.74
+          },
+          "knee": {
+            "x": 0.651,
+            "y": 0.679
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.18,
+              0.62
+            ],
+            [
+              0.38,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 0.75,
+        "phase": "CONCENTRIC",
+        "cue": "Drive through palms to extend elbows back to straight arm position",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.36,
+            "y": 0.26
+          },
+          "neck": {
+            "x": 0.36,
+            "y": 0.33
+          },
+          "shoulder": {
+            "x": 0.36,
+            "y": 0.38
+          },
+          "elbow": {
+            "x": 0.27,
+            "y": 0.5
+          },
+          "wrist": {
+            "x": 0.36,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.44,
+            "y": 0.67
+          },
+          "knee": {
+            "x": 0.66,
+            "y": 0.675
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.18,
+              0.62
+            ],
+            [
+              0.38,
+              0.62
+            ]
+          ]
+        }
+      },
+      {
+        "progress": 1.0,
+        "phase": "END",
+        "cue": "Full triceps extension and chest opened at top of movement",
+        "activeMuscles": [
+          "triceps"
+        ],
+        "joints": {
+          "head": {
+            "x": 0.36,
+            "y": 0.2
+          },
+          "neck": {
+            "x": 0.36,
+            "y": 0.27
+          },
+          "shoulder": {
+            "x": 0.36,
+            "y": 0.32
+          },
+          "elbow": {
+            "x": 0.36,
+            "y": 0.47
+          },
+          "wrist": {
+            "x": 0.36,
+            "y": 0.62
+          },
+          "hip": {
+            "x": 0.44,
+            "y": 0.6
+          },
+          "knee": {
+            "x": 0.644,
+            "y": 0.682
+          },
+          "ankle": {
+            "x": 0.74,
+            "y": 0.88
+          },
+          "foot": {
+            "x": 0.8,
+            "y": 0.9
+          }
+        },
+        "equipment": {
+          "type": "bench",
+          "points": [
+            [
+              0.18,
+              0.62
+            ],
+            [
+              0.38,
+              0.62
+            ]
+          ]
+        }
+      }
+    ]
   }
 ]

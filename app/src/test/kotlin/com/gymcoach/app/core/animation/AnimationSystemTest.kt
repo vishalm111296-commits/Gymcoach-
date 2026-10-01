@@ -25,7 +25,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals("Must parse 26 high-value exercise animations", 26, definitions.size)
+        assertEquals("Must parse 31 high-value exercise animations", 31, definitions.size)
 
         for (def in definitions) {
             assertTrue("Exercise ID must not be blank", def.exerciseId.isNotBlank())
@@ -164,7 +164,7 @@ class AnimationSystemTest {
     fun testAll20DefinitionsInterpolationAtRequiredProgressPoints() {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
-        assertEquals(26, definitions.size)
+        assertEquals(31, definitions.size)
 
         val progressPoints = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)
 
@@ -556,7 +556,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals(26, definitions.size)
+        assertEquals(31, definitions.size)
 
         val benchmarkSet = setOf(
             "barbell_squat", "bench_press", "deadlift", "barbell_row",
@@ -680,7 +680,11 @@ class AnimationSystemTest {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
         for (def in definitions) {
-            if (def.exerciseId in listOf("overhead_press", "bench_press", "biceps_curl", "incline_dumbbell_press", "hammer_curl", "dumbbell_romanian_deadlift", "face_pull", "standing_calf_raise")) {
+            if (def.exerciseId in listOf(
+                    "overhead_press", "bench_press", "biceps_curl", "incline_dumbbell_press",
+                    "hammer_curl", "dumbbell_romanian_deadlift", "face_pull", "standing_calf_raise",
+                    "db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip"
+                )) {
                 val j0 = def.keyframes[0].joints
                 val p1 = "shoulder"
                 val p2 = "elbow"
@@ -694,6 +698,106 @@ class AnimationSystemTest {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    fun testFourLimbSegmentsInvariance() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        val matching = definitions.filter { it.exerciseId in newExercises }
+        assertEquals("Target exercise set must match exactly without missing entries", newExercises, matching.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate target exercise definitions permitted", newExercises.size, matching.size)
+        val segments = listOf("shoulder" to "elbow", "elbow" to "wrist", "hip" to "knee", "knee" to "ankle")
+
+        for (def in matching) {
+            val j0 = def.keyframes[0].joints
+            for ((p1, p2) in segments) {
+                val pt1 = j0[p1]
+                val pt2 = j0[p2]
+                assertNotNull("Initial joint $p1 must exist in ${def.exerciseId}", pt1)
+                assertNotNull("Initial joint $p2 must exist in ${def.exerciseId}", pt2)
+                val refLen = Math.hypot((pt1!!.x - pt2!!.x).toDouble(), (pt1.y - pt2.y).toDouble())
+                for ((idx, kf) in def.keyframes.withIndex()) {
+                    val j = kf.joints
+                    val kpt1 = j[p1]
+                    val kpt2 = j[p2]
+                    assertNotNull("Joint $p1 must exist at kf $idx in ${def.exerciseId}", kpt1)
+                    assertNotNull("Joint $p2 must exist at kf $idx in ${def.exerciseId}", kpt2)
+                    val len = Math.hypot((kpt1!!.x - kpt2!!.x).toDouble(), (kpt1.y - kpt2.y).toDouble())
+                    val variance = Math.abs(len - refLen) / refLen
+                    assertTrue("Segment $p1-$p2 distorted in ${def.exerciseId} at kf $idx (var: $variance)", variance <= 0.12)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testEquipmentDumbbellAttachment() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val dumbbellExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher")
+        val matchingDumbbell = definitions.filter { it.exerciseId in dumbbellExercises }
+        assertEquals("Dumbbell target set must match exactly without missing entries", dumbbellExercises, matchingDumbbell.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate dumbbell definitions permitted", dumbbellExercises.size, matchingDumbbell.size)
+        for (def in matchingDumbbell) {
+            for ((idx, kf) in def.keyframes.withIndex()) {
+                val eq = kf.equipment
+                assertNotNull("Equipment must not be null at kf $idx in ${def.exerciseId}", eq)
+                assertEquals("Equipment must be dumbbell in ${def.exerciseId}", "dumbbell", eq?.type)
+                assertTrue("Equipment points must not be empty at kf $idx in ${def.exerciseId}", eq!!.points.isNotEmpty())
+                val wrist = kf.joints["wrist"]
+                assertNotNull("Wrist joint must exist at kf $idx in ${def.exerciseId}", wrist)
+                val db = eq.points[0]
+                val dist = Math.hypot((db.x - wrist!!.x).toDouble(), (db.y - wrist.y).toDouble())
+                assertTrue("Dumbbell must stay attached to wrist in ${def.exerciseId} (dist: $dist)", dist <= 0.05)
+            }
+        }
+
+        // Also verify bench equipment geometry for bench_dip
+        val benchDip = definitions.firstOrNull { it.exerciseId == "bench_dip" }
+        assertNotNull("bench_dip definition must be present", benchDip)
+        for ((idx, kf) in benchDip!!.keyframes.withIndex()) {
+            val eq = kf.equipment
+            assertNotNull("Equipment must not be null at kf $idx in bench_dip", eq)
+            assertEquals("Equipment must be bench in bench_dip", "bench", eq?.type)
+            assertTrue("Bench equipment must have at least 2 points in bench_dip", eq!!.points.size >= 2)
+        }
+    }
+
+    @Test
+    fun testAnatomicalAnglePlausibility() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        val matching = definitions.filter { it.exerciseId in newExercises }
+        assertEquals("Target exercise set must match exactly without missing entries", newExercises, matching.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate target exercise definitions permitted", newExercises.size, matching.size)
+        for (def in matching) {
+            val bottomKf = def.keyframes.find { it.phase == AnimationPhase.BOTTOM }
+            assertNotNull("Bottom phase must exist in ${def.exerciseId}", bottomKf)
+            val j = bottomKf!!.joints
+            assertTrue("Angle specs must not be empty in ${def.exerciseId}", def.angleSpecs.isNotEmpty())
+            for (spec in def.angleSpecs) {
+                val a = j[spec.pointA]
+                val b = j[spec.centerPoint]
+                val c = j[spec.pointB]
+                assertNotNull("Angle point A ${spec.pointA} must exist in ${def.exerciseId}", a)
+                assertNotNull("Angle center point ${spec.centerPoint} must exist in ${def.exerciseId}", b)
+                assertNotNull("Angle point B ${spec.pointB} must exist in ${def.exerciseId}", c)
+                val v1x = (a!!.x - b!!.x).toDouble()
+                val v1y = (a.y - b.y).toDouble()
+                val v2x = (c!!.x - b.x).toDouble()
+                val v2y = (c.y - b.y).toDouble()
+                val dot = v1x * v2x + v1y * v2y
+                val m1 = Math.hypot(v1x, v1y)
+                val m2 = Math.hypot(v2x, v2y)
+                assertTrue("Angle vectors must have non-zero length in ${def.exerciseId}", m1 * m2 > 0)
+                val cosVal = Math.max(-1.0, Math.min(1.0, dot / (m1 * m2)))
+                val angleDeg = Math.toDegrees(Math.acos(cosVal))
+                assertTrue("Bottom angle ${spec.label} for ${def.exerciseId} must be plausible, was: $angleDeg", angleDeg in 45.0..140.0)
             }
         }
     }

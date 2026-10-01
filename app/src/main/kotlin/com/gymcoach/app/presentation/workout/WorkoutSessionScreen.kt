@@ -1912,9 +1912,8 @@ internal fun WorkoutCompletionView(
                             color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.15f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup.copy(alpha = 0.4f))
                         ) {
-                            val prValueFormatted = if (pr.value % 1.0 == 0.0) pr.value.toInt().toString() else String.format(Locale.US, "%.1f", pr.value)
                             Text(
-                                text = "🏆 ${pr.exerciseName}: $prValueFormatted ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else weightUnit.code}",
+                                text = "🏆 ${pr.exerciseName}: ${pr.value} ${if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) "reps" else weightUnit.code}",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = com.gymcoach.app.ui.theme.GymCoachColors.SetWarmup,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)

@@ -707,9 +707,11 @@ class AnimationSystemTest {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
         val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        val matching = definitions.filter { it.exerciseId in newExercises }
+        assertEquals("All 5 target exercises must be present in definitions", newExercises.size, matching.size)
         val segments = listOf("shoulder" to "elbow", "elbow" to "wrist", "hip" to "knee", "knee" to "ankle")
 
-        for (def in definitions.filter { it.exerciseId in newExercises }) {
+        for (def in matching) {
             val j0 = def.keyframes[0].joints
             for ((p1, p2) in segments) {
                 val pt1 = j0[p1]
@@ -736,7 +738,9 @@ class AnimationSystemTest {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
         val dumbbellExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher")
-        for (def in definitions.filter { it.exerciseId in dumbbellExercises }) {
+        val matchingDumbbell = definitions.filter { it.exerciseId in dumbbellExercises }
+        assertEquals("All 4 dumbbell target exercises must be present in definitions", dumbbellExercises.size, matchingDumbbell.size)
+        for (def in matchingDumbbell) {
             for ((idx, kf) in def.keyframes.withIndex()) {
                 val eq = kf.equipment
                 assertNotNull("Equipment must not be null at kf $idx in ${def.exerciseId}", eq)
@@ -751,8 +755,9 @@ class AnimationSystemTest {
         }
 
         // Also verify bench equipment geometry for bench_dip
-        val benchDip = definitions.first { it.exerciseId == "bench_dip" }
-        for ((idx, kf) in benchDip.keyframes.withIndex()) {
+        val benchDip = definitions.firstOrNull { it.exerciseId == "bench_dip" }
+        assertNotNull("bench_dip definition must be present", benchDip)
+        for ((idx, kf) in benchDip!!.keyframes.withIndex()) {
             val eq = kf.equipment
             assertNotNull("Equipment must not be null at kf $idx in bench_dip", eq)
             assertEquals("Equipment must be bench in bench_dip", "bench", eq?.type)
@@ -765,7 +770,9 @@ class AnimationSystemTest {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
         val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
-        for (def in definitions.filter { it.exerciseId in newExercises }) {
+        val matching = definitions.filter { it.exerciseId in newExercises }
+        assertEquals("All 5 new target exercises must be present in definitions", newExercises.size, matching.size)
+        for (def in matching) {
             val bottomKf = def.keyframes.find { it.phase == AnimationPhase.BOTTOM }
             assertNotNull("Bottom phase must exist in ${def.exerciseId}", bottomKf)
             val j = bottomKf!!.joints

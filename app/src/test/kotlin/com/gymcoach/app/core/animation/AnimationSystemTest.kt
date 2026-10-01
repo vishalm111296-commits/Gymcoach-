@@ -708,7 +708,8 @@ class AnimationSystemTest {
         val definitions = AnimationParser.parseList(assetFile.readText())
         val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
         val matching = definitions.filter { it.exerciseId in newExercises }
-        assertEquals("All 5 target exercises must be present in definitions", newExercises.size, matching.size)
+        assertEquals("Target exercise set must match exactly without missing entries", newExercises, matching.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate target exercise definitions permitted", newExercises.size, matching.size)
         val segments = listOf("shoulder" to "elbow", "elbow" to "wrist", "hip" to "knee", "knee" to "ankle")
 
         for (def in matching) {
@@ -739,7 +740,8 @@ class AnimationSystemTest {
         val definitions = AnimationParser.parseList(assetFile.readText())
         val dumbbellExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher")
         val matchingDumbbell = definitions.filter { it.exerciseId in dumbbellExercises }
-        assertEquals("All 4 dumbbell target exercises must be present in definitions", dumbbellExercises.size, matchingDumbbell.size)
+        assertEquals("Dumbbell target set must match exactly without missing entries", dumbbellExercises, matchingDumbbell.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate dumbbell definitions permitted", dumbbellExercises.size, matchingDumbbell.size)
         for (def in matchingDumbbell) {
             for ((idx, kf) in def.keyframes.withIndex()) {
                 val eq = kf.equipment
@@ -771,7 +773,8 @@ class AnimationSystemTest {
         val definitions = AnimationParser.parseList(assetFile.readText())
         val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
         val matching = definitions.filter { it.exerciseId in newExercises }
-        assertEquals("All 5 new target exercises must be present in definitions", newExercises.size, matching.size)
+        assertEquals("Target exercise set must match exactly without missing entries", newExercises, matching.map { it.exerciseId }.toSet())
+        assertEquals("No duplicate target exercise definitions permitted", newExercises.size, matching.size)
         for (def in matching) {
             val bottomKf = def.keyframes.find { it.phase == AnimationPhase.BOTTOM }
             assertNotNull("Bottom phase must exist in ${def.exerciseId}", bottomKf)

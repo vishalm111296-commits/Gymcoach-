@@ -221,4 +221,17 @@ class PersonalRecordsViewModelTest {
 
         assertEquals(com.gymcoach.app.core.preferences.WeightUnit.LBS, viewModel.weightUnit.value)
     }
+
+    @Test
+    fun `WeightUnit toDisplayWeight correctly converts kg to lbs and preserves kg`() {
+        val kgValue = 100.0
+        val lbsUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+        val kgUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
+
+        assertEquals(100.0, kgUnit.toDisplayWeight(kgValue), 0.001)
+        assertEquals(220.462, lbsUnit.toDisplayWeight(kgValue), 0.01)
+
+        assertEquals(100.0, lbsUnit.toCanonicalKg(220.462262185), 0.001)
+        assertEquals(100.0, kgUnit.toCanonicalKg(100.0), 0.001)
+    }
 }

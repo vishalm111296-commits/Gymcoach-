@@ -265,12 +265,14 @@ private fun PRHallOfFameCard(
     }
 
     // Use stored 1RM or calculate via Epley formula
-    val displayOneRepMax = if (record.oneRepMaxKg > 0.0) {
+    val rawOneRepMax = if (record.oneRepMaxKg > 0.0) {
         record.oneRepMaxKg
     } else {
         record.weightKg * (1.0 + record.reps.coerceAtMost(12) / 30.0)
     }
 
+    val displayWeight = weightUnit.toDisplayWeight(record.weightKg)
+    val displayOneRepMax = weightUnit.toDisplayWeight(rawOneRepMax)
     val unit = weightUnit.code
 
     Card(
@@ -318,10 +320,10 @@ private fun PRHallOfFameCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(3.dp))
-                val weightStr = if (record.weightKg == record.weightKg.toLong().toDouble()) {
-                    "${record.weightKg.toInt()} $unit"
+                val weightStr = if (displayWeight == displayWeight.toLong().toDouble()) {
+                    "${displayWeight.toInt()} $unit"
                 } else {
-                    String.format(Locale.US, "%.1f $unit", record.weightKg)
+                    String.format(Locale.US, "%.1f $unit", displayWeight)
                 }
                 Text(
                     text = "$weightStr × ${record.reps} reps",

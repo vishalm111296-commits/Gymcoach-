@@ -14,9 +14,24 @@ enum class WeightUnit(val code: String, val label: String) {
     KG("kg", "Metric (kg)"),
     LBS("lbs", "Imperial (lbs)");
 
+    fun toDisplayWeight(weightKg: Double): Double = when (this) {
+        KG -> weightKg
+        LBS -> weightKg * LBS_PER_KG
+    }
+
+    fun toCanonicalKg(displayWeight: Double): Double = when (this) {
+        KG -> displayWeight
+        LBS -> displayWeight / LBS_PER_KG
+    }
+
     companion object {
+        const val LBS_PER_KG = 2.20462262185
+
         fun fromCode(code: String?): WeightUnit =
             entries.find { it.code.equals(code, ignoreCase = true) } ?: KG
+
+        fun kgToLbs(kg: Double): Double = kg * LBS_PER_KG
+        fun lbsToKg(lbs: Double): Double = lbs / LBS_PER_KG
     }
 }
 

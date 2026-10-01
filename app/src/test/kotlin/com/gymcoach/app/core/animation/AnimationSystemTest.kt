@@ -25,7 +25,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals("Must parse 26 high-value exercise animations", 26, definitions.size)
+        assertEquals("Must parse 31 high-value exercise animations", 31, definitions.size)
 
         for (def in definitions) {
             assertTrue("Exercise ID must not be blank", def.exerciseId.isNotBlank())
@@ -164,7 +164,7 @@ class AnimationSystemTest {
     fun testAll20DefinitionsInterpolationAtRequiredProgressPoints() {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
-        assertEquals(26, definitions.size)
+        assertEquals(31, definitions.size)
 
         val progressPoints = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)
 
@@ -556,7 +556,7 @@ class AnimationSystemTest {
         val json = assetFile.readText()
         val definitions = AnimationParser.parseList(json)
 
-        assertEquals(26, definitions.size)
+        assertEquals(31, definitions.size)
 
         val benchmarkSet = setOf(
             "barbell_squat", "bench_press", "deadlift", "barbell_row",
@@ -680,7 +680,11 @@ class AnimationSystemTest {
         val assetFile = resolveAssetsFile("animations/exercise_animations.json")
         val definitions = AnimationParser.parseList(assetFile.readText())
         for (def in definitions) {
-            if (def.exerciseId in listOf("overhead_press", "bench_press", "biceps_curl", "incline_dumbbell_press", "hammer_curl", "dumbbell_romanian_deadlift", "face_pull", "standing_calf_raise")) {
+            if (def.exerciseId in listOf(
+                    "overhead_press", "bench_press", "biceps_curl", "incline_dumbbell_press",
+                    "hammer_curl", "dumbbell_romanian_deadlift", "face_pull", "standing_calf_raise",
+                    "db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip"
+                )) {
                 val j0 = def.keyframes[0].joints
                 val p1 = "shoulder"
                 val p2 = "elbow"

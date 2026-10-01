@@ -88,11 +88,12 @@ fun PlateCalculatorDialog(
     barWeight: Double = 20.0,
     weightUnit: WeightUnit = WeightUnit.KG,
     onDismiss: () -> Unit,
-    onWeightSelected: ((Double) -> Unit)? = null
+    onWeightSelected: ((Double) -> Unit)? = null,
+    onBarWeightChange: ((Double) -> Unit)? = null
 ) {
     val isImperial = weightUnit == WeightUnit.LBS
     val initialBarWeight = if (isImperial && barWeight == 20.0) 45.0 else barWeight
-    var selectedBarWeight by rememberSaveable(weightUnit) { mutableDoubleStateOf(initialBarWeight) }
+    var selectedBarWeight by rememberSaveable(weightUnit, barWeight) { mutableDoubleStateOf(initialBarWeight) }
     var currentTargetWeight by rememberSaveable(targetWeight, weightUnit) { mutableDoubleStateOf(targetWeight) }
 
     val presets = if (isImperial) BARBELL_PRESETS_IMPERIAL else BARBELL_PRESETS_METRIC
@@ -241,7 +242,10 @@ fun PlateCalculatorDialog(
                             val isSelected = selectedBarWeight == preset.weight
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { selectedBarWeight = preset.weight },
+                                onClick = {
+                                    selectedBarWeight = preset.weight
+                                    onBarWeightChange?.invoke(preset.weight)
+                                },
                                 label = {
                                     Text(
                                         text = "${preset.name} (${preset.weight.toInt()}${weightUnit.code})",
@@ -502,13 +506,15 @@ fun PlateCalculatorDialog(
     initialTargetWeight: Double,
     weightUnit: WeightUnit,
     onDismiss: () -> Unit,
-    onWeightSelected: (Double) -> Unit
+    onWeightSelected: (Double) -> Unit,
+    onBarWeightChange: ((Double) -> Unit)? = null
 ) {
     PlateCalculatorDialog(
         targetWeight = initialTargetWeight,
         weightUnit = weightUnit,
         onDismiss = onDismiss,
-        onWeightSelected = onWeightSelected
+        onWeightSelected = onWeightSelected,
+        onBarWeightChange = onBarWeightChange
     )
 }
 

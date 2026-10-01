@@ -115,6 +115,13 @@ class ProfileViewModel @Inject constructor(
     private val audioCoach: com.gymcoach.app.core.audio.RestAudioCoach? = null
 ) : ViewModel() {
 
+    private val activeAudioCoach: com.gymcoach.app.core.audio.RestAudioCoach by lazy {
+        audioCoach ?: com.gymcoach.app.core.audio.RestAudioCoach(
+            com.gymcoach.app.core.audio.RestAudioCueEvaluator(),
+            appPreferences
+        )
+    }
+
     val preferencesState: StateFlow<AppPreferencesState> = appPreferences.preferencesState
 
     fun setWeightUnit(unit: WeightUnit) {
@@ -131,11 +138,7 @@ class ProfileViewModel @Inject constructor(
 
     fun previewAudioPreset(preset: AudioCoachPreset) {
         setAudioPreset(preset)
-        val coach = audioCoach ?: com.gymcoach.app.core.audio.RestAudioCoach(
-            com.gymcoach.app.core.audio.RestAudioCueEvaluator(),
-            appPreferences
-        )
-        coach.playCue(com.gymcoach.app.core.audio.AudioCueType.TIMER_FINISHED)
+        activeAudioCoach.playCue(com.gymcoach.app.core.audio.AudioCueType.TIMER_FINISHED)
     }
 
     fun setAutoStartRestTimer(enabled: Boolean) {

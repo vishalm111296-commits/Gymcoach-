@@ -329,4 +329,25 @@ class ProfileViewModelTest {
         io.mockk.verify { mockPrefs.setAudioPreset(com.gymcoach.app.core.audio.AudioCoachPreset.POWER_PULSE) }
         io.mockk.verify { mockAudioCoach.playCue(com.gymcoach.app.core.audio.AudioCueType.TIMER_FINISHED) }
     }
+
+    @Test
+    fun `previewAudioPreset with null audioCoach lazily instantiates fallback coach and saves preset`() {
+        val mockRepo = io.mockk.mockk<com.gymcoach.app.domain.repository.UserProfileRepository>(relaxed = true)
+        val mockDao = io.mockk.mockk<com.gymcoach.app.data.local.dao.BodyMeasurementDao>(relaxed = true)
+        val inMemoryPrefs = com.gymcoach.app.core.preferences.InMemoryAppPreferences()
+
+        val viewModel = ProfileViewModel(
+            userProfileRepository = mockRepo,
+            bodyMeasurementDao = mockDao,
+            appPreferences = inMemoryPrefs,
+            audioCoach = null
+        )
+
+        // Multiple calls should reuse the retained fallback coach instance without error
+        viewModel.previewAudioPreset(com.gymcoach.app.core.audio.AudioCoachPreset.MELLOW_CHIMES)
+        assertEquals(com.gymcoach.app.core.audio.AudioCoachPreset.MELLOW_CHIMES, inMemoryPrefs.preferencesState.value.audioPreset)
+
+        viewModel.previewAudioPreset(com.gymcoach.app.core.audio.AudioCoachPreset.POWER_PULSE)
+        assertEquals(com.gymcoach.app.core.audio.AudioCoachPreset.POWER_PULSE, inMemoryPrefs.preferencesState.value.audioPreset)
+    }
 }

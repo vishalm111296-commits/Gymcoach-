@@ -289,7 +289,7 @@ fun WorkoutSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Column {
                         Text("Workout Session")
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1439,8 +1439,8 @@ internal fun ExerciseSetCard(
                     .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("MMM d"))
                 val bestWeight = lastPerformance.maxWeight
-                val lastSetSummary = previousSets?.joinToString("  •  ") { 
-                    "${it.weight}${weightUnit.code} × ${it.reps}" 
+                val lastSetSummary = previousSets?.joinToString("  •  ") {
+                    "${it.weight}${weightUnit.code} × ${it.reps}"
                 } ?: ""
 
                 Card(
@@ -1505,7 +1505,7 @@ internal fun ExerciseSetCard(
                         color = GymCoachColors.Primary
                     )
                 }
-    
+
                 AnimatedVisibility(
                     visible = showInstructions,
                     enter = fadeIn() + expandVertically(
@@ -1662,7 +1662,7 @@ internal fun ExerciseSetCard(
                 }
                 FilledTonalButton(
                     onClick = onAddSet,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    modifier = Modifier.weight(if (hasWorkingWeight) 1f else 1f).fillMaxWidth().heightIn(min = 48.dp),
                     shape = GymCoachShapes.sm,
                     colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                         containerColor = GymCoachColors.SurfaceCardElevated,
@@ -2033,5 +2033,3 @@ private fun StatCard(
         }
     }
 }
-
-

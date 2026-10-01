@@ -196,4 +196,54 @@ class PersonalRecordsViewModelTest {
         viewModel.setSortBy(SortBy.EXERCISE_NAME)
         assertEquals(SortBy.EXERCISE_NAME, viewModel.sortBy.value)
     }
+
+    @Test
+    fun `weightUnit defaults to KG when AppPreferences is not provided`() = runTest(testDispatcher) {
+        every { personalRecordDao.getAllWithExerciseName() } returns flowOf(emptyList())
+
+        val viewModel = PersonalRecordsViewModel(personalRecordDao)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.KG, viewModel.weightUnit.value)
+    }
+
+    @Test
+    fun `weightUnit reflects AppPreferences when provided`() = runTest(testDispatcher) {
+        every { personalRecordDao.getAllWithExerciseName() } returns flowOf(emptyList())
+
+        val prefs = com.gymcoach.app.core.preferences.InMemoryAppPreferences(
+            com.gymcoach.app.core.preferences.AppPreferencesState(
+                weightUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+            )
+        )
+        val viewModel = PersonalRecordsViewModel(personalRecordDao, prefs)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(com.gymcoach.app.core.preferences.WeightUnit.LBS, viewModel.weightUnit.value)
+    }
+
+    @Test
+    fun `WeightUnit toDisplayWeight correctly converts kg to lbs and preserves kg`() {
+        val kgValue = 100.0
+        val lbsUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+        val kgUnit = com.gymcoach.app.core.preferences.WeightUnit.KG
+
+        assertEquals(100.0, kgUnit.toDisplayWeight(kgValue), 0.001)
+        assertEquals(220.462, lbsUnit.toDisplayWeight(kgValue), 0.01)
+
+        assertEquals(100.0, lbsUnit.toCanonicalKg(220.462262185), 0.001)
+        assertEquals(100.0, kgUnit.toCanonicalKg(100.0), 0.001)
+    }
+
+    @Test
+    fun `WeightUnit bidirectional conversion maintains precision across diverse weights`() {
+        val testWeightsKg = listOf(20.0, 60.0, 82.5, 100.0, 142.5, 227.27)
+        val lbsUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+
+        for (kg in testWeightsKg) {
+            val lbs = lbsUnit.toDisplayWeight(kg)
+            val convertedBackKg = lbsUnit.toCanonicalKg(lbs)
+            assertEquals(kg, convertedBackKg, 0.0001)
+        }
+    }
 }

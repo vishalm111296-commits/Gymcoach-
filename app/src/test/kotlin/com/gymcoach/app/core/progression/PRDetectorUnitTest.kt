@@ -544,6 +544,91 @@ class PRDetectorUnitTest {
         assertEquals(25.0, repPR!!.value, 0.001)
     }
 
+    @Test
+    fun `detectPRs formats details with custom unit such as lbs`() {
+        val currentSets = listOf(
+            createSet(weight = 225.0, reps = 10, completed = true, setType = 0)
+        )
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 99L,
+            unit = "lbs"
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals("225.0lbs lifted", weightPR.details)
+
+        val repPR = prs.first { it.type == PRDetector.PRType.REP }
+        assertEquals("10 reps at 225.0lbs", repPR.details)
+
+        val volumePR = prs.first { it.type == PRDetector.PRType.VOLUME }
+        assertEquals("Volume: 2250lbs", volumePR.details)
+
+        val e1rmPR = prs.first { it.type == PRDetector.PRType.ESTIMATED_1RM }
+        assertTrue("e1RM details should contain lbs: ${e1rmPR.details}", e1rmPR.details.endsWith("lbs"))
+    }
+
+    @Test
+    fun `detectPRs correctly triggers when lifting higher weight in lbs than normalized existing kg PR`() {
+        val existingKgPR = 100.0
+        val existingNormalizedLbs = com.gymcoach.app.core.preferences.WeightUnit.LBS.toDisplayWeight(existingKgPR) // ~220.46 lbs
+        val existingPR = PRDetector.PersonalRecord(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            type = PRDetector.PRType.WEIGHT,
+            value = existingNormalizedLbs,
+            details = "100.0kg lifted",
+            date = java.time.Instant.now(),
+            workoutId = 1L
+        )
+
+        // 225 lbs is higher than ~220.46 lbs -> PR
+        val higherSets = listOf(createSet(weight = 225.0, reps = 5))
+        val prsHigher = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = higherSets,
+            existingPRs = listOf(existingPR),
+            workoutId = 2L,
+            unit = "lbs"
+        )
+        assertTrue(prsHigher.any { it.type == PRDetector.PRType.WEIGHT })
+        assertEquals(225.0, prsHigher.first { it.type == PRDetector.PRType.WEIGHT }.value, 0.001)
+
+        // 215 lbs is lower than ~220.46 lbs -> No PR
+        val lowerSets = listOf(createSet(weight = 215.0, reps = 5))
+        val prsLower = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            currentSets = lowerSets,
+            existingPRs = listOf(existingPR),
+            workoutId = 3L,
+            unit = "lbs"
+        )
+        assertTrue(prsLower.none { it.type == PRDetector.PRType.WEIGHT })
+    }
+
+    @Test
+    fun `detectPRs defaults to WeightUnit KG code when unit parameter omitted`() {
+        val currentSets = listOf(
+            createSet(weight = 100.0, reps = 5, completed = true, setType = 0)
+        )
+        val prs = detector.detectPRs(
+            exerciseId = 1L,
+            exerciseName = "Squat",
+            currentSets = currentSets,
+            existingPRs = emptyList(),
+            workoutId = 10L
+        )
+
+        val weightPR = prs.first { it.type == PRDetector.PRType.WEIGHT }
+        assertEquals("100.0kg lifted", weightPR.details)
+        assertEquals("kg", com.gymcoach.app.core.preferences.WeightUnit.KG.code)
+    }
+
     private fun createSet(
         weight: Double,
         reps: Int,

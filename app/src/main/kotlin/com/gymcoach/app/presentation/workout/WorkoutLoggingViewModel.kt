@@ -811,6 +811,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         try {
                             val exerciseCompletedSets = updatedWe.sets.filter { it.completed }
                             val existingEntities = personalRecordDao.getByExerciseId(currentWe.exercise.id).firstOrNull() ?: emptyList()
+                            val currentUnit = appPreferences.preferencesState.value.weightUnit
                             val existingPRs = existingEntities.map { entity ->
                                 val type = when {
                                     entity.oneRepMaxKg > 0 -> com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM
@@ -819,12 +820,13 @@ class WorkoutLoggingViewModel @Inject constructor(
                                     entity.reps > 0 && entity.weightKg == 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
                                     else -> com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT
                                 }
-                                val prValue = when (type) {
+                                val rawKg = when (type) {
                                     com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM -> entity.oneRepMaxKg
                                     com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME -> entity.weightKg
                                     com.gymcoach.app.core.progression.PRDetector.PRType.REP -> if (entity.reps > 0) entity.reps.toDouble() else entity.weightKg
                                     com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT -> entity.weightKg
                                 }
+                                val prValue = if (type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) rawKg else currentUnit.toDisplayWeight(rawKg)
                                 com.gymcoach.app.core.progression.PRDetector.PersonalRecord(
                                     exerciseId = entity.exerciseId,
                                     exerciseName = currentWe.exercise.name,
@@ -842,16 +844,18 @@ class WorkoutLoggingViewModel @Inject constructor(
                                 currentWe.exercise.name,
                                 currentSetEntities,
                                 existingPRs,
-                                currentWorkout.workout.id
+                                currentWorkout.workout.id,
+                                unit = currentUnit.code
                             )
 
                             for (pr in detectedPRs) {
+                                val canonicalValue = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value else currentUnit.toCanonicalKg(pr.value)
                                 personalRecordDao.insert(
                                     com.gymcoach.app.data.local.entity.PersonalRecordEntity(
                                         exerciseId = pr.exerciseId,
-                                        weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) pr.value else 0.0,
+                                        weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) canonicalValue else 0.0,
                                         reps = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value.toInt() else 0,
-                                        oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) pr.value else 0.0,
+                                        oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) canonicalValue else 0.0,
                                         achievedAt = pr.date.toEpochMilli(),
                                         notes = pr.details
                                     )
@@ -996,6 +1000,7 @@ class WorkoutLoggingViewModel @Inject constructor(
                         totalVolume += exerciseCompletedSets.sumOf { it.weight * it.reps }
 
                         val existingEntityPRs = personalRecordDao.getByExerciseId(we.exercise.id).firstOrNull() ?: emptyList()
+                        val currentUnit = appPreferences.preferencesState.value.weightUnit
                         val existingPRs = existingEntityPRs.map { entity ->
                             val type = when {
                                 entity.oneRepMaxKg > 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM
@@ -1004,12 +1009,13 @@ class WorkoutLoggingViewModel @Inject constructor(
                                 entity.reps > 0 && entity.weightKg == 0.0 -> com.gymcoach.app.core.progression.PRDetector.PRType.REP
                                 else -> com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT
                             }
-                            val prValue = when (type) {
+                            val rawKg = when (type) {
                                 com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM -> entity.oneRepMaxKg
                                 com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME -> entity.weightKg
                                 com.gymcoach.app.core.progression.PRDetector.PRType.REP -> if (entity.reps > 0) entity.reps.toDouble() else entity.weightKg
                                 com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT -> entity.weightKg
                             }
+                            val prValue = if (type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) rawKg else currentUnit.toDisplayWeight(rawKg)
                             com.gymcoach.app.core.progression.PRDetector.PersonalRecord(
                                 exerciseId = entity.exerciseId,
                                 exerciseName = we.exercise.name,
@@ -1022,15 +1028,23 @@ class WorkoutLoggingViewModel @Inject constructor(
                         }
 
                         val currentSetEntities = exerciseCompletedSets.map { it.toEntity() }
-                        val newPRs = prDetector.detectPRs(we.exercise.id, we.exercise.name, currentSetEntities, existingPRs, workout.id)
+                        val newPRs = prDetector.detectPRs(
+                            we.exercise.id,
+                            we.exercise.name,
+                            currentSetEntities,
+                            existingPRs,
+                            workout.id,
+                            unit = currentUnit.code
+                        )
 
                         for (pr in newPRs) {
+                            val canonicalValue = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value else currentUnit.toCanonicalKg(pr.value)
                             personalRecordDao.insert(
                                 com.gymcoach.app.data.local.entity.PersonalRecordEntity(
                                     exerciseId = pr.exerciseId,
-                                    weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) pr.value else 0.0,
+                                    weightKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.WEIGHT || pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.VOLUME) canonicalValue else 0.0,
                                     reps = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.REP) pr.value.toInt() else 0,
-                                    oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) pr.value else 0.0,
+                                    oneRepMaxKg = if (pr.type == com.gymcoach.app.core.progression.PRDetector.PRType.ESTIMATED_1RM) canonicalValue else 0.0,
                                     achievedAt = pr.date.toEpochMilli(),
                                     notes = pr.details
                                 )

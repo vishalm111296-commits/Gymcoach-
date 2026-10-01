@@ -365,6 +365,50 @@ class WorkoutLoggingViewModelTest {
         assertEquals(2L, viewModel.currentWorkout.value?.exercises?.get(0)?.sets?.get(0)?.id)
         coVerify { workoutRepository.deleteSet(1L) }
     }
+
+    @Test
+    fun `toggleSetCompletion converts newly detected weight PR in lbs to canonical kg for persistence`() = runTest {
+        val workout = createTestWorkout()
+        currentWorkoutFlow.value = workout
+        val preferences = com.gymcoach.app.core.preferences.InMemoryAppPreferences(
+            com.gymcoach.app.core.preferences.AppPreferencesState(
+                weightUnit = com.gymcoach.app.core.preferences.WeightUnit.LBS
+            )
+        )
+        val customViewModel = WorkoutLoggingViewModel(
+            workoutRepository,
+            exerciseRepository,
+            restTimerManager,
+            progressionEngine,
+            userProfileRepository,
+            readinessRepository,
+            personalRecordDao,
+            prDetector,
+            null,
+            preferences
+        ).apply { enableWorkoutTimer = false }
+
+        val detectedPR = PRDetector.PersonalRecord(
+            exerciseId = 1L,
+            exerciseName = "Bench Press",
+            type = PRDetector.PRType.WEIGHT,
+            value = 220.462262185,
+            details = "220.5lbs lifted",
+            date = Instant.now(),
+            workoutId = workout.workout.id
+        )
+        every { prDetector.detectPRs(any(), any(), any(), any(), any(), any()) } returns listOf(detectedPR)
+
+        customViewModel.loadOrStartWorkout(workout.workout.id)
+        customViewModel.toggleSetCompletion(0, 0)
+
+        coVerify {
+            personalRecordDao.insert(match { entity ->
+                Math.abs(entity.weightKg - 100.0) < 0.01
+            })
+        }
+        customViewModel.clearForTest()
+    }
 }
 
 

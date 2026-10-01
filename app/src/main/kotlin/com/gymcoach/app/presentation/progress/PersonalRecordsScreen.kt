@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gymcoach.app.core.preferences.WeightUnit
 import com.gymcoach.app.data.local.entity.PersonalRecordWithExercise
 import com.gymcoach.app.ui.theme.GymCoachColors
 import com.gymcoach.app.ui.theme.GymCoachShapes
@@ -73,6 +74,7 @@ fun PersonalRecordsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sortBy by viewModel.sortBy.collectAsState()
+    val weightUnit by viewModel.weightUnit.collectAsState()
 
     Scaffold(
         topBar = {
@@ -159,7 +161,8 @@ fun PersonalRecordsScreen(
                             AnimatedPRCard(
                                 record = record,
                                 rank = index,
-                                animationDelay = (index * 60).coerceAtMost(480)
+                                animationDelay = (index * 60).coerceAtMost(480),
+                                weightUnit = weightUnit
                             )
                         }
                     }
@@ -216,7 +219,8 @@ private fun SortChipRow(
 private fun AnimatedPRCard(
     record: PersonalRecordWithExercise,
     rank: Int,
-    animationDelay: Int
+    animationDelay: Int,
+    weightUnit: WeightUnit = WeightUnit.KG
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(record.id) {
@@ -231,14 +235,15 @@ private fun AnimatedPRCard(
             animationSpec = tween(300)
         )
     ) {
-        PRHallOfFameCard(record = record, rank = rank)
+        PRHallOfFameCard(record = record, rank = rank, weightUnit = weightUnit)
     }
 }
 
 @Composable
 private fun PRHallOfFameCard(
     record: PersonalRecordWithExercise,
-    rank: Int
+    rank: Int,
+    weightUnit: WeightUnit = WeightUnit.KG
 ) {
     val accentColor = when (rank) {
         0 -> GoldColor
@@ -260,11 +265,15 @@ private fun PRHallOfFameCard(
     }
 
     // Use stored 1RM or calculate via Epley formula
-    val displayOneRepMax = if (record.oneRepMaxKg > 0.0) {
+    val rawOneRepMax = if (record.oneRepMaxKg > 0.0) {
         record.oneRepMaxKg
     } else {
         record.weightKg * (1.0 + record.reps.coerceAtMost(12) / 30.0)
     }
+
+    val displayWeight = weightUnit.toDisplayWeight(record.weightKg)
+    val displayOneRepMax = weightUnit.toDisplayWeight(rawOneRepMax)
+    val unit = weightUnit.code
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -311,20 +320,31 @@ private fun PRHallOfFameCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(3.dp))
-                val weightStr = if (record.weightKg == record.weightKg.toLong().toDouble()) {
-                    "${record.weightKg.toInt()} kg"
+                val weightStr = if (displayWeight == displayWeight.toLong().toDouble()) {
+                    "${displayWeight.toInt()} $unit"
                 } else {
-                    String.format(Locale.US, "%.1f kg", record.weightKg)
+                    String.format(Locale.US, "%.1f $unit", displayWeight)
+                }
+                val isVolumePR = record.notes.startsWith("Volume", ignoreCase = true)
+                val primaryText = if (isVolumePR) {
+                    "Total Volume: $weightStr"
+                } else {
+                    "$weightStr × ${record.reps} reps"
                 }
                 Text(
-                    text = "$weightStr × ${record.reps} reps",
+                    text = primaryText,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = accentColor
                 )
                 Spacer(Modifier.height(2.dp))
+                val secondaryText = if (isVolumePR) {
+                    dateStr
+                } else {
+                    "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} $unit  •  $dateStr"
+                }
                 Text(
-                    text = "Est. 1RM: ${String.format(Locale.US, "%.1f", displayOneRepMax)} kg  •  $dateStr",
+                    text = secondaryText,
                     style = MaterialTheme.typography.labelSmall,
                     color = GymCoachColors.TextSecondary
                 )

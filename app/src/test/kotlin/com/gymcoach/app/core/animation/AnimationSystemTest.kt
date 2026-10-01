@@ -701,4 +701,75 @@ class AnimationSystemTest {
             }
         }
     }
+
+    @Test
+    fun testFourLimbSegmentsInvariance() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        val segments = listOf("shoulder" to "elbow", "elbow" to "wrist", "hip" to "knee", "knee" to "ankle")
+
+        for (def in definitions.filter { it.exerciseId in newExercises }) {
+            val j0 = def.keyframes[0].joints
+            for ((p1, p2) in segments) {
+                if (j0.containsKey(p1) && j0.containsKey(p2)) {
+                    val refLen = Math.hypot((j0[p1]!!.x - j0[p2]!!.x).toDouble(), (j0[p1]!!.y - j0[p2]!!.y).toDouble())
+                    for ((idx, kf) in def.keyframes.withIndex()) {
+                        val j = kf.joints
+                        val len = Math.hypot((j[p1]!!.x - j[p2]!!.x).toDouble(), (j[p1]!!.y - j[p2]!!.y).toDouble())
+                        val variance = Math.abs(len - refLen) / refLen
+                        assertTrue("Segment $p1-$p2 distorted in ${def.exerciseId} at kf $idx (var: $variance)", variance <= 0.12)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testEquipmentDumbbellAttachment() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        for (def in definitions.filter { it.exerciseId in newExercises }) {
+            for (kf in def.keyframes) {
+                val eq = kf.equipment
+                if (eq != null && eq.type == "dumbbell" && eq.points.isNotEmpty()) {
+                    val wrist = kf.joints["wrist"] ?: kf.joints["wrist_near"] ?: kf.joints["wrist_left"]
+                    if (wrist != null) {
+                        val db = eq.points[0]
+                        val dist = Math.hypot((db.x - wrist.x).toDouble(), (db.y - wrist.y).toDouble())
+                        assertTrue("Dumbbell must stay attached to wrist in ${def.exerciseId} (dist: $dist)", dist <= 0.05)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testAnatomicalAnglePlausibility() {
+        val assetFile = resolveAssetsFile("animations/exercise_animations.json")
+        val definitions = AnimationParser.parseList(assetFile.readText())
+        val newExercises = setOf("db_goblet_squat", "db_bulgarian_split_squat", "db_bench_press", "db_skull_crusher", "bench_dip")
+        for (def in definitions.filter { it.exerciseId in newExercises }) {
+            val bottomKf = def.keyframes.find { it.phase == AnimationPhase.BOTTOM } ?: continue
+            val j = bottomKf.joints
+            for (spec in def.angleSpecs) {
+                val a = j[spec.pointA] ?: continue
+                val b = j[spec.centerPoint] ?: continue
+                val c = j[spec.pointB] ?: continue
+                val v1x = (a.x - b.x).toDouble()
+                val v1y = (a.y - b.y).toDouble()
+                val v2x = (c.x - b.x).toDouble()
+                val v2y = (c.y - b.y).toDouble()
+                val dot = v1x * v2x + v1y * v2y
+                val m1 = Math.hypot(v1x, v1y)
+                val m2 = Math.hypot(v2x, v2y)
+                if (m1 * m2 > 0) {
+                    val cosVal = Math.max(-1.0, Math.min(1.0, dot / (m1 * m2)))
+                    val angleDeg = Math.toDegrees(Math.acos(cosVal))
+                    assertTrue("Bottom angle ${spec.label} for ${def.exerciseId} must be plausible, was: $angleDeg", angleDeg in 45.0..140.0)
+                }
+            }
+        }
+    }
 }

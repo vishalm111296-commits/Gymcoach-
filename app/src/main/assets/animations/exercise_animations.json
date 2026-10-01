@@ -7011,7 +7011,7 @@
     "exerciseName": "Dumbbell Goblet Squat",
     "perspective": "SIDE",
     "durationMs": 3200,
-    "description": "Anterior-loaded squat building quadriceps, glutes, and core stability with a single vertical dumbbell.",
+    "description": "Anterior-loaded squat building quadriceps, glutes, and core stability with a vertical dumbbell.",
     "angleSpecs": [
       {
         "label": "Knee",
@@ -7030,7 +7030,7 @@
       {
         "progress": 0.0,
         "phase": "SETUP",
-        "cue": "Hold dumbbell vertically under chin, feet shoulder-width, elbows tucked",
+        "cue": "Hold dumbbell vertically against sternum, elbows tucked, feet shoulder-width",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7050,12 +7050,12 @@
             "y": 0.28
           },
           "elbow": {
-            "x": 0.52,
-            "y": 0.42
+            "x": 0.41,
+            "y": 0.413
           },
           "wrist": {
-            "x": 0.52,
-            "y": 0.28
+            "x": 0.54,
+            "y": 0.36
           },
           "hip": {
             "x": 0.48,
@@ -7078,8 +7078,8 @@
           "type": "dumbbell",
           "points": [
             [
-              0.52,
-              0.32
+              0.54,
+              0.36
             ]
           ]
         }
@@ -7087,7 +7087,7 @@
       {
         "progress": 0.25,
         "phase": "ECCENTRIC",
-        "cue": "Break at hips and knees simultaneously, keeping elbows inside knees",
+        "cue": "Break at hips and knees, sitting down between heels with proud chest",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7095,32 +7095,32 @@
         ],
         "joints": {
           "head": {
-            "x": 0.46,
-            "y": 0.24
+            "x": 0.452,
+            "y": 0.264
           },
           "neck": {
-            "x": 0.46,
-            "y": 0.31
+            "x": 0.452,
+            "y": 0.334
           },
           "shoulder": {
-            "x": 0.46,
-            "y": 0.36
+            "x": 0.452,
+            "y": 0.384
           },
           "elbow": {
-            "x": 0.5,
-            "y": 0.5
+            "x": 0.382,
+            "y": 0.517
           },
           "wrist": {
-            "x": 0.5,
-            "y": 0.36
+            "x": 0.512,
+            "y": 0.464
           },
           "hip": {
             "x": 0.41,
-            "y": 0.61
+            "y": 0.62
           },
           "knee": {
-            "x": 0.54,
-            "y": 0.75
+            "x": 0.568,
+            "y": 0.743
           },
           "ankle": {
             "x": 0.48,
@@ -7135,8 +7135,8 @@
           "type": "dumbbell",
           "points": [
             [
-              0.5,
-              0.4
+              0.512,
+              0.464
             ]
           ]
         }
@@ -7144,7 +7144,7 @@
       {
         "progress": 0.5,
         "phase": "BOTTOM",
-        "cue": "Thighs parallel or below, chest proud, elbows tracking between knees",
+        "cue": "Thighs parallel to floor, elbows tracking just inside knees, spine neutral",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7152,32 +7152,32 @@
         ],
         "joints": {
           "head": {
-            "x": 0.44,
-            "y": 0.32
+            "x": 0.422,
+            "y": 0.374
           },
           "neck": {
-            "x": 0.44,
-            "y": 0.39
+            "x": 0.422,
+            "y": 0.444
           },
           "shoulder": {
-            "x": 0.44,
-            "y": 0.44
+            "x": 0.422,
+            "y": 0.494
           },
           "elbow": {
-            "x": 0.48,
-            "y": 0.58
+            "x": 0.352,
+            "y": 0.627
           },
           "wrist": {
-            "x": 0.48,
-            "y": 0.44
+            "x": 0.482,
+            "y": 0.574
           },
           "hip": {
-            "x": 0.35,
-            "y": 0.7
+            "x": 0.34,
+            "y": 0.72
           },
           "knee": {
             "x": 0.54,
-            "y": 0.76
+            "y": 0.73
           },
           "ankle": {
             "x": 0.48,
@@ -7192,8 +7192,8 @@
           "type": "dumbbell",
           "points": [
             [
-              0.48,
-              0.48
+              0.482,
+              0.574
             ]
           ]
         }
@@ -7201,7 +7201,7 @@
       {
         "progress": 0.75,
         "phase": "CONCENTRIC",
-        "cue": "Drive through midfoot, maintaining upright torso position",
+        "cue": "Drive through midfoot, extending knees and hips together",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7209,32 +7209,32 @@
         ],
         "joints": {
           "head": {
-            "x": 0.46,
-            "y": 0.24
+            "x": 0.452,
+            "y": 0.264
           },
           "neck": {
-            "x": 0.46,
-            "y": 0.31
+            "x": 0.452,
+            "y": 0.334
           },
           "shoulder": {
-            "x": 0.46,
-            "y": 0.36
+            "x": 0.452,
+            "y": 0.384
           },
           "elbow": {
-            "x": 0.5,
-            "y": 0.5
+            "x": 0.382,
+            "y": 0.517
           },
           "wrist": {
-            "x": 0.5,
-            "y": 0.36
+            "x": 0.512,
+            "y": 0.464
           },
           "hip": {
             "x": 0.41,
-            "y": 0.61
+            "y": 0.62
           },
           "knee": {
-            "x": 0.54,
-            "y": 0.75
+            "x": 0.568,
+            "y": 0.743
           },
           "ankle": {
             "x": 0.48,
@@ -7249,8 +7249,8 @@
           "type": "dumbbell",
           "points": [
             [
-              0.5,
-              0.4
+              0.512,
+              0.464
             ]
           ]
         }
@@ -7258,7 +7258,7 @@
       {
         "progress": 1.0,
         "phase": "END",
-        "cue": "Full hip extension at top without hyperextending lower back",
+        "cue": "Stand tall at full lockout without arching lower back",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7278,12 +7278,12 @@
             "y": 0.28
           },
           "elbow": {
-            "x": 0.52,
-            "y": 0.42
+            "x": 0.41,
+            "y": 0.413
           },
           "wrist": {
-            "x": 0.52,
-            "y": 0.28
+            "x": 0.54,
+            "y": 0.36
           },
           "hip": {
             "x": 0.48,
@@ -7306,8 +7306,8 @@
           "type": "dumbbell",
           "points": [
             [
-              0.52,
-              0.32
+              0.54,
+              0.36
             ]
           ]
         }
@@ -7369,28 +7369,24 @@
             "y": 0.54
           },
           "knee": {
-            "x": 0.52,
+            "x": 0.537,
             "y": 0.73
           },
           "ankle": {
-            "x": 0.56,
+            "x": 0.58,
             "y": 0.9
           },
           "foot": {
-            "x": 0.62,
+            "x": 0.64,
             "y": 0.92
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.18,
-              0.65
-            ],
-            [
-              0.38,
-              0.65
+              0.48,
+              0.62
             ]
           ]
         }
@@ -7398,59 +7394,55 @@
       {
         "progress": 0.25,
         "phase": "ECCENTRIC",
-        "cue": "Descend straight down, loading front heel, slight torso lean forward",
+        "cue": "Descend straight down under control, loading front leg heel",
         "activeMuscles": [
           "quadriceps",
           "glutes"
         ],
         "joints": {
           "head": {
-            "x": 0.48,
-            "y": 0.28
+            "x": 0.43,
+            "y": 0.27
           },
           "neck": {
-            "x": 0.48,
-            "y": 0.35
+            "x": 0.43,
+            "y": 0.34
           },
           "shoulder": {
-            "x": 0.48,
-            "y": 0.4
+            "x": 0.43,
+            "y": 0.39
           },
           "elbow": {
-            "x": 0.48,
-            "y": 0.55
+            "x": 0.43,
+            "y": 0.54
           },
           "wrist": {
-            "x": 0.48,
-            "y": 0.7
+            "x": 0.43,
+            "y": 0.69
           },
           "hip": {
-            "x": 0.47,
-            "y": 0.62
+            "x": 0.43,
+            "y": 0.61
           },
           "knee": {
-            "x": 0.58,
-            "y": 0.78
+            "x": 0.591,
+            "y": 0.725
           },
           "ankle": {
-            "x": 0.56,
+            "x": 0.58,
             "y": 0.9
           },
           "foot": {
-            "x": 0.62,
+            "x": 0.64,
             "y": 0.92
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.18,
-              0.65
-            ],
-            [
-              0.38,
-              0.65
+              0.43,
+              0.69
             ]
           ]
         }
@@ -7458,7 +7450,7 @@
       {
         "progress": 0.5,
         "phase": "BOTTOM",
-        "cue": "Front thigh parallel to floor, rear knee hovering just above floor",
+        "cue": "Front thigh parallel to floor, back knee hovering above ground",
         "activeMuscles": [
           "quadriceps",
           "glutes",
@@ -7466,52 +7458,48 @@
         ],
         "joints": {
           "head": {
-            "x": 0.48,
-            "y": 0.36
+            "x": 0.39,
+            "y": 0.33
           },
           "neck": {
-            "x": 0.48,
-            "y": 0.43
+            "x": 0.39,
+            "y": 0.4
           },
           "shoulder": {
-            "x": 0.48,
-            "y": 0.48
+            "x": 0.39,
+            "y": 0.45
           },
           "elbow": {
-            "x": 0.48,
-            "y": 0.63
+            "x": 0.39,
+            "y": 0.6
           },
           "wrist": {
-            "x": 0.48,
-            "y": 0.78
+            "x": 0.39,
+            "y": 0.75
           },
           "hip": {
-            "x": 0.46,
-            "y": 0.7
+            "x": 0.39,
+            "y": 0.67
           },
           "knee": {
-            "x": 0.61,
-            "y": 0.82
+            "x": 0.58,
+            "y": 0.725
           },
           "ankle": {
-            "x": 0.56,
+            "x": 0.58,
             "y": 0.9
           },
           "foot": {
-            "x": 0.62,
+            "x": 0.64,
             "y": 0.92
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.18,
-              0.65
-            ],
-            [
-              0.38,
-              0.65
+              0.39,
+              0.75
             ]
           ]
         }
@@ -7526,52 +7514,48 @@
         ],
         "joints": {
           "head": {
-            "x": 0.48,
-            "y": 0.28
+            "x": 0.43,
+            "y": 0.27
           },
           "neck": {
-            "x": 0.48,
-            "y": 0.35
+            "x": 0.43,
+            "y": 0.34
           },
           "shoulder": {
-            "x": 0.48,
-            "y": 0.4
+            "x": 0.43,
+            "y": 0.39
           },
           "elbow": {
-            "x": 0.48,
-            "y": 0.55
+            "x": 0.43,
+            "y": 0.54
           },
           "wrist": {
-            "x": 0.48,
-            "y": 0.7
+            "x": 0.43,
+            "y": 0.69
           },
           "hip": {
-            "x": 0.47,
-            "y": 0.62
+            "x": 0.43,
+            "y": 0.61
           },
           "knee": {
-            "x": 0.58,
-            "y": 0.78
+            "x": 0.591,
+            "y": 0.725
           },
           "ankle": {
-            "x": 0.56,
+            "x": 0.58,
             "y": 0.9
           },
           "foot": {
-            "x": 0.62,
+            "x": 0.64,
             "y": 0.92
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.18,
-              0.65
-            ],
-            [
-              0.38,
-              0.65
+              0.43,
+              0.69
             ]
           ]
         }
@@ -7610,28 +7594,24 @@
             "y": 0.54
           },
           "knee": {
-            "x": 0.52,
+            "x": 0.537,
             "y": 0.73
           },
           "ankle": {
-            "x": 0.56,
+            "x": 0.58,
             "y": 0.9
           },
           "foot": {
-            "x": 0.62,
+            "x": 0.64,
             "y": 0.92
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.18,
-              0.65
-            ],
-            [
-              0.38,
-              0.65
+              0.48,
+              0.62
             ]
           ]
         }
@@ -7650,19 +7630,13 @@
         "pointA": "shoulder",
         "centerPoint": "elbow",
         "pointB": "wrist"
-      },
-      {
-        "label": "Shoulder",
-        "pointA": "hip",
-        "centerPoint": "shoulder",
-        "pointB": "elbow"
       }
     ],
     "keyframes": [
       {
         "progress": 0.0,
         "phase": "START",
-        "cue": "Arms fully extended over chest, wrists stacked over elbows, feet firmly planted",
+        "cue": "Dumbbells extended over chest, wrists stacked over elbows, feet firmly planted",
         "activeMuscles": [
           "chest",
           "triceps",
@@ -7683,11 +7657,11 @@
           },
           "elbow": {
             "x": 0.42,
-            "y": 0.4
+            "y": 0.41
           },
           "wrist": {
             "x": 0.42,
-            "y": 0.22
+            "y": 0.24
           },
           "hip": {
             "x": 0.6,
@@ -7707,15 +7681,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.42,
+              0.24
             ]
           ]
         }
@@ -7742,12 +7712,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.32,
+            "x": 0.5,
             "y": 0.43
           },
           "wrist": {
-            "x": 0.32,
-            "y": 0.25
+            "x": 0.5,
+            "y": 0.26
           },
           "hip": {
             "x": 0.6,
@@ -7767,15 +7737,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.5,
+              0.26
             ]
           ]
         }
@@ -7783,7 +7749,7 @@
       {
         "progress": 0.5,
         "phase": "BOTTOM",
-        "cue": "Deep chest stretch, dumbbells just outside chest, forearms vertical",
+        "cue": "Full chest stretch at bottom, forearms vertical, elbows flared ~50 degrees",
         "activeMuscles": [
           "chest"
         ],
@@ -7801,12 +7767,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.42,
-            "y": 0.76
+            "x": 0.58,
+            "y": 0.61
           },
           "wrist": {
-            "x": 0.42,
-            "y": 0.58
+            "x": 0.58,
+            "y": 0.44
           },
           "hip": {
             "x": 0.6,
@@ -7826,15 +7792,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.58,
+              0.44
             ]
           ]
         }
@@ -7861,12 +7823,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.32,
+            "x": 0.5,
             "y": 0.43
           },
           "wrist": {
-            "x": 0.32,
-            "y": 0.25
+            "x": 0.5,
+            "y": 0.26
           },
           "hip": {
             "x": 0.6,
@@ -7886,15 +7848,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.5,
+              0.26
             ]
           ]
         }
@@ -7905,7 +7863,8 @@
         "cue": "Lockout over chest, squeezing pectorals at peak contraction",
         "activeMuscles": [
           "chest",
-          "triceps"
+          "triceps",
+          "front_delts"
         ],
         "joints": {
           "head": {
@@ -7922,11 +7881,11 @@
           },
           "elbow": {
             "x": 0.42,
-            "y": 0.4
+            "y": 0.41
           },
           "wrist": {
             "x": 0.42,
-            "y": 0.22
+            "y": 0.24
           },
           "hip": {
             "x": 0.6,
@@ -7946,15 +7905,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.42,
+              0.24
             ]
           ]
         }
@@ -7997,12 +7952,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.4,
-            "y": 0.41
+            "x": 0.38,
+            "y": 0.415
           },
           "wrist": {
-            "x": 0.38,
-            "y": 0.24
+            "x": 0.34,
+            "y": 0.26
           },
           "hip": {
             "x": 0.6,
@@ -8022,15 +7977,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.34,
+              0.26
             ]
           ]
         }
@@ -8056,12 +8007,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.4,
-            "y": 0.41
+            "x": 0.38,
+            "y": 0.415
           },
           "wrist": {
-            "x": 0.3,
-            "y": 0.31
+            "x": 0.252,
+            "y": 0.319
           },
           "hip": {
             "x": 0.6,
@@ -8081,15 +8032,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.252,
+              0.319
             ]
           ]
         }
@@ -8115,12 +8062,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.4,
-            "y": 0.41
+            "x": 0.38,
+            "y": 0.415
           },
           "wrist": {
-            "x": 0.24,
-            "y": 0.43
+            "x": 0.22,
+            "y": 0.42
           },
           "hip": {
             "x": 0.6,
@@ -8140,15 +8087,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
               0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.42
             ]
           ]
         }
@@ -8174,12 +8117,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.4,
-            "y": 0.41
+            "x": 0.38,
+            "y": 0.415
           },
           "wrist": {
-            "x": 0.3,
-            "y": 0.31
+            "x": 0.252,
+            "y": 0.319
           },
           "hip": {
             "x": 0.6,
@@ -8199,15 +8142,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.252,
+              0.319
             ]
           ]
         }
@@ -8233,12 +8172,12 @@
             "y": 0.58
           },
           "elbow": {
-            "x": 0.4,
-            "y": 0.41
+            "x": 0.38,
+            "y": 0.415
           },
           "wrist": {
-            "x": 0.38,
-            "y": 0.24
+            "x": 0.34,
+            "y": 0.26
           },
           "hip": {
             "x": 0.6,
@@ -8258,15 +8197,11 @@
           }
         },
         "equipment": {
-          "type": "bench",
+          "type": "dumbbell",
           "points": [
             [
-              0.22,
-              0.58
-            ],
-            [
-              0.65,
-              0.58
+              0.34,
+              0.26
             ]
           ]
         }
@@ -8285,12 +8220,6 @@
         "pointA": "shoulder",
         "centerPoint": "elbow",
         "pointB": "wrist"
-      },
-      {
-        "label": "Shoulder",
-        "pointA": "hip",
-        "centerPoint": "shoulder",
-        "pointB": "elbow"
       }
     ],
     "keyframes": [
@@ -8304,20 +8233,20 @@
         ],
         "joints": {
           "head": {
-            "x": 0.42,
-            "y": 0.32
+            "x": 0.36,
+            "y": 0.2
           },
           "neck": {
-            "x": 0.42,
-            "y": 0.39
+            "x": 0.36,
+            "y": 0.27
           },
           "shoulder": {
-            "x": 0.42,
-            "y": 0.44
+            "x": 0.36,
+            "y": 0.32
           },
           "elbow": {
-            "x": 0.39,
-            "y": 0.58
+            "x": 0.36,
+            "y": 0.47
           },
           "wrist": {
             "x": 0.36,
@@ -8325,19 +8254,19 @@
           },
           "hip": {
             "x": 0.44,
-            "y": 0.64
+            "y": 0.6
           },
           "knee": {
-            "x": 0.58,
-            "y": 0.77
+            "x": 0.644,
+            "y": 0.682
           },
           "ankle": {
-            "x": 0.7,
-            "y": 0.9
+            "x": 0.74,
+            "y": 0.88
           },
           "foot": {
-            "x": 0.76,
-            "y": 0.92
+            "x": 0.8,
+            "y": 0.9
           }
         },
         "equipment": {
@@ -8364,20 +8293,20 @@
         ],
         "joints": {
           "head": {
-            "x": 0.42,
-            "y": 0.4
+            "x": 0.36,
+            "y": 0.26
           },
           "neck": {
-            "x": 0.42,
-            "y": 0.47
+            "x": 0.36,
+            "y": 0.33
           },
           "shoulder": {
-            "x": 0.42,
-            "y": 0.52
+            "x": 0.36,
+            "y": 0.38
           },
           "elbow": {
-            "x": 0.32,
-            "y": 0.62
+            "x": 0.27,
+            "y": 0.5
           },
           "wrist": {
             "x": 0.36,
@@ -8385,19 +8314,19 @@
           },
           "hip": {
             "x": 0.44,
-            "y": 0.72
+            "y": 0.67
           },
           "knee": {
-            "x": 0.61,
-            "y": 0.81
+            "x": 0.66,
+            "y": 0.675
           },
           "ankle": {
-            "x": 0.7,
-            "y": 0.9
+            "x": 0.74,
+            "y": 0.88
           },
           "foot": {
-            "x": 0.76,
-            "y": 0.92
+            "x": 0.8,
+            "y": 0.9
           }
         },
         "equipment": {
@@ -8417,27 +8346,27 @@
       {
         "progress": 0.5,
         "phase": "BOTTOM",
-        "cue": "Elbows reach 90-degree flexion, shoulders depressed without shrugging",
+        "cue": "Elbows reach ~75-degree flexion, shoulders depressed without shrugging",
         "activeMuscles": [
           "triceps",
           "front_delts"
         ],
         "joints": {
           "head": {
-            "x": 0.42,
-            "y": 0.48
+            "x": 0.36,
+            "y": 0.32
           },
           "neck": {
-            "x": 0.42,
-            "y": 0.55
+            "x": 0.36,
+            "y": 0.39
           },
           "shoulder": {
-            "x": 0.42,
-            "y": 0.6
+            "x": 0.36,
+            "y": 0.44
           },
           "elbow": {
-            "x": 0.28,
-            "y": 0.62
+            "x": 0.24,
+            "y": 0.53
           },
           "wrist": {
             "x": 0.36,
@@ -8445,19 +8374,19 @@
           },
           "hip": {
             "x": 0.44,
-            "y": 0.8
+            "y": 0.74
           },
           "knee": {
-            "x": 0.63,
-            "y": 0.82
+            "x": 0.651,
+            "y": 0.679
           },
           "ankle": {
-            "x": 0.7,
-            "y": 0.9
+            "x": 0.74,
+            "y": 0.88
           },
           "foot": {
-            "x": 0.76,
-            "y": 0.92
+            "x": 0.8,
+            "y": 0.9
           }
         },
         "equipment": {
@@ -8483,20 +8412,20 @@
         ],
         "joints": {
           "head": {
-            "x": 0.42,
-            "y": 0.4
+            "x": 0.36,
+            "y": 0.26
           },
           "neck": {
-            "x": 0.42,
-            "y": 0.47
+            "x": 0.36,
+            "y": 0.33
           },
           "shoulder": {
-            "x": 0.42,
-            "y": 0.52
+            "x": 0.36,
+            "y": 0.38
           },
           "elbow": {
-            "x": 0.32,
-            "y": 0.62
+            "x": 0.27,
+            "y": 0.5
           },
           "wrist": {
             "x": 0.36,
@@ -8504,19 +8433,19 @@
           },
           "hip": {
             "x": 0.44,
-            "y": 0.72
+            "y": 0.67
           },
           "knee": {
-            "x": 0.61,
-            "y": 0.81
+            "x": 0.66,
+            "y": 0.675
           },
           "ankle": {
-            "x": 0.7,
-            "y": 0.9
+            "x": 0.74,
+            "y": 0.88
           },
           "foot": {
-            "x": 0.76,
-            "y": 0.92
+            "x": 0.8,
+            "y": 0.9
           }
         },
         "equipment": {
@@ -8542,20 +8471,20 @@
         ],
         "joints": {
           "head": {
-            "x": 0.42,
-            "y": 0.32
+            "x": 0.36,
+            "y": 0.2
           },
           "neck": {
-            "x": 0.42,
-            "y": 0.39
+            "x": 0.36,
+            "y": 0.27
           },
           "shoulder": {
-            "x": 0.42,
-            "y": 0.44
+            "x": 0.36,
+            "y": 0.32
           },
           "elbow": {
-            "x": 0.39,
-            "y": 0.58
+            "x": 0.36,
+            "y": 0.47
           },
           "wrist": {
             "x": 0.36,
@@ -8563,19 +8492,19 @@
           },
           "hip": {
             "x": 0.44,
-            "y": 0.64
+            "y": 0.6
           },
           "knee": {
-            "x": 0.58,
-            "y": 0.77
+            "x": 0.644,
+            "y": 0.682
           },
           "ankle": {
-            "x": 0.7,
-            "y": 0.9
+            "x": 0.74,
+            "y": 0.88
           },
           "foot": {
-            "x": 0.76,
-            "y": 0.92
+            "x": 0.8,
+            "y": 0.9
           }
         },
         "equipment": {

@@ -196,8 +196,8 @@ class ExerciseSeeder @Inject constructor(
         }
     }
 
-    private fun rebuildSearchIndex() {
-        db.openHelper.writableDatabase.execSQL("INSERT INTO exercise_fts(exercise_fts) VALUES('rebuild')")
+    private suspend fun rebuildSearchIndex() {
+        db.exerciseDao().rebuildFtsIndex()
     }
 
     companion object {
